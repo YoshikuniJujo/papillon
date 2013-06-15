@@ -1,0 +1,14 @@
+additive
+	= multitive '+' additive
+	/ multitive
+
+multitive
+	= primary '*' multitive
+	/ primary
+
+primary
+	= '(' additive ')'
+	/ decimal
+
+decimal
+	= [0-9]
