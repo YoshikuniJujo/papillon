@@ -1,0 +1,46 @@
+leaf :: Leaf
+	= t:test	{ left t }
+	/ v:variable	{ right v }
+;
+test :: Strings
+	= o:[isOpenBr] h:hsExp c:[isCloseBr]	{ h }
+;
+hsExp :: Strings
+	= v:variable s:spaces h:hsExp	{ cons v h }
+	/ v:variable	{ cons v empty }
+;
+type :: String
+	= u:upper t:tail	{ cons u t }
+;
+variable :: String
+	= l:lower t:tail	{ cons l t }
+;
+tail :: String
+	= a:alpha t:tail	{ cons a t }
+	/ 	{ empty }
+;
+alpha :: Char
+	= u:upper	{ u }
+	/ l:lower	{ l }
+;
+upper :: Char
+	= u:[isUpper]	{ u }
+;
+lower :: Char
+	= l:[isLower]	{ l }
+;
+digit :: Char
+	= d:[isDigit]	{ d }
+;
+symbolOne :: Char
+	= sym:[isSymbolOne]	{ sym }
+;
+symbolTwo :: Char
+	= sym:[isSymbolTwo]	{ sym }
+;
+spaces :: Nil
+	= s:space ss:spaces	{ nil }
+	/ 	{ nil }
+;
+space :: Nil
+	= l:[isSpace]	{ nil }

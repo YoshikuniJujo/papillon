@@ -31,8 +31,8 @@ symbol1	= [(`elem` "=/;+*() ")]
 ;
 symbol2	= [(`elem` "\\'nt")]
 ;
-spaces	= space spaces
-	/ space
+spaces	= s:space ss:spaces	{ s : ss }
+	/	{ () }
 ;
-space	= [isSpace]
+space	= s:[isSpace]	{ () }
 ;

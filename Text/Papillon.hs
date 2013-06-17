@@ -119,3 +119,5 @@ transLeaf (n, Right p) = [
 	noBindS $ condE (p `appE` varE n)
 		(varE 'return `appE` varE n)
 		(varE 'fail `appE` litE (stringL "not match"))]
+transLeaf (n, Left v) = [
+	bindS (varP n) $ varE $ mkName $ "dv_" ++ v ++ "M"]

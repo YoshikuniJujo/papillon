@@ -1,4 +1,4 @@
-{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE PackageImports, TemplateHaskell #-}
 
 module Text.Papillon.Parser (
 	parse,
@@ -41,7 +41,7 @@ data Derivs = Derivs {
 	dvNameLeafs :: Result [NameLeaf],
 	dvNameLeaf :: Result NameLeaf,
 	dvLeaf :: Result Leaf,
-	dvHsExpression :: Result ExpQ,
+	dvHsExpression :: Result (ExpQ -> ExpQ),
 	dvType :: Result String,
 	dvVariable :: Result String,
 	dvTail :: Result String,
@@ -69,7 +69,7 @@ dvNameLeafM = StateT dvNameLeaf
 dvLeafM :: PMonad Leaf
 dvLeafM = StateT dvLeaf
 
-dvHsExpressionM :: PMonad ExpQ
+dvHsExpressionM :: PMonad (ExpQ -> ExpQ)
 dvHsExpressionM = StateT dvHsExpression
 
 dvTypeM :: PMonad String
@@ -139,7 +139,7 @@ pSelection = msum [(\expr _ _ _ _ sel -> expr : sel)
 	(: []) <$> dvExpressionM]
 
 pExpression :: PMonad Expression
-pExpression = (\nls _ _ _ hse _ _ -> (nls, hse))
+pExpression = (\nls _ _ _ hse _ _ -> (nls, hse $ varE 'id))
 	<$> dvNameLeafsM
 	<*> do { '\t' <- dvCharsM; return () }
 	<*> do { '{' <- dvCharsM; return () }
@@ -167,15 +167,15 @@ pLeaf = (Left <$> dvVariableM) `mplus` (Right <$> (do
 	'[' <- dvCharsM
 	v <- dvHsExpressionM
 	']' <- dvCharsM
-	return v))
+	return $ v $ varE 'id))
 
-pHsExpression :: PMonad ExpQ
+pHsExpression :: PMonad (ExpQ -> ExpQ)
 pHsExpression = msum [
-	(\f _ x -> f `appE` x)
-		<$> (varE <$> mkName <$> dvVariableM)
+	(\f _ x -> \e -> x $ f e)
+		<$> ((\x -> \f -> f `appE` x) <$> varE <$> mkName <$> dvVariableM)
 		<*> do { ' ' <- dvCharsM; return () }
 		<*> dvHsExpressionM,
-	varE <$> mkName <$> dvVariableM
+	(\x -> \f -> f `appE` x) <$> varE <$> mkName <$> dvVariableM
  ]
 
 pType :: PMonad String
