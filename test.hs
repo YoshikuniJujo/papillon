@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-import ParsePeg3
+import Text.Papillon.Parser
 import Language.Haskell.TH
 
 main = do

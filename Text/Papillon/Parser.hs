@@ -1,6 +1,6 @@
 {-# LANGUAGE PackageImports #-}
 
-module ParsePeg3 (
+module Text.Papillon.Parser (
 	parse,
 	dvDefinition,
 	runQ,
