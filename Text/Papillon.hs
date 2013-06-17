@@ -9,6 +9,8 @@ import Language.Haskell.TH.Quote
 import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
 
+import Text.Papillon.Parser
+
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
 	quoteExp = undefined,
@@ -19,27 +21,24 @@ papillon = QuasiQuoter {
 
 declaration :: String -> DecsQ
 declaration src = do
-{-
-	parseT <- sigD (mkName "parse") $
-		arrowT `appT` conT (mkName "String") `appT`
-			(conT (mkName "Maybe") `appT`
-				(tupleT 2
-					`appT` conT (mkName "Int")
-					`appT` conT (mkName "Int")))
-	parse <- funD (mkName "parse") [c] -- valD (varP $ mkName "parse") (normalB $ litE $ integerL 8) []
-	dvSome <- valD (varP $ mkName "dvSome") (normalB $ varE $ mkName "id") []
--}
+	let parsed@(name, typ, expr) = case dvDefinition $ parse src of
+		Just (p, _) -> p
+		_ -> error "bad"
+	runIO $ print $ (\(v, t, [([(tv, Right p)], b)]) -> (v, t, tv)) parsed
+	some <- (\(v, t, [([(tv, Right p)], b)]) -> p) parsed
+	other <- (\(v, t, [([(tv, Right p)], b)]) -> b) parsed
+	runIO $ print some
+	runIO $ print other
 	debug <- flip (valD $ varP $ mkName "debug") [] $ normalB $
 		appE (varE $ mkName "putStrLn") (litE $ stringL "debug")
 	r <- result
 	pm <- pmonad
 	d <- derivs
 	pt <- parseT
-	p <- funD (mkName "parse") [parse]
+	p <- funD (mkName "parse") [parseE]
 	dvsm <- dvSomeM
 	dvcm <- dvCharsM
 	ps <- pSome
---	return [parseT, parse, dvSome, debug, d, ps]
 	return [debug, r, pm, d, pt, p, dvsm, dvcm, ps]
 	where
 	c = clause [wildP] (normalB $ conE $ mkName "Nothing") []
@@ -64,8 +63,8 @@ pmonad = tySynD (mkName "PMonad") [] $ conT ''StateT `appT`
 parseT :: DecQ
 parseT = sigD (mkName "parse") $
 	arrowT `appT` conT ''String `appT` conT (mkName "Derivs")
-parse :: ClauseQ
-parse = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") [
+parseE :: ClauseQ
+parseE = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") [
 	flip (valD $ varP $ mkName "d") [] $ normalB $ (conE $ mkName "Derivs")
 		`appE` (varE $ mkName "some")
 		`appE` (varE $ mkName "chr"),

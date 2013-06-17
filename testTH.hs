@@ -13,9 +13,7 @@ main = do
 		_ -> putStrLn "bad"
 	debug
 
-[papillon|
-
-some :: Char
+[papillon|some :: Char
 	= d:[isDigit]	{ d }
 
 |]
