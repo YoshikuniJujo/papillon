@@ -8,12 +8,12 @@ import Data.Char
 
 main :: IO ()
 main = do
-	case dvSome $ parse "3" of
+	case dvSome $ parse "c3" of
 		Just (r, _d) -> print r
 		_ -> putStrLn "bad"
 	debug
 
 [papillon|some :: Char
-	= d:[isDigit]	{ d }
-
+	= d:[isDigit] l:[isLower]	{ d }
+	/ l:[isLower] d:[isDigit]	{ l }
 |]

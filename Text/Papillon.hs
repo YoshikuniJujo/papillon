@@ -8,6 +8,7 @@ module Text.Papillon (
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
+import Control.Monad
 
 import Text.Papillon.Parser
 
@@ -24,11 +25,11 @@ declaration src = do
 	let parsed@(name, typ, expr) = case dvDefinition $ parse src of
 		Just (p, _) -> p
 		_ -> error "bad"
-	runIO $ print $ (\(v, t, [([(tv, Right p)], b)]) -> (v, t, tv)) parsed
-	some <- (\(v, t, [([(tv, Right p)], b)]) -> p) parsed
-	other <- (\(v, t, [([(tv, Right p)], b)]) -> b) parsed
-	runIO $ print some
-	runIO $ print other
+--	runIO $ print $ (\(v, t, [([nl@(tv, Right p)], b)]) -> (v, t, tv)) parsed
+--	some <- (\(v, t, [([(tv, Right p)], b)]) -> p) parsed
+--	other <- (\(v, t, [([(tv, Right p)], b)]) -> b) parsed
+--	runIO $ print some
+--	runIO $ print other
 	debug <- flip (valD $ varP $ mkName "debug") [] $ normalB $
 		appE (varE $ mkName "putStrLn") (litE $ stringL "debug")
 	r <- result
@@ -38,7 +39,7 @@ declaration src = do
 	p <- funD (mkName "parse") [parseE]
 	dvsm <- dvSomeM
 	dvcm <- dvCharsM
-	ps <- pSome
+	ps <- pSomes expr
 	return [debug, r, pm, d, pt, p, dvsm, dvcm, ps]
 	where
 	c = clause [wildP] (normalB $ conE $ mkName "Nothing") []
@@ -91,10 +92,20 @@ dvSomeM = flip (valD $ varP $ mkName "dvSomeM") [] $ normalB $
 dvCharsM = flip (valD $ varP $ mkName "dvCharsM") [] $ normalB $
 	conE 'StateT `appE` varE (mkName "dvChars")
 
-pSome :: DecQ
-pSome = flip (valD $ varP $ mkName "pSome") [] $ normalB $ doE [
-	bindS (varP $ mkName "d") $ varE $ mkName "dvCharsM",
-	noBindS $ condE (varE (mkName "isDigit") `appE` varE (mkName "d"))
-		(varE (mkName "return") `appE` varE (mkName "d"))
-		(varE (mkName "fail") `appE` litE (stringL "not match"))
- ]
+pSomes :: [([NameLeaf], ExpQ)] -> DecQ
+pSomes sel = flip (valD $ varP $ mkName "pSome") [] $ normalB $
+	varE 'msum `appE` listE (map (uncurry pSome_) sel)
+
+pSome :: [NameLeaf] -> ExpQ -> DecQ
+pSome nls ret = flip (valD $ varP $ mkName "pSome") [] $ normalB $ pSome_ nls ret
+
+pSome_ :: [NameLeaf] -> ExpQ -> ExpQ
+pSome_ nls ret = doE $
+	concatMap transLeaf nls ++ [noBindS $ (varE 'return) `appE` ret]
+
+transLeaf :: NameLeaf -> [StmtQ]
+transLeaf (n, Right p) = [
+	bindS (varP n) $ varE $ mkName "dvCharsM",
+	noBindS $ condE (p `appE` varE n)
+		(varE 'return `appE` varE n)
+		(varE 'fail `appE` litE (stringL "not match"))]

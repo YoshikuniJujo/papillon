@@ -12,3 +12,44 @@ QuasiQuote の parser と pappy 的な file 出力の parser を別にすれば�
 これはある意味美しいかもしれない。
 
 つまり import Papillon の有無だけでそのふたつを分けることができる。
+しかも、場合によっては import Papillon は別に無害だ。
+
+type Result v = Maybe (v, Derivs)
+type PackratM = StateT Derivs Maybe
+
+data Derivs = Derivs {
+	dv... :: Result ...,
+	dv... :: Result ...,
+	dv... :: Result ...,
+	dvChars :: Result Char
+ }
+
+dv...M :: PackratM ...
+dv...M = StateT dv...
+
+dv...M :: PackratM ...
+dv...M = StateT dv...
+
+dv...M :: PackratM ...
+dv...M = StateT dv...
+
+parse :: String -> Derivs
+parse s = d where
+	d = Derivs ... ... ... chars
+	... = runStateT p... d
+	... = runStateT p... d
+	... = runStateT p... d
+	chars = flip runStateT d $ do
+		c : s' <- return s
+		put $ parse s'
+		return c
+
+p... :: PMonad ...
+p... = do
+	... <- dv...M
+	if ... ...
+	then return ...
+	else fail "not match"
+
+まずは葉の部分から変換していけばいいかもしれない。
+その葉を do のなかで集める。

@@ -4,7 +4,8 @@ module Text.Papillon.Parser (
 	parse,
 	dvDefinition,
 	runQ,
-	ppr
+	ppr,
+	NameLeaf
 ) where
 
 import Control.Applicative
@@ -44,6 +45,9 @@ data Derivs = Derivs {
 	dvChars :: Result Char
  }
 
+dvSelectionM :: PMonad Selection
+dvSelectionM = StateT dvSelection
+
 dvDefinitionM :: PMonad Definition
 dvDefinitionM = StateT dvDefinition
 
@@ -77,9 +81,10 @@ dvCharsM = StateT dvChars
 parse :: String -> Derivs
 parse s = d where
 	d = Derivs
-		undefined definition undefined expression nameLeafs nameLeaf leaf
+		undefined definition selection expression nameLeafs nameLeaf leaf
 		hsExpression typ variable tail chr
 	definition = runStateT pDefinition d
+	selection = runStateT pSelection d
 	expression = runStateT pExpression d
 	nameLeafs = runStateT pNameLeafs d
 	nameLeaf = runStateT pNameLeaf d
@@ -94,7 +99,7 @@ parse s = d where
 		return c
 
 pDefinition :: PMonad Definition
-pDefinition = (\v _ _ _ _ t _ _ _ _ expr -> (mkName v, mkName t, [expr]))
+pDefinition = (\v _ _ _ _ t _ _ _ _ expr -> (mkName v, mkName t, expr))
 	<$> dvVariableM
 	<*> do { ' ' <- dvCharsM; return () }
 	<*> do { ':' <- dvCharsM; return () }
@@ -105,7 +110,17 @@ pDefinition = (\v _ _ _ _ t _ _ _ _ expr -> (mkName v, mkName t, [expr]))
 	<*> do { '\t' <- dvCharsM; return () }
 	<*> do { '=' <- dvCharsM; return () }
 	<*> do { ' ' <- dvCharsM; return () }
-	<*> dvExpressionM
+	<*> dvSelectionM
+
+pSelection :: PMonad Selection
+pSelection = msum [(\expr _ _ _ _ sel -> expr : sel)
+	<$> dvExpressionM
+	<*> do { '\n' <- dvCharsM; return () }
+	<*> do { '\t' <- dvCharsM; return () }
+	<*> do { '/' <- dvCharsM; return () }
+	<*> do { ' ' <- dvCharsM; return () }
+	<*> dvSelectionM,
+	(: []) <$> dvExpressionM]
 
 pExpression :: PMonad Expression
 pExpression = (\nls _ _ _ hse _ _ -> (nls, hse))
