@@ -2,6 +2,9 @@
 
 module Text.Papillon.Parser (
 	parse,
+	Peg,
+	Definition,
+	dvPeg,
 	dvDefinition,
 	runQ,
 	ppr,
@@ -20,7 +23,7 @@ type Result v = Maybe (v, Derivs)
 
 type Peg = [Definition]
 
-type Definition = (Name, Name, Selection)
+type Definition = (String, Name, Selection)
 
 type Selection = [Expression]
 
@@ -44,6 +47,9 @@ data Derivs = Derivs {
 	dvTail :: Result String,
 	dvChars :: Result Char
  }
+
+dvPegM :: PMonad Peg
+dvPegM = StateT dvPeg
 
 dvSelectionM :: PMonad Selection
 dvSelectionM = StateT dvSelection
@@ -81,8 +87,9 @@ dvCharsM = StateT dvChars
 parse :: String -> Derivs
 parse s = d where
 	d = Derivs
-		undefined definition selection expression nameLeafs nameLeaf leaf
+		peg definition selection expression nameLeafs nameLeaf leaf
 		hsExpression typ variable tail chr
+	peg = runStateT pPeg d
 	definition = runStateT pDefinition d
 	selection = runStateT pSelection d
 	expression = runStateT pExpression d
@@ -98,8 +105,17 @@ parse s = d where
 		put $ parse s'
 		return c
 
+pPeg :: PMonad Peg
+pPeg = msum [(\d _ _ _ p -> d : p)
+	<$> dvDefinitionM
+	<*> do { '\n' <- dvCharsM; return () }
+	<*> do { ';' <- dvCharsM; return () }
+	<*> do { '\n' <- dvCharsM; return () }
+	<*> dvPegM,
+	(: []) <$> dvDefinitionM]
+
 pDefinition :: PMonad Definition
-pDefinition = (\v _ _ _ _ t _ _ _ _ expr -> (mkName v, mkName t, expr))
+pDefinition = (\v _ _ _ _ t _ _ _ _ expr -> (v, mkName t, expr))
 	<$> dvVariableM
 	<*> do { ' ' <- dvCharsM; return () }
 	<*> do { ':' <- dvCharsM; return () }
