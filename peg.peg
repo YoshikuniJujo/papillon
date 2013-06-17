@@ -2,10 +2,10 @@ peg	= definition spaces peg
 	/
 ;
 definition
-	= variable spaces '=' spaces selection
+	= variable spaces [(== '=')] spaces selection
 ;
 selection
-	= expression spaces '/' spaces expression
+	= expression spaces [(== '/')] spaces expression
 	/ expression
 ;
 expression
@@ -18,25 +18,21 @@ variable
 	= small variable
 	/ small
 ;
-charlit	= '\'' small '\''
-	/ '\'' digit '\''
-	/ '\'' symbol1 '\''
-	/ '\'' '\\' symbol2 '\''
+charlit	= [(== '\'')] small [(== '\'')]
+	/ [(== '\'')] digit [(== '\'')]
+	/ [(== '\'')] symbol1 [(== '\'')]
+	/ [(== '\'')] [(== '\\')] symbol2 [(== '\'')]
 ;
-small	= 'a' / 'b' / 'c' / 'd' / 'e' / 'f' / 'g' / 'h' / 'i' / 'j' / 'k' / 'l'
-	/ 'm' / 'n' / 'o' / 'p' / 'q' / 'r' / 's' / 't' / 'u' / 'v' / 'w' / 'x'
-	/ 'y' / 'z'
+small	= [isLower]
 ;
-digit	= '0' / '1' / '2' / '3' / '4' / '5' / '6' / '7' / '8' / '9'
+digit	= [isDigit]
 ;
-symbol1	= '=' / '/' / ';' / '+' / '*' / '(' / ')' / ' '
+symbol1	= [(`elem` "=/;+*() ")]
 ;
-symbol2	= '\\' / '\'' / 'n' / 't'
+symbol2	= [(`elem` "\\'nt")]
 ;
 spaces	= space spaces
 	/ space
 ;
-space	= ' '
-	/ '\n'
-	/ '\t'
+space	= [isSpace]
 ;

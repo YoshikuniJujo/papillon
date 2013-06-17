@@ -1,0 +1,2 @@
+some :: Char
+	= d:[isDigit]	{ d }
