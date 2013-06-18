@@ -1,40 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 import Text.Papillon
+import MkParser
 
-import Language.Haskell.TH
-import Language.Haskell.TH.Quote
-import Data.Char
-
-type Nil = ()
-type Strings = [String]
-type Leaf = Either [String] String
-type Expression = [Leaf]
-
-left = Left
-right = Right
-
-nil :: Nil
-nil = ()
-
-cons :: a -> [a] -> [a]
-cons = (:)
-
-empty :: [a]
-empty = []
-
-isOpenBr, isCloseBr, isSymbolOne, isSymbolTwo :: Char -> Bool
-isOpenBr = (== '[')
-isCloseBr = (== ']')
-isSymbolOne = (`elem` "=/;+*() ")
-isSymbolTwo = (`elem` "\\'nt")
-
-do	cnt <- runIO $ readFile "test.peg"
-	quoteDec papillon cnt
-	
 main :: IO ()
 main = do
-	case dv_expression $ parse "hage[aAdxy hoge]hige posoZ=' 3" of
-		Just (r, _d) -> print r
+	case dv_peg $ parse $ "heko :: Int\n\t= h:hage p:[aAdxy hoge]h:hige { hoge }/" ++
+			"p:posoZ{ boka }\n;hage=bo { boke };' 3" of
+		Just (r@((n, _, _) : _), _d) -> print n
 		_ -> putStrLn "bad"
-	debug
+

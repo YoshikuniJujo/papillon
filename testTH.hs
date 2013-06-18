@@ -13,10 +13,12 @@ main = do
 		_ -> putStrLn "bad"
 	debug
 
-[papillon|other :: Char
+[papillon|
+other :: Char
 	= d:[isDigit]	{ d }
 ;
 some :: Char
 	= d:[isDigit] l:[isLower]	{ d }
 	/ l:[isLower] d:[isDigit]	{ l }
+;
 |]

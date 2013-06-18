@@ -1,19 +1,36 @@
-expression :: Expression
-	= l:leaf s:spaces e:expression	{ cons l e }
+peg :: Peg
+	= s:spaces d:definition p:peg	{ cons d p }
 	/ 	{ empty }
+;
+definition :: Definition
+	= v:variable s:spaces c:[isColon] c:[isColon] s:spaces t:typ s:spaces e:[isEqual] s:spaces sel:selection s:spaces s:[isSemi]	{ mkDef v t sel }
+;
+selection :: Selection
+	= ex:expressionHs s:spaces e:[isSlash] s:spaces sel:selection	{ cons ex sel }
+	/ ex:expressionHs	{ cons ex empty }
+;
+expressionHs :: ExpressionHs
+	= e:expression s:spaces o:[isOpenWave] s:spaces h:hsExp s:spaces c:[isCloseWave]	{ mkExpressionHs e h }
+;
+expression :: Expression
+	= l:nameLeaf s:spaces e:expression	{ cons l e }
+	/ 	{ empty }
+;
+nameLeaf :: NameLeaf
+	= n:variable c:[isColon] l:leaf	{ mkNameLeaf n l }
 ;
 leaf :: Leaf
 	= t:test	{ left t }
 	/ v:variable	{ right v }
 ;
-test :: Strings
-	= o:[isOpenBr] h:hsExp c:[isCloseBr]	{ h }
+test :: ExR
+	= o:[isOpenBr] h:hsExp c:[isCloseBr]	{ getEx h }
 ;
-hsExp :: Strings
-	= v:variable s:spaces h:hsExp	{ cons v h }
-	/ v:variable	{ cons v empty }
+hsExp :: Ex
+	= v:variable s:spaces h:hsExp	{ apply v h }
+	/ v:variable	{ toExp v }
 ;
-type :: String
+typ :: String
 	= u:upper t:tail	{ cons u t }
 ;
 variable :: String
@@ -48,3 +65,4 @@ spaces :: Nil
 ;
 space :: Nil
 	= l:[isSpace]	{ nil }
+;

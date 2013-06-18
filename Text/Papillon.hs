@@ -10,7 +10,8 @@ import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
 import Control.Monad
 
-import Text.Papillon.Parser
+-- import Text.Papillon.Parser
+import Parser
 
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
@@ -22,7 +23,7 @@ papillon = QuasiQuoter {
 
 declaration :: String -> DecsQ
 declaration src = do
-	let parsed = case dvPeg $ parse src of
+	let parsed = case dv_peg $ parse src of
 		Just (p, _) -> p
 		_ -> error "bad"
 	debug <- flip (valD $ varP $ mkName "debug") [] $ normalB $

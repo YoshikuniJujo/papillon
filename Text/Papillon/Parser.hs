@@ -4,7 +4,7 @@ module Text.Papillon.Parser (
 	parse,
 	Peg,
 	Definition,
-	dvPeg,
+	dv_peg,
 	dvDefinition,
 	runQ,
 	ppr,
@@ -16,6 +16,8 @@ import Control.Monad
 import "monads-tf" Control.Monad.State
 import Data.Char
 import Language.Haskell.TH
+
+dv_peg = dvPeg
 
 type PMonad = StateT Derivs Maybe
 
