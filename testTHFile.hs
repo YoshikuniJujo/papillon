@@ -9,6 +9,7 @@ import Data.Char
 type Nil = ()
 type Strings = [String]
 type Leaf = Either [String] String
+type Expression = [Leaf]
 
 left = Left
 right = Right
@@ -33,7 +34,7 @@ do	cnt <- runIO $ readFile "test.peg"
 	
 main :: IO ()
 main = do
-	case dv_test $ parse "[aAdxy hoge]Z=' 3" of
+	case dv_expression $ parse "hage[aAdxy hoge]hige posoZ=' 3" of
 		Just (r, _d) -> print r
 		_ -> putStrLn "bad"
 	debug

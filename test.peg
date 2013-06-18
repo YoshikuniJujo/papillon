@@ -1,3 +1,7 @@
+expression :: Expression
+	= l:leaf s:spaces e:expression	{ cons l e }
+	/ 	{ empty }
+;
 leaf :: Leaf
 	= t:test	{ left t }
 	/ v:variable	{ right v }
