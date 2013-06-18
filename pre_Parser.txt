@@ -8,13 +8,9 @@ module Parser (
 	dv_peg
 ) where
 
-import GHC.Base
-import GHC.Types
 import Data.Char
 import Control.Monad
-import "monads-tf" Control.Monad.State.Class
-import "transformers" Control.Monad.Trans.State.Lazy
-import Data.Maybe
+import "monads-tf" Control.Monad.State
 import Language.Haskell.TH
 
 type Nil = ()

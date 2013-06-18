@@ -2,12 +2,15 @@
 
 module Text.Papillon (
 	papillon,
+	papillonStr,
 	StateT(..)
 ) where
 
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
+
+import Control.Applicative
 
 import Text.Papillon.Parser
 -- import Parser
@@ -17,36 +20,60 @@ papillon = QuasiQuoter {
 	quoteExp = undefined,
 	quotePat = undefined,
 	quoteType = undefined,
-	quoteDec = declaration
+	quoteDec = declaration True
  }
 
-declaration :: String -> DecsQ
-declaration src = do
+papillonStr :: String -> IO String
+papillonStr src = show . ppr <$> runQ (declaration False src)
+
+returnN, failN, charN, maybeN, stateTN, stringN, putN, stateTN', msumN ::
+	Bool -> Name
+returnN True = 'return
+returnN False = mkName "return"
+failN True = 'fail
+failN False = mkName "fail"
+charN True = ''Char
+charN False = mkName "Char"
+maybeN True = ''Maybe
+maybeN False = mkName "Maybe"
+stateTN True = ''StateT
+stateTN False = mkName "StateT"
+stringN True = ''String
+stringN False = mkName "String"
+putN True = 'put
+putN False = mkName "put"
+stateTN' True = 'StateT
+stateTN' False = mkName "StateT"
+msumN True = 'msum
+msumN False = mkName "msum"
+
+declaration :: Bool -> String -> DecsQ
+declaration th src = do
 	let parsed = case dv_peg $ parse src of
 		Just (p, _) -> p
 		_ -> error "bad"
 --	debug <- flip (valD $ varP $ mkName "debug") [] $ normalB $
 --		appE (varE $ mkName "putStrLn") (litE $ stringL "debug")
-	r <- result
-	pm <- pmonad
-	d <- derivs parsed
-	pt <- parseT
-	p <- funD (mkName "parse") [parseE parsed]
+	r <- result th
+	pm <- pmonad th
+	d <- derivs th parsed
+	pt <- parseT th
+	p <- funD (mkName "parse") [parseE th parsed]
 	tdvm <- typeDvM parsed
-	dvsm <- dvSomeM parsed
-	tdvcm <- typeDvCharsM
-	dvcm <- dvCharsM
+	dvsm <- dvSomeM th parsed
+	tdvcm <- typeDvCharsM th
+	dvcm <- dvCharsM th
 	pts <- typeP parsed
-	ps <- pSomes parsed -- name expr
+	ps <- pSomes th parsed -- name expr
 	return $ [pm, r, d, pt, p] ++ tdvm ++ dvsm ++ [tdvcm, dvcm] ++ pts ++ ps
 	where
 --	c = clause [wildP] (normalB $ conE $ mkName "Nothing") []
 
-derivs :: Peg -> DecQ
-derivs peg = flip (dataD (cxt []) (mkName "Derivs") []) [] $ [
+derivs :: Bool -> Peg -> DecQ
+derivs th peg = flip (dataD (cxt []) (mkName "Derivs") []) [] $ [
 	recC (mkName "Derivs") $ (map derivs1 peg) ++ [
 		varStrictType (mkName "dvChars") $ strictType notStrict $
-			conT (mkName "Result") `appT` conT ''Char
+			conT (mkName "Result") `appT` conT (charN th)
 	 ]
  ]
 
@@ -55,21 +82,21 @@ derivs1 (name, typ, _) =
 	varStrictType (mkName $ "dv_" ++ name) $ strictType notStrict $
 		conT (mkName "Result") `appT` conT typ
 
-result :: DecQ
-result = tySynD (mkName "Result") [PlainTV $ mkName "v"] $ conT ''Maybe `appT`
+result :: Bool -> DecQ
+result th = tySynD (mkName "Result") [PlainTV $ mkName "v"] $ conT (maybeN th) `appT`
 	(tupleT 2 `appT` varT (mkName "v") `appT` conT (mkName "Derivs"))
 
-pmonad :: DecQ
-pmonad = tySynD (mkName "PackratM") [] $ conT ''StateT `appT`
-	conT (mkName "Derivs") `appT` conT ''Maybe
+pmonad :: Bool -> DecQ
+pmonad th = tySynD (mkName "PackratM") [] $ conT (stateTN th) `appT`
+	conT (mkName "Derivs") `appT` conT (maybeN th)
 
-parseT :: DecQ
-parseT = sigD (mkName "parse") $
-	arrowT `appT` conT ''String `appT` conT (mkName "Derivs")
-parseE :: Peg -> ClauseQ
-parseE = parseE' . map (\(n, _, _) -> n)
-parseE' :: [String] -> ClauseQ
-parseE' names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
+parseT :: Bool -> DecQ
+parseT th = sigD (mkName "parse") $
+	arrowT `appT` conT (stringN th) `appT` conT (mkName "Derivs")
+parseE :: Bool -> Peg -> ClauseQ
+parseE th = parseE' th . map (\(n, _, _) -> n)
+parseE' :: Bool -> [String] -> ClauseQ
+parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 	flip (valD $ varP $ mkName "d") [] $ normalB $ appsE $
 		conE (mkName "Derivs") :
 			map (varE . mkName) names
@@ -80,12 +107,12 @@ parseE' names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 			(varE $ mkName "d") `appE` (doE [
 				bindS	(infixP (varP $ mkName "c") (mkName ":")
 						(varP $ mkName "s'")) $
-					(varE 'return) `appE`
+					(varE $ returnN th) `appE`
 						(varE $ mkName "s"),
-				noBindS $ (varE 'put) `appE`
+				noBindS $ (varE $ putN th) `appE`
 					(varE (mkName "parse") `appE`
 						varE (mkName "s'")),
-				noBindS $ (varE 'return) `appE` varE (mkName "c")
+				noBindS $ (varE $ returnN th) `appE` varE (mkName "c")
 			 ])
  ]
 parseE1 :: String -> DecQ
@@ -99,18 +126,19 @@ typeDvM = uncurry (zipWithM typeDvM1) . unzip . map (\(n, t, _) -> (n, t))
 typeDvM1 :: String -> Name -> DecQ
 typeDvM1 f t = sigD (mkName $ "dv_" ++ f ++ "M") $ conT (mkName "PackratM") `appT` conT t
 
-dvSomeM :: Peg -> DecsQ
-dvSomeM peg = mapM dvSomeM1 peg
+dvSomeM :: Bool -> Peg -> DecsQ
+dvSomeM th peg = mapM (dvSomeM1 th) peg
 
-dvSomeM1 :: Definition -> DecQ
-dvSomeM1 (name, _, _) = flip (valD $ varP $ mkName $ "dv_" ++ name ++ "M") [] $ normalB $
-	conE 'StateT `appE` varE (mkName $ "dv_" ++ name)
+dvSomeM1 :: Bool -> Definition -> DecQ
+dvSomeM1 th (name, _, _) = flip (valD $ varP $ mkName $ "dv_" ++ name ++ "M") [] $ normalB $
+	conE (stateTN' th) `appE` varE (mkName $ "dv_" ++ name)
 
-typeDvCharsM :: DecQ
-typeDvCharsM = sigD (mkName $ "dvCharsM") $ conT (mkName "PackratM") `appT` conT ''Char
-dvCharsM :: DecQ
-dvCharsM = flip (valD $ varP $ mkName "dvCharsM") [] $ normalB $
-	conE 'StateT `appE` varE (mkName "dvChars")
+typeDvCharsM :: Bool -> DecQ
+typeDvCharsM th =
+	sigD (mkName $ "dvCharsM") $ conT (mkName "PackratM") `appT` conT (charN th)
+dvCharsM :: Bool -> DecQ
+dvCharsM th = flip (valD $ varP $ mkName "dvCharsM") [] $ normalB $
+	conE (stateTN' th) `appE` varE (mkName "dvChars")
 
 typeP :: Peg -> DecsQ
 typeP = uncurry (zipWithM typeP1) . unzip . map (\(n, t, _) -> (n, t))
@@ -118,22 +146,22 @@ typeP = uncurry (zipWithM typeP1) . unzip . map (\(n, t, _) -> (n, t))
 typeP1 :: String -> Name -> DecQ
 typeP1 f t = sigD (mkName $ "p_" ++ f) $ conT (mkName "PackratM") `appT` conT t
 
-pSomes :: Peg -> DecsQ
-pSomes = mapM pSomes1
+pSomes :: Bool -> Peg -> DecsQ
+pSomes th = mapM $ pSomes1 th
 
-pSomes1 :: Definition -> DecQ
-pSomes1 (name, _, sel) = flip (valD $ varP $ mkName $ "p_" ++ name) [] $ normalB $
-	varE 'msum `appE` listE (map (uncurry pSome_) sel)
+pSomes1 :: Bool -> Definition -> DecQ
+pSomes1 th (name, _, sel) = flip (valD $ varP $ mkName $ "p_" ++ name) [] $ normalB $
+	varE (msumN th) `appE` listE (map (uncurry $ pSome_ th) sel)
 
-pSome_ :: [NameLeaf] -> ExpQ -> ExpQ
-pSome_ nls ret = doE $
-	concatMap transLeaf nls ++ [noBindS $ (varE 'return) `appE` ret]
+pSome_ :: Bool -> [NameLeaf] -> ExpQ -> ExpQ
+pSome_ th nls ret = doE $
+	concatMap (transLeaf th) nls ++ [noBindS $ (varE $ returnN th) `appE` ret]
 
-transLeaf :: NameLeaf -> [StmtQ]
-transLeaf (n, Right p) = [
+transLeaf :: Bool -> NameLeaf -> [StmtQ]
+transLeaf th (n, Right p) = [
 	bindS (varP n) $ varE $ mkName "dvCharsM",
 	noBindS $ condE (p `appE` varE n)
-		(varE 'return `appE` conE (mkName "()"))
-		(varE 'fail `appE` litE (stringL "not match"))]
-transLeaf (n, Left v) = [
+		(varE (returnN th) `appE` conE (mkName "()"))
+		(varE (failN th) `appE` litE (stringL "not match"))]
+transLeaf _ (n, Left v) = [
 	bindS (varP n) $ varE $ mkName $ "dv_" ++ v ++ "M"]

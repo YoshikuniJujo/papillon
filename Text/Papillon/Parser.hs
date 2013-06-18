@@ -8,13 +8,9 @@ module Text.Papillon.Parser (
 	dv_peg
 ) where
 
-import GHC.Base
-import GHC.Types
 import Data.Char
 import Control.Monad
-import "monads-tf" Control.Monad.State.Class
-import "transformers" Control.Monad.Trans.State.Lazy
-import Data.Maybe
+import "monads-tf" Control.Monad.State
 import Language.Haskell.TH
 
 type Nil = ()
@@ -71,9 +67,8 @@ isOpenWave = (== '{')
 isCloseWave = (== '}')
 isLowerU c = isLower c || c == '_'
 
-type PackratM = Control.Monad.Trans.State.Lazy.StateT Derivs
-                                                      Data.Maybe.Maybe
-type Result v = Data.Maybe.Maybe ((v, Derivs))
+type PackratM = StateT Derivs Maybe
+type Result v = Maybe ((v, Derivs))
 data Derivs
     = Derivs {dv_peg :: (Result Peg),
               dv_definition :: (Result Definition),
@@ -93,8 +88,8 @@ data Derivs
               dv_digit :: (Result Char),
               dv_spaces :: (Result Nil),
               dv_space :: (Result Nil),
-              dvChars :: (Result GHC.Types.Char)}
-parse :: GHC.Base.String -> Derivs
+              dvChars :: (Result Char)}
+parse :: String -> Derivs
 parse s = d
           where d = Derivs peg definition selection expressionHs expression nameLeaf leaf test hsExp typ variable tvtail alpha upper lower digit spaces space char
                 peg = runStateT p_peg d
@@ -115,9 +110,9 @@ parse s = d
                 digit = runStateT p_digit d
                 spaces = runStateT p_spaces d
                 space = runStateT p_space d
-                char = flip runStateT d (do c : s' <- GHC.Base.return s
-                                            Control.Monad.State.Class.put (parse s')
-                                            GHC.Base.return c)
+                char = flip runStateT d (do c : s' <- return s
+                                            put (parse s')
+                                            return c)
 dv_pegM :: PackratM Peg
 dv_definitionM :: PackratM Definition
 dv_selectionM :: PackratM Selection
@@ -136,26 +131,26 @@ dv_lowerM :: PackratM Char
 dv_digitM :: PackratM Char
 dv_spacesM :: PackratM Nil
 dv_spaceM :: PackratM Nil
-dv_pegM = Control.Monad.Trans.State.Lazy.StateT dv_peg
-dv_definitionM = Control.Monad.Trans.State.Lazy.StateT dv_definition
-dv_selectionM = Control.Monad.Trans.State.Lazy.StateT dv_selection
-dv_expressionHsM = Control.Monad.Trans.State.Lazy.StateT dv_expressionHs
-dv_expressionM = Control.Monad.Trans.State.Lazy.StateT dv_expression
-dv_nameLeafM = Control.Monad.Trans.State.Lazy.StateT dv_nameLeaf
-dv_leafM = Control.Monad.Trans.State.Lazy.StateT dv_leaf
-dv_testM = Control.Monad.Trans.State.Lazy.StateT dv_test
-dv_hsExpM = Control.Monad.Trans.State.Lazy.StateT dv_hsExp
-dv_typM = Control.Monad.Trans.State.Lazy.StateT dv_typ
-dv_variableM = Control.Monad.Trans.State.Lazy.StateT dv_variable
-dv_tvtailM = Control.Monad.Trans.State.Lazy.StateT dv_tvtail
-dv_alphaM = Control.Monad.Trans.State.Lazy.StateT dv_alpha
-dv_upperM = Control.Monad.Trans.State.Lazy.StateT dv_upper
-dv_lowerM = Control.Monad.Trans.State.Lazy.StateT dv_lower
-dv_digitM = Control.Monad.Trans.State.Lazy.StateT dv_digit
-dv_spacesM = Control.Monad.Trans.State.Lazy.StateT dv_spaces
-dv_spaceM = Control.Monad.Trans.State.Lazy.StateT dv_space
-dvCharsM :: PackratM GHC.Types.Char
-dvCharsM = Control.Monad.Trans.State.Lazy.StateT dvChars
+dv_pegM = StateT dv_peg
+dv_definitionM = StateT dv_definition
+dv_selectionM = StateT dv_selection
+dv_expressionHsM = StateT dv_expressionHs
+dv_expressionM = StateT dv_expression
+dv_nameLeafM = StateT dv_nameLeaf
+dv_leafM = StateT dv_leaf
+dv_testM = StateT dv_test
+dv_hsExpM = StateT dv_hsExp
+dv_typM = StateT dv_typ
+dv_variableM = StateT dv_variable
+dv_tvtailM = StateT dv_tvtail
+dv_alphaM = StateT dv_alpha
+dv_upperM = StateT dv_upper
+dv_lowerM = StateT dv_lower
+dv_digitM = StateT dv_digit
+dv_spacesM = StateT dv_spaces
+dv_spaceM = StateT dv_space
+dvCharsM :: PackratM Char
+dvCharsM = StateT dvChars
 p_peg :: PackratM Peg
 p_definition :: PackratM Definition
 p_selection :: PackratM Selection
@@ -174,130 +169,102 @@ p_lower :: PackratM Char
 p_digit :: PackratM Char
 p_spaces :: PackratM Nil
 p_space :: PackratM Nil
-p_peg = Control.Monad.msum [do _ <- dv_spacesM
-                               d <- dv_definitionM
-                               p <- dv_pegM
-                               GHC.Base.return (id cons d p),
-                            do GHC.Base.return (id empty)]
-p_definition = Control.Monad.msum [do v <- dv_variableM
-                                      _ <- dv_spacesM
-                                      c <- dvCharsM
-                                      if id isColon c
-                                       then GHC.Base.return ()
-                                       else GHC.Base.fail "not match"
-                                      cc <- dvCharsM
-                                      if id isColon cc
-                                       then GHC.Base.return ()
-                                       else GHC.Base.fail "not match"
-                                      _ <- dv_spacesM
-                                      t <- dv_typM
-                                      _ <- dv_spacesM
-                                      e <- dvCharsM
-                                      if id isEqual e
-                                       then GHC.Base.return ()
-                                       else GHC.Base.fail "not match"
-                                      _ <- dv_spacesM
-                                      sel <- dv_selectionM
-                                      _ <- dv_spacesM
-                                      s <- dvCharsM
-                                      if id isSemi s
-                                       then GHC.Base.return ()
-                                       else GHC.Base.fail "not match"
-                                      GHC.Base.return (id mkDef v t sel)]
-p_selection = Control.Monad.msum [do ex <- dv_expressionHsM
-                                     _ <- dv_spacesM
-                                     e <- dvCharsM
-                                     if id isSlash e
-                                      then GHC.Base.return ()
-                                      else GHC.Base.fail "not match"
-                                     _ <- dv_spacesM
-                                     sel <- dv_selectionM
-                                     GHC.Base.return (id cons ex sel),
-                                  do ex <- dv_expressionHsM
-                                     GHC.Base.return (id cons ex empty)]
-p_expressionHs = Control.Monad.msum [do e <- dv_expressionM
-                                        _ <- dv_spacesM
-                                        o <- dvCharsM
-                                        if id isOpenWave o
-                                         then GHC.Base.return ()
-                                         else GHC.Base.fail "not match"
-                                        _ <- dv_spacesM
-                                        h <- dv_hsExpM
-                                        _ <- dv_spacesM
-                                        c <- dvCharsM
-                                        if id isCloseWave c
-                                         then GHC.Base.return ()
-                                         else GHC.Base.fail "not match"
-                                        GHC.Base.return (id mkExpressionHs e h)]
-p_expression = Control.Monad.msum [do l <- dv_nameLeafM
-                                      _ <- dv_spacesM
-                                      e <- dv_expressionM
-                                      GHC.Base.return (id cons l e),
-                                   do GHC.Base.return (id empty)]
-p_nameLeaf = Control.Monad.msum [do n <- dv_variableM
-                                    c <- dvCharsM
-                                    if id isColon c
-                                     then GHC.Base.return ()
-                                     else GHC.Base.fail "not match"
-                                    l <- dv_leafM
-                                    GHC.Base.return (id mkNameLeaf n l)]
-p_leaf = Control.Monad.msum [do t <- dv_testM
-                                GHC.Base.return (id left t),
-                             do v <- dv_variableM
-                                GHC.Base.return (id right v)]
-p_test = Control.Monad.msum [do o <- dvCharsM
-                                if id isOpenBr o
-                                 then GHC.Base.return ()
-                                 else GHC.Base.fail "not match"
-                                h <- dv_hsExpM
-                                c <- dvCharsM
-                                if id isCloseBr c
-                                 then GHC.Base.return ()
-                                 else GHC.Base.fail "not match"
-                                GHC.Base.return (id getEx h)]
-p_hsExp = Control.Monad.msum [do v <- dv_variableM
-                                 _ <- dv_spacesM
-                                 h <- dv_hsExpM
-                                 GHC.Base.return (id apply v h),
-                              do v <- dv_variableM
-                                 GHC.Base.return (id toExp v)]
-p_typ = Control.Monad.msum [do u <- dv_upperM
-                               t <- dv_tvtailM
-                               GHC.Base.return (id cons u t)]
-p_variable = Control.Monad.msum [do l <- dv_lowerM
-                                    t <- dv_tvtailM
-                                    GHC.Base.return (id cons l t)]
-p_tvtail = Control.Monad.msum [do a <- dv_alphaM
-                                  t <- dv_tvtailM
-                                  GHC.Base.return (id cons a t),
-                               do GHC.Base.return (id empty)]
-p_alpha = Control.Monad.msum [do u <- dv_upperM
-                                 GHC.Base.return (id u),
-                              do l <- dv_lowerM
-                                 GHC.Base.return (id l),
-                              do d <- dv_digitM
-                                 GHC.Base.return (id d)]
-p_upper = Control.Monad.msum [do u <- dvCharsM
-                                 if id isUpper u
-                                  then GHC.Base.return ()
-                                  else GHC.Base.fail "not match"
-                                 GHC.Base.return (id u)]
-p_lower = Control.Monad.msum [do l <- dvCharsM
-                                 if id isLowerU l
-                                  then GHC.Base.return ()
-                                  else GHC.Base.fail "not match"
-                                 GHC.Base.return (id l)]
-p_digit = Control.Monad.msum [do d <- dvCharsM
-                                 if id isDigit d
-                                  then GHC.Base.return ()
-                                  else GHC.Base.fail "not match"
-                                 GHC.Base.return (id d)]
-p_spaces = Control.Monad.msum [do _ <- dv_spaceM
-                                  _ <- dv_spacesM
-                                  GHC.Base.return (id nil),
-                               do GHC.Base.return (id nil)]
-p_space = Control.Monad.msum [do l <- dvCharsM
-                                 if id isSpace l
-                                  then GHC.Base.return ()
-                                  else GHC.Base.fail "not match"
-                                 GHC.Base.return (id nil)]
+p_peg = msum [do _ <- dv_spacesM
+                 d <- dv_definitionM
+                 p <- dv_pegM
+                 return (id cons d p),
+              do return (id empty)]
+p_definition = msum [do v <- dv_variableM
+                        _ <- dv_spacesM
+                        c <- dvCharsM
+                        if id isColon c then return () else fail "not match"
+                        cc <- dvCharsM
+                        if id isColon cc then return () else fail "not match"
+                        _ <- dv_spacesM
+                        t <- dv_typM
+                        _ <- dv_spacesM
+                        e <- dvCharsM
+                        if id isEqual e then return () else fail "not match"
+                        _ <- dv_spacesM
+                        sel <- dv_selectionM
+                        _ <- dv_spacesM
+                        s <- dvCharsM
+                        if id isSemi s then return () else fail "not match"
+                        return (id mkDef v t sel)]
+p_selection = msum [do ex <- dv_expressionHsM
+                       _ <- dv_spacesM
+                       e <- dvCharsM
+                       if id isSlash e then return () else fail "not match"
+                       _ <- dv_spacesM
+                       sel <- dv_selectionM
+                       return (id cons ex sel),
+                    do ex <- dv_expressionHsM
+                       return (id cons ex empty)]
+p_expressionHs = msum [do e <- dv_expressionM
+                          _ <- dv_spacesM
+                          o <- dvCharsM
+                          if id isOpenWave o then return () else fail "not match"
+                          _ <- dv_spacesM
+                          h <- dv_hsExpM
+                          _ <- dv_spacesM
+                          c <- dvCharsM
+                          if id isCloseWave c then return () else fail "not match"
+                          return (id mkExpressionHs e h)]
+p_expression = msum [do l <- dv_nameLeafM
+                        _ <- dv_spacesM
+                        e <- dv_expressionM
+                        return (id cons l e),
+                     do return (id empty)]
+p_nameLeaf = msum [do n <- dv_variableM
+                      c <- dvCharsM
+                      if id isColon c then return () else fail "not match"
+                      l <- dv_leafM
+                      return (id mkNameLeaf n l)]
+p_leaf = msum [do t <- dv_testM
+                  return (id left t),
+               do v <- dv_variableM
+                  return (id right v)]
+p_test = msum [do o <- dvCharsM
+                  if id isOpenBr o then return () else fail "not match"
+                  h <- dv_hsExpM
+                  c <- dvCharsM
+                  if id isCloseBr c then return () else fail "not match"
+                  return (id getEx h)]
+p_hsExp = msum [do v <- dv_variableM
+                   _ <- dv_spacesM
+                   h <- dv_hsExpM
+                   return (id apply v h),
+                do v <- dv_variableM
+                   return (id toExp v)]
+p_typ = msum [do u <- dv_upperM
+                 t <- dv_tvtailM
+                 return (id cons u t)]
+p_variable = msum [do l <- dv_lowerM
+                      t <- dv_tvtailM
+                      return (id cons l t)]
+p_tvtail = msum [do a <- dv_alphaM
+                    t <- dv_tvtailM
+                    return (id cons a t),
+                 do return (id empty)]
+p_alpha = msum [do u <- dv_upperM
+                   return (id u),
+                do l <- dv_lowerM
+                   return (id l),
+                do d <- dv_digitM
+                   return (id d)]
+p_upper = msum [do u <- dvCharsM
+                   if id isUpper u then return () else fail "not match"
+                   return (id u)]
+p_lower = msum [do l <- dvCharsM
+                   if id isLowerU l then return () else fail "not match"
+                   return (id l)]
+p_digit = msum [do d <- dvCharsM
+                   if id isDigit d then return () else fail "not match"
+                   return (id d)]
+p_spaces = msum [do _ <- dv_spaceM
+                    _ <- dv_spacesM
+                    return (id nil),
+                 do return (id nil)]
+p_space = msum [do l <- dvCharsM
+                   if id isSpace l then return () else fail "not match"
+                   return (id nil)]
