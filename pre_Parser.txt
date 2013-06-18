@@ -18,7 +18,6 @@ import Data.Maybe
 import Language.Haskell.TH
 
 type Nil = ()
-type Strings = [String]
 type Leaf = Either String ExR
 type NameLeaf = (Name, Leaf)
 type Expression = [NameLeaf]
@@ -31,6 +30,8 @@ type Peg = [Definition]
 type Ex = ExpQ -> ExpQ
 type ExR = ExpQ
 
+left :: b -> Either a b
+right :: a -> Either a b
 left = Right
 right = Left
 
@@ -39,14 +40,10 @@ nil = ()
 
 cons :: a -> [a] -> [a]
 cons = (:)
-tuple :: a -> b -> (a, b)
-tuple = (,)
 mkNameLeaf :: String -> b -> (Name, b)
 mkNameLeaf x y = (mkName x, y)
 mkExpressionHs :: a -> Ex -> (a, ExR)
 mkExpressionHs x y = (x, getEx y)
-tupleThree :: a -> b -> c -> (a, b, c)
-tupleThree = (,,)
 mkDef :: a -> String -> c -> (a, Name, c)
 mkDef x y z = (x, mkName y, z)
 
@@ -62,15 +59,15 @@ getEx ex = ex (varE $ mkName "id")
 empty :: [a]
 empty = []
 
-isOpenBr, isCloseBr, isSymbolOne, isSymbolTwo, isEqual, isSlash :: Char -> Bool
+isOpenBr, isCloseBr, isEqual, isSlash, isSemi,
+	isColon, isOpenWave, isCloseWave, isLowerU :: Char -> Bool
 isOpenBr = (== '[')
 isCloseBr = (== ']')
-isSymbolOne = (`elem` "=/;+*() ")
-isSymbolTwo = (`elem` "\\'nt")
 isEqual = (== '=')
 isSlash = (== '/')
 isSemi = (== ';')
 isColon = (== ':')
 isOpenWave = (== '{')
 isCloseWave = (== '}')
+isLowerU c = isLower c || c == '_'
 

@@ -1,19 +1,22 @@
 peg :: Peg
-	= s:spaces d:definition p:peg	{ cons d p }
+	= _:spaces d:definition p:peg	{ cons d p }
 	/ 	{ empty }
 ;
 definition :: Definition
-	= v:variable s:spaces c:[isColon] c:[isColon] s:spaces t:typ s:spaces e:[isEqual] s:spaces sel:selection s:spaces s:[isSemi]	{ mkDef v t sel }
+	= v:variable _:spaces c:[isColon] cc:[isColon]
+		_:spaces t:typ _:spaces e:[isEqual]
+		_:spaces sel:selection _:spaces s:[isSemi]	{ mkDef v t sel }
 ;
 selection :: Selection
-	= ex:expressionHs s:spaces e:[isSlash] s:spaces sel:selection	{ cons ex sel }
+	= ex:expressionHs _:spaces e:[isSlash] _:spaces sel:selection	{ cons ex sel }
 	/ ex:expressionHs	{ cons ex empty }
 ;
 expressionHs :: ExpressionHs
-	= e:expression s:spaces o:[isOpenWave] s:spaces h:hsExp s:spaces c:[isCloseWave]	{ mkExpressionHs e h }
+	= e:expression _:spaces o:[isOpenWave] _:spaces h:hsExp
+		_:spaces c:[isCloseWave]	{ mkExpressionHs e h }
 ;
 expression :: Expression
-	= l:nameLeaf s:spaces e:expression	{ cons l e }
+	= l:nameLeaf _:spaces e:expression	{ cons l e }
 	/ 	{ empty }
 ;
 nameLeaf :: NameLeaf
@@ -27,40 +30,35 @@ test :: ExR
 	= o:[isOpenBr] h:hsExp c:[isCloseBr]	{ getEx h }
 ;
 hsExp :: Ex
-	= v:variable s:spaces h:hsExp	{ apply v h }
+	= v:variable _:spaces h:hsExp	{ apply v h }
 	/ v:variable	{ toExp v }
 ;
 typ :: String
-	= u:upper t:tail	{ cons u t }
+	= u:upper t:tvtail	{ cons u t }
 ;
 variable :: String
-	= l:lower t:tail	{ cons l t }
+	= l:lower t:tvtail	{ cons l t }
 ;
-tail :: String
-	= a:alpha t:tail	{ cons a t }
+tvtail :: String
+	= a:alpha t:tvtail	{ cons a t }
 	/ 	{ empty }
 ;
 alpha :: Char
 	= u:upper	{ u }
 	/ l:lower	{ l }
+	/ d:digit	{ d }
 ;
 upper :: Char
 	= u:[isUpper]	{ u }
 ;
 lower :: Char
-	= l:[isLower]	{ l }
+	= l:[isLowerU]	{ l }
 ;
 digit :: Char
 	= d:[isDigit]	{ d }
 ;
-symbolOne :: Char
-	= sym:[isSymbolOne]	{ sym }
-;
-symbolTwo :: Char
-	= sym:[isSymbolTwo]	{ sym }
-;
 spaces :: Nil
-	= s:space ss:spaces	{ nil }
+	= _:space _:spaces	{ nil }
 	/ 	{ nil }
 ;
 space :: Nil
