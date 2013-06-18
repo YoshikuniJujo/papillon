@@ -5,7 +5,8 @@ module Text.Papillon.Parser (
 	Definition,
 	NameLeaf,
 	parse,
-	dv_peg
+	dv_peg,
+	Leaf_(..)
 ) where
 
 import Data.Char
@@ -15,7 +16,11 @@ import Language.Haskell.TH
 
 type Nil = ()
 type Leaf = Either String ExR
-type NameLeaf = (Name, Leaf)
+data Leaf_ = NotAfter Leaf | Here Leaf
+notAfter, here :: Leaf -> Leaf_
+notAfter = NotAfter
+here = Here
+type NameLeaf = (Name, Leaf_)
 type Expression = [NameLeaf]
 type ExpressionHs = (Expression, ExR)
 type Selection = [ExpressionHs]
@@ -56,7 +61,7 @@ empty :: [a]
 empty = []
 
 isOpenBr, isCloseBr, isEqual, isSlash, isSemi,
-	isColon, isOpenWave, isCloseWave, isLowerU :: Char -> Bool
+	isColon, isOpenWave, isCloseWave, isLowerU, isNot :: Char -> Bool
 isOpenBr = (== '[')
 isCloseBr = (== ']')
 isEqual = (== '=')
@@ -66,6 +71,7 @@ isColon = (== ':')
 isOpenWave = (== '{')
 isCloseWave = (== '}')
 isLowerU c = isLower c || c == '_'
+isNot = (== '!')
 
 type PackratM = StateT Derivs Maybe
 type Result v = Maybe ((v, Derivs))
@@ -76,6 +82,7 @@ data Derivs
               dv_expressionHs :: (Result ExpressionHs),
               dv_expression :: (Result Expression),
               dv_nameLeaf :: (Result NameLeaf),
+              dv_leaf_ :: (Result Leaf_),
               dv_leaf :: (Result Leaf),
               dv_test :: (Result ExR),
               dv_hsExp :: (Result Ex),
@@ -91,13 +98,14 @@ data Derivs
               dvChars :: (Result Char)}
 parse :: String -> Derivs
 parse s = d
-          where d = Derivs peg definition selection expressionHs expression nameLeaf leaf test hsExp typ variable tvtail alpha upper lower digit spaces space char
+          where d = Derivs peg definition selection expressionHs expression nameLeaf leaf_ leaf test hsExp typ variable tvtail alpha upper lower digit spaces space char
                 peg = runStateT p_peg d
                 definition = runStateT p_definition d
                 selection = runStateT p_selection d
                 expressionHs = runStateT p_expressionHs d
                 expression = runStateT p_expression d
                 nameLeaf = runStateT p_nameLeaf d
+                leaf_ = runStateT p_leaf_ d
                 leaf = runStateT p_leaf d
                 test = runStateT p_test d
                 hsExp = runStateT p_hsExp d
@@ -119,6 +127,7 @@ dv_selectionM :: PackratM Selection
 dv_expressionHsM :: PackratM ExpressionHs
 dv_expressionM :: PackratM Expression
 dv_nameLeafM :: PackratM NameLeaf
+dv_leaf_M :: PackratM Leaf_
 dv_leafM :: PackratM Leaf
 dv_testM :: PackratM ExR
 dv_hsExpM :: PackratM Ex
@@ -137,6 +146,7 @@ dv_selectionM = StateT dv_selection
 dv_expressionHsM = StateT dv_expressionHs
 dv_expressionM = StateT dv_expression
 dv_nameLeafM = StateT dv_nameLeaf
+dv_leaf_M = StateT dv_leaf_
 dv_leafM = StateT dv_leaf
 dv_testM = StateT dv_test
 dv_hsExpM = StateT dv_hsExp
@@ -157,6 +167,7 @@ p_selection :: PackratM Selection
 p_expressionHs :: PackratM ExpressionHs
 p_expression :: PackratM Expression
 p_nameLeaf :: PackratM NameLeaf
+p_leaf_ :: PackratM Leaf_
 p_leaf :: PackratM Leaf
 p_test :: PackratM ExR
 p_hsExp :: PackratM Ex
@@ -218,8 +229,14 @@ p_expression = msum [do l <- dv_nameLeafM
 p_nameLeaf = msum [do n <- dv_variableM
                       c <- dvCharsM
                       if id isColon c then return () else fail "not match"
-                      l <- dv_leafM
+                      l <- dv_leaf_M
                       return (id mkNameLeaf n l)]
+p_leaf_ = msum [do n <- dvCharsM
+                   if id isNot n then return () else fail "not match"
+                   l <- dv_leafM
+                   return (id notAfter l),
+                do l <- dv_leafM
+                   return (id here l)]
 p_leaf = msum [do t <- dv_testM
                   return (id left t),
                do v <- dv_variableM

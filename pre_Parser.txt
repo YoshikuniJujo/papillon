@@ -5,7 +5,8 @@ module Parser (
 	Definition,
 	NameLeaf,
 	parse,
-	dv_peg
+	dv_peg,
+	Leaf_(..)
 ) where
 
 import Data.Char
@@ -15,7 +16,11 @@ import Language.Haskell.TH
 
 type Nil = ()
 type Leaf = Either String ExR
-type NameLeaf = (Name, Leaf)
+data Leaf_ = NotAfter Leaf | Here Leaf
+notAfter, here :: Leaf -> Leaf_
+notAfter = NotAfter
+here = Here
+type NameLeaf = (Name, Leaf_)
 type Expression = [NameLeaf]
 type ExpressionHs = (Expression, ExR)
 type Selection = [ExpressionHs]
@@ -56,7 +61,7 @@ empty :: [a]
 empty = []
 
 isOpenBr, isCloseBr, isEqual, isSlash, isSemi,
-	isColon, isOpenWave, isCloseWave, isLowerU :: Char -> Bool
+	isColon, isOpenWave, isCloseWave, isLowerU, isNot :: Char -> Bool
 isOpenBr = (== '[')
 isCloseBr = (== ']')
 isEqual = (== '=')
@@ -66,4 +71,5 @@ isColon = (== ':')
 isOpenWave = (== '{')
 isCloseWave = (== '}')
 isLowerU c = isLower c || c == '_'
+isNot = (== '!')
 

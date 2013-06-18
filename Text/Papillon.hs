@@ -3,7 +3,8 @@
 module Text.Papillon (
 	papillon,
 	papillonStr,
-	StateT(..)
+	StateT(..),
+	flipMaybe
 ) where
 
 import Language.Haskell.TH.Quote
@@ -14,6 +15,11 @@ import Control.Applicative
 
 import Text.Papillon.Parser
 -- import Parser
+
+flipMaybe :: StateT s Maybe a -> StateT s Maybe ()
+flipMaybe action = StateT $ \s -> case runStateT action s of
+	Nothing -> Just ((), s)
+	_ -> Nothing
 
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
@@ -46,6 +52,8 @@ stateTN' True = 'StateT
 stateTN' False = mkName "StateT"
 msumN True = 'msum
 msumN False = mkName "msum"
+getN True = 'get
+getN False = mkName "get"
 
 declaration :: Bool -> String -> DecsQ
 declaration th src = do
@@ -158,10 +166,17 @@ pSome_ th nls ret = doE $
 	concatMap (transLeaf th) nls ++ [noBindS $ (varE $ returnN th) `appE` ret]
 
 transLeaf :: Bool -> NameLeaf -> [StmtQ]
-transLeaf th (n, Right p) = [
+transLeaf th (n, (Here (Right p))) = [
 	bindS (varP n) $ varE $ mkName "dvCharsM",
 	noBindS $ condE (p `appE` varE n)
 		(varE (returnN th) `appE` conE (mkName "()"))
 		(varE (failN th) `appE` litE (stringL "not match"))]
-transLeaf _ (n, Left v) = [
+transLeaf _ (n, (Here (Left v))) = [
 	bindS (varP n) $ varE $ mkName $ "dv_" ++ v ++ "M"]
+transLeaf th (n, (NotAfter (Right p))) = [
+	]
+transLeaf th (n, (NotAfter (Left v))) = [
+	bindS (varP $ mkName "d") $ varE (getN th),
+	noBindS $ varE (mkName "flipMaybe") `appE`
+		varE (mkName $ "dv_" ++ v ++ "M"),
+	noBindS $ varE (putN th) `appE` (varE $ mkName "d")]

@@ -12,8 +12,12 @@ import Language.Haskell.TH.Quote
 import Data.Char
 
 type Nil = ()
+data Leaf_ = NotAfter Leaf | Here Leaf
+notAfter, here :: Leaf -> Leaf_
+notAfter = NotAfter
+here = Here
 type Leaf = Either ExR String
-type NameLeaf = (Name, Leaf)
+type NameLeaf = (Name, Leaf_)
 type Expression = [NameLeaf]
 type ExpressionHs = (Expression, ExR)
 type Selection = [ExpressionHs]
@@ -54,7 +58,7 @@ empty :: [a]
 empty = []
 
 isOpenBr, isCloseBr, isEqual, isSlash, isSemi,
-	isColon, isOpenWave, isCloseWave, isLowerU :: Char -> Bool
+	isColon, isOpenWave, isCloseWave, isLowerU, isNot :: Char -> Bool
 isOpenBr = (== '[')
 isCloseBr = (== ']')
 isEqual = (== '=')
@@ -64,6 +68,7 @@ isColon = (== ':')
 isOpenWave = (== '{')
 isCloseWave = (== '}')
 isLowerU c = isLower c || c == '_'
+isNot = (== '!')
 
 do	cnt <- runIO $ readFile "test.peg"
 	quoteDec papillon cnt

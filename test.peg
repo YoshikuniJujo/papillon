@@ -20,7 +20,11 @@ expression :: Expression
 	/ 	{ empty }
 ;
 nameLeaf :: NameLeaf
-	= n:variable c:[isColon] l:leaf	{ mkNameLeaf n l }
+	= n:variable c:[isColon] l:leaf_	{ mkNameLeaf n l }
+;
+leaf_ :: Leaf_
+	= n:[isNot] l:leaf	{ notAfter l }
+	/ l:leaf		{ here l }
 ;
 leaf :: Leaf
 	= t:test	{ left t }

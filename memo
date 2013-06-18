@@ -58,3 +58,5 @@ p... = do
 
 'return を使ったほうが TH として使うときには便利だけど、
 mkName "return" を使ったほうが preprocessor として使うときには便利。
+
+先読みが必要か。
