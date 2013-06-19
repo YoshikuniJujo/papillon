@@ -87,3 +87,94 @@ flipMaybe :: StateT s Maybe a -> StateT s Maybe ()
 flipMaybe action = StateT $ \s -> case runStateT action s of
 	Nothing -> Just ((), s)
 	_ -> Nothing
+
+[papillon|
+
+pegFile :: PegFile
+	= pp:prePeg _:pap p:peg _:spaces b:[isBar] c:[isCloseBr]
+		n:[isNL] atp:afterPeg		{ mkPegFile pp p atp }
+;
+prePeg :: String
+	= _:!pap c:[const true] pp:prePeg	{ cons c pp }
+	/					{ empty }
+;
+afterPeg :: String
+	= c:[const true] atp:afterPeg		{ cons c atp }
+	/					{ empty }
+;
+pap :: Nil
+	= nl:[isNL] ob:[isOpenBr] p:[isP] a:[isA] pp:[isP] i:[isI] l:[isL] ll:[isL]
+		o:[isO] n:[isN] b:[isBar] nll:[isNL]	{ nil }
+;
+peg :: Peg
+	= _:spaces d:definition p:peg	{ cons d p }
+	/ 	{ empty }
+;
+definition :: Definition
+	= v:variable _:spaces c:[isColon] cc:[isColon]
+		_:spaces t:typ _:spaces e:[isEqual]
+		_:spaces sel:selection _:spaces s:[isSemi]	{ mkDef v t sel }
+;
+selection :: Selection
+	= ex:expressionHs _:spaces e:[isSlash] _:spaces sel:selection	{ cons ex sel }
+	/ ex:expressionHs	{ cons ex empty }
+;
+expressionHs :: ExpressionHs
+	= e:expression _:spaces o:[isOpenWave] _:spaces h:hsExp
+		_:spaces c:[isCloseWave]	{ mkExpressionHs e h }
+;
+expression :: Expression
+	= l:nameLeaf _:spaces e:expression	{ cons l e }
+	/ 	{ empty }
+;
+nameLeaf :: NameLeaf
+	= n:variable c:[isColon] l:leaf_	{ mkNameLeaf n l }
+;
+leaf_ :: Leaf_
+	= n:[isNot] l:leaf	{ notAfter l }
+	/ l:leaf		{ here l }
+;
+leaf :: Leaf
+	= t:test	{ left t }
+	/ v:variable	{ right v }
+;
+test :: ExR
+	= o:[isOpenBr] h:hsExp c:[isCloseBr]	{ getEx h }
+;
+hsExp :: Ex
+	= v:variable _:spaces h:hsExp	{ apply v h }
+	/ v:variable	{ toExp v }
+;
+typ :: String
+	= u:upper t:tvtail	{ cons u t }
+;
+variable :: String
+	= l:lower t:tvtail	{ cons l t }
+;
+tvtail :: String
+	= a:alpha t:tvtail	{ cons a t }
+	/ 	{ empty }
+;
+alpha :: Char
+	= u:upper	{ u }
+	/ l:lower	{ l }
+	/ d:digit	{ d }
+;
+upper :: Char
+	= u:[isUpper]	{ u }
+;
+lower :: Char
+	= l:[isLowerU]	{ l }
+;
+digit :: Char
+	= d:[isDigit]	{ d }
+;
+spaces :: Nil
+	= _:space _:spaces	{ nil }
+	/ 	{ nil }
+;
+space :: Nil
+	= l:[isSpace]	{ nil }
+;
+
+|]

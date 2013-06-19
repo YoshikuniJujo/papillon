@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module MkParser (
+	dv_pegFile,
 	dv_peg,
 	parse
 ) where
@@ -45,6 +46,13 @@ mkExpressionHs x y = (x, getEx y)
 mkDef :: a -> String -> c -> (a, Name, c)
 mkDef x y z = (x, mkName y, z)
 
+type PegFile = (String, Peg, String)
+mkPegFile :: a -> b -> c -> (a, b, c)
+mkPegFile = (,,)
+
+true :: Bool
+true = True
+
 toExp :: String -> Ex
 toExp v = \f -> f `appE` varE (mkName v)
 
@@ -57,10 +65,10 @@ getEx ex = ex (varE $ mkName "id")
 empty :: [a]
 empty = []
 
-isOpenBr, isCloseBr, isEqual, isSlash, isSemi,
+isEqual, isSlash, isSemi,
 	isColon, isOpenWave, isCloseWave, isLowerU, isNot :: Char -> Bool
-isOpenBr = (== '[')
-isCloseBr = (== ']')
+-- isOpenBr = (== '[')
+-- isCloseBr = (== ']')
 isEqual = (== '=')
 isSlash = (== '/')
 isSemi = (== ';')
@@ -69,6 +77,10 @@ isOpenWave = (== '{')
 isCloseWave = (== '}')
 isLowerU c = isLower c || c == '_'
 isNot = (== '!')
+
+isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
+[isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL] =
+	map (==) "[pailon|]\n"
 
 do	cnt <- runIO $ readFile "test.peg"
 	quoteDec papillon cnt

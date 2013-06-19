@@ -6,6 +6,7 @@ module Text.Papillon.Parser (
 	NameLeaf,
 	parse,
 	dv_peg,
+	dv_pegFile,
 	Leaf_(..)
 ) where
 
@@ -60,10 +61,15 @@ getEx ex = ex (varE $ mkName "id")
 empty :: [a]
 empty = []
 
-isOpenBr, isCloseBr, isEqual, isSlash, isSemi,
+type PegFile = (String, Peg, String)
+mkPegFile :: a -> b -> c -> (a, b, c)
+mkPegFile = (,,)
+
+true :: Bool
+true = True
+
+isEqual, isSlash, isSemi,
 	isColon, isOpenWave, isCloseWave, isLowerU, isNot :: Char -> Bool
-isOpenBr = (== '[')
-isCloseBr = (== ']')
 isEqual = (== '=')
 isSlash = (== '/')
 isSemi = (== ';')
@@ -73,10 +79,23 @@ isCloseWave = (== '}')
 isLowerU c = isLower c || c == '_'
 isNot = (== '!')
 
+isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
+[isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL] =
+	map (==) "[pailon|]\n"
+
+flipMaybe :: StateT s Maybe a -> StateT s Maybe ()
+flipMaybe action = StateT $ \s -> case runStateT action s of
+	Nothing -> Just ((), s)
+	_ -> Nothing
+
 type PackratM = StateT Derivs Maybe
 type Result v = Maybe ((v, Derivs))
 data Derivs
-    = Derivs {dv_peg :: (Result Peg),
+    = Derivs {dv_pegFile :: (Result PegFile),
+              dv_prePeg :: (Result String),
+              dv_afterPeg :: (Result String),
+              dv_pap :: (Result Nil),
+              dv_peg :: (Result Peg),
               dv_definition :: (Result Definition),
               dv_selection :: (Result Selection),
               dv_expressionHs :: (Result ExpressionHs),
@@ -98,7 +117,11 @@ data Derivs
               dvChars :: (Result Char)}
 parse :: String -> Derivs
 parse s = d
-          where d = Derivs peg definition selection expressionHs expression nameLeaf leaf_ leaf test hsExp typ variable tvtail alpha upper lower digit spaces space char
+          where d = Derivs pegFile prePeg afterPeg pap peg definition selection expressionHs expression nameLeaf leaf_ leaf test hsExp typ variable tvtail alpha upper lower digit spaces space char
+                pegFile = runStateT p_pegFile d
+                prePeg = runStateT p_prePeg d
+                afterPeg = runStateT p_afterPeg d
+                pap = runStateT p_pap d
                 peg = runStateT p_peg d
                 definition = runStateT p_definition d
                 selection = runStateT p_selection d
@@ -121,6 +144,10 @@ parse s = d
                 char = flip runStateT d (do c : s' <- return s
                                             put (parse s')
                                             return c)
+dv_pegFileM :: PackratM PegFile
+dv_prePegM :: PackratM String
+dv_afterPegM :: PackratM String
+dv_papM :: PackratM Nil
 dv_pegM :: PackratM Peg
 dv_definitionM :: PackratM Definition
 dv_selectionM :: PackratM Selection
@@ -140,6 +167,10 @@ dv_lowerM :: PackratM Char
 dv_digitM :: PackratM Char
 dv_spacesM :: PackratM Nil
 dv_spaceM :: PackratM Nil
+dv_pegFileM = StateT dv_pegFile
+dv_prePegM = StateT dv_prePeg
+dv_afterPegM = StateT dv_afterPeg
+dv_papM = StateT dv_pap
 dv_pegM = StateT dv_peg
 dv_definitionM = StateT dv_definition
 dv_selectionM = StateT dv_selection
@@ -161,6 +192,10 @@ dv_spacesM = StateT dv_spaces
 dv_spaceM = StateT dv_space
 dvCharsM :: PackratM Char
 dvCharsM = StateT dvChars
+p_pegFile :: PackratM PegFile
+p_prePeg :: PackratM String
+p_afterPeg :: PackratM String
+p_pap :: PackratM Nil
 p_peg :: PackratM Peg
 p_definition :: PackratM Definition
 p_selection :: PackratM Selection
@@ -180,6 +215,56 @@ p_lower :: PackratM Char
 p_digit :: PackratM Char
 p_spaces :: PackratM Nil
 p_space :: PackratM Nil
+p_pegFile = msum [do pp <- dv_prePegM
+                     _ <- dv_papM
+                     p <- dv_pegM
+                     _ <- dv_spacesM
+                     b <- dvCharsM
+                     if id isBar b then return () else fail "not match"
+                     c <- dvCharsM
+                     if id isCloseBr c then return () else fail "not match"
+                     n <- dvCharsM
+                     if id isNL n then return () else fail "not match"
+                     atp <- dv_afterPegM
+                     return (id mkPegFile pp p atp)]
+p_prePeg = msum [do d <- get
+                    flipMaybe dv_papM
+                    put d
+                    c <- dvCharsM
+                    if id const true c then return () else fail "not match"
+                    pp <- dv_prePegM
+                    return (id cons c pp),
+                 do return (id empty)]
+p_afterPeg = msum [do c <- dvCharsM
+                      if id const true c then return () else fail "not match"
+                      atp <- dv_afterPegM
+                      return (id cons c atp),
+                   do return (id empty)]
+p_pap = msum [do nl <- dvCharsM
+                 if id isNL nl then return () else fail "not match"
+                 ob <- dvCharsM
+                 if id isOpenBr ob then return () else fail "not match"
+                 p <- dvCharsM
+                 if id isP p then return () else fail "not match"
+                 a <- dvCharsM
+                 if id isA a then return () else fail "not match"
+                 pp <- dvCharsM
+                 if id isP pp then return () else fail "not match"
+                 i <- dvCharsM
+                 if id isI i then return () else fail "not match"
+                 l <- dvCharsM
+                 if id isL l then return () else fail "not match"
+                 ll <- dvCharsM
+                 if id isL ll then return () else fail "not match"
+                 o <- dvCharsM
+                 if id isO o then return () else fail "not match"
+                 n <- dvCharsM
+                 if id isN n then return () else fail "not match"
+                 b <- dvCharsM
+                 if id isBar b then return () else fail "not match"
+                 nll <- dvCharsM
+                 if id isNL nll then return () else fail "not match"
+                 return (id nil)]
 p_peg = msum [do _ <- dv_spacesM
                  d <- dv_definitionM
                  p <- dv_pegM

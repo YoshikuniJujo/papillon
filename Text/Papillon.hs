@@ -3,8 +3,9 @@
 module Text.Papillon (
 	papillon,
 	papillonStr,
+	papillonStr',
 	StateT(..),
-	flipMaybe
+--	flipMaybe
 ) where
 
 import Language.Haskell.TH.Quote
@@ -16,10 +17,13 @@ import Control.Applicative
 import Text.Papillon.Parser
 -- import Parser
 
+-- dFlipMaybe :: DecsQ
+-- dFlipMaybe = [d|
 flipMaybe :: StateT s Maybe a -> StateT s Maybe ()
 flipMaybe action = StateT $ \s -> case runStateT action s of
 	Nothing -> Just ((), s)
 	_ -> Nothing
+-- |]
 
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
@@ -32,7 +36,17 @@ papillon = QuasiQuoter {
 papillonStr :: String -> IO String
 papillonStr src = show . ppr <$> runQ (declaration False src)
 
-returnN, failN, charN, maybeN, stateTN, stringN, putN, stateTN', msumN ::
+papillonStr' :: String -> IO String
+papillonStr' src = do
+	let (pp, decsQ, atp) = declaration' src
+	decs <- runQ decsQ
+	return $ pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp
+
+flipMaybeN :: Bool -> Name
+flipMaybeN True = 'flipMaybe
+flipMaybeN False = mkName "flipMaybe"
+
+returnN, failN, charN, maybeN, stateTN, stringN, putN, stateTN', msumN, getN ::
 	Bool -> Name
 returnN True = 'return
 returnN False = mkName "return"
@@ -57,9 +71,19 @@ getN False = mkName "get"
 
 declaration :: Bool -> String -> DecsQ
 declaration th src = do
+--	fm <- dFlipMaybe
 	let parsed = case dv_peg $ parse src of
 		Just (p, _) -> p
 		_ -> error "bad"
+	decParsed th parsed
+
+declaration' :: String -> (String, DecsQ, String)
+declaration' src = case dv_pegFile $ parse src of
+	Just ((pp, p, atp), _) -> (pp, decParsed False p, atp)
+	_ -> error "bad"
+
+decParsed :: Bool -> Peg -> DecsQ
+decParsed th parsed = do
 --	debug <- flip (valD $ varP $ mkName "debug") [] $ normalB $
 --		appE (varE $ mkName "putStrLn") (litE $ stringL "debug")
 	r <- result th
@@ -73,7 +97,7 @@ declaration th src = do
 	dvcm <- dvCharsM th
 	pts <- typeP parsed
 	ps <- pSomes th parsed -- name expr
-	return $ [pm, r, d, pt, p] ++ tdvm ++ dvsm ++ [tdvcm, dvcm] ++ pts ++ ps
+	return $ {- fm ++ -} [pm, r, d, pt, p] ++ tdvm ++ dvsm ++ [tdvcm, dvcm] ++ pts ++ ps
 	where
 --	c = clause [wildP] (normalB $ conE $ mkName "Nothing") []
 
@@ -174,9 +198,14 @@ transLeaf th (n, (Here (Right p))) = [
 transLeaf _ (n, (Here (Left v))) = [
 	bindS (varP n) $ varE $ mkName $ "dv_" ++ v ++ "M"]
 transLeaf th (n, (NotAfter (Right p))) = [
-	]
-transLeaf th (n, (NotAfter (Left v))) = [
 	bindS (varP $ mkName "d") $ varE (getN th),
-	noBindS $ varE (mkName "flipMaybe") `appE`
+	bindS (varP n) $ varE $ mkName "dvCharsM",
+	noBindS $ condE (p `appE` varE n)
+		(varE (failN th) `appE` litE (stringL "not match"))
+		(varE (returnN th) `appE` conE (mkName "()")),
+	noBindS $ varE (putN th) `appE` (varE $ mkName "d")]
+transLeaf th (_, (NotAfter (Left v))) = [
+	bindS (varP $ mkName "d") $ varE (getN th),
+	noBindS $ varE (flipMaybeN th) `appE`
 		varE (mkName $ "dv_" ++ v ++ "M"),
 	noBindS $ varE (putN th) `appE` (varE $ mkName "d")]

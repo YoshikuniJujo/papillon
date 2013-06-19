@@ -1,8 +1,7 @@
 import Text.Papillon
-import Language.Haskell.TH
-import Language.Haskell.TH.Quote
+import System.Environment
 
 main :: IO ()
 main = do
-	cnt <- readFile "test.peg"
-	putStr =<< papillonStr cnt
+	fn : _ <- getArgs
+	putStr =<< papillonStr' =<< readFile fn

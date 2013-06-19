@@ -16,11 +16,15 @@ isOpenBr, isP, isA, isI, isL, isO, isN, isBar :: Char -> Bool
 [papillon|
 
 prePap :: String
-	= s:string_ ss:string		{ s }
+	= s:string2 ss:string		{ s }
+;
+string2 :: String
+	= p:![isOpenBr] c:[const true] s:string2	{ cons c s }
+	/						{ empty }
 ;
 string_ :: String
-	= p:!pap c:[const true] s:string_ { cons c s }
-	/				{ empty }
+	= p:!pap c:[const true] s:string_		{ cons c s }
+	/						{ empty }
 ;
 string :: String
 	= c:[const true] s:string	{ cons c s }

@@ -1,3 +1,20 @@
+pegFile :: PegFile
+	= pp:prePeg _:pap p:peg _:spaces b:[isBar] c:[isCloseBr]
+		n:[isNL] atp:afterPeg
+						{ mkPegFile pp p atp }
+;
+prePeg :: String
+	= _:!pap c:[const true] pp:prePeg	{ cons c pp }
+	/					{ empty }
+;
+afterPeg :: String
+	= c:[const true] atp:afterPeg		{ cons c atp }
+	/					{ empty }
+;
+pap :: Nil
+	= nl:[isNL] ob:[isOpenBr] p:[isP] a:[isA] pp:[isP] i:[isI] l:[isL] ll:[isL]
+		o:[isO] n:[isN] b:[isBar] nll:[isNL]	{ nil }
+;
 peg :: Peg
 	= _:spaces d:definition p:peg	{ cons d p }
 	/ 	{ empty }
