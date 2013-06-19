@@ -31,11 +31,11 @@ library
   hs-source-dirs:	src
   exposed-modules:	Text.Papillon
   other-modules:	Text.Papillon.Parser
-  build-depends:	base > 3 && < 5, template-haskell, monads-tf
+  build-depends:	base > 3 && < 5, template-haskell, monads-tf, transformers
   ghc-options:		-Wall
 
 executable	papillon
   hs-source-dirs:	src
   main-is:		papillon.hs
-  build-depends:	base > 3 && < 5, template-haskell, monads-tf
+  build-depends:	base > 3 && < 5, template-haskell, monads-tf, transformers
   ghc-options:		-Wall

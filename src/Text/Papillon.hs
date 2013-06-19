@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, PackageImports #-}
+{-# LANGUAGE TemplateHaskell, PackageImports, TypeFamilies, FlexibleContexts #-}
 
 module Text.Papillon (
 	papillon,
@@ -10,15 +10,18 @@ module Text.Papillon (
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
+import "monads-tf" Control.Monad.Error
+import Control.Monad.Trans.Error (Error(..))
 
 import Control.Applicative
 
 import Text.Papillon.Parser
 
-flipMaybe :: StateT s Maybe a -> StateT s Maybe ()
-flipMaybe action = StateT $ \s -> case runStateT action s of
-	Nothing -> Just ((), s)
-	_ -> Nothing
+flipMaybe :: (Error (ErrorType me), MonadError me) =>
+	StateT s me a -> StateT s me ()
+flipMaybe action = do
+	err <- (action >> return False) `catchError` const (return True)
+	unless err $ throwError $ strMsg "not error"
 
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
@@ -39,25 +42,33 @@ papillonStr' src = do
 
 flipMaybeS :: String
 flipMaybeS =
-	"flipMaybe :: StateT s Maybe a -> StateT s Maybe ()\n" ++
-	"flipMaybe action = StateT $ \\s -> case runStateT action s of\n" ++
-	"\tNothing -> Just ((), s)\n" ++
-	"\t_ -> Nothing\n\n"
+{-
+	"instance MonadError Maybe where\n" ++
+	"\ttype ErrorType Maybe = ()\n" ++
+	"\tthrowError () = Nothing\n" ++
+	"\tcatchError action recover = recover ()\n\n" ++
+-}
+
+	"flipMaybe :: (Error (ErrorType me), MonadError me) =>\n" ++
+	"\tStateT s me a -> StateT s me ()\n" ++
+	"flipMaybe action = do\n" ++
+	"\terr <- (action >> return False) `catchError` const (return True)\n" ++
+	"\tunless err $ throwError $ strMsg \"not error\"\n"
 
 flipMaybeN :: Bool -> Name
 flipMaybeN True = 'flipMaybe
 flipMaybeN False = mkName "flipMaybe"
 
-returnN, failN, charN, maybeN, stateTN, stringN, putN, stateTN', msumN, getN ::
-	Bool -> Name
+returnN, charN, stateTN, stringN, putN, stateTN', msumN, getN,
+	eitherN, whenN, nullN, strMsgN, throwErrorN :: Bool -> Name
 returnN True = 'return
 returnN False = mkName "return"
-failN True = 'fail
-failN False = mkName "fail"
+throwErrorN True = 'throwError
+throwErrorN False = mkName "throwError"
+strMsgN True = 'strMsg
+strMsgN False = mkName "strMsg"
 charN True = ''Char
 charN False = mkName "Char"
-maybeN True = ''Maybe
-maybeN False = mkName "Maybe"
 stateTN True = ''StateT
 stateTN False = mkName "StateT"
 stringN True = ''String
@@ -70,6 +81,12 @@ msumN True = 'msum
 msumN False = mkName "msum"
 getN True = 'get
 getN False = mkName "get"
+eitherN True = ''Either
+eitherN False = mkName "Either"
+whenN True = 'when
+whenN False = mkName "when"
+nullN True = 'null
+nullN False = mkName "null"
 
 declaration :: Bool -> String -> DecsQ
 declaration th src = do
@@ -117,12 +134,14 @@ derivs1 (name, typ, _) =
 		conT (mkName "Result") `appT` conT typ
 
 result :: Bool -> DecQ
-result th = tySynD (mkName "Result") [PlainTV $ mkName "v"] $ conT (maybeN th) `appT`
-	(tupleT 2 `appT` varT (mkName "v") `appT` conT (mkName "Derivs"))
+result th = tySynD (mkName "Result") [PlainTV $ mkName "v"] $
+	conT (eitherN th) `appT` conT (stringN th) `appT`
+		(tupleT 2 `appT` varT (mkName "v") `appT` conT (mkName "Derivs"))
 
 pmonad :: Bool -> DecQ
 pmonad th = tySynD (mkName "PackratM") [] $ conT (stateTN th) `appT`
-	conT (mkName "Derivs") `appT` conT (maybeN th)
+	conT (mkName "Derivs") `appT`
+		(conT (eitherN th) `appT` conT (stringN th))
 
 parseT :: Bool -> DecQ
 parseT th = sigD (mkName "parse") $
@@ -139,6 +158,12 @@ parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 	flip (valD $ varP $ mkName "char") [] $ normalB $
 		(varE $ mkName "flip") `appE` (varE $ mkName "runStateT") `appE`
 			(varE $ mkName "d") `appE` (doE [
+				noBindS $ varE (whenN th) `appE`
+					(varE (nullN th) `appE` varE (mkName "s"))
+					`appE`
+					(varE (throwErrorN th) `appE`
+						(varE (strMsgN th) `appE`
+							litE (stringL "eof"))),
 				bindS	(infixP (varP $ mkName "c") (mkName ":")
 						(varP $ mkName "s'")) $
 					(varE $ returnN th) `appE`
@@ -196,7 +221,8 @@ transLeaf th (n, (Here (Right p))) = [
 	bindS (varP n) $ varE $ mkName "dvCharsM",
 	noBindS $ condE (p `appE` varE n)
 		(varE (returnN th) `appE` conE (mkName "()"))
-		(varE (failN th) `appE` litE (stringL "not match"))]
+		(varE (throwErrorN th) `appE`
+			(varE (strMsgN th) `appE` litE (stringL "not match")))]
 transLeaf _ (n, (Here (Left v))) = [
 	bindS (varP n) $ varE $ mkName $ "dv_" ++ v ++ "M"]
 transLeaf th (n, (NotAfter (Right p))) = [

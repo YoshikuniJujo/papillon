@@ -1,9 +1,11 @@
-{-# LANGUAGE QuasiQuotes, PackageImports #-}
+{-# LANGUAGE QuasiQuotes, PackageImports, FlexibleContexts #-}
 
 module Main where
 
 import Control.Monad
 import "monads-tf" Control.Monad.State
+import "monads-tf" Control.Monad.Error
+import Control.Monad.Trans.Error (Error(..))
 import Text.Papillon
 
 import Data.Char
@@ -15,10 +17,9 @@ testExp'' = "50 + 3 * 6"
 testExp''' = "3 * (50 + 5) / 8"
 
 main :: IO ()
-main = do
-	case dv_expression $ parse testExp of
-		Just (d, _) -> print d
-		Nothing -> putStrLn "error: parse failed"
+main = case dv_expression $ parse testExp of
+	Right (d, _) -> print d
+	Left s -> putStrLn $ "error: " ++ s
 
 type LeftInteger = Integer -> Integer
 type Nil = ()
