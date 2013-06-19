@@ -1,0 +1,7 @@
+* 右辺に出てこないものについて dv_...M を作らないようにする。
+* Maybe ではなく Either ParseError とする
+	あるいはもっと一般的な Monad を取れるようにするのもいいかもしれない
+* String -> m (Char, String) をより一般的に s -> m (c, s) としよう。
+	これには TypeFamilies を使った class によって可能だろう。
+* Text/Papillon/Parser.hs を git から外す
+	これは papillon 自体がある程度安定してから、となるだろう。
