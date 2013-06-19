@@ -1,6 +1,6 @@
 {-# LANGUAGE PackageImports #-}
 
-module Parser (
+module Text.Papillon.Parser (
 	Peg,
 	Definition,
 	NameLeaf,
