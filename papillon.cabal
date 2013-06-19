@@ -6,7 +6,7 @@ version:	0.0.1
 stability:	Experimental
 author:		Yoshikuni Jujo <PAF01143@nifty.ne.jp>
 maintainer:	Yoshikuni Jujo <PAF01143@nifty.ne.jp>
-homepage:	yet
+homepage:	https://skami.iocikun.jp/haskell/packages/papillon
 
 license:	BSD3
 license-file:	LICENSE
