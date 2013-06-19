@@ -201,10 +201,8 @@ transLeaf _ (n, (Here (Left v))) = [
 	bindS (varP n) $ varE $ mkName $ "dv_" ++ v ++ "M"]
 transLeaf th (n, (NotAfter (Right p))) = [
 	bindS (varP $ mkName "d") $ varE (getN th),
-	bindS (varP n) $ varE $ mkName "dvCharsM",
-	noBindS $ condE (p `appE` varE n)
-		(varE (failN th) `appE` litE (stringL "not match"))
-		(varE (returnN th) `appE` conE (mkName "()")),
+	noBindS $ varE (flipMaybeN th) `appE`
+		doE (transLeaf th (n, (Here (Right p)))),
 	noBindS $ varE (putN th) `appE` (varE $ mkName "d")]
 transLeaf th (_, (NotAfter (Left v))) = [
 	bindS (varP $ mkName "d") $ varE (getN th),

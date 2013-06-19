@@ -1,0 +1,96 @@
+{-# LANGUAGE QuasiQuotes, PackageImports #-}
+
+module Main where
+
+import Control.Monad
+import "monads-tf" Control.Monad.State
+import Text.Papillon
+
+import Data.Char
+
+testExp :: String
+testExp = "3 * (2 + 24) / 8 / 3"
+testExp' = "3 + 2 + 24 / 8 / 3"
+testExp'' = "50 + 3 * 6"
+testExp''' = "3 * (50 + 5) / 8"
+
+main :: IO ()
+main = do
+	case dv_expression $ parse testExp of
+		Just (d, _) -> print d
+		Nothing -> putStrLn "error: parse failed"
+
+type LeftInteger = Integer -> Integer
+type Nil = ()
+
+readC = read . (: "")
+mkLeftInteger x y = \i -> y (toLeftInteger x i)
+toLeftInteger x = \i -> i * 10 + toInteger x
+nil = ()
+cons = (:)
+empty = []
+zero = 0
+isSymA = (`elem` "+-")
+isSymM = (`elem` "*/%")
+[isOpenParen, isCloseParen] = map (==) "()"
+
+type LeftMul = (Integer -> Integer -> Integer, Integer) -> Integer
+
+mkLeftMul '*' x y = \oi -> y ((*), toLeftMul x oi)
+mkLeftMul '/' x y = \oi -> y (div, toLeftMul x oi)
+mkLeftMul '%' x y = \oi -> y (mod, toLeftMul x oi)
+mkLeftMul '+' x y = \oi -> y ((+), toLeftMul x oi)
+toLeftMul x = \(o, i) -> i `o` x
+
+comMul s x y = mkLeftMul s (x ((*), 1)) y
+toMul v = \(o, i) -> i `o` (v ((*), 1))
+
+getMul v = v ((*), 1)
+
+true = True
+
+[papillon|
+
+expression :: Integer
+	= s:spacing v:additive c:![const true] { getMul v }
+;
+additive :: LeftMul
+	= l:multitive s:symbolA r:additive	{ comMul s l r }
+	/ v:multitive				{ toMul v }
+;
+multitive :: LeftMul
+	= l:primary s:symbolM r:multitive	{ mkLeftMul s l r }
+	/ v:primary				{ toLeftMul v }
+;
+primary :: Integer
+	= d:decimal				{ d }
+	/ o:[isOpenParen] _:spacing v:additive c:[isCloseParen] _:spacing
+						{ getMul v }
+;
+decimal :: Integer
+	= d:digits _:spacing		{ d zero }
+;
+digits :: LeftInteger
+	= d:digit ds:digits		{ mkLeftInteger d ds }
+	/ d:digit			{ toLeftInteger d }
+;
+digit :: Int
+	= d:[isDigit]			{ readC d }
+;
+symbolA :: Char
+	= s:symCharsA _:spacing		{ s }
+;
+symbolM :: Char
+	= s:symCharsM _:spacing		{ s }
+;
+symCharsA :: Char
+	= s:[isSymA]			{ s }
+;
+symCharsM :: Char
+	= s:[isSymM]			{ s }
+;
+spacing :: Nil
+	= s:[isSpace] ss:spacing	{ nil }
+	/				{ nil }
+;
+|]

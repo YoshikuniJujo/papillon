@@ -5,3 +5,28 @@
 	これには TypeFamilies を使った class によって可能だろう。
 * Text/Papillon/Parser.hs を git から外す
 	これは papillon 自体がある程度安定してから、となるだろう。
+* papillon command は何も取らなければ filter とする。
+	また、papillon [Input] や papillon [Input] -o [Output] の形も使う。
+	そのうちに papillon -h や papillon --help も。
+	より使いやすく GetOpt を使ってみるのもいいかもしれない。
+* 関数の名前について
+	parser とかそういう名前は conflict するので、もっとちゃんとした名前にする
+	...M という名前を使ったときに問題がある
+* parser の呼び出しかたの改善
+* papillon command が必要なものを import していなければ import するようにする
+	import のダブりに問題がなければしばらくはそのままにしておこう
+* haskell の exp をちゃんとパースしよう
+	(...) を許すようにしよう
+	3 + 2 とか x : xs とかを可能にしよう
+	Maybe Int とかも
+* コメントを許すようにする
+* 非終端記号に大文字で始まるものも許すようにしようかな
+* 変数にパターンを使えるようにしようかな
+* 左再帰の解決はどうしようかな
+	pappy はこれにひどく時間がかかっていた
+* c:Char &{isDigit c} のような構造はどうなのだろうか
+	けっこう使えるような気もするがもっときれいに書けないだろうか
+	s[isHoge]:some のような感じはどうだろうか。
+	そうすると今 s:[isHoge] となっているところは s[isHoge]:char
+	ということになるだろう。
+* ; を省略可能にしようかな
