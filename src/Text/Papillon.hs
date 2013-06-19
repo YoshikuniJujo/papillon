@@ -61,7 +61,7 @@ flipMaybeN True = 'flipMaybe
 flipMaybeN False = mkName "flipMaybe"
 
 returnN, charN, stateTN, stringN, putN, stateTN', msumN, getN,
-	eitherN, whenN, nullN, strMsgN, throwErrorN, nilN :: Bool -> Name
+	eitherN, whenN, nullN, strMsgN, throwErrorN :: Bool -> Name
 returnN True = 'return
 returnN False = mkName "return"
 throwErrorN True = 'throwError
@@ -88,8 +88,6 @@ whenN True = 'when
 whenN False = mkName "when"
 nullN True = 'null
 nullN False = mkName "null"
-nilN True = '()
-nilN False = mkName "()"
 
 declaration :: Bool -> String -> DecsQ
 declaration th src = do
@@ -235,21 +233,24 @@ transLeaf g th (n, (Here (Right p))) = do
 			(varE (throwErrorN th) `appE`
 				(varE (strMsgN th) `appE` litE (stringL "not match")))]
 transLeaf g th (n, (Here (Left v))) = do
-	gn <- runIO $ readIORef g
-	runIO $ modifyIORef g succ
-	t <- newName $ "xx" ++ show gn
-	sequence [
-		bindS (varP t) $ varE $ mkName $ "dv_" ++ v ++ "M",
-		noBindS $ caseE (varE t) [
-			flip (match n) [] $ normalB $ varE (returnN th) `appE`
-				(tupE []),
-			flip (match wildP) [] $ normalB $ varE (throwErrorN th) `appE`
-				(varE (strMsgN th) `appE`
-					litE (stringL "not match"))
-		 ],
---		letS [flip (valD n) [] $ normalB $ varE t]
-		bindS n $ varE (returnN th) `appE` varE t
-	 ]
+	nn <- n
+	case nn of
+		VarP _ -> sequence [
+			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M"]
+		_ -> do	gn <- runIO $ readIORef g
+			runIO $ modifyIORef g succ
+			t <- newName $ "xx" ++ show gn
+			sequence [
+				bindS (varP t) $ varE $ mkName $ "dv_" ++ v ++ "M",
+				noBindS $ caseE (varE t) [
+					flip (match $ varPToWild n) [] $ normalB $ varE (returnN th) `appE`
+						(tupE []),
+					flip (match wildP) [] $ normalB $ varE (throwErrorN th) `appE`
+						(varE (strMsgN th) `appE`
+							litE (stringL "not match"))
+				 ],
+				bindS n $ varE (returnN th) `appE` varE t
+			 ]
 transLeaf g th (n, (NotAfter (Right p))) = sequence [
 	bindS (varP $ mkName "d") $ varE (getN th),
 	noBindS $ varE (flipMaybeN th) `appE`
@@ -260,3 +261,12 @@ transLeaf _ th (_, (NotAfter (Left v))) = sequence [
 	noBindS $ varE (flipMaybeN th) `appE`
 		varE (mkName $ "dv_" ++ v ++ "M"),
 	noBindS $ varE (putN th) `appE` (varE $ mkName "d")]
+
+varPToWild :: PatQ -> PatQ
+varPToWild p = do
+	pp <- p
+	return $ vpw pp
+	where
+	vpw (VarP _) = WildP
+	vpw (ConP n ps) = ConP n $ map vpw ps
+	vpw o = o
