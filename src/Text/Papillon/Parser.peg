@@ -81,8 +81,11 @@ mkPegFile = (,,)
 true :: Bool
 true = True
 
+charP :: Char -> PatQ
+charP = litP . charL
+
 isEqual, isSlash, isSemi,
-	isColon, isOpenWave, isCloseWave, isLowerU, isNot :: Char -> Bool
+	isColon, isOpenWave, isCloseWave, isLowerU, isNot, isChon :: Char -> Bool
 isEqual = (== '=')
 isSlash = (== '/')
 isSemi = (== ';')
@@ -91,6 +94,7 @@ isOpenWave = (== '{')
 isCloseWave = (== '}')
 isLowerU c = isLower c || c == '_'
 isNot = (== '!')
+isChon = (== '\'')
 
 isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
 [isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL] =
@@ -141,6 +145,7 @@ nameLeaf :: NameLeaf
 pat :: PatQ
 	= n:variable				{ strToPatQ n }
 	/ t:typ _:spaces ps:pats		{ conToPatQ t ps }
+	/ _:[isChon] c:[const true] _:[isChon]	{ charP c }
 ;
 pats :: PatQs
 	= p:pat ps:pats				{ cons p ps }

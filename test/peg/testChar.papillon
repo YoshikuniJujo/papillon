@@ -1,8 +1,12 @@
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE PackageImports, QuasiQuotes, FlexibleContexts #-}
 
 import Text.Papillon
 
 import Data.Char
+
+import "monads-tf" Control.Monad.State
+import "monads-tf" Control.Monad.Error
+import Control.Monad.Trans.Error (Error(..))
 
 type Nil = ()
 nil :: Nil
@@ -10,16 +14,16 @@ nil = ()
 
 main :: IO ()
 main = case dv_other $ parse "333" of
-	Right () -> putStrLn "OK!"
+	Right ((), _) -> putStrLn "OK!"
 	Left err -> putStrLn $ "error: " ++ err
 
 [papillon|
 
 other :: Nil
-	'3':some	{ nil }
+	= '3':some	{ nil }
 ;
 some :: Char
-	c:[isDigit]	{ c }
+	= c:[isDigit]	{ c }
 ;
 
 |]

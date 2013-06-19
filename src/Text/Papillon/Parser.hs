@@ -81,8 +81,11 @@ mkPegFile = (,,)
 true :: Bool
 true = True
 
+charP :: Char -> PatQ
+charP = litP . charL
+
 isEqual, isSlash, isSemi,
-	isColon, isOpenWave, isCloseWave, isLowerU, isNot :: Char -> Bool
+	isColon, isOpenWave, isCloseWave, isLowerU, isNot, isChon :: Char -> Bool
 isEqual = (== '=')
 isSlash = (== '/')
 isSemi = (== ';')
@@ -91,6 +94,7 @@ isOpenWave = (== '{')
 isCloseWave = (== '}')
 isLowerU c = isLower c || c == '_'
 isNot = (== '!')
+isChon = (== '\'')
 
 isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
 [isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL] =
@@ -414,14 +418,30 @@ p_pat = msum [do n <- dv_variableM
               do t <- dv_typM
                  _ <- dv_spacesM
                  ps <- dv_patsM
-                 return (id conToPatQ t ps)]
+                 return (id conToPatQ t ps),
+              do xx25_25 <- dvCharsM
+                 let _ = xx25_25
+                 if id isChon xx25_25
+                  then return ()
+                  else throwError (strMsg "not match")
+                 xx26_26 <- dvCharsM
+                 let c = xx26_26
+                 if id const true xx26_26
+                  then return ()
+                  else throwError (strMsg "not match")
+                 xx27_27 <- dvCharsM
+                 let _ = xx27_27
+                 if id isChon xx27_27
+                  then return ()
+                  else throwError (strMsg "not match")
+                 return (id charP c)]
 p_pats = msum [do p <- dv_patM
                   ps <- dv_patsM
                   return (id cons p ps),
                do return (id empty)]
-p_leaf_ = msum [do xx25_25 <- dvCharsM
-                   let _ = xx25_25
-                   if id isNot xx25_25
+p_leaf_ = msum [do xx28_28 <- dvCharsM
+                   let _ = xx28_28
+                   if id isNot xx28_28
                     then return ()
                     else throwError (strMsg "not match")
                    l <- dv_leafM
@@ -432,15 +452,15 @@ p_leaf = msum [do t <- dv_testM
                   return (id left t),
                do v <- dv_variableM
                   return (id right v)]
-p_test = msum [do xx26_26 <- dvCharsM
-                  let _ = xx26_26
-                  if id isOpenBr xx26_26
+p_test = msum [do xx29_29 <- dvCharsM
+                  let _ = xx29_29
+                  if id isOpenBr xx29_29
                    then return ()
                    else throwError (strMsg "not match")
                   h <- dv_hsExpM
-                  xx27_27 <- dvCharsM
-                  let _ = xx27_27
-                  if id isCloseBr xx27_27
+                  xx30_30 <- dvCharsM
+                  let _ = xx30_30
+                  if id isCloseBr xx30_30
                    then return ()
                    else throwError (strMsg "not match")
                   return (id getEx h)]
@@ -466,21 +486,21 @@ p_alpha = msum [do u <- dv_upperM
                    return (id l),
                 do d <- dv_digitM
                    return (id d)]
-p_upper = msum [do xx28_28 <- dvCharsM
-                   let u = xx28_28
-                   if id isUpper xx28_28
+p_upper = msum [do xx31_31 <- dvCharsM
+                   let u = xx31_31
+                   if id isUpper xx31_31
                     then return ()
                     else throwError (strMsg "not match")
                    return (id u)]
-p_lower = msum [do xx29_29 <- dvCharsM
-                   let l = xx29_29
-                   if id isLowerU xx29_29
+p_lower = msum [do xx32_32 <- dvCharsM
+                   let l = xx32_32
+                   if id isLowerU xx32_32
                     then return ()
                     else throwError (strMsg "not match")
                    return (id l)]
-p_digit = msum [do xx30_30 <- dvCharsM
-                   let d = xx30_30
-                   if id isDigit xx30_30
+p_digit = msum [do xx33_33 <- dvCharsM
+                   let d = xx33_33
+                   if id isDigit xx33_33
                     then return ()
                     else throwError (strMsg "not match")
                    return (id d)]
@@ -488,9 +508,9 @@ p_spaces = msum [do _ <- dv_spaceM
                     _ <- dv_spacesM
                     return (id nil),
                  do return (id nil)]
-p_space = msum [do xx31_31 <- dvCharsM
-                   let _ = xx31_31
-                   if id isSpace xx31_31
+p_space = msum [do xx34_34 <- dvCharsM
+                   let _ = xx34_34
+                   if id isSpace xx34_34
                     then return ()
                     else throwError (strMsg "not match")
                    return (id nil)]
