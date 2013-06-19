@@ -64,3 +64,7 @@ mkName "return" を使ったほうが preprocessor として使うときには�
 2013.06.19 Wed.
 
 右辺に出てこないものについては dv_...M を作らないようにしよう。
+Maybe ではなく Either ParseError というようにする。
+もっと一般化し、s -> Either ParseError (c, s) のようにしよう。
+また、papillon で、flipMaybe をちゃんとくっつけるようにする必要がある。
+また、Text/Papillon/Parser.hs を git から外そう。

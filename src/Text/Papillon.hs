@@ -5,7 +5,6 @@ module Text.Papillon (
 	papillonStr,
 	papillonStr',
 	StateT(..),
---	flipMaybe
 ) where
 
 import Language.Haskell.TH.Quote
@@ -15,15 +14,11 @@ import "monads-tf" Control.Monad.State
 import Control.Applicative
 
 import Text.Papillon.Parser
--- import Parser
 
--- dFlipMaybe :: DecsQ
--- dFlipMaybe = [d|
 flipMaybe :: StateT s Maybe a -> StateT s Maybe ()
 flipMaybe action = StateT $ \s -> case runStateT action s of
 	Nothing -> Just ((), s)
 	_ -> Nothing
--- |]
 
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
@@ -40,7 +35,14 @@ papillonStr' :: String -> IO String
 papillonStr' src = do
 	let (pp, decsQ, atp) = declaration' src
 	decs <- runQ decsQ
-	return $ pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp
+	return $ pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp
+
+flipMaybeS :: String
+flipMaybeS =
+	"flipMaybe :: StateT s Maybe a -> StateT s Maybe ()\n" ++
+	"flipMaybe action = StateT $ \\s -> case runStateT action s of\n" ++
+	"\tNothing -> Just ((), s)\n" ++
+	"\t_ -> Nothing\n\n"
 
 flipMaybeN :: Bool -> Name
 flipMaybeN True = 'flipMaybe

@@ -83,11 +83,6 @@ isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
 [isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL] =
 	map (==) "[pailon|]\n"
 
-flipMaybe :: StateT s Maybe a -> StateT s Maybe ()
-flipMaybe action = StateT $ \s -> case runStateT action s of
-	Nothing -> Just ((), s)
-	_ -> Nothing
-
 [papillon|
 
 pegFile :: PegFile
