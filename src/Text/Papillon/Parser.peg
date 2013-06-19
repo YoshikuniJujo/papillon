@@ -21,7 +21,7 @@ data Leaf_ = NotAfter Leaf | Here Leaf
 notAfter, here :: Leaf -> Leaf_
 notAfter = NotAfter
 here = Here
-type NameLeaf = (Name, Leaf_)
+type NameLeaf = (PatQ, Leaf_)
 type Expression = [NameLeaf]
 type ExpressionHs = (Expression, ExR)
 type Selection = [ExpressionHs]
@@ -42,10 +42,21 @@ nil = ()
 
 cons :: a -> [a] -> [a]
 cons = (:)
-mkNameLeaf :: String -> b -> (Name, b)
-mkNameLeaf x y = (mkName x, y)
+
+type PatQs = [PatQ]
+
+mkNameLeaf :: PatQ -> b -> (PatQ, b)
+mkNameLeaf = (,)
+
+strToPatQ :: String -> PatQ
+strToPatQ = varP . mkName
+
+conToPatQ :: String -> [PatQ] -> PatQ
+conToPatQ t ps = conP (mkName t) ps
+
 mkExpressionHs :: a -> Ex -> (a, ExR)
 mkExpressionHs x y = (x, getEx y)
+
 mkDef :: a -> String -> c -> (a, Name, c)
 mkDef x y z = (x, mkName y, z)
 
@@ -123,7 +134,15 @@ expression :: Expression
 	/ 	{ empty }
 ;
 nameLeaf :: NameLeaf
-	= n:variable c:[isColon] l:leaf_	{ mkNameLeaf n l }
+	= n:pat c:[isColon] l:leaf_		{ mkNameLeaf n l }
+;
+pat :: PatQ
+	= n:variable				{ strToPatQ n }
+	/ t:typ _:spaces ps:pats		{ conToPatQ t ps }
+;
+pats :: PatQs
+	= p:pat ps:pats				{ cons p ps }
+	/					{ empty }
 ;
 leaf_ :: Leaf_
 	= n:[isNot] l:leaf	{ notAfter l }

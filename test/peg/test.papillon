@@ -1,0 +1,49 @@
+{-# LANGUAGE PackageImports, FlexibleContexts, QuasiQuotes #-}
+
+import Text.Papillon
+
+import Data.Char
+
+import Control.Monad
+import "monads-tf" Control.Monad.State
+import "monads-tf" Control.Monad.Error
+import Control.Monad.Trans.Error (Error(..))
+
+main :: IO ()
+main = do
+	case dv_onlyDigits $ parse "123" of
+		Right (str, _) -> print str
+		Left "" -> putStrLn $ "error: empty"
+		Left err -> putStrLn $ "error: " ++ err
+	putStrLn "here"
+
+cons :: a -> [a] -> [a]
+cons = (:)
+empty :: [a]
+empty = []
+
+type MString = Maybe String
+just :: a -> Maybe a
+just = Just
+nothing :: Maybe a
+nothing = Nothing
+
+[papillon|
+
+onlyDigits :: String
+	= Just s:digits		{ s }
+;
+digits :: MString
+	= s:some		{ just s }
+	/ _:other		{ nothing }
+;
+some :: String
+	= c:[isDigit] s:some	{ cons c s }
+	/ c:[isDigit]		{ cons c empty }
+;
+other :: String
+	= c:[isLower] s:other	{ cons c s }
+	/ c:[isLower]		{ cons c empty }
+;
+
+|]

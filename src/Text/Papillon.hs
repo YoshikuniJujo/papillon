@@ -16,6 +16,7 @@ import Control.Monad.Trans.Error (Error(..))
 import Control.Applicative
 
 import Text.Papillon.Parser
+import Data.IORef
 
 flipMaybe :: (Error (ErrorType me), MonadError me) =>
 	StateT s me a -> StateT s me ()
@@ -60,7 +61,7 @@ flipMaybeN True = 'flipMaybe
 flipMaybeN False = mkName "flipMaybe"
 
 returnN, charN, stateTN, stringN, putN, stateTN', msumN, getN,
-	eitherN, whenN, nullN, strMsgN, throwErrorN :: Bool -> Name
+	eitherN, whenN, nullN, strMsgN, throwErrorN, nilN :: Bool -> Name
 returnN True = 'return
 returnN False = mkName "return"
 throwErrorN True = 'throwError
@@ -87,6 +88,8 @@ whenN True = 'when
 whenN False = mkName "when"
 nullN True = 'null
 nullN False = mkName "null"
+nilN True = '()
+nilN False = mkName "()"
 
 declaration :: Bool -> String -> DecsQ
 declaration th src = do
@@ -105,6 +108,7 @@ decParsed :: Bool -> Peg -> DecsQ
 decParsed th parsed = do
 --	debug <- flip (valD $ varP $ mkName "debug") [] $ normalB $
 --		appE (varE $ mkName "putStrLn") (litE $ stringL "debug")
+	glb <- runIO $ newIORef 0
 	r <- result th
 	pm <- pmonad th
 	d <- derivs th parsed
@@ -115,7 +119,7 @@ decParsed th parsed = do
 	tdvcm <- typeDvCharsM th
 	dvcm <- dvCharsM th
 	pts <- typeP parsed
-	ps <- pSomes th parsed -- name expr
+	ps <- pSomes glb th parsed -- name expr
 	return $ {- fm ++ -} [pm, r, d, pt, p] ++ tdvm ++ dvsm ++ [tdvcm, dvcm] ++ pts ++ ps
 	where
 --	c = clause [wildP] (normalB $ conE $ mkName "Nothing") []
@@ -205,32 +209,53 @@ typeP = uncurry (zipWithM typeP1) . unzip . map (\(n, t, _) -> (n, t))
 typeP1 :: String -> Name -> DecQ
 typeP1 f t = sigD (mkName $ "p_" ++ f) $ conT (mkName "PackratM") `appT` conT t
 
-pSomes :: Bool -> Peg -> DecsQ
-pSomes th = mapM $ pSomes1 th
+pSomes :: IORef Int -> Bool -> Peg -> DecsQ
+pSomes g th = mapM $ pSomes1 g th
 
-pSomes1 :: Bool -> Definition -> DecQ
-pSomes1 th (name, _, sel) = flip (valD $ varP $ mkName $ "p_" ++ name) [] $ normalB $
-	varE (msumN th) `appE` listE (map (uncurry $ pSome_ th) sel)
+pSomes1 :: IORef Int -> Bool -> Definition -> DecQ
+pSomes1 g th (name, _, sel) = flip (valD $ varP $ mkName $ "p_" ++ name) [] $ normalB $
+	varE (msumN th) `appE` listE (map (uncurry $ pSome_ g th) sel)
 
-pSome_ :: Bool -> [NameLeaf] -> ExpQ -> ExpQ
-pSome_ th nls ret = doE $
-	concatMap (transLeaf th) nls ++ [noBindS $ (varE $ returnN th) `appE` ret]
+pSome_ :: IORef Int -> Bool -> [NameLeaf] -> ExpQ -> ExpQ
+pSome_ g th nls ret = fmap DoE $ do
+	x <- (mapM (transLeaf g th) nls)
+	r <- noBindS $ (varE $ returnN th) `appE` ret
+	return $ concat x ++ [r]
 
-transLeaf :: Bool -> NameLeaf -> [StmtQ]
-transLeaf th (n, (Here (Right p))) = [
-	bindS (varP n) $ varE $ mkName "dvCharsM",
-	noBindS $ condE (p `appE` varE n)
-		(varE (returnN th) `appE` conE (mkName "()"))
-		(varE (throwErrorN th) `appE`
-			(varE (strMsgN th) `appE` litE (stringL "not match")))]
-transLeaf _ (n, (Here (Left v))) = [
-	bindS (varP n) $ varE $ mkName $ "dv_" ++ v ++ "M"]
-transLeaf th (n, (NotAfter (Right p))) = [
+transLeaf :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
+transLeaf g th (n, (Here (Right p))) = do
+	gn <- runIO $ readIORef g
+	runIO $ modifyIORef g succ
+	t <- newName $ "xx" ++ show gn
+	sequence [
+		bindS (varP t) $ varE $ mkName "dvCharsM",
+		letS [flip (valD n) [] $ normalB $ varE t],
+		noBindS $ condE (p `appE` varE t)
+			(varE (returnN th) `appE` conE (mkName "()"))
+			(varE (throwErrorN th) `appE`
+				(varE (strMsgN th) `appE` litE (stringL "not match")))]
+transLeaf g th (n, (Here (Left v))) = do
+	gn <- runIO $ readIORef g
+	runIO $ modifyIORef g succ
+	t <- newName $ "xx" ++ show gn
+	sequence [
+		bindS (varP t) $ varE $ mkName $ "dv_" ++ v ++ "M",
+		noBindS $ caseE (varE t) [
+			flip (match n) [] $ normalB $ varE (returnN th) `appE`
+				(tupE []),
+			flip (match wildP) [] $ normalB $ varE (throwErrorN th) `appE`
+				(varE (strMsgN th) `appE`
+					litE (stringL "not match"))
+		 ],
+--		letS [flip (valD n) [] $ normalB $ varE t]
+		bindS n $ varE (returnN th) `appE` varE t
+	 ]
+transLeaf g th (n, (NotAfter (Right p))) = sequence [
 	bindS (varP $ mkName "d") $ varE (getN th),
 	noBindS $ varE (flipMaybeN th) `appE`
-		doE (transLeaf th (n, (Here (Right p)))),
+		(DoE <$> (transLeaf g th (n, (Here (Right p))))),
 	noBindS $ varE (putN th) `appE` (varE $ mkName "d")]
-transLeaf th (_, (NotAfter (Left v))) = [
+transLeaf _ th (_, (NotAfter (Left v))) = sequence [
 	bindS (varP $ mkName "d") $ varE (getN th),
 	noBindS $ varE (flipMaybeN th) `appE`
 		varE (mkName $ "dv_" ++ v ++ "M"),

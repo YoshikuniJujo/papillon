@@ -10,7 +10,7 @@ import Text.Papillon
 
 import Data.Char
 
-testExp :: String
+testExp, testExp', testExp'', testExp''' :: String
 testExp = "3 * (2 + 24) / 8 / 3"
 testExp' = "3 + 2 + 24 / 8 / 3"
 testExp'' = "50 + 3 * 6"
@@ -24,36 +24,52 @@ main = case dv_expression $ parse testExp of
 type LeftInteger = Integer -> Integer
 type Nil = ()
 
+readC :: Char -> Int
 readC = read . (: "")
+
+mkLeftInteger :: Int -> (Integer -> Integer) -> Integer -> Integer
 mkLeftInteger x y = \i -> y (toLeftInteger x i)
+toLeftInteger :: Int -> Integer -> Integer
 toLeftInteger x = \i -> i * 10 + toInteger x
+nil ::Nil
 nil = ()
+cons :: a -> [a] -> [a]
 cons = (:)
+empty :: [a]
 empty = []
+zero :: Integer
 zero = 0
+isSymA, isSymM, isOpenParen, isCloseParen :: Char -> Bool
 isSymA = (`elem` "+-")
 isSymM = (`elem` "*/%")
 [isOpenParen, isCloseParen] = map (==) "()"
 
 type LeftMul = (Integer -> Integer -> Integer, Integer) -> Integer
 
+mkLeftMul :: Char -> Integer -> LeftMul -> LeftMul
 mkLeftMul '*' x y = \oi -> y ((*), toLeftMul x oi)
 mkLeftMul '/' x y = \oi -> y (div, toLeftMul x oi)
 mkLeftMul '%' x y = \oi -> y (mod, toLeftMul x oi)
 mkLeftMul '+' x y = \oi -> y ((+), toLeftMul x oi)
+mkLeftMul _ _ _ = error "mkLeftMul"
+toLeftMul :: Integer -> LeftMul
 toLeftMul x = \(o, i) -> i `o` x
 
+comMul :: Char -> LeftMul -> LeftMul -> LeftMul
 comMul s x y = mkLeftMul s (x ((*), 1)) y
+toMul :: LeftMul -> LeftMul
 toMul v = \(o, i) -> i `o` (v ((*), 1))
 
+getMul :: LeftMul -> Integer
 getMul v = v ((*), 1)
 
+true :: Bool
 true = True
 
 [papillon|
 
 expression :: Integer
-	= s:spacing v:additive c:![const true] { getMul v }
+	= _:spacing v:additive _:![const true] { getMul v }
 ;
 additive :: LeftMul
 	= l:multitive s:symbolA r:additive	{ comMul s l r }
@@ -65,7 +81,7 @@ multitive :: LeftMul
 ;
 primary :: Integer
 	= d:decimal				{ d }
-	/ o:[isOpenParen] _:spacing v:additive c:[isCloseParen] _:spacing
+	/ _:[isOpenParen] _:spacing v:additive _:[isCloseParen] _:spacing
 						{ getMul v }
 ;
 decimal :: Integer
@@ -91,7 +107,7 @@ symCharsM :: Char
 	= s:[isSymM]			{ s }
 ;
 spacing :: Nil
-	= s:[isSpace] ss:spacing	{ nil }
+	= _:[isSpace] _:spacing	{ nil }
 	/				{ nil }
 ;
 |]

@@ -21,7 +21,7 @@ data Leaf_ = NotAfter Leaf | Here Leaf
 notAfter, here :: Leaf -> Leaf_
 notAfter = NotAfter
 here = Here
-type NameLeaf = (Name, Leaf_)
+type NameLeaf = (PatQ, Leaf_)
 type Expression = [NameLeaf]
 type ExpressionHs = (Expression, ExR)
 type Selection = [ExpressionHs]
@@ -42,10 +42,21 @@ nil = ()
 
 cons :: a -> [a] -> [a]
 cons = (:)
-mkNameLeaf :: String -> b -> (Name, b)
-mkNameLeaf x y = (mkName x, y)
+
+type PatQs = [PatQ]
+
+mkNameLeaf :: PatQ -> b -> (PatQ, b)
+mkNameLeaf = (,)
+
+strToPatQ :: String -> PatQ
+strToPatQ = varP . mkName
+
+conToPatQ :: String -> [PatQ] -> PatQ
+conToPatQ t ps = conP (mkName t) ps
+
 mkExpressionHs :: a -> Ex -> (a, ExR)
 mkExpressionHs x y = (x, getEx y)
+
 mkDef :: a -> String -> c -> (a, Name, c)
 mkDef x y z = (x, mkName y, z)
 
@@ -101,6 +112,8 @@ data Derivs
               dv_expressionHs :: (Result ExpressionHs),
               dv_expression :: (Result Expression),
               dv_nameLeaf :: (Result NameLeaf),
+              dv_pat :: (Result PatQ),
+              dv_pats :: (Result PatQs),
               dv_leaf_ :: (Result Leaf_),
               dv_leaf :: (Result Leaf),
               dv_test :: (Result ExR),
@@ -117,7 +130,7 @@ data Derivs
               dvChars :: (Result Char)}
 parse :: String -> Derivs
 parse s = d
-          where d = Derivs pegFile prePeg afterPeg pap peg definition selection expressionHs expression nameLeaf leaf_ leaf test hsExp typ variable tvtail alpha upper lower digit spaces space char
+          where d = Derivs pegFile prePeg afterPeg pap peg definition selection expressionHs expression nameLeaf pat pats leaf_ leaf test hsExp typ variable tvtail alpha upper lower digit spaces space char
                 pegFile = runStateT p_pegFile d
                 prePeg = runStateT p_prePeg d
                 afterPeg = runStateT p_afterPeg d
@@ -128,6 +141,8 @@ parse s = d
                 expressionHs = runStateT p_expressionHs d
                 expression = runStateT p_expression d
                 nameLeaf = runStateT p_nameLeaf d
+                pat = runStateT p_pat d
+                pats = runStateT p_pats d
                 leaf_ = runStateT p_leaf_ d
                 leaf = runStateT p_leaf d
                 test = runStateT p_test d
@@ -154,6 +169,8 @@ dv_selectionM :: PackratM Selection
 dv_expressionHsM :: PackratM ExpressionHs
 dv_expressionM :: PackratM Expression
 dv_nameLeafM :: PackratM NameLeaf
+dv_patM :: PackratM PatQ
+dv_patsM :: PackratM PatQs
 dv_leaf_M :: PackratM Leaf_
 dv_leafM :: PackratM Leaf
 dv_testM :: PackratM ExR
@@ -177,6 +194,8 @@ dv_selectionM = StateT dv_selection
 dv_expressionHsM = StateT dv_expressionHs
 dv_expressionM = StateT dv_expression
 dv_nameLeafM = StateT dv_nameLeaf
+dv_patM = StateT dv_pat
+dv_patsM = StateT dv_pats
 dv_leaf_M = StateT dv_leaf_
 dv_leafM = StateT dv_leaf
 dv_testM = StateT dv_test
@@ -202,6 +221,8 @@ p_selection :: PackratM Selection
 p_expressionHs :: PackratM ExpressionHs
 p_expression :: PackratM Expression
 p_nameLeaf :: PackratM NameLeaf
+p_pat :: PackratM PatQ
+p_pats :: PackratM PatQs
 p_leaf_ :: PackratM Leaf_
 p_leaf :: PackratM Leaf
 p_test :: PackratM ExR
@@ -311,11 +332,21 @@ p_expression = msum [do l <- dv_nameLeafM
                         e <- dv_expressionM
                         return (id cons l e),
                      do return (id empty)]
-p_nameLeaf = msum [do n <- dv_variableM
+p_nameLeaf = msum [do n <- dv_patM
                       c <- dvCharsM
                       if id isColon c then return () else fail "not match"
                       l <- dv_leaf_M
                       return (id mkNameLeaf n l)]
+p_pat = msum [do n <- dv_variableM
+                 return (id strToPatQ n),
+              do t <- dv_typM
+                 _ <- dv_spacesM
+                 ps <- dv_patsM
+                 return (id conToPatQ t ps)]
+p_pats = msum [do p <- dv_patM
+                  ps <- dv_patsM
+                  return (id cons p ps),
+               do return (id empty)]
 p_leaf_ = msum [do n <- dvCharsM
                    if id isNot n then return () else fail "not match"
                    l <- dv_leafM
