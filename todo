@@ -1,6 +1,10 @@
 * 右辺に出てこないものについて dv_...M を作らないようにする。
 * Maybe ではなく Either ParseError とする
 	あるいはもっと一般的な Monad を取れるようにするのもいいかもしれない
+	ただし、Error からの復帰が必要なので、MonadError m が必要だろう
+	でも今の段階ではそうする理由もないので Either ParseError としよう
+	type PackratM = StateT Derivs (Either ParseError) とする。
+	その前に、instance MonadError Maybe としてみようか。
 * String -> m (Char, String) をより一般的に s -> m (c, s) としよう。
 	これには TypeFamilies を使った class によって可能だろう。
 * Text/Papillon/Parser.hs を git から外す
@@ -30,3 +34,4 @@
 	そうすると今 s:[isHoge] となっているところは s[isHoge]:char
 	ということになるだろう。
 * ; を省略可能にしようかな
+* -Wall で警告が出ないようにする
