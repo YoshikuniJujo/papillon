@@ -1,4 +1,4 @@
-{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE PackageImports, FlexibleContexts #-}
 
 module Text.Papillon.Parser (
 	Peg,
@@ -13,6 +13,8 @@ module Text.Papillon.Parser (
 import Data.Char
 import Control.Monad
 import "monads-tf" Control.Monad.State
+import "monads-tf" Control.Monad.Error
+import Control.Monad.Trans.Error (Error(..))
 import Language.Haskell.TH
 
 type Nil = ()
@@ -97,8 +99,8 @@ isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
 [papillon|
 
 pegFile :: PegFile
-	= pp:prePeg _:pap p:peg _:spaces b:[isBar] c:[isCloseBr]
-		n:[isNL] atp:afterPeg		{ mkPegFile pp p atp }
+	= pp:prePeg _:pap p:peg _:spaces _:[isBar] _:[isCloseBr]
+		_:[isNL] atp:afterPeg		{ mkPegFile pp p atp }
 ;
 prePeg :: String
 	= _:!pap c:[const true] pp:prePeg	{ cons c pp }
@@ -109,32 +111,32 @@ afterPeg :: String
 	/					{ empty }
 ;
 pap :: Nil
-	= nl:[isNL] ob:[isOpenBr] p:[isP] a:[isA] pp:[isP] i:[isI] l:[isL] ll:[isL]
-		o:[isO] n:[isN] b:[isBar] nll:[isNL]	{ nil }
+	= _:[isNL] _:[isOpenBr] _:[isP] _:[isA] _:[isP] _:[isI] _:[isL] _:[isL]
+		_:[isO] _:[isN] _:[isBar] _:[isNL]	{ nil }
 ;
 peg :: Peg
 	= _:spaces d:definition p:peg	{ cons d p }
 	/ 	{ empty }
 ;
 definition :: Definition
-	= v:variable _:spaces c:[isColon] cc:[isColon]
-		_:spaces t:typ _:spaces e:[isEqual]
-		_:spaces sel:selection _:spaces s:[isSemi]	{ mkDef v t sel }
+	= v:variable _:spaces _:[isColon] _:[isColon]
+		_:spaces t:typ _:spaces _:[isEqual]
+		_:spaces sel:selection _:spaces _:[isSemi]	{ mkDef v t sel }
 ;
 selection :: Selection
-	= ex:expressionHs _:spaces e:[isSlash] _:spaces sel:selection	{ cons ex sel }
+	= ex:expressionHs _:spaces _:[isSlash] _:spaces sel:selection	{ cons ex sel }
 	/ ex:expressionHs	{ cons ex empty }
 ;
 expressionHs :: ExpressionHs
-	= e:expression _:spaces o:[isOpenWave] _:spaces h:hsExp
-		_:spaces c:[isCloseWave]	{ mkExpressionHs e h }
+	= e:expression _:spaces _:[isOpenWave] _:spaces h:hsExp
+		_:spaces _:[isCloseWave]	{ mkExpressionHs e h }
 ;
 expression :: Expression
 	= l:nameLeaf _:spaces e:expression	{ cons l e }
 	/ 	{ empty }
 ;
 nameLeaf :: NameLeaf
-	= n:pat c:[isColon] l:leaf_		{ mkNameLeaf n l }
+	= n:pat _:[isColon] l:leaf_		{ mkNameLeaf n l }
 ;
 pat :: PatQ
 	= n:variable				{ strToPatQ n }
@@ -145,7 +147,7 @@ pats :: PatQs
 	/					{ empty }
 ;
 leaf_ :: Leaf_
-	= n:[isNot] l:leaf	{ notAfter l }
+	= _:[isNot] l:leaf	{ notAfter l }
 	/ l:leaf		{ here l }
 ;
 leaf :: Leaf
@@ -153,7 +155,7 @@ leaf :: Leaf
 	/ v:variable	{ right v }
 ;
 test :: ExR
-	= o:[isOpenBr] h:hsExp c:[isCloseBr]	{ getEx h }
+	= _:[isOpenBr] h:hsExp _:[isCloseBr]	{ getEx h }
 ;
 hsExp :: Ex
 	= v:variable _:spaces h:hsExp	{ apply v h }
@@ -188,7 +190,7 @@ spaces :: Nil
 	/ 	{ nil }
 ;
 space :: Nil
-	= l:[isSpace]	{ nil }
+	= _:[isSpace]	{ nil }
 ;
 
 |]

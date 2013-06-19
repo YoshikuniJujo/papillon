@@ -1,0 +1,25 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+import Text.Papillon
+
+import Data.Char
+
+type Nil = ()
+nil :: Nil
+nil = ()
+
+main :: IO ()
+main = case dv_other $ parse "333" of
+	Right () -> putStrLn "OK!"
+	Left err -> putStrLn $ "error: " ++ err
+
+[papillon|
+
+other :: Nil
+	'3':some	{ nil }
+;
+some :: Char
+	c:[isDigit]	{ c }
+;
+
+|]

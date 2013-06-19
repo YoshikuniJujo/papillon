@@ -51,3 +51,9 @@
 * case 文で x -> ... が出てきたときには _ -> をつけないようにする
 * 'c':[isLower] のような文にも対応すること
 	case 文を使う
+* module 構造について
+	Papillon -+-> some
+                  |
+	papillon -+
+	とすることで、Papillon が papillonStr 等を export せずにすむ。
+	ただし、papillonStr を export するのが役立つ可能性もあるので考えること

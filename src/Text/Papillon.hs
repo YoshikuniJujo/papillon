@@ -3,8 +3,7 @@
 module Text.Papillon (
 	papillon,
 	papillonStr,
-	papillonStr',
-	StateT(..),
+	papillonStr'
 ) where
 
 import Language.Haskell.TH.Quote
@@ -61,7 +60,7 @@ flipMaybeN True = 'flipMaybe
 flipMaybeN False = mkName "flipMaybe"
 
 returnN, charN, stateTN, stringN, putN, stateTN', msumN, getN,
-	eitherN, whenN, nullN, strMsgN, throwErrorN :: Bool -> Name
+	eitherN, whenN, nullN, strMsgN, throwErrorN, runStateTN :: Bool -> Name
 returnN True = 'return
 returnN False = mkName "return"
 throwErrorN True = 'throwError
@@ -88,18 +87,20 @@ whenN True = 'when
 whenN False = mkName "when"
 nullN True = 'null
 nullN False = mkName "null"
+runStateTN True = 'runStateT
+runStateTN False = mkName "runStateT"
 
 declaration :: Bool -> String -> DecsQ
 declaration th src = do
 --	fm <- dFlipMaybe
 	let parsed = case dv_peg $ parse src of
-		Just (p, _) -> p
+		Right (p, _) -> p
 		_ -> error "bad"
 	decParsed th parsed
 
 declaration' :: String -> (String, DecsQ, String)
 declaration' src = case dv_pegFile $ parse src of
-	Just ((pp, p, atp), _) -> (pp, decParsed False p, atp)
+	Right ((pp, p, atp), _) -> (pp, decParsed False p, atp)
 	_ -> error "bad"
 
 decParsed :: Bool -> Peg -> DecsQ
@@ -156,9 +157,9 @@ parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 		conE (mkName "Derivs") :
 			map (varE . mkName) names
 			++ [(varE $ mkName "char")]] ++
-	map parseE1 names ++ [
+	map (parseE1 th) names ++ [
 	flip (valD $ varP $ mkName "char") [] $ normalB $
-		(varE $ mkName "flip") `appE` (varE $ mkName "runStateT") `appE`
+		(varE $ mkName "flip") `appE` (varE $ runStateTN th) `appE`
 			(varE $ mkName "d") `appE` (doE [
 				noBindS $ varE (whenN th) `appE`
 					(varE (nullN th) `appE` varE (mkName "s"))
@@ -176,9 +177,9 @@ parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 				noBindS $ (varE $ returnN th) `appE` varE (mkName "c")
 			 ])
  ]
-parseE1 :: String -> DecQ
-parseE1 name = flip (valD $ varP $ mkName name) [] $ normalB $
-	(varE $ mkName "runStateT") `appE` (varE $ mkName $ "p_" ++ name)
+parseE1 :: Bool -> String -> DecQ
+parseE1 th name = flip (valD $ varP $ mkName name) [] $ normalB $
+	(varE $ runStateTN th) `appE` (varE $ mkName $ "p_" ++ name)
 		`appE` (varE $ mkName "d")
 
 typeDvM :: Peg -> DecsQ
