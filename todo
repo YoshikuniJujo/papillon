@@ -33,3 +33,5 @@
 
 * Text/Papillon/Parser.hs を git から外す
 	これは papillon 自体がある程度安定してから、となるだろう。
+
+* cabal に examples directory を追加する
