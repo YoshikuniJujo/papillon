@@ -1,11 +1,7 @@
-{-# LANGUAGE QuasiQuotes, PackageImports, FlexibleContexts #-}
+{-# LANGUAGE QuasiQuotes, FlexibleContexts #-}
 
 module Main where
 
-import Control.Monad
-import "monads-tf" Control.Monad.State
-import "monads-tf" Control.Monad.Error
-import Control.Monad.Trans.Error (Error(..))
 import Text.Papillon
 
 import Data.Char

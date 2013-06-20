@@ -11,11 +11,9 @@ module Text.Papillon.Parser (
 ) where
 
 import Data.Char
-import Control.Monad
-import "monads-tf" Control.Monad.State
-import "monads-tf" Control.Monad.Error
-import Control.Monad.Trans.Error (Error(..))
 import Language.Haskell.TH
+
+type MaybeString = Maybe String
 
 type Nil = ()
 type Leaf = Either String ExR
@@ -41,6 +39,11 @@ left :: b -> Either a b
 right :: a -> Either a b
 left = Right
 right = Left
+
+just :: a -> Maybe a
+just = Just
+nothing :: Maybe a
+nothing = Nothing
 
 nil :: Nil
 nil = ()
@@ -78,8 +81,27 @@ empty :: [a]
 empty = []
 
 type PegFile = (String, Peg, String)
-mkPegFile :: String -> String -> b -> c -> (String, b, c)
-mkPegFile x y z w = (x ++ "\n" ++ y, z, w)
+mkPegFile :: Maybe String -> Maybe String -> String -> String -> b -> c -> (String, b, c)
+mkPegFile (Just p) (Just md) x y z w =
+	("{-#" ++ p ++ ", PackageImports #-}\n" ++ "module " ++ md ++ " where\n" ++
+	addModules ++
+	x ++ "\n" ++ y, z, w)
+mkPegFile Nothing (Just md) x y z w =
+	(x ++ "\n" ++ "module " ++ md ++ " where\n" ++
+	addModules ++
+	x ++ "\n" ++ y, z, w)
+mkPegFile (Just p) Nothing x y z w = (
+	"{-#" ++ p ++ ", PackageImports #-}\n" ++
+	addModules ++
+	x ++ "\n" ++ y
+	, z, w)
+mkPegFile Nothing Nothing x y z w = (addModules ++ x ++ "\n" ++ y, z, w)
+
+addModules :: String
+addModules =
+	"import \"monads-tf\" Control.Monad.State\n" ++
+	"import \"monads-tf\" Control.Monad.Error\n" ++
+	"import Control.Monad.Trans.Error (Error (..))\n"
 
 true :: Bool
 true = True
@@ -109,12 +131,34 @@ isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
 [papillon|
 
 pegFile :: PegFile
-	= pip:preImpPap _:importPapillon pp:prePeg _:pap p:peg _:spaces
+	= pr:pragma md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
+		p:peg _:spaces _:[isBar] _:[isCloseBr] _:[isNL] atp:afterPeg
+			{ mkPegFile pr md pip pp p atp }
+	/ pr:pragma md:moduleDec pp:prePeg _:pap p:peg _:spaces
 		_:[isBar] _:[isCloseBr] _:[isNL] atp:afterPeg
-			{ mkPegFile pip pp p atp }
-	/ pp:prePeg _:pap p:peg _:spaces
-		_:[isBar] _:[isCloseBr] _:[isNL] atp:afterPeg
-			{ mkPegFile empty pp p atp }
+			{ mkPegFile pr md empty pp p atp }
+;
+pragma :: MaybeString
+	= _:spaces '{' '-' '#' s:pragmaStr _:pragmaEnd _:spaces { just s }
+	/ _:spaces						{ nothing }
+;
+pragmaStr :: String
+	= _:!pragmaEnd c s:pragmaStr		{ cons c s }
+	/					{ empty }
+;
+pragmaEnd :: Nil
+	= '#' '-' '}'				{ nil }
+;
+moduleDec :: MaybeString
+	= 'm' 'o' 'd' 'u' 'l' 'e' s:moduleDecStr _:whr	{ just s }
+	/						{ nothing }
+;
+moduleDecStr :: String
+	= _:!whr c s:moduleDecStr			{ cons c s }
+	/						{ empty }
+;
+whr :: Nil
+	= 'w' 'h' 'e' 'r' 'e'				{ nil }
 ;
 preImpPap :: String
 	= _:!importPapillon _:!pap c:[const true] pip:preImpPap	{ cons c pip }

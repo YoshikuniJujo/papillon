@@ -1,13 +1,8 @@
-{-# LANGUAGE PackageImports, FlexibleContexts, QuasiQuotes #-}
+{-# LANGUAGE FlexibleContexts, QuasiQuotes #-}
 
 import Text.Papillon
 
 import Data.Char
-
-import Control.Monad
-import "monads-tf" Control.Monad.State
-import "monads-tf" Control.Monad.Error
-import Control.Monad.Trans.Error (Error(..))
 
 main :: IO ()
 main = do

@@ -1,12 +1,8 @@
-{-# LANGUAGE PackageImports, QuasiQuotes, FlexibleContexts #-}
+{-# LANGUAGE QuasiQuotes, FlexibleContexts #-}
 
 import Text.Papillon
 
 import Data.Char
-
-import "monads-tf" Control.Monad.State
-import "monads-tf" Control.Monad.Error
-import Control.Monad.Trans.Error (Error(..))
 
 type Nil = ()
 nil :: Nil
@@ -20,7 +16,7 @@ true :: Bool
 true = True
 
 main :: IO ()
-main = case dv_oneTwoThree $ parse "123" of
+main = case dv_three $ parse "333" of
 	Right ((), _) -> putStrLn "OK!"
 	Left err -> putStrLn $ "not matched: " ++ err
 
@@ -34,7 +30,7 @@ string :: String
 	/		{ empty }
 ;
 three :: Nil
-	= '3'		{ nil }
+	= '3' '3' '3'	{ nil }
 ;
 other :: Nil
 	= '3':some	{ nil }
