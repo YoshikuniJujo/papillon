@@ -159,7 +159,7 @@ pragma :: MaybeString
 	/ _:spaces						{ nothing }
 ;
 pragmaStr :: String
-	= _:!pragmaEnd c s:pragmaStr		{ cons c s }
+	= !_:pragmaEnd c s:pragmaStr		{ cons c s }
 	/					{ empty }
 ;
 pragmaEnd :: Nil
@@ -170,18 +170,18 @@ moduleDec :: MaybeString
 	/						{ nothing }
 ;
 moduleDecStr :: String
-	= _:!whr c s:moduleDecStr			{ cons c s }
+	= !_:whr c s:moduleDecStr			{ cons c s }
 	/						{ empty }
 ;
 whr :: Nil
 	= 'w' 'h' 'e' 'r' 'e'				{ nil }
 ;
 preImpPap :: String
-	= _:!importPapillon _:!pap c:[const true] pip:preImpPap	{ cons c pip }
+	= !_:importPapillon !_:pap c:[const true] pip:preImpPap	{ cons c pip }
 	/					{ empty }
 ;
 prePeg :: String
-	= _:!pap c:[const true] pp:prePeg	{ cons c pp }
+	= !_:pap c:[const true] pp:prePeg	{ cons c pp }
 	/					{ empty }
 ;
 afterPeg :: String
@@ -203,7 +203,7 @@ pap :: Nil
 		_:[isO] _:[isN] _:[isBar] _:[isNL]	{ nil }
 ;
 peg :: TTPeg
-	= :spaces s:sourceType t:tokenType p:peg_	{ mkTTPeg s t p }
+	= _:spaces s:sourceType t:tokenType p:peg_	{ mkTTPeg s t p }
 	/ p:peg_				{ mkTTPeg tString tChar p }
 ;
 sourceType :: String
@@ -250,7 +250,7 @@ pat :: PatQ
 	/ _:[isDQ] s:stringLit _:[isDQ]		{ stringP s }
 ;
 stringLit :: String
-	= _:!dq c s:stringLit			{ cons c s }
+	= !_:dq c s:stringLit			{ cons c s }
 	/					{ empty }
 ;
 dq :: Nil
@@ -308,7 +308,7 @@ space :: Nil
 	/ '-' '-' _:notNLString _:nl	{ nil }
 ;
 notNLString :: String
-	= _:!nl c s:notNLString	{ cons c s }
+	= !_:nl c s:notNLString	{ cons c s }
 	/			{ empty }
 ;
 nl :: Nil

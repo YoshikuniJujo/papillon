@@ -204,24 +204,6 @@ parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 							litE (stringL "eof")))
 						[]
 				 ]
-{-
-doE [
-				noBindS $ varE (whenN th) `appE`
-					(varE (nullN th) `appE` varE (mkName "s"))
-					`appE`
-					(varE (throwErrorN th) `appE`
-						(varE (strMsgN th) `appE`
-							litE (stringL "eof"))),
-				bindS	(infixP (varP $ mkName "c") (mkName ":")
-						(varP $ mkName "s'")) $
-					varE (returnN th) `appE`
-						varE (mkName "s"),
-				noBindS $ varE (putN th) `appE`
-					(varE (mkName "parse") `appE`
-						varE (mkName "s'")),
-				noBindS $ varE (returnN th) `appE` varE (mkName "c")
-			 ]
--}
  ]
 parseE1 :: Bool -> String -> DecQ
 parseE1 th name = flip (valD $ varP $ mkName name) [] $ normalB $
@@ -326,9 +308,11 @@ transLeaf g th (Here (n, Left v)) = do
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
-			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M"]
+			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M",
+			noBindS $ varE (returnN th) `appE` conE (mkName "()")]
 		WildP -> sequence [
-			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M"]
+			bindS wildP $ varE $ mkName $ "dv_" ++ v ++ "M",
+			noBindS $ varE (returnN th) `appE` conE (mkName "()")]
 		_ -> do	gn <- runIO $ readIORef g
 			runIO $ modifyIORef g succ
 			t <- newName $ "xx" ++ show gn

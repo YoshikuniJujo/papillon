@@ -375,13 +375,21 @@ p_space :: PackratM Nil
 p_notNLString :: PackratM String
 p_nl :: PackratM Nil
 p_pegFile = msum [do pr <- dv_pragmaM
+                     return ()
                      md <- dv_moduleDecM
+                     return ()
                      pip <- dv_preImpPapM
+                     return ()
                      _ <- dv_importPapillonM
+                     return ()
                      pp <- dv_prePegM
+                     return ()
                      _ <- dv_papM
+                     return ()
                      p <- dv_pegM
+                     return ()
                      _ <- dv_spacesM
+                     return ()
                      xx0_0 <- dvCharsM
                      if id isBar xx0_0
                       then return ()
@@ -407,13 +415,20 @@ p_pegFile = msum [do pr <- dv_pragmaM
                      let _ = xx2_2
                      return ()
                      atp <- dv_afterPegM
+                     return ()
                      return (id mkPegFile pr md pip pp p atp),
                   do pr <- dv_pragmaM
+                     return ()
                      md <- dv_moduleDecM
+                     return ()
                      pp <- dv_prePegM
+                     return ()
                      _ <- dv_papM
+                     return ()
                      p <- dv_pegM
+                     return ()
                      _ <- dv_spacesM
+                     return ()
                      xx3_3 <- dvCharsM
                      if id isBar xx3_3
                       then return ()
@@ -439,8 +454,10 @@ p_pegFile = msum [do pr <- dv_pragmaM
                      let _ = xx5_5
                      return ()
                      atp <- dv_afterPegM
+                     return ()
                      return (id mkPegFile pr md empty pp p atp)]
 p_pragma = msum [do _ <- dv_spacesM
+                    return ()
                     xx6_6 <- dvCharsM
                     if const True xx6_6
                      then return ()
@@ -469,13 +486,18 @@ p_pragma = msum [do _ <- dv_spacesM
                     let '#' = xx8_8
                     return ()
                     s <- dv_pragmaStrM
+                    return ()
                     _ <- dv_pragmaEndM
+                    return ()
                     _ <- dv_spacesM
+                    return ()
                     return (id just s),
                  do _ <- dv_spacesM
+                    return ()
                     return (id nothing)]
 p_pragmaStr = msum [do d_9 <- get
-                       flipMaybe dv_pragmaEndM
+                       flipMaybe (do _ <- dv_pragmaEndM
+                                     return ())
                        put d_9
                        xx9_10 <- dvCharsM
                        if const True xx9_10
@@ -486,6 +508,7 @@ p_pragmaStr = msum [do d_9 <- get
                        let c = xx9_10
                        return ()
                        s <- dv_pragmaStrM
+                       return ()
                        return (id cons c s),
                     do return (id empty)]
 p_pragmaEnd = msum [do xx10_11 <- dvCharsM
@@ -571,11 +594,14 @@ p_moduleDec = msum [do xx13_14 <- dvCharsM
                        let 'e' = xx18_19
                        return ()
                        s <- dv_moduleDecStrM
+                       return ()
                        _ <- dv_whrM
+                       return ()
                        return (id just s),
                     do return (id nothing)]
 p_moduleDecStr = msum [do d_20 <- get
-                          flipMaybe dv_whrM
+                          flipMaybe (do _ <- dv_whrM
+                                        return ())
                           put d_20
                           xx19_21 <- dvCharsM
                           if const True xx19_21
@@ -586,6 +612,7 @@ p_moduleDecStr = msum [do d_20 <- get
                           let c = xx19_21
                           return ()
                           s <- dv_moduleDecStrM
+                          return ()
                           return (id cons c s),
                        do return (id empty)]
 p_whr = msum [do xx20_22 <- dvCharsM
@@ -635,10 +662,12 @@ p_whr = msum [do xx20_22 <- dvCharsM
                  return ()
                  return (id nil)]
 p_preImpPap = msum [do d_27 <- get
-                       flipMaybe dv_importPapillonM
+                       flipMaybe (do _ <- dv_importPapillonM
+                                     return ())
                        put d_27
                        d_28 <- get
-                       flipMaybe dv_papM
+                       flipMaybe (do _ <- dv_papM
+                                     return ())
                        put d_28
                        xx25_29 <- dvCharsM
                        if id const true xx25_29
@@ -649,10 +678,12 @@ p_preImpPap = msum [do d_27 <- get
                        let c = xx25_29
                        return ()
                        pip <- dv_preImpPapM
+                       return ()
                        return (id cons c pip),
                     do return (id empty)]
 p_prePeg = msum [do d_30 <- get
-                    flipMaybe dv_papM
+                    flipMaybe (do _ <- dv_papM
+                                  return ())
                     put d_30
                     xx26_31 <- dvCharsM
                     if id const true xx26_31
@@ -663,6 +694,7 @@ p_prePeg = msum [do d_30 <- get
                     let c = xx26_31
                     return ()
                     pp <- dv_prePegM
+                    return ()
                     return (id cons c pp),
                  do return (id empty)]
 p_afterPeg = msum [do xx27_32 <- dvCharsM
@@ -674,6 +706,7 @@ p_afterPeg = msum [do xx27_32 <- dvCharsM
                       let c = xx27_32
                       return ()
                       atp <- dv_afterPegM
+                      return ()
                       return (id cons c atp),
                    do return (id empty)]
 p_importPapillon = msum [do xx28_33 <- dv_varTokenM
@@ -696,6 +729,7 @@ p_importPapillon = msum [do xx28_33 <- dv_varTokenM
                             let '.' = xx30_35
                             return ()
                             _ <- dv_spacesM
+                            return ()
                             xx31_36 <- dv_typTokenM
                             case xx31_36 of
                                 "Papillon" -> return ()
@@ -703,10 +737,14 @@ p_importPapillon = msum [do xx28_33 <- dv_varTokenM
                             "Papillon" <- return xx31_36
                             return (id nil)]
 p_varToken = msum [do v <- dv_variableM
+                      return ()
                       _ <- dv_spacesM
+                      return ()
                       return (id v)]
 p_typToken = msum [do t <- dv_typM
+                      return ()
                       _ <- dv_spacesM
+                      return ()
                       return (id t)]
 p_pap = msum [do xx32_37 <- dvCharsM
                  if id isNL xx32_37
@@ -806,11 +844,16 @@ p_pap = msum [do xx32_37 <- dvCharsM
                  return ()
                  return (id nil)]
 p_peg = msum [do _ <- dv_spacesM
+                 return ()
                  s <- dv_sourceTypeM
+                 return ()
                  t <- dv_tokenTypeM
+                 return ()
                  p <- dv_peg_M
+                 return ()
                  return (id mkTTPeg s t p),
               do p <- dv_peg_M
+                 return ()
                  return (id mkTTPeg tString tChar p)]
 p_sourceType = msum [do xx44_49 <- dv_varTokenM
                         case xx44_49 of
@@ -827,7 +870,9 @@ p_sourceType = msum [do xx44_49 <- dv_varTokenM
                         let ':' = xx45_50
                         return ()
                         _ <- dv_spacesM
+                        return ()
                         v <- dv_typTokenM
+                        return ()
                         return (id v)]
 p_tokenType = msum [do xx46_51 <- dv_varTokenM
                        case xx46_51 of
@@ -844,15 +889,22 @@ p_tokenType = msum [do xx46_51 <- dv_varTokenM
                        let ':' = xx47_52
                        return ()
                        _ <- dv_spacesM
+                       return ()
                        v <- dv_typTokenM
+                       return ()
                        return (id v)]
 p_peg_ = msum [do _ <- dv_spacesM
+                  return ()
                   d <- dv_definitionM
+                  return ()
                   p <- dv_peg_M
+                  return ()
                   return (id cons d p),
                do return (id empty)]
 p_definition = msum [do v <- dv_variableM
+                        return ()
                         _ <- dv_spacesM
+                        return ()
                         xx48_53 <- dvCharsM
                         if id isColon xx48_53
                          then return ()
@@ -870,8 +922,11 @@ p_definition = msum [do v <- dv_variableM
                         let _ = xx49_54
                         return ()
                         _ <- dv_spacesM
+                        return ()
                         t <- dv_typM
+                        return ()
                         _ <- dv_spacesM
+                        return ()
                         xx50_55 <- dvCharsM
                         if id isEqual xx50_55
                          then return ()
@@ -881,8 +936,11 @@ p_definition = msum [do v <- dv_variableM
                         let _ = xx50_55
                         return ()
                         _ <- dv_spacesM
+                        return ()
                         sel <- dv_selectionM
+                        return ()
                         _ <- dv_spacesM
+                        return ()
                         xx51_56 <- dvCharsM
                         if id isSemi xx51_56
                          then return ()
@@ -893,7 +951,9 @@ p_definition = msum [do v <- dv_variableM
                         return ()
                         return (id mkDef v t sel)]
 p_selection = msum [do ex <- dv_expressionHsM
+                       return ()
                        _ <- dv_spacesM
+                       return ()
                        xx52_57 <- dvCharsM
                        if id isSlash xx52_57
                         then return ()
@@ -903,12 +963,17 @@ p_selection = msum [do ex <- dv_expressionHsM
                        let _ = xx52_57
                        return ()
                        _ <- dv_spacesM
+                       return ()
                        sel <- dv_selectionM
+                       return ()
                        return (id cons ex sel),
                     do ex <- dv_expressionHsM
+                       return ()
                        return (id cons ex empty)]
 p_expressionHs = msum [do e <- dv_expressionM
+                          return ()
                           _ <- dv_spacesM
+                          return ()
                           xx53_58 <- dvCharsM
                           if id isOpenWave xx53_58
                            then return ()
@@ -918,8 +983,11 @@ p_expressionHs = msum [do e <- dv_expressionM
                           let _ = xx53_58
                           return ()
                           _ <- dv_spacesM
+                          return ()
                           h <- dv_hsExpM
+                          return ()
                           _ <- dv_spacesM
+                          return ()
                           xx54_59 <- dvCharsM
                           if id isCloseWave xx54_59
                            then return ()
@@ -930,8 +998,11 @@ p_expressionHs = msum [do e <- dv_expressionM
                           return ()
                           return (id mkExpressionHs e h)]
 p_expression = msum [do l <- dv_nameLeaf_M
+                        return ()
                         _ <- dv_spacesM
+                        return ()
                         e <- dv_expressionM
+                        return ()
                         return (id cons l e),
                      do return (id empty)]
 p_nameLeaf_ = msum [do xx55_60 <- dvCharsM
@@ -943,10 +1014,13 @@ p_nameLeaf_ = msum [do xx55_60 <- dvCharsM
                        let _ = xx55_60
                        return ()
                        nl <- dv_nameLeafM
+                       return ()
                        return (id notAfter nl),
                     do nl <- dv_nameLeafM
+                       return ()
                        return (id here nl)]
 p_nameLeaf = msum [do n <- dv_patM
+                      return ()
                       xx56_61 <- dvCharsM
                       if id isColon xx56_61
                        then return ()
@@ -956,8 +1030,10 @@ p_nameLeaf = msum [do n <- dv_patM
                       let _ = xx56_61
                       return ()
                       l <- dv_leafM
+                      return ()
                       return (id mkNameLeaf n l),
                    do n <- dv_patM
+                      return ()
                       return (id mkNameLeaf n ctLeaf)]
 p_pat = msum [do xx57_62 <- dv_variableM
                  case xx57_62 of
@@ -966,10 +1042,14 @@ p_pat = msum [do xx57_62 <- dv_variableM
                  "_" <- return xx57_62
                  return (id wildP),
               do n <- dv_variableM
+                 return ()
                  return (id strToPatQ n),
               do t <- dv_typM
+                 return ()
                  _ <- dv_spacesM
+                 return ()
                  ps <- dv_patsM
+                 return ()
                  return (id conToPatQ t ps),
               do xx58_63 <- dvCharsM
                  if id isChon xx58_63
@@ -1005,6 +1085,7 @@ p_pat = msum [do xx57_62 <- dv_variableM
                  let _ = xx61_66
                  return ()
                  s <- dv_stringLitM
+                 return ()
                  xx62_67 <- dvCharsM
                  if id isDQ xx62_67
                   then return ()
@@ -1015,7 +1096,8 @@ p_pat = msum [do xx57_62 <- dv_variableM
                  return ()
                  return (id stringP s)]
 p_stringLit = msum [do d_68 <- get
-                       flipMaybe dv_dqM
+                       flipMaybe (do _ <- dv_dqM
+                                     return ())
                        put d_68
                        xx63_69 <- dvCharsM
                        if const True xx63_69
@@ -1026,6 +1108,7 @@ p_stringLit = msum [do d_68 <- get
                        let c = xx63_69
                        return ()
                        s <- dv_stringLitM
+                       return ()
                        return (id cons c s),
                     do return (id empty)]
 p_dq = msum [do xx64_70 <- dvCharsM
@@ -1039,12 +1122,16 @@ p_dq = msum [do xx64_70 <- dvCharsM
                 return ()
                 return (id nil)]
 p_pats = msum [do p <- dv_patM
+                  return ()
                   ps <- dv_patsM
+                  return ()
                   return (id cons p ps),
                do return (id empty)]
 p_leaf = msum [do t <- dv_testM
+                  return ()
                   return (id left t),
                do v <- dv_variableM
+                  return ()
                   return (id right v)]
 p_test = msum [do xx65_71 <- dvCharsM
                   if id isOpenBr xx65_71
@@ -1055,6 +1142,7 @@ p_test = msum [do xx65_71 <- dvCharsM
                   let _ = xx65_71
                   return ()
                   h <- dv_hsExpM
+                  return ()
                   xx66_72 <- dvCharsM
                   if id isCloseBr xx66_72
                    then return ()
@@ -1065,26 +1153,39 @@ p_test = msum [do xx65_71 <- dvCharsM
                   return ()
                   return (id getEx h)]
 p_hsExp = msum [do v <- dv_variableM
+                   return ()
                    _ <- dv_spacesM
+                   return ()
                    h <- dv_hsExpM
+                   return ()
                    return (id apply v h),
                 do v <- dv_variableM
+                   return ()
                    return (id toExp v)]
 p_typ = msum [do u <- dv_upperM
+                 return ()
                  t <- dv_tvtailM
+                 return ()
                  return (id cons u t)]
 p_variable = msum [do l <- dv_lowerM
+                      return ()
                       t <- dv_tvtailM
+                      return ()
                       return (id cons l t)]
 p_tvtail = msum [do a <- dv_alphaM
+                    return ()
                     t <- dv_tvtailM
+                    return ()
                     return (id cons a t),
                  do return (id empty)]
 p_alpha = msum [do u <- dv_upperM
+                   return ()
                    return (id u),
                 do l <- dv_lowerM
+                   return ()
                    return (id l),
                 do d <- dv_digitM
+                   return ()
                    return (id d)]
 p_upper = msum [do xx67_73 <- dvCharsM
                    if id isUpper xx67_73
@@ -1114,7 +1215,9 @@ p_digit = msum [do xx69_75 <- dvCharsM
                    return ()
                    return (id d)]
 p_spaces = msum [do _ <- dv_spaceM
+                    return ()
                     _ <- dv_spacesM
+                    return ()
                     return (id nil),
                  do return (id nil)]
 p_space = msum [do xx70_76 <- dvCharsM
@@ -1145,10 +1248,13 @@ p_space = msum [do xx70_76 <- dvCharsM
                    let '-' = xx72_78
                    return ()
                    _ <- dv_notNLStringM
+                   return ()
                    _ <- dv_nlM
+                   return ()
                    return (id nil)]
 p_notNLString = msum [do d_79 <- get
-                         flipMaybe dv_nlM
+                         flipMaybe (do _ <- dv_nlM
+                                       return ())
                          put d_79
                          xx73_80 <- dvCharsM
                          if const True xx73_80
@@ -1159,6 +1265,7 @@ p_notNLString = msum [do d_79 <- get
                          let c = xx73_80
                          return ()
                          s <- dv_notNLStringM
+                         return ()
                          return (id cons c s),
                       do return (id empty)]
 p_nl = msum [do xx74_81 <- dvCharsM
