@@ -12,13 +12,19 @@ type Nil = ()
 nil :: Nil
 nil = ()
 
+true :: Bool
+true = True
+
 main :: IO ()
-main = case dv_other $ parse "333" of
+main = case dv_three $ parse "333" of
 	Right ((), _) -> putStrLn "OK!"
 	Left err -> putStrLn $ "error: " ++ err
 
 [papillon|
 
+three :: Nil
+	= '3'		{ nil }
+;
 other :: Nil
 	= '3':some	{ nil }
 ;

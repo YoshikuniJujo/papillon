@@ -1,4 +1,4 @@
-{-# LANGUAGE PackageImports, FlexibleContexts #-}
+{-# LANGUAGE PackageImports, FlexibleContexts, TemplateHaskell #-}
 
 module Text.Papillon.Parser (
 	Peg,
@@ -33,6 +33,9 @@ type Peg = [Definition]
 
 type Ex = ExpQ -> ExpQ
 type ExR = ExpQ
+
+ctLeaf :: Leaf_
+ctLeaf = Here $ Right $ varE (mkName "const") `appE` conE (mkName "True")
 
 left :: b -> Either a b
 right :: a -> Either a b
@@ -141,6 +144,7 @@ expression :: Expression
 ;
 nameLeaf :: NameLeaf
 	= n:pat _:[isColon] l:leaf_		{ mkNameLeaf n l }
+	/ n:pat					{ mkNameLeaf n ctLeaf }
 ;
 pat :: PatQ
 	= n:variable				{ strToPatQ n }

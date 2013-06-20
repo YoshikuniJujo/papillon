@@ -226,13 +226,38 @@ transLeaf g th (n, (Here (Right p))) = do
 	gn <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	t <- newName $ "xx" ++ show gn
-	sequence [
-		bindS (varP t) $ varE $ mkName "dvCharsM",
-		letS [flip (valD n) [] $ normalB $ varE t],
-		noBindS $ condE (p `appE` varE t)
-			(varE (returnN th) `appE` conE (mkName "()"))
-			(varE (throwErrorN th) `appE`
-				(varE (strMsgN th) `appE` litE (stringL "not match")))]
+	nn <- n
+	case nn of
+		VarP _ -> sequence [
+			bindS (varP t) $ varE $ mkName "dvCharsM",
+			noBindS $ condE (p `appE` varE t)
+				(varE (returnN th) `appE` conE (mkName "()"))
+				(varE (throwErrorN th) `appE`
+					(varE (strMsgN th) `appE`
+						litE (stringL "not match"))),
+			noBindS $ caseE (varE t) [
+				flip (match $ varPToWild n) [] $ normalB $
+					varE (returnN th) `appE` (tupE [])
+			 ],
+			letS [flip (valD n) [] $ normalB $ varE t],
+			noBindS $ varE (returnN th) `appE` tupE []
+		 ]
+		_ -> sequence [
+			bindS (varP t) $ varE $ mkName "dvCharsM",
+			noBindS $ condE (p `appE` varE t)
+				(varE (returnN th) `appE` conE (mkName "()"))
+				(varE (throwErrorN th) `appE`
+					(varE (strMsgN th) `appE`
+						litE (stringL "not match"))),
+			noBindS $ caseE (varE t) [
+				flip (match $ varPToWild n) [] $ normalB $
+					varE (returnN th) `appE` (tupE []),
+				flip (match wildP) [] $ normalB $ varE (throwErrorN th) `appE`
+					(varE (strMsgN th) `appE` litE (stringL "not match"))
+			 ],
+			letS [flip (valD n) [] $ normalB $ varE t],
+			noBindS $ varE (returnN th) `appE` tupE []
+		 ]
 transLeaf g th (n, (Here (Left v))) = do
 	nn <- n
 	case nn of
@@ -244,11 +269,13 @@ transLeaf g th (n, (Here (Left v))) = do
 			sequence [
 				bindS (varP t) $ varE $ mkName $ "dv_" ++ v ++ "M",
 				noBindS $ caseE (varE t) [
-					flip (match $ varPToWild n) [] $ normalB $ varE (returnN th) `appE`
-						(tupE []),
-					flip (match wildP) [] $ normalB $ varE (throwErrorN th) `appE`
-						(varE (strMsgN th) `appE`
-							litE (stringL "not match"))
+					flip (match $ varPToWild n) [] $ normalB $
+						varE (returnN th) `appE`
+							(tupE []),
+					flip (match wildP) [] $ normalB $
+						varE (throwErrorN th) `appE`
+							(varE (strMsgN th) `appE`
+								litE (stringL "not match"))
 				 ],
 				bindS n $ varE (returnN th) `appE` varE t
 			 ]
