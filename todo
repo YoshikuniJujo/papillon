@@ -1,5 +1,9 @@
-* source と token を両方指定する必要はないな
-	source だけ決めれば token のほうは Token source として得られるな
+* {- -} の形のコメントを許すようにする
+
+* msum を使うと error message が消えてしまうので何とかする必要がある
+	つまり、msum はその一番右に Left "" を持っているということ。
+	自分で msum1 を作る必要がある。
+* Either String ではなく Either ParseError とする
 
 * haskell の exp をちゃんとパースしよう
 	まずは、type のところを Maybe Int とかができるようにしようかな
@@ -7,33 +11,30 @@
 	3 + 2 とか x : xs とかを可能にしよう
 	Maybe Int とかも
 	変数のパターンも
-* Either String ではなく Either ParseError とする
-* Text/Papillon/Parser.hs を git から外す
-	これは papillon 自体がある程度安定してから、となるだろう。
+* 関数の名前について
+	parser とかそういう名前は conflict するので、もっとちゃんとした名前にする
+	...M という名前を使ったときにとくに問題がある
+* parser の呼び出しかたの改善
 * papillon command は何も取らなければ filter とする。
 	また、papillon [Input] や papillon [Input] -o [Output] の形も使う。
 	そのうちに papillon -h や papillon --help も。
 	より使いやすく GetOpt を使ってみるのもいいかもしれない。
-* 関数の名前について
-	parser とかそういう名前は conflict するので、もっとちゃんとした名前にする
-	...M という名前を使ったときに問題がある
-* parser の呼び出しかたの改善
-* コメントを許すようにする
-	-- の形は完了次は {- -} の形を
-* 非終端記号に大文字で始まるものも許すようにしようかな
-* 左再帰の解決はどうしようかな
-	pappy はこれにひどく時間がかかっていた
-* ; を省略可能にしようかな
-* msum を使うと error message が消えてしまうので何とかする必要がある
-	つまり、msum はその一番右に Left "" を持っているということ。
-	自分で msum1 を作る必要がある。
 * module 構造について
 	Papillon -+-> some
                   |
 	papillon -+
 	とすることで、Papillon が papillonStr 等を export せずにすむ。
 	ただし、papillonStr を export するのが役立つ可能性もあるので考えること
+
 * {-# LANGUAGE ... #-} がないときにはそれを追加する
-* source や token の見直し
-	今の文法だと、source: SomeSource\ntoken: SomeToken のようになっているが
+
+* source の見直し
+	今の文法だと、source: SomeSource\n のようになっているが
 	今後より複雑な文法を許容した場合において ';' で区切ったほうが良いかもしれない
+* 非終端記号に大文字で始まるものも許すようにしようかな
+* 左再帰の解決はどうしようかな
+	pappy はこれにひどく時間がかかっていた
+* ; を省略可能にしようかな
+
+* Text/Papillon/Parser.hs を git から外す
+	これは papillon 自体がある程度安定してから、となるだろう。
