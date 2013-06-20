@@ -84,7 +84,7 @@ flipMaybeN :: Bool -> Name
 flipMaybeN True = 'flipMaybe
 flipMaybeN False = mkName "flipMaybe"
 
-returnN, charN, stateTN, stringN, putN, stateTN', msumN, getN,
+returnN, stateTN, stringN, putN, stateTN', msumN, getN,
 	eitherN, strMsgN, throwErrorN, runStateTN, justN,
 	getTokenN :: Bool -> Name
 returnN True = 'return
@@ -93,8 +93,6 @@ throwErrorN True = 'throwError
 throwErrorN False = mkName "throwError"
 strMsgN True = 'strMsg
 strMsgN False = mkName "strMsg"
-charN True = ''Char
-charN False = mkName "Char"
 stateTN True = ''StateT
 stateTN False = mkName "StateT"
 stringN True = ''String
@@ -117,31 +115,32 @@ getTokenN True = 'getToken
 getTokenN False = mkName "getToken"
 
 declaration :: Bool -> String -> DecsQ
-declaration th src = do
+declaration th str = do
 --	fm <- dFlipMaybe
-	let parsed = case dv_peg $ parse src of
-		Right (p, _) -> p
+	let (src, tkn, parsed) = case dv_peg $ parse str of
+		Right ((s, t, p), _) -> (s, t, p)
 		_ -> error "bad"
-	decParsed th parsed
+	decParsed th src tkn parsed
 
 declaration' :: String -> (String, DecsQ, String)
 declaration' src = case dv_pegFile $ parse src of
-	Right ((pp, p, atp), _) -> (pp, decParsed False p, atp)
+	Right ((pp, (s, t, p), atp), _) ->
+		(pp, decParsed False s t p, atp)
 	_ -> error "bad"
 
-decParsed :: Bool -> Peg -> DecsQ
-decParsed th parsed = do
+decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
+decParsed th src tkn parsed = do
 --	debug <- flip (valD $ varP $ mkName "debug") [] $ normalB $
 --		appE (varE $ mkName "putStrLn") (litE $ stringL "debug")
 	glb <- runIO $ newIORef 0
 	r <- result th
 	pm <- pmonad th
-	d <- derivs th parsed
-	pt <- parseT th
+	d <- derivs th tkn parsed
+	pt <- parseT src th
 	p <- funD (mkName "parse") [parseE th parsed]
 	tdvm <- typeDvM parsed
 	dvsm <- dvSomeM th parsed
-	tdvcm <- typeDvCharsM th
+	tdvcm <- typeDvCharsM th tkn
 	dvcm <- dvCharsM th
 	pts <- typeP parsed
 	ps <- pSomes glb th parsed -- name expr
@@ -149,11 +148,11 @@ decParsed th parsed = do
 	where
 --	c = clause [wildP] (normalB $ conE $ mkName "Nothing") []
 
-derivs :: Bool -> Peg -> DecQ
-derivs th peg = dataD (cxt []) (mkName "Derivs") [] [
+derivs :: Bool -> TypeQ -> Peg -> DecQ
+derivs _ tkn peg = dataD (cxt []) (mkName "Derivs") [] [
 	recC (mkName "Derivs") $ map derivs1 peg ++ [
 		varStrictType (mkName "dvChars") $ strictType notStrict $
-			conT (mkName "Result") `appT` conT (charN th)
+			conT (mkName "Result") `appT` tkn
 	 ]
  ] []
 
@@ -172,9 +171,9 @@ pmonad th = tySynD (mkName "PackratM") [] $ conT (stateTN th) `appT`
 	conT (mkName "Derivs") `appT`
 		(conT (eitherN th) `appT` conT (stringN th))
 
-parseT :: Bool -> DecQ
-parseT th = sigD (mkName "parse") $
-	arrowT `appT` conT (stringN th) `appT` conT (mkName "Derivs")
+parseT :: TypeQ -> Bool -> DecQ
+parseT src _ = sigD (mkName "parse") $
+	arrowT `appT` src `appT` conT (mkName "Derivs")
 parseE :: Bool -> Peg -> ClauseQ
 parseE th = parseE' th . map (\(n, _, _) -> n)
 parseE' :: Bool -> [String] -> ClauseQ
@@ -246,9 +245,9 @@ dvSomeM1 :: Bool -> Definition -> DecQ
 dvSomeM1 th (name, _, _) = flip (valD $ varP $ mkName $ "dv_" ++ name ++ "M") [] $ normalB $
 	conE (stateTN' th) `appE` varE (mkName $ "dv_" ++ name)
 
-typeDvCharsM :: Bool -> DecQ
-typeDvCharsM th =
-	sigD (mkName "dvCharsM") $ conT (mkName "PackratM") `appT` conT (charN th)
+typeDvCharsM :: Bool -> TypeQ -> DecQ
+typeDvCharsM _ tkn =
+	sigD (mkName "dvCharsM") $ conT (mkName "PackratM") `appT` tkn
 dvCharsM :: Bool -> DecQ
 dvCharsM th = flip (valD $ varP $ mkName "dvCharsM") [] $ normalB $
 	conE (stateTN' th) `appE` varE (mkName "dvChars")

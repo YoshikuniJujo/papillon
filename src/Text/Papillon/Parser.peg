@@ -29,6 +29,7 @@ type Selection = [ExpressionHs]
 type Typ = Name
 type Definition = (String, Typ, Selection)
 type Peg = [Definition]
+type TTPeg = (TypeQ, TypeQ, Peg)
 
 type Ex = ExpQ -> ExpQ
 type ExR = ExpQ
@@ -81,7 +82,7 @@ getEx ex = ex (varE $ mkName "id")
 empty :: [a]
 empty = []
 
-type PegFile = (String, Peg, String)
+type PegFile = (String, TTPeg, String)
 mkPegFile :: Maybe String -> Maybe String -> String -> String -> b -> c -> (String, b, c)
 mkPegFile (Just p) (Just md) x y z w =
 	("{-#" ++ p ++ addPragmas ++ "module " ++ md ++ " where\n" ++
@@ -130,6 +131,18 @@ isDQ = (== '"')
 isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
 [isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL] =
 	map (==) "[pailon|]\n"
+
+{-
+tString, tChar :: TypeQ
+tString = varT ''String
+tChar = varT ''Char
+-}
+
+tString, tChar :: String
+tString = "String"
+tChar = "Char"
+mkTTPeg :: String -> String -> Peg -> TTPeg
+mkTTPeg s t p = (conT $ mkName s, conT $ mkName t, p)
 
 [papillon|
 
@@ -189,8 +202,18 @@ pap :: Nil
 	= _:[isNL] _:[isOpenBr] _:[isP] _:[isA] _:[isP] _:[isI] _:[isL] _:[isL]
 		_:[isO] _:[isN] _:[isBar] _:[isNL]	{ nil }
 ;
-peg :: Peg
-	= _:spaces d:definition p:peg	{ cons d p }
+peg :: TTPeg
+	= :spaces s:sourceType t:tokenType p:peg_	{ mkTTPeg s t p }
+	/ p:peg_				{ mkTTPeg tString tChar p }
+;
+sourceType :: String
+	= "source":varToken ':' _:spaces v:typToken	{ v }
+;
+tokenType :: String
+	= "token":varToken ':' _:spaces v:typToken	{ v }
+;
+peg_ :: Peg
+	= _:spaces d:definition p:peg_	{ cons d p }
 	/ 	{ empty }
 ;
 definition :: Definition

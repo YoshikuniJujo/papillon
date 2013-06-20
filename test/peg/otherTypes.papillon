@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
 
 import Text.Papillon
 
@@ -8,13 +8,40 @@ instance SourceList MyToken where
 
 data MyToken = A | B | C deriving Show
 
+data YourToken = D | E | F deriving Show
+data YourSource = Empty | TwoD | OneD | DEF | EF | OneF deriving Show
+
+instance Source YourSource where
+	type Token YourSource = YourToken
+	getToken Empty = Nothing
+	getToken TwoD = Just (D, OneD)
+	getToken OneD = Just (D, Empty)
+	getToken DEF = Just (D, EF)
+	getToken EF = Just (E, OneF)
+	getToken OneF = Just (F, Empty)
+
 main :: IO ()
-main = case dv_some $ parse [A, B, C] of
+main = case dv_str $ parse DEF of
 	Right (r, _) -> print r
 	Left err -> putStrLn $ "not match: " ++ err
 
+type MyTokens = [MyToken]
+type YourTokens = [YourToken]
+
+cons :: a -> [a] -> [a]
+cons = (:)
+empty :: [a]
+empty = []
+
 [papillon|
 
-some :: MyToken = c	{ c };
+source: YourSource
+token: YourToken
+
+str :: YourTokens
+	= c s:str	{ cons c s }
+	/		{ empty }
+;
+some :: YourToken = c	{ c };
 
 |]
