@@ -11,11 +11,27 @@ import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
 import Control.Monad.Trans.Error (Error(..))
+import Data.Maybe
 
 import Control.Applicative
 
 import Text.Papillon.Parser
 import Data.IORef
+
+usingNames :: Peg -> [String]
+usingNames = concatMap getNamesFromDefinition
+
+getNamesFromDefinition :: Definition -> [String]
+getNamesFromDefinition (_, _, sel) =
+	concatMap getNamesFromExpressionHs sel
+
+getNamesFromExpressionHs :: ExpressionHs -> [String]
+getNamesFromExpressionHs = catMaybes . map (getLeafName . snd) . fst
+
+getLeafName :: Leaf_ -> Maybe String
+getLeafName (Here (Left n)) = Just n
+getLeafName (NotAfter (Left n)) = Just n
+getLeafName _ = Nothing
 
 flipMaybe :: (Error (ErrorType me), MonadError me) =>
 	StateT s me a -> StateT s me ()
@@ -183,13 +199,17 @@ parseE1 th name = flip (valD $ varP $ mkName name) [] $ normalB $
 		`appE` (varE $ mkName "d")
 
 typeDvM :: Peg -> DecsQ
-typeDvM = uncurry (zipWithM typeDvM1) . unzip . map (\(n, t, _) -> (n, t))
+typeDvM peg = let
+	used = usingNames peg in
+	uncurry (zipWithM typeDvM1) $ unzip $ filter ((`elem` used) . fst)
+		$ map (\(n, t, _) -> (n, t)) peg
 
 typeDvM1 :: String -> Name -> DecQ
 typeDvM1 f t = sigD (mkName $ "dv_" ++ f ++ "M") $ conT (mkName "PackratM") `appT` conT t
 
 dvSomeM :: Bool -> Peg -> DecsQ
-dvSomeM th peg = mapM (dvSomeM1 th) peg
+dvSomeM th peg = mapM (dvSomeM1 th) $
+	filter ((`elem` usingNames peg) . (\(n, _, _) -> n)) peg
 
 dvSomeM1 :: Bool -> Definition -> DecQ
 dvSomeM1 th (name, _, _) = flip (valD $ varP $ mkName $ "dv_" ++ name ++ "M") [] $ normalB $

@@ -1,8 +1,9 @@
-{-# LANGUAGE PackageImports, FlexibleContexts, TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell #-}
 
 module Text.Papillon.Parser (
 	Peg,
 	Definition,
+	ExpressionHs,
 	NameLeaf,
 	parse,
 	dv_peg,

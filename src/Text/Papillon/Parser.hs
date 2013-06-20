@@ -1,7 +1,8 @@
-{-# LANGUAGE PackageImports, FlexibleContexts, TemplateHaskell , PackageImports #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell , PackageImports #-}
 module  Text.Papillon.Parser (
 	Peg,
 	Definition,
+	ExpressionHs,
 	NameLeaf,
 	parse,
 	dv_peg,
@@ -222,7 +223,6 @@ parse s = d
                                             c : s' <- return s
                                             put (parse s')
                                             return c)
-dv_pegFileM :: PackratM PegFile
 dv_pragmaM :: PackratM MaybeString
 dv_pragmaStrM :: PackratM String
 dv_pragmaEndM :: PackratM Nil
@@ -259,7 +259,6 @@ dv_lowerM :: PackratM Char
 dv_digitM :: PackratM Char
 dv_spacesM :: PackratM Nil
 dv_spaceM :: PackratM Nil
-dv_pegFileM = StateT dv_pegFile
 dv_pragmaM = StateT dv_pragma
 dv_pragmaStrM = StateT dv_pragmaStr
 dv_pragmaEndM = StateT dv_pragmaEnd
