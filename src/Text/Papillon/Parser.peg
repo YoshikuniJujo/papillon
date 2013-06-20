@@ -150,11 +150,11 @@ tString = varT ''String
 tChar = varT ''Char
 -}
 
-tString, tChar :: String
+tString :: String
 tString = "String"
-tChar = "Char"
-mkTTPeg :: String -> String -> Peg -> TTPeg
-mkTTPeg s t p = (conT $ mkName s, conT $ mkName t, p)
+mkTTPeg :: String -> Peg -> TTPeg
+mkTTPeg s p =
+	(conT $ mkName s, conT (mkName "Token") `appT` conT (mkName s), p)
 
 [papillon|
 
@@ -215,14 +215,11 @@ pap :: Nil
 		_:[isO] _:[isN] _:[isBar] _:[isNL]	{ nil }
 ;
 peg :: TTPeg
-	= _:spaces s:sourceType t:tokenType p:peg_	{ mkTTPeg s t p }
-	/ p:peg_				{ mkTTPeg tString tChar p }
+	= _:spaces s:sourceType p:peg_		{ mkTTPeg s p }
+	/ p:peg_				{ mkTTPeg tString p }
 ;
 sourceType :: String
 	= "source":varToken ':' _:spaces v:typToken	{ v }
-;
-tokenType :: String
-	= "token":varToken ':' _:spaces v:typToken	{ v }
 ;
 peg_ :: Peg
 	= _:spaces d:definition p:peg_	{ cons d p }

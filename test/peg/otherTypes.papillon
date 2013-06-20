@@ -36,7 +36,6 @@ empty = []
 [papillon|
 
 source: YourSource
-token: YourToken
 
 str :: YourTokens
 	= c s:str	{ cons c s }
