@@ -78,17 +78,19 @@ empty :: [a]
 empty = []
 
 type PegFile = (String, Peg, String)
-mkPegFile :: a -> b -> c -> (a, b, c)
-mkPegFile = (,,)
+mkPegFile :: String -> String -> b -> c -> (String, b, c)
+mkPegFile x y z w = (x ++ "\n" ++ y, z, w)
 
 true :: Bool
 true = True
 
 charP :: Char -> PatQ
 charP = litP . charL
+stringP :: String -> PatQ
+stringP = litP . stringL
 
-isEqual, isSlash, isSemi,
-	isColon, isOpenWave, isCloseWave, isLowerU, isNot, isChon :: Char -> Bool
+isEqual, isSlash, isSemi, isColon, isOpenWave, isCloseWave, isLowerU, isNot,
+	isChon, isDQ :: Char -> Bool
 isEqual = (== '=')
 isSlash = (== '/')
 isSemi = (== ';')
@@ -98,6 +100,7 @@ isCloseWave = (== '}')
 isLowerU c = isLower c || c == '_'
 isNot = (== '!')
 isChon = (== '\'')
+isDQ = (== '"')
 
 isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
 [isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL] =
@@ -106,8 +109,16 @@ isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
 [papillon|
 
 pegFile :: PegFile
-	= pp:prePeg _:pap p:peg _:spaces _:[isBar] _:[isCloseBr]
-		_:[isNL] atp:afterPeg		{ mkPegFile pp p atp }
+	= pip:preImpPap _:importPapillon pp:prePeg _:pap p:peg _:spaces
+		_:[isBar] _:[isCloseBr] _:[isNL] atp:afterPeg
+			{ mkPegFile pip pp p atp }
+	/ pp:prePeg _:pap p:peg _:spaces
+		_:[isBar] _:[isCloseBr] _:[isNL] atp:afterPeg
+			{ mkPegFile empty pp p atp }
+;
+preImpPap :: String
+	= _:!importPapillon _:!pap c:[const true] pip:preImpPap	{ cons c pip }
+	/					{ empty }
 ;
 prePeg :: String
 	= _:!pap c:[const true] pp:prePeg	{ cons c pp }
@@ -116,6 +127,16 @@ prePeg :: String
 afterPeg :: String
 	= c:[const true] atp:afterPeg		{ cons c atp }
 	/					{ empty }
+;
+importPapillon :: Nil
+	= "import":varToken "Text":typToken '.' _:spaces "Papillon":typToken
+		{ nil }
+;
+varToken :: String
+	= v:variable _:spaces			{ v }
+;
+typToken :: String
+	= t:typ _:spaces			{ t }
 ;
 pap :: Nil
 	= _:[isNL] _:[isOpenBr] _:[isP] _:[isA] _:[isP] _:[isI] _:[isL] _:[isL]
@@ -150,6 +171,14 @@ pat :: PatQ
 	= n:variable				{ strToPatQ n }
 	/ t:typ _:spaces ps:pats		{ conToPatQ t ps }
 	/ _:[isChon] c:[const true] _:[isChon]	{ charP c }
+	/ _:[isDQ] s:stringLit _:[isDQ]		{ stringP s }
+;
+stringLit :: String
+	= _:!dq c s:stringLit			{ cons c s }
+	/					{ empty }
+;
+dq :: Nil
+	= '"'					{ nil }
 ;
 pats :: PatQs
 	= p:pat ps:pats				{ cons p ps }

@@ -279,16 +279,20 @@ transLeaf g th (n, (Here (Left v))) = do
 				 ],
 				bindS n $ varE (returnN th) `appE` varE t
 			 ]
-transLeaf g th (n, (NotAfter (Right p))) = sequence [
-	bindS (varP $ mkName "d") $ varE (getN th),
-	noBindS $ varE (flipMaybeN th) `appE`
-		(DoE <$> (transLeaf g th (n, (Here (Right p))))),
-	noBindS $ varE (putN th) `appE` (varE $ mkName "d")]
-transLeaf _ th (_, (NotAfter (Left v))) = sequence [
-	bindS (varP $ mkName "d") $ varE (getN th),
-	noBindS $ varE (flipMaybeN th) `appE`
-		varE (mkName $ "dv_" ++ v ++ "M"),
-	noBindS $ varE (putN th) `appE` (varE $ mkName "d")]
+transLeaf g th (n, (NotAfter (Right p))) = do
+	d <- newName "d"
+	sequence [
+		bindS (varP d) $ varE (getN th),
+		noBindS $ varE (flipMaybeN th) `appE`
+			(DoE <$> (transLeaf g th (n, (Here (Right p))))),
+		noBindS $ varE (putN th) `appE` (varE d)]
+transLeaf _ th (_, (NotAfter (Left v))) = do
+	d <- newName "d"
+	sequence [
+		bindS (varP d) $ varE (getN th),
+		noBindS $ varE (flipMaybeN th) `appE`
+			varE (mkName $ "dv_" ++ v ++ "M"),
+		noBindS $ varE (putN th) `appE` (varE d)]
 
 varPToWild :: PatQ -> PatQ
 varPToWild p = do

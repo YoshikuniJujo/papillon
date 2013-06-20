@@ -11,17 +11,28 @@ import Control.Monad.Trans.Error (Error(..))
 type Nil = ()
 nil :: Nil
 nil = ()
+cons :: a -> [a] -> [a]
+cons = (:)
+empty :: [a]
+empty = []
 
 true :: Bool
 true = True
 
 main :: IO ()
-main = case dv_three $ parse "333" of
+main = case dv_oneTwoThree $ parse "123" of
 	Right ((), _) -> putStrLn "OK!"
-	Left err -> putStrLn $ "error: " ++ err
+	Left err -> putStrLn $ "not matched: " ++ err
 
 [papillon|
 
+oneTwoThree :: Nil
+	= "123":string	{ nil }
+;
+string :: String
+	= c s:string	{ cons c s }
+	/		{ empty }
+;
 three :: Nil
 	= '3'		{ nil }
 ;
