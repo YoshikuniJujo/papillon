@@ -64,6 +64,7 @@ true = True
 
 [papillon|
 
+-- comment
 expression :: Integer
 	= :spacing v:additive :![const true] { getMul v }
 ;
@@ -72,6 +73,7 @@ additive :: LeftMul
 	/ v:multitive				{ toMul v }
 ;
 multitive :: LeftMul
+-- comment2
 	= l:primary s:symbolM r:multitive	{ mkLeftMul s l r }
 	/ v:primary				{ toLeftMul v }
 ;

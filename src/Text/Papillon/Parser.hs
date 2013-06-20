@@ -196,10 +196,12 @@ data Derivs
               dv_digit :: (Result Char),
               dv_spaces :: (Result Nil),
               dv_space :: (Result Nil),
+              dv_notNLString :: (Result String),
+              dv_nl :: (Result Nil),
               dvChars :: (Result Char)}
 parse :: String -> Derivs
 parse s = d
-          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType tokenType peg_ definition selection expressionHs expression nameLeaf pat stringLit dq pats leaf_ leaf test hsExp typ variable tvtail alpha upper lower digit spaces space char
+          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType tokenType peg_ definition selection expressionHs expression nameLeaf pat stringLit dq pats leaf_ leaf test hsExp typ variable tvtail alpha upper lower digit spaces space notNLString nl char
                 pegFile = runStateT p_pegFile d
                 pragma = runStateT p_pragma d
                 pragmaStr = runStateT p_pragmaStr d
@@ -240,6 +242,8 @@ parse s = d
                 digit = runStateT p_digit d
                 spaces = runStateT p_spaces d
                 space = runStateT p_space d
+                notNLString = runStateT p_notNLString d
+                nl = runStateT p_nl d
                 char = flip runStateT d (do when (null s) (throwError (strMsg "eof"))
                                             c : s' <- return s
                                             put (parse s')
@@ -283,6 +287,8 @@ dv_lowerM :: PackratM Char
 dv_digitM :: PackratM Char
 dv_spacesM :: PackratM Nil
 dv_spaceM :: PackratM Nil
+dv_notNLStringM :: PackratM String
+dv_nlM :: PackratM Nil
 dv_pragmaM = StateT dv_pragma
 dv_pragmaStrM = StateT dv_pragmaStr
 dv_pragmaEndM = StateT dv_pragmaEnd
@@ -322,6 +328,8 @@ dv_lowerM = StateT dv_lower
 dv_digitM = StateT dv_digit
 dv_spacesM = StateT dv_spaces
 dv_spaceM = StateT dv_space
+dv_notNLStringM = StateT dv_notNLString
+dv_nlM = StateT dv_nl
 dvCharsM :: PackratM Char
 dvCharsM = StateT dvChars
 p_pegFile :: PackratM PegFile
@@ -364,6 +372,8 @@ p_lower :: PackratM Char
 p_digit :: PackratM Char
 p_spaces :: PackratM Nil
 p_space :: PackratM Nil
+p_notNLString :: PackratM String
+p_nl :: PackratM Nil
 p_pegFile = msum [do pr <- dv_pragmaM
                      md <- dv_moduleDecM
                      pip <- dv_preImpPapM
@@ -1125,4 +1135,48 @@ p_space = msum [do xx71_77 <- dvCharsM
                        _ -> return ()
                    let _ = xx71_77
                    return ()
+                   return (id nil),
+                do xx72_78 <- dvCharsM
+                   if const True xx72_78
+                    then return ()
+                    else throwError (strMsg "not match")
+                   case xx72_78 of
+                       '-' -> return ()
+                       _ -> throwError (strMsg "not match")
+                   let '-' = xx72_78
+                   return ()
+                   xx73_79 <- dvCharsM
+                   if const True xx73_79
+                    then return ()
+                    else throwError (strMsg "not match")
+                   case xx73_79 of
+                       '-' -> return ()
+                       _ -> throwError (strMsg "not match")
+                   let '-' = xx73_79
+                   return ()
+                   _ <- dv_notNLStringM
+                   _ <- dv_nlM
                    return (id nil)]
+p_notNLString = msum [do d_80 <- get
+                         flipMaybe dv_nlM
+                         put d_80
+                         xx74_81 <- dvCharsM
+                         if const True xx74_81
+                          then return ()
+                          else throwError (strMsg "not match")
+                         case xx74_81 of
+                             _ -> return ()
+                         let c = xx74_81
+                         return ()
+                         s <- dv_notNLStringM
+                         return (id cons c s),
+                      do return (id empty)]
+p_nl = msum [do xx75_82 <- dvCharsM
+                if id isNL xx75_82
+                 then return ()
+                 else throwError (strMsg "not match")
+                case xx75_82 of
+                    _ -> return ()
+                let _ = xx75_82
+                return ()
+                return (id nil)]

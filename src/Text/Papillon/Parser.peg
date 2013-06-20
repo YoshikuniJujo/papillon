@@ -301,6 +301,14 @@ spaces :: Nil
 ;
 space :: Nil
 	= _:[isSpace]	{ nil }
+	/ '-' '-' _:notNLString _:nl	{ nil }
+;
+notNLString :: String
+	= _:!nl c s:notNLString	{ cons c s }
+	/			{ empty }
+;
+nl :: Nil
+	= _:[isNL]		{ nil }
 ;
 
 |]
