@@ -865,30 +865,30 @@ p_nameLeaf = msum [do n <- dv_patM
                       l <- dv_leaf_M
                       return (id mkNameLeaf n l),
                    do n <- dv_patM
-                      return (id mkNameLeaf n ctLeaf)]
-p_pat = msum [do n <- dv_variableM
+                      return (id mkNameLeaf n ctLeaf),
+                   do xx52_57 <- dvCharsM
+                      if id isColon xx52_57
+                       then return ()
+                       else throwError (strMsg "not match")
+                      case xx52_57 of
+                          _ -> return ()
+                      let _ = xx52_57
+                      return ()
+                      l <- dv_leaf_M
+                      return (id mkNameLeaf wildP l)]
+p_pat = msum [do xx53_58 <- dv_variableM
+                 case xx53_58 of
+                     "_" -> return ()
+                     _ -> throwError (strMsg "not match")
+                 "_" <- return xx53_58
+                 return (id wildP),
+              do n <- dv_variableM
                  return (id strToPatQ n),
               do t <- dv_typM
                  _ <- dv_spacesM
                  ps <- dv_patsM
                  return (id conToPatQ t ps),
-              do xx52_57 <- dvCharsM
-                 if id isChon xx52_57
-                  then return ()
-                  else throwError (strMsg "not match")
-                 case xx52_57 of
-                     _ -> return ()
-                 let _ = xx52_57
-                 return ()
-                 xx53_58 <- dvCharsM
-                 if id const true xx53_58
-                  then return ()
-                  else throwError (strMsg "not match")
-                 case xx53_58 of
-                     _ -> return ()
-                 let c = xx53_58
-                 return ()
-                 xx54_59 <- dvCharsM
+              do xx54_59 <- dvCharsM
                  if id isChon xx54_59
                   then return ()
                   else throwError (strMsg "not match")
@@ -896,60 +896,76 @@ p_pat = msum [do n <- dv_variableM
                      _ -> return ()
                  let _ = xx54_59
                  return ()
-                 return (id charP c),
-              do xx55_60 <- dvCharsM
-                 if id isDQ xx55_60
+                 xx55_60 <- dvCharsM
+                 if id const true xx55_60
                   then return ()
                   else throwError (strMsg "not match")
                  case xx55_60 of
                      _ -> return ()
-                 let _ = xx55_60
+                 let c = xx55_60
                  return ()
-                 s <- dv_stringLitM
                  xx56_61 <- dvCharsM
-                 if id isDQ xx56_61
+                 if id isChon xx56_61
                   then return ()
                   else throwError (strMsg "not match")
                  case xx56_61 of
                      _ -> return ()
                  let _ = xx56_61
                  return ()
+                 return (id charP c),
+              do xx57_62 <- dvCharsM
+                 if id isDQ xx57_62
+                  then return ()
+                  else throwError (strMsg "not match")
+                 case xx57_62 of
+                     _ -> return ()
+                 let _ = xx57_62
+                 return ()
+                 s <- dv_stringLitM
+                 xx58_63 <- dvCharsM
+                 if id isDQ xx58_63
+                  then return ()
+                  else throwError (strMsg "not match")
+                 case xx58_63 of
+                     _ -> return ()
+                 let _ = xx58_63
+                 return ()
                  return (id stringP s)]
-p_stringLit = msum [do d_62 <- get
+p_stringLit = msum [do d_64 <- get
                        flipMaybe dv_dqM
-                       put d_62
-                       xx57_63 <- dvCharsM
-                       if const True xx57_63
+                       put d_64
+                       xx59_65 <- dvCharsM
+                       if const True xx59_65
                         then return ()
                         else throwError (strMsg "not match")
-                       case xx57_63 of
+                       case xx59_65 of
                            _ -> return ()
-                       let c = xx57_63
+                       let c = xx59_65
                        return ()
                        s <- dv_stringLitM
                        return (id cons c s),
                     do return (id empty)]
-p_dq = msum [do xx58_64 <- dvCharsM
-                if const True xx58_64
+p_dq = msum [do xx60_66 <- dvCharsM
+                if const True xx60_66
                  then return ()
                  else throwError (strMsg "not match")
-                case xx58_64 of
+                case xx60_66 of
                     '"' -> return ()
                     _ -> throwError (strMsg "not match")
-                let '"' = xx58_64
+                let '"' = xx60_66
                 return ()
                 return (id nil)]
 p_pats = msum [do p <- dv_patM
                   ps <- dv_patsM
                   return (id cons p ps),
                do return (id empty)]
-p_leaf_ = msum [do xx59_65 <- dvCharsM
-                   if id isNot xx59_65
+p_leaf_ = msum [do xx61_67 <- dvCharsM
+                   if id isNot xx61_67
                     then return ()
                     else throwError (strMsg "not match")
-                   case xx59_65 of
+                   case xx61_67 of
                        _ -> return ()
-                   let _ = xx59_65
+                   let _ = xx61_67
                    return ()
                    l <- dv_leafM
                    return (id notAfter l),
@@ -959,22 +975,22 @@ p_leaf = msum [do t <- dv_testM
                   return (id left t),
                do v <- dv_variableM
                   return (id right v)]
-p_test = msum [do xx60_66 <- dvCharsM
-                  if id isOpenBr xx60_66
+p_test = msum [do xx62_68 <- dvCharsM
+                  if id isOpenBr xx62_68
                    then return ()
                    else throwError (strMsg "not match")
-                  case xx60_66 of
+                  case xx62_68 of
                       _ -> return ()
-                  let _ = xx60_66
+                  let _ = xx62_68
                   return ()
                   h <- dv_hsExpM
-                  xx61_67 <- dvCharsM
-                  if id isCloseBr xx61_67
+                  xx63_69 <- dvCharsM
+                  if id isCloseBr xx63_69
                    then return ()
                    else throwError (strMsg "not match")
-                  case xx61_67 of
+                  case xx63_69 of
                       _ -> return ()
-                  let _ = xx61_67
+                  let _ = xx63_69
                   return ()
                   return (id getEx h)]
 p_hsExp = msum [do v <- dv_variableM
@@ -999,43 +1015,43 @@ p_alpha = msum [do u <- dv_upperM
                    return (id l),
                 do d <- dv_digitM
                    return (id d)]
-p_upper = msum [do xx62_68 <- dvCharsM
-                   if id isUpper xx62_68
-                    then return ()
-                    else throwError (strMsg "not match")
-                   case xx62_68 of
-                       _ -> return ()
-                   let u = xx62_68
-                   return ()
-                   return (id u)]
-p_lower = msum [do xx63_69 <- dvCharsM
-                   if id isLowerU xx63_69
-                    then return ()
-                    else throwError (strMsg "not match")
-                   case xx63_69 of
-                       _ -> return ()
-                   let l = xx63_69
-                   return ()
-                   return (id l)]
-p_digit = msum [do xx64_70 <- dvCharsM
-                   if id isDigit xx64_70
+p_upper = msum [do xx64_70 <- dvCharsM
+                   if id isUpper xx64_70
                     then return ()
                     else throwError (strMsg "not match")
                    case xx64_70 of
                        _ -> return ()
-                   let d = xx64_70
+                   let u = xx64_70
+                   return ()
+                   return (id u)]
+p_lower = msum [do xx65_71 <- dvCharsM
+                   if id isLowerU xx65_71
+                    then return ()
+                    else throwError (strMsg "not match")
+                   case xx65_71 of
+                       _ -> return ()
+                   let l = xx65_71
+                   return ()
+                   return (id l)]
+p_digit = msum [do xx66_72 <- dvCharsM
+                   if id isDigit xx66_72
+                    then return ()
+                    else throwError (strMsg "not match")
+                   case xx66_72 of
+                       _ -> return ()
+                   let d = xx66_72
                    return ()
                    return (id d)]
 p_spaces = msum [do _ <- dv_spaceM
                     _ <- dv_spacesM
                     return (id nil),
                  do return (id nil)]
-p_space = msum [do xx65_71 <- dvCharsM
-                   if id isSpace xx65_71
+p_space = msum [do xx67_73 <- dvCharsM
+                   if id isSpace xx67_73
                     then return ()
                     else throwError (strMsg "not match")
-                   case xx65_71 of
+                   case xx67_73 of
                        _ -> return ()
-                   let _ = xx65_71
+                   let _ = xx67_73
                    return ()
                    return (id nil)]

@@ -211,9 +211,11 @@ expression :: Expression
 nameLeaf :: NameLeaf
 	= n:pat _:[isColon] l:leaf_		{ mkNameLeaf n l }
 	/ n:pat					{ mkNameLeaf n ctLeaf }
+	/ _:[isColon] l:leaf_			{ mkNameLeaf wildP l }
 ;
 pat :: PatQ
-	= n:variable				{ strToPatQ n }
+	= "_":variable				{ wildP }
+	/ n:variable				{ strToPatQ n }
 	/ t:typ _:spaces ps:pats		{ conToPatQ t ps }
 	/ _:[isChon] c:[const true] _:[isChon]	{ charP c }
 	/ _:[isDQ] s:stringLit _:[isDQ]		{ stringP s }

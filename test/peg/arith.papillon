@@ -65,7 +65,7 @@ true = True
 [papillon|
 
 expression :: Integer
-	= _:spacing v:additive _:![const true] { getMul v }
+	= :spacing v:additive :![const true] { getMul v }
 ;
 additive :: LeftMul
 	= l:multitive s:symbolA r:additive	{ comMul s l r }
@@ -77,11 +77,11 @@ multitive :: LeftMul
 ;
 primary :: Integer
 	= d:decimal				{ d }
-	/ _:[isOpenParen] _:spacing v:additive _:[isCloseParen] _:spacing
+	/ :[isOpenParen] :spacing v:additive :[isCloseParen] :spacing
 						{ getMul v }
 ;
 decimal :: Integer
-	= d:digits _:spacing		{ d zero }
+	= d:digits :spacing		{ d zero }
 ;
 digits :: LeftInteger
 	= d:digit ds:digits		{ mkLeftInteger d ds }
@@ -91,10 +91,10 @@ digit :: Int
 	= d:[isDigit]			{ readC d }
 ;
 symbolA :: Char
-	= s:symCharsA _:spacing		{ s }
+	= s:symCharsA :spacing		{ s }
 ;
 symbolM :: Char
-	= s:symCharsM _:spacing		{ s }
+	= s:symCharsM :spacing		{ s }
 ;
 symCharsA :: Char
 	= s:[isSymA]			{ s }
@@ -103,7 +103,7 @@ symCharsM :: Char
 	= s:[isSymM]			{ s }
 ;
 spacing :: Nil
-	= _:[isSpace] _:spacing	{ nil }
+	= :[isSpace] :spacing	{ nil }
 	/				{ nil }
 ;
 |]

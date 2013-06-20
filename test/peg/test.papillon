@@ -30,7 +30,7 @@ onlyDigits :: String
 ;
 digits :: MString
 	= s:some		{ just s }
-	/ _:other		{ nothing }
+	/ :other		{ nothing }
 ;
 some :: String
 	= c:[isDigit] s:some	{ cons c s }

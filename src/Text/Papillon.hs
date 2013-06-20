@@ -262,6 +262,20 @@ transLeaf g th (n, Here (Right p)) = do
 			letS [flip (valD n) [] $ normalB $ varE t],
 			noBindS $ varE (returnN th) `appE` tupE []
 		 ]
+		WildP -> sequence [
+			bindS (varP t) $ varE $ mkName "dvCharsM",
+			noBindS $ condE (p `appE` varE t)
+				(varE (returnN th) `appE` conE (mkName "()"))
+				(varE (throwErrorN th) `appE`
+					(varE (strMsgN th) `appE`
+						litE (stringL "not match"))),
+			noBindS $ caseE (varE t) [
+				flip (match $ varPToWild n) [] $ normalB $
+					varE (returnN th) `appE` tupE []
+			 ],
+			letS [flip (valD n) [] $ normalB $ varE t],
+			noBindS $ varE (returnN th) `appE` tupE []
+		 ]
 		_ -> sequence [
 			bindS (varP t) $ varE $ mkName "dvCharsM",
 			noBindS $ condE (p `appE` varE t)
@@ -282,6 +296,8 @@ transLeaf g th (n, Here (Left v)) = do
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
+			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M"]
+		WildP -> sequence [
 			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M"]
 		_ -> do	gn <- runIO $ readIORef g
 			runIO $ modifyIORef g succ
