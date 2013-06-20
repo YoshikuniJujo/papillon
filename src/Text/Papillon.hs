@@ -84,8 +84,8 @@ flipMaybeN :: Bool -> Name
 flipMaybeN True = 'flipMaybe
 flipMaybeN False = mkName "flipMaybe"
 
-returnN, stateTN, stringN, putN, stateTN', msumN, getN,
-	eitherN, strMsgN, throwErrorN, runStateTN, justN,
+returnN, stateTN, stringN, putN, stateTN', getN,
+	eitherN, strMsgN, throwErrorN, runStateTN, justN, mplusN,
 	getTokenN :: Bool -> Name
 returnN True = 'return
 returnN False = mkName "return"
@@ -101,8 +101,8 @@ putN True = 'put
 putN False = mkName "put"
 stateTN' True = 'StateT
 stateTN' False = mkName "StateT"
-msumN True = 'msum
-msumN False = mkName "msum"
+mplusN True = 'mplus
+mplusN False = mkName "mplus"
 getN True = 'get
 getN False = mkName "get"
 eitherN True = ''Either
@@ -245,7 +245,7 @@ pSomes g th = mapM $ pSomes1 g th
 
 pSomes1 :: IORef Int -> Bool -> Definition -> DecQ
 pSomes1 g th (name, _, sel) = flip (valD $ varP $ mkName $ "p_" ++ name) [] $ normalB $
-	varE (msumN th) `appE` listE (map (uncurry $ pSome_ g th) sel)
+	varE (mkName "foldl1") `appE` varE (mplusN th) `appE` listE (map (uncurry $ pSome_ g th) sel)
 
 pSome_ :: IORef Int -> Bool -> [NameLeaf_] -> ExpQ -> ExpQ
 pSome_ g th nls ret = fmap DoE $ do

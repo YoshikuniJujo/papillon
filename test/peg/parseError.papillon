@@ -1,0 +1,35 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = do
+	case dv_some $ parse "parse fail" of
+		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
+		Left err -> putStrLn $ "OK! it's fail: " ++ show err
+	case dv_more $ parse "" of
+		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
+		Left err -> putStrLn $ "OK! it's fail: " ++ show err
+
+type Nil = ()
+nil :: Nil
+nil = ()
+cons :: a -> [a] -> [a]
+cons = (:)
+empty :: [a]
+empty = []
+
+[papillon|
+
+more :: Char = c		{ c }
+;
+some :: Nil = !_:other		{ nil }
+;
+other :: Nil = "parse fail":string	{ nil }
+;
+string :: String
+	= c s:string		{ cons c s }
+	/			{ empty }
+;
+
+|]
