@@ -1,9 +1,3 @@
-* msum を使うと error message が消えてしまうので何とかする必要がある
-	つまり、msum はその一番右に Left "" を持っているということ。
-	自分で msum1 を作る必要がある。
-	msum1 :: MonadPlus m => [m a] -> m a
-	msum1 = foldl1 mplus
-
 * Either String ではなく Either ParseError とする
 
 * haskell の exp をちゃんとパースしよう
