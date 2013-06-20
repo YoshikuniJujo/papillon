@@ -76,3 +76,9 @@ case getToken s of
 		put $ parse s
 		return c
 	Nothing -> throwError $ strMsg "eof"
+
+次にすることは ! の形を変えることだ。
+今は var:!hoge のような形だが、本来ならば
+!var:hoge のような形にするべきだろう。
+もちろん !var:hoge は !_:hoge と書くべきだが、
+!"hoge":str のような形が作れるし、さらに言えば !'\n' のような形は便利だ。

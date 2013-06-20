@@ -236,7 +236,7 @@ expression :: Expression
 nameLeaf :: NameLeaf
 	= n:pat _:[isColon] l:leaf_		{ mkNameLeaf n l }
 	/ n:pat					{ mkNameLeaf n ctLeaf }
-	/ _:[isColon] l:leaf_			{ mkNameLeaf wildP l }
+--	/ _:[isColon] l:leaf_			{ mkNameLeaf wildP l }
 ;
 pat :: PatQ
 	= "_":variable				{ wildP }
