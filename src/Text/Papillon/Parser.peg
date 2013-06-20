@@ -319,6 +319,7 @@ spaces :: Nil
 space :: Nil
 	= _:[isSpace]	{ nil }
 	/ '-' '-' _:notNLString _:nl	{ nil }
+	/ _:comment			{ nil }
 ;
 notNLString :: String
 	= !_:nl c s:notNLString	{ cons c s }
@@ -326,6 +327,20 @@ notNLString :: String
 ;
 nl :: Nil
 	= _:[isNL]		{ nil }
+;
+comment :: Nil
+	= '{' '-' !'#' _:comments _:comEnd	{ nil }
+;
+comments :: Nil
+	= _:notComStr _:comment _:comments	{ nil }
+	/ _:notComStr				{ nil }
+;
+notComStr :: Nil
+	= !_:comment !_:comEnd _ _:notComStr	{ nil }
+	/				{ nil }
+;
+comEnd :: Nil
+	= '-' '}'			{ nil }
 ;
 
 |]

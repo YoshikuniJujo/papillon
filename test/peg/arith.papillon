@@ -64,7 +64,12 @@ true = True
 
 [papillon|
 
--- comment
+{-
+{-
+	{- this {- nested -} is comment -}
+-}{--}
+-- {-comment-}
+-}
 expression :: Integer
 	= _:spacing v:additive !_:[const true] { getMul v }
 ;

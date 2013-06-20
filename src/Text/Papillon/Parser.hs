@@ -210,10 +210,14 @@ data Derivs
               dv_space :: (Result Nil),
               dv_notNLString :: (Result String),
               dv_nl :: (Result Nil),
+              dv_comment :: (Result Nil),
+              dv_comments :: (Result Nil),
+              dv_notComStr :: (Result Nil),
+              dv_comEnd :: (Result Nil),
               dvChars :: (Result (Token String))}
 parse :: String -> Derivs
 parse s = d
-          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf pat charLit stringLit dq pats leaf test hsExp typ variable tvtail alpha upper lower digit spaces space notNLString nl char
+          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf pat charLit stringLit dq pats leaf test hsExp typ variable tvtail alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char
                 pegFile = runStateT p_pegFile d
                 pragma = runStateT p_pragma d
                 pragmaStr = runStateT p_pragmaStr d
@@ -256,6 +260,10 @@ parse s = d
                 space = runStateT p_space d
                 notNLString = runStateT p_notNLString d
                 nl = runStateT p_nl d
+                comment = runStateT p_comment d
+                comments = runStateT p_comments d
+                notComStr = runStateT p_notComStr d
+                comEnd = runStateT p_comEnd d
                 char = flip runStateT d (case getToken s of
                                              Just (c, s') -> do put (parse s')
                                                                 return c
@@ -301,6 +309,10 @@ dv_spacesM :: PackratM Nil
 dv_spaceM :: PackratM Nil
 dv_notNLStringM :: PackratM String
 dv_nlM :: PackratM Nil
+dv_commentM :: PackratM Nil
+dv_commentsM :: PackratM Nil
+dv_notComStrM :: PackratM Nil
+dv_comEndM :: PackratM Nil
 dv_pragmaM = StateT dv_pragma
 dv_pragmaStrM = StateT dv_pragmaStr
 dv_pragmaEndM = StateT dv_pragmaEnd
@@ -342,6 +354,10 @@ dv_spacesM = StateT dv_spaces
 dv_spaceM = StateT dv_space
 dv_notNLStringM = StateT dv_notNLString
 dv_nlM = StateT dv_nl
+dv_commentM = StateT dv_comment
+dv_commentsM = StateT dv_comments
+dv_notComStrM = StateT dv_notComStr
+dv_comEndM = StateT dv_comEnd
 dvCharsM :: PackratM (Token String)
 dvCharsM = StateT dvChars
 p_pegFile :: PackratM PegFile
@@ -386,6 +402,10 @@ p_spaces :: PackratM Nil
 p_space :: PackratM Nil
 p_notNLString :: PackratM String
 p_nl :: PackratM Nil
+p_comment :: PackratM Nil
+p_comments :: PackratM Nil
+p_notComStr :: PackratM Nil
+p_comEnd :: PackratM Nil
 p_pegFile = msum [do pr <- dv_pragmaM
                      return ()
                      md <- dv_moduleDecM
@@ -1262,6 +1282,9 @@ p_space = msum [do xx70_76 <- dvCharsM
                    return ()
                    _ <- dv_nlM
                    return ()
+                   return (id nil),
+                do _ <- dv_commentM
+                   return ()
                    return (id nil)]
 p_notNLString = msum [do d_79 <- get
                          flipMaybe (do _ <- dv_nlM
@@ -1288,6 +1311,89 @@ p_nl = msum [do xx74_81 <- dvCharsM
                 let _ = xx74_81
                 return ()
                 return (id nil)]
+p_comment = msum [do xx75_82 <- dvCharsM
+                     if const True xx75_82
+                      then return ()
+                      else throwError (strMsg "not match")
+                     case xx75_82 of
+                         '{' -> return ()
+                         _ -> throwError (strMsg "not match")
+                     let '{' = xx75_82
+                     return ()
+                     xx76_83 <- dvCharsM
+                     if const True xx76_83
+                      then return ()
+                      else throwError (strMsg "not match")
+                     case xx76_83 of
+                         '-' -> return ()
+                         _ -> throwError (strMsg "not match")
+                     let '-' = xx76_83
+                     return ()
+                     d_84 <- get
+                     flipMaybe (do xx77_85 <- dvCharsM
+                                   if const True xx77_85
+                                    then return ()
+                                    else throwError (strMsg "not match")
+                                   case xx77_85 of
+                                       '#' -> return ()
+                                       _ -> throwError (strMsg "not match")
+                                   let '#' = xx77_85
+                                   return ())
+                     put d_84
+                     _ <- dv_commentsM
+                     return ()
+                     _ <- dv_comEndM
+                     return ()
+                     return (id nil)]
+p_comments = msum [do _ <- dv_notComStrM
+                      return ()
+                      _ <- dv_commentM
+                      return ()
+                      _ <- dv_commentsM
+                      return ()
+                      return (id nil),
+                   do _ <- dv_notComStrM
+                      return ()
+                      return (id nil)]
+p_notComStr = msum [do d_86 <- get
+                       flipMaybe (do _ <- dv_commentM
+                                     return ())
+                       put d_86
+                       d_87 <- get
+                       flipMaybe (do _ <- dv_comEndM
+                                     return ())
+                       put d_87
+                       xx78_88 <- dvCharsM
+                       if const True xx78_88
+                        then return ()
+                        else throwError (strMsg "not match")
+                       case xx78_88 of
+                           _ -> return ()
+                       let _ = xx78_88
+                       return ()
+                       _ <- dv_notComStrM
+                       return ()
+                       return (id nil),
+                    do return (id nil)]
+p_comEnd = msum [do xx79_89 <- dvCharsM
+                    if const True xx79_89
+                     then return ()
+                     else throwError (strMsg "not match")
+                    case xx79_89 of
+                        '-' -> return ()
+                        _ -> throwError (strMsg "not match")
+                    let '-' = xx79_89
+                    return ()
+                    xx80_90 <- dvCharsM
+                    if const True xx80_90
+                     then return ()
+                     else throwError (strMsg "not match")
+                    case xx80_90 of
+                        '}' -> return ()
+                        _ -> throwError (strMsg "not match")
+                    let '}' = xx80_90
+                    return ()
+                    return (id nil)]
 
 class Source sl
     where type Token sl
