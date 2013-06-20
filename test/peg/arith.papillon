@@ -66,7 +66,7 @@ true = True
 
 -- comment
 expression :: Integer
-	= _:spacing v:additive _:![const true] { getMul v }
+	= _:spacing v:additive !_:[const true] { getMul v }
 ;
 additive :: LeftMul
 	= l:multitive s:symbolA r:additive	{ comMul s l r }

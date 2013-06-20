@@ -4,10 +4,10 @@ module  Text.Papillon.Parser (
 	Definition,
 	ExpressionHs,
 	NameLeaf,
+	NameLeaf_(..),
 	parse,
 	dv_peg,
 	dv_pegFile,
-	Leaf_(..)
 )  where
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
@@ -22,12 +22,12 @@ type MaybeString = Maybe String
 
 type Nil = ()
 type Leaf = Either String ExR
-data Leaf_ = NotAfter Leaf | Here Leaf
-notAfter, here :: Leaf -> Leaf_
+type NameLeaf = (PatQ, Leaf)
+data NameLeaf_ = NotAfter NameLeaf | Here NameLeaf
+notAfter, here :: NameLeaf -> NameLeaf_
 notAfter = NotAfter
 here = Here
-type NameLeaf = (PatQ, Leaf_)
-type Expression = [NameLeaf]
+type Expression = [NameLeaf_]
 type ExpressionHs = (Expression, ExR)
 type Selection = [ExpressionHs]
 type Typ = Name
@@ -38,8 +38,8 @@ type TTPeg = (TypeQ, TypeQ, Peg)
 type Ex = ExpQ -> ExpQ
 type ExR = ExpQ
 
-ctLeaf :: Leaf_
-ctLeaf = Here $ Right $ varE (mkName "const") `appE` conE (mkName "True")
+ctLeaf :: Leaf
+ctLeaf = Right $ varE (mkName "const") `appE` conE (mkName "True")
 
 left :: b -> Either a b
 right :: a -> Either a b
@@ -178,12 +178,12 @@ data Derivs
               dv_selection :: (Result Selection),
               dv_expressionHs :: (Result ExpressionHs),
               dv_expression :: (Result Expression),
+              dv_nameLeaf_ :: (Result NameLeaf_),
               dv_nameLeaf :: (Result NameLeaf),
               dv_pat :: (Result PatQ),
               dv_stringLit :: (Result String),
               dv_dq :: (Result Nil),
               dv_pats :: (Result PatQs),
-              dv_leaf_ :: (Result Leaf_),
               dv_leaf :: (Result Leaf),
               dv_test :: (Result ExR),
               dv_hsExp :: (Result Ex),
@@ -201,7 +201,7 @@ data Derivs
               dvChars :: (Result Char)}
 parse :: String -> Derivs
 parse s = d
-          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType tokenType peg_ definition selection expressionHs expression nameLeaf pat stringLit dq pats leaf_ leaf test hsExp typ variable tvtail alpha upper lower digit spaces space notNLString nl char
+          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType tokenType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf pat stringLit dq pats leaf test hsExp typ variable tvtail alpha upper lower digit spaces space notNLString nl char
                 pegFile = runStateT p_pegFile d
                 pragma = runStateT p_pragma d
                 pragmaStr = runStateT p_pragmaStr d
@@ -224,12 +224,12 @@ parse s = d
                 selection = runStateT p_selection d
                 expressionHs = runStateT p_expressionHs d
                 expression = runStateT p_expression d
+                nameLeaf_ = runStateT p_nameLeaf_ d
                 nameLeaf = runStateT p_nameLeaf d
                 pat = runStateT p_pat d
                 stringLit = runStateT p_stringLit d
                 dq = runStateT p_dq d
                 pats = runStateT p_pats d
-                leaf_ = runStateT p_leaf_ d
                 leaf = runStateT p_leaf d
                 test = runStateT p_test d
                 hsExp = runStateT p_hsExp d
@@ -269,12 +269,12 @@ dv_definitionM :: PackratM Definition
 dv_selectionM :: PackratM Selection
 dv_expressionHsM :: PackratM ExpressionHs
 dv_expressionM :: PackratM Expression
+dv_nameLeaf_M :: PackratM NameLeaf_
 dv_nameLeafM :: PackratM NameLeaf
 dv_patM :: PackratM PatQ
 dv_stringLitM :: PackratM String
 dv_dqM :: PackratM Nil
 dv_patsM :: PackratM PatQs
-dv_leaf_M :: PackratM Leaf_
 dv_leafM :: PackratM Leaf
 dv_testM :: PackratM ExR
 dv_hsExpM :: PackratM Ex
@@ -310,12 +310,12 @@ dv_definitionM = StateT dv_definition
 dv_selectionM = StateT dv_selection
 dv_expressionHsM = StateT dv_expressionHs
 dv_expressionM = StateT dv_expression
+dv_nameLeaf_M = StateT dv_nameLeaf_
 dv_nameLeafM = StateT dv_nameLeaf
 dv_patM = StateT dv_pat
 dv_stringLitM = StateT dv_stringLit
 dv_dqM = StateT dv_dq
 dv_patsM = StateT dv_pats
-dv_leaf_M = StateT dv_leaf_
 dv_leafM = StateT dv_leaf
 dv_testM = StateT dv_test
 dv_hsExpM = StateT dv_hsExp
@@ -354,12 +354,12 @@ p_definition :: PackratM Definition
 p_selection :: PackratM Selection
 p_expressionHs :: PackratM ExpressionHs
 p_expression :: PackratM Expression
+p_nameLeaf_ :: PackratM NameLeaf_
 p_nameLeaf :: PackratM NameLeaf
 p_pat :: PackratM PatQ
 p_stringLit :: PackratM String
 p_dq :: PackratM Nil
 p_pats :: PackratM PatQs
-p_leaf_ :: PackratM Leaf_
 p_leaf :: PackratM Leaf
 p_test :: PackratM ExR
 p_hsExp :: PackratM Ex
@@ -929,29 +929,41 @@ p_expressionHs = msum [do e <- dv_expressionM
                           let _ = xx54_59
                           return ()
                           return (id mkExpressionHs e h)]
-p_expression = msum [do l <- dv_nameLeafM
+p_expression = msum [do l <- dv_nameLeaf_M
                         _ <- dv_spacesM
                         e <- dv_expressionM
                         return (id cons l e),
                      do return (id empty)]
+p_nameLeaf_ = msum [do xx55_60 <- dvCharsM
+                       if id isNot xx55_60
+                        then return ()
+                        else throwError (strMsg "not match")
+                       case xx55_60 of
+                           _ -> return ()
+                       let _ = xx55_60
+                       return ()
+                       nl <- dv_nameLeafM
+                       return (id notAfter nl),
+                    do nl <- dv_nameLeafM
+                       return (id here nl)]
 p_nameLeaf = msum [do n <- dv_patM
-                      xx55_60 <- dvCharsM
-                      if id isColon xx55_60
+                      xx56_61 <- dvCharsM
+                      if id isColon xx56_61
                        then return ()
                        else throwError (strMsg "not match")
-                      case xx55_60 of
+                      case xx56_61 of
                           _ -> return ()
-                      let _ = xx55_60
+                      let _ = xx56_61
                       return ()
-                      l <- dv_leaf_M
+                      l <- dv_leafM
                       return (id mkNameLeaf n l),
                    do n <- dv_patM
                       return (id mkNameLeaf n ctLeaf)]
-p_pat = msum [do xx56_61 <- dv_variableM
-                 case xx56_61 of
+p_pat = msum [do xx57_62 <- dv_variableM
+                 case xx57_62 of
                      "_" -> return ()
                      _ -> throwError (strMsg "not match")
-                 "_" <- return xx56_61
+                 "_" <- return xx57_62
                  return (id wildP),
               do n <- dv_variableM
                  return (id strToPatQ n),
@@ -959,41 +971,32 @@ p_pat = msum [do xx56_61 <- dv_variableM
                  _ <- dv_spacesM
                  ps <- dv_patsM
                  return (id conToPatQ t ps),
-              do xx57_62 <- dvCharsM
-                 if id isChon xx57_62
-                  then return ()
-                  else throwError (strMsg "not match")
-                 case xx57_62 of
-                     _ -> return ()
-                 let _ = xx57_62
-                 return ()
-                 xx58_63 <- dvCharsM
-                 if id const true xx58_63
+              do xx58_63 <- dvCharsM
+                 if id isChon xx58_63
                   then return ()
                   else throwError (strMsg "not match")
                  case xx58_63 of
                      _ -> return ()
-                 let c = xx58_63
+                 let _ = xx58_63
                  return ()
                  xx59_64 <- dvCharsM
-                 if id isChon xx59_64
+                 if id const true xx59_64
                   then return ()
                   else throwError (strMsg "not match")
                  case xx59_64 of
                      _ -> return ()
-                 let _ = xx59_64
+                 let c = xx59_64
                  return ()
-                 return (id charP c),
-              do xx60_65 <- dvCharsM
-                 if id isDQ xx60_65
+                 xx60_65 <- dvCharsM
+                 if id isChon xx60_65
                   then return ()
                   else throwError (strMsg "not match")
                  case xx60_65 of
                      _ -> return ()
                  let _ = xx60_65
                  return ()
-                 s <- dv_stringLitM
-                 xx61_66 <- dvCharsM
+                 return (id charP c),
+              do xx61_66 <- dvCharsM
                  if id isDQ xx61_66
                   then return ()
                   else throwError (strMsg "not match")
@@ -1001,47 +1004,44 @@ p_pat = msum [do xx56_61 <- dv_variableM
                      _ -> return ()
                  let _ = xx61_66
                  return ()
+                 s <- dv_stringLitM
+                 xx62_67 <- dvCharsM
+                 if id isDQ xx62_67
+                  then return ()
+                  else throwError (strMsg "not match")
+                 case xx62_67 of
+                     _ -> return ()
+                 let _ = xx62_67
+                 return ()
                  return (id stringP s)]
-p_stringLit = msum [do d_67 <- get
+p_stringLit = msum [do d_68 <- get
                        flipMaybe dv_dqM
-                       put d_67
-                       xx62_68 <- dvCharsM
-                       if const True xx62_68
+                       put d_68
+                       xx63_69 <- dvCharsM
+                       if const True xx63_69
                         then return ()
                         else throwError (strMsg "not match")
-                       case xx62_68 of
+                       case xx63_69 of
                            _ -> return ()
-                       let c = xx62_68
+                       let c = xx63_69
                        return ()
                        s <- dv_stringLitM
                        return (id cons c s),
                     do return (id empty)]
-p_dq = msum [do xx63_69 <- dvCharsM
-                if const True xx63_69
+p_dq = msum [do xx64_70 <- dvCharsM
+                if const True xx64_70
                  then return ()
                  else throwError (strMsg "not match")
-                case xx63_69 of
+                case xx64_70 of
                     '"' -> return ()
                     _ -> throwError (strMsg "not match")
-                let '"' = xx63_69
+                let '"' = xx64_70
                 return ()
                 return (id nil)]
 p_pats = msum [do p <- dv_patM
                   ps <- dv_patsM
                   return (id cons p ps),
                do return (id empty)]
-p_leaf_ = msum [do xx64_70 <- dvCharsM
-                   if id isNot xx64_70
-                    then return ()
-                    else throwError (strMsg "not match")
-                   case xx64_70 of
-                       _ -> return ()
-                   let _ = xx64_70
-                   return ()
-                   l <- dv_leafM
-                   return (id notAfter l),
-                do l <- dv_leafM
-                   return (id here l)]
 p_leaf = msum [do t <- dv_testM
                   return (id left t),
                do v <- dv_variableM

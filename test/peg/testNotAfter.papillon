@@ -1,0 +1,25 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = case dv_some $ parse "abcndefn" of
+	Right (r, _) -> print r
+	Left err -> putStrLn $ "not match: " ++ err
+
+true :: Bool
+true = True
+
+cons :: a -> [a] -> [a]
+cons = (:)
+empty :: [a]
+empty = []
+
+[papillon|
+
+some :: String
+	= !'n':[const true] c s:some	{ cons c s }
+	/				{ empty }
+;
+
+|]

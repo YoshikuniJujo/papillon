@@ -5,10 +5,10 @@ module Text.Papillon.Parser (
 	Definition,
 	ExpressionHs,
 	NameLeaf,
+	NameLeaf_(..),
 	parse,
 	dv_peg,
 	dv_pegFile,
-	Leaf_(..)
 ) where
 
 import Data.Char
@@ -18,12 +18,12 @@ type MaybeString = Maybe String
 
 type Nil = ()
 type Leaf = Either String ExR
-data Leaf_ = NotAfter Leaf | Here Leaf
-notAfter, here :: Leaf -> Leaf_
+type NameLeaf = (PatQ, Leaf)
+data NameLeaf_ = NotAfter NameLeaf | Here NameLeaf
+notAfter, here :: NameLeaf -> NameLeaf_
 notAfter = NotAfter
 here = Here
-type NameLeaf = (PatQ, Leaf_)
-type Expression = [NameLeaf]
+type Expression = [NameLeaf_]
 type ExpressionHs = (Expression, ExR)
 type Selection = [ExpressionHs]
 type Typ = Name
@@ -34,8 +34,8 @@ type TTPeg = (TypeQ, TypeQ, Peg)
 type Ex = ExpQ -> ExpQ
 type ExR = ExpQ
 
-ctLeaf :: Leaf_
-ctLeaf = Here $ Right $ varE (mkName "const") `appE` conE (mkName "True")
+ctLeaf :: Leaf
+ctLeaf = Right $ varE (mkName "const") `appE` conE (mkName "True")
 
 left :: b -> Either a b
 right :: a -> Either a b
@@ -230,11 +230,15 @@ expressionHs :: ExpressionHs
 		_:spaces _:[isCloseWave]	{ mkExpressionHs e h }
 ;
 expression :: Expression
-	= l:nameLeaf _:spaces e:expression	{ cons l e }
+	= l:nameLeaf_ _:spaces e:expression	{ cons l e }
 	/ 	{ empty }
 ;
+nameLeaf_ :: NameLeaf_
+	= _:[isNot] nl:nameLeaf			{ notAfter nl }
+	/ nl:nameLeaf				{ here nl }
+;
 nameLeaf :: NameLeaf
-	= n:pat _:[isColon] l:leaf_		{ mkNameLeaf n l }
+	= n:pat _:[isColon] l:leaf		{ mkNameLeaf n l }
 	/ n:pat					{ mkNameLeaf n ctLeaf }
 --	/ _:[isColon] l:leaf_			{ mkNameLeaf wildP l }
 ;
@@ -256,10 +260,10 @@ pats :: PatQs
 	= p:pat ps:pats				{ cons p ps }
 	/					{ empty }
 ;
-leaf_ :: Leaf_
-	= _:[isNot] l:leaf	{ notAfter l }
-	/ l:leaf		{ here l }
-;
+-- leaf_ :: Leaf_
+--	= _:[isNot] l:leaf	{ notAfter l }
+--	/ l:leaf		{ here l }
+-- ;
 leaf :: Leaf
 	= t:test	{ left t }
 	/ v:variable	{ right v }

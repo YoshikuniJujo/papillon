@@ -33,11 +33,11 @@ getNamesFromDefinition (_, _, sel) =
 	concatMap getNamesFromExpressionHs sel
 
 getNamesFromExpressionHs :: ExpressionHs -> [String]
-getNamesFromExpressionHs = mapMaybe (getLeafName . snd) . fst
+getNamesFromExpressionHs = mapMaybe getLeafName . fst
 
-getLeafName :: Leaf_ -> Maybe String
-getLeafName (Here (Left n)) = Just n
-getLeafName (NotAfter (Left n)) = Just n
+getLeafName :: NameLeaf_ -> Maybe String
+getLeafName (Here (_, Left n)) = Just n
+getLeafName (NotAfter (_, Left n)) = Just n
 getLeafName _ = Nothing
 
 flipMaybe :: (Error (ErrorType me), MonadError me) =>
@@ -265,14 +265,14 @@ pSomes1 :: IORef Int -> Bool -> Definition -> DecQ
 pSomes1 g th (name, _, sel) = flip (valD $ varP $ mkName $ "p_" ++ name) [] $ normalB $
 	varE (msumN th) `appE` listE (map (uncurry $ pSome_ g th) sel)
 
-pSome_ :: IORef Int -> Bool -> [NameLeaf] -> ExpQ -> ExpQ
+pSome_ :: IORef Int -> Bool -> [NameLeaf_] -> ExpQ -> ExpQ
 pSome_ g th nls ret = fmap DoE $ do
 	x <- mapM (transLeaf g th) nls
 	r <- noBindS $ varE (returnN th) `appE` ret
 	return $ concat x ++ [r]
 
-transLeaf :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
-transLeaf g th (n, Here (Right p)) = do
+transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
+transLeaf g th (Here (n, Right p)) = do
 	gn <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	t <- newName $ "xx" ++ show gn
@@ -322,7 +322,7 @@ transLeaf g th (n, Here (Right p)) = do
 			letS [flip (valD n) [] $ normalB $ varE t],
 			noBindS $ varE (returnN th) `appE` tupE []
 		 ]
-transLeaf g th (n, Here (Left v)) = do
+transLeaf g th (Here (n, Left v)) = do
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
@@ -345,19 +345,23 @@ transLeaf g th (n, Here (Left v)) = do
 				 ],
 				bindS n $ varE (returnN th) `appE` varE t
 			 ]
-transLeaf g th (n, NotAfter (Right p)) = do
+transLeaf g th (NotAfter (n, Right p)) = do
 	d <- newName "d"
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ varE (flipMaybeN th) `appE`
-			(DoE <$> transLeaf g th (n, Here (Right p))),
+			(DoE <$> transLeaf g th (Here (n, Right p))),
 		noBindS $ varE (putN th) `appE` varE d]
-transLeaf _ th (_, NotAfter (Left v)) = do
+transLeaf g th (NotAfter (n, Left v)) = do
 	d <- newName "d"
 	sequence [
 		bindS (varP d) $ varE (getN th),
+		noBindS $ varE (flipMaybeN th) `appE`
+			(DoE <$> transLeaf g th (Here (n, Left v))),
+{-
 		noBindS $ varE (flipMaybeN th) `appE`
 			varE (mkName $ "dv_" ++ v ++ "M"),
+-}
 		noBindS $ varE (putN th) `appE` varE d]
 
 varPToWild :: PatQ -> PatQ
