@@ -6,6 +6,9 @@
 	その前に、instance MonadError Maybe としてみようか。
 * String -> m (Char, String) をより一般的に s -> m (c, s) としよう。
 	これには TypeFamilies を使った class によって可能だろう。
+	ただし、これをやると、to file がうまくいかない。
+	ここらへんも構文木の形で作っておく必要があるだろう。
+	まずは普通に書いてうまく動くことを確認しよう。
 * Text/Papillon/Parser.hs を git から外す
 	これは papillon 自体がある程度安定してから、となるだろう。
 * papillon command は何も取らなければ filter とする。
@@ -42,3 +45,4 @@
 	ただし、papillonStr を export するのが役立つ可能性もあるので考えること
 * n:!... のときには n: の部分はいらないが、しかしそれだと、統一感がないな。
 	_:!... とするか :!... とするか
+* {-# LANGUAGE ... #-} がないときにはそれを追加する

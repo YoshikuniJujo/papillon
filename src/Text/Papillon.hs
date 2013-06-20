@@ -3,7 +3,10 @@
 module Text.Papillon (
 	papillon,
 	papillonStr,
-	papillonStr'
+	papillonStr',
+	classSourceQ,
+	Source(..),
+	SourceList(..)
 ) where
 
 import Language.Haskell.TH.Quote
@@ -17,6 +20,10 @@ import Control.Applicative
 
 import Text.Papillon.Parser
 import Data.IORef
+
+import Text.Papillon.Class
+
+classSourceQ True
 
 usingNames :: Peg -> [String]
 usingNames = concatMap getNamesFromDefinition
@@ -54,7 +61,9 @@ papillonStr' :: String -> IO String
 papillonStr' src = do
 	let (pp, decsQ, atp) = declaration' src
 	decs <- runQ decsQ
-	return $ pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp
+	cls <- runQ $ classSourceQ False
+	return $ pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp ++
+		"\n" ++ show (ppr cls)
 
 flipMaybeS :: String
 flipMaybeS =
@@ -76,7 +85,8 @@ flipMaybeN True = 'flipMaybe
 flipMaybeN False = mkName "flipMaybe"
 
 returnN, charN, stateTN, stringN, putN, stateTN', msumN, getN,
-	eitherN, whenN, nullN, strMsgN, throwErrorN, runStateTN :: Bool -> Name
+	eitherN, strMsgN, throwErrorN, runStateTN, justN,
+	getTokenN :: Bool -> Name
 returnN True = 'return
 returnN False = mkName "return"
 throwErrorN True = 'throwError
@@ -99,12 +109,12 @@ getN True = 'get
 getN False = mkName "get"
 eitherN True = ''Either
 eitherN False = mkName "Either"
-whenN True = 'when
-whenN False = mkName "when"
-nullN True = 'null
-nullN False = mkName "null"
 runStateTN True = 'runStateT
 runStateTN False = mkName "runStateT"
+justN True = 'Just
+justN False = mkName "Just"
+getTokenN True = 'getToken
+getTokenN False = mkName "getToken"
 
 declaration :: Bool -> String -> DecsQ
 declaration th src = do
@@ -176,7 +186,27 @@ parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 	map (parseE1 th) names ++ [
 	flip (valD $ varP $ mkName "char") [] $ normalB $
 		varE (mkName "flip") `appE` varE (runStateTN th) `appE`
-			varE (mkName "d") `appE` doE [
+			varE (mkName "d") `appE` caseE (varE (getTokenN th) `appE`
+								varE (mkName "s")) [
+					match	(justN th `conP` [
+							tupP [(varP (mkName "c")),
+							(varP (mkName "s'"))]])
+						(normalB $ doE [
+							noBindS $ varE (putN th)
+								`appE`
+								(varE (mkName "parse") `appE` varE (mkName "s'")),
+							noBindS $ varE (returnN th) `appE`
+								varE (mkName "c")
+						 ])
+						[],
+					match	wildP
+						(normalB $ varE (throwErrorN th) `appE`
+							(varE (strMsgN th) `appE`
+							litE (stringL "eof")))
+						[]
+				 ]
+{-
+doE [
 				noBindS $ varE (whenN th) `appE`
 					(varE (nullN th) `appE` varE (mkName "s"))
 					`appE`
@@ -192,6 +222,7 @@ parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 						varE (mkName "s'")),
 				noBindS $ varE (returnN th) `appE` varE (mkName "c")
 			 ]
+-}
  ]
 parseE1 :: Bool -> String -> DecQ
 parseE1 th name = flip (valD $ varP $ mkName name) [] $ normalB $

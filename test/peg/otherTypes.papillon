@@ -1,0 +1,20 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+import Text.Papillon
+
+instance SourceList MyToken where
+	listToken [] = Nothing
+	listToken (c : s) = Just (c, s)
+
+data MyToken = A | B | C deriving Show
+
+main :: IO ()
+main = case dv_some $ parse [A, B, C] of
+	Right (r, _) -> print r
+	Left err -> putStrLn $ "not match: " ++ err
+
+[papillon|
+
+some :: MyToken = c	{ c };
+
+|]

@@ -68,3 +68,11 @@ Maybe ではなく Either ParseError というようにする。
 もっと一般化し、s -> Either ParseError (c, s) のようにしよう。
 また、papillon で、flipMaybe をちゃんとくっつけるようにする必要がある。
 また、Text/Papillon/Parser.hs を git から外そう。
+
+2013.06.20 Thu.
+
+case getToken s of
+	Just (c, s) -> do
+		put $ parse s
+		return c
+	Nothing -> throwError $ strMsg "eof"

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, TemplateHaskell , PackageImports #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell , FlexibleContexts, PackageImports, TypeFamilies #-}
 module  Text.Papillon.Parser (
 	Peg,
 	Definition,
@@ -88,7 +88,7 @@ empty = []
 type PegFile = (String, Peg, String)
 mkPegFile :: Maybe String -> Maybe String -> String -> String -> b -> c -> (String, b, c)
 mkPegFile (Just p) (Just md) x y z w =
-	("{-#" ++ p ++ ", PackageImports #-}\n" ++ "module " ++ md ++ " where\n" ++
+	("{-#" ++ p ++ addPragmas ++ "module " ++ md ++ " where\n" ++
 	addModules ++
 	x ++ "\n" ++ y, z, w)
 mkPegFile Nothing (Just md) x y z w =
@@ -96,13 +96,15 @@ mkPegFile Nothing (Just md) x y z w =
 	addModules ++
 	x ++ "\n" ++ y, z, w)
 mkPegFile (Just p) Nothing x y z w = (
-	"{-#" ++ p ++ ", PackageImports #-}\n" ++
+	"{-#" ++ p ++ addPragmas ++
 	addModules ++
 	x ++ "\n" ++ y
 	, z, w)
 mkPegFile Nothing Nothing x y z w = (addModules ++ x ++ "\n" ++ y, z, w)
 
-addModules :: String
+addPragmas, addModules :: String
+addPragmas =
+	", FlexibleContexts, PackageImports, TypeFamilies #-}\n"
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n" ++
@@ -219,10 +221,10 @@ parse s = d
                 digit = runStateT p_digit d
                 spaces = runStateT p_spaces d
                 space = runStateT p_space d
-                char = flip runStateT d (do when (null s) (throwError (strMsg "eof"))
-                                            c : s' <- return s
-                                            put (parse s')
-                                            return c)
+                char = flip runStateT d (case getToken s of
+                                             Just (c, s') -> do put (parse s')
+                                                                return c
+                                             _ -> throwError (strMsg "eof"))
 dv_pragmaM :: PackratM MaybeString
 dv_pragmaStrM :: PackratM String
 dv_pragmaEndM :: PackratM Nil
@@ -1055,3 +1057,15 @@ p_space = msum [do xx67_73 <- dvCharsM
                    let _ = xx67_73
                    return ()
                    return (id nil)]
+
+class Source sl
+    where type Token sl
+          getToken :: sl -> Maybe ((Token sl, sl))
+class SourceList c
+    where listToken :: [c] -> Maybe ((c, [c]))
+instance SourceList Char
+    where listToken (c : s) = Just (c, s)
+          listToken _ = Nothing
+instance SourceList c => Source ([c])
+    where type Token ([c]) = c
+          getToken = listToken

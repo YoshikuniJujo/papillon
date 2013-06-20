@@ -84,7 +84,7 @@ empty = []
 type PegFile = (String, Peg, String)
 mkPegFile :: Maybe String -> Maybe String -> String -> String -> b -> c -> (String, b, c)
 mkPegFile (Just p) (Just md) x y z w =
-	("{-#" ++ p ++ ", PackageImports #-}\n" ++ "module " ++ md ++ " where\n" ++
+	("{-#" ++ p ++ addPragmas ++ "module " ++ md ++ " where\n" ++
 	addModules ++
 	x ++ "\n" ++ y, z, w)
 mkPegFile Nothing (Just md) x y z w =
@@ -92,13 +92,15 @@ mkPegFile Nothing (Just md) x y z w =
 	addModules ++
 	x ++ "\n" ++ y, z, w)
 mkPegFile (Just p) Nothing x y z w = (
-	"{-#" ++ p ++ ", PackageImports #-}\n" ++
+	"{-#" ++ p ++ addPragmas ++
 	addModules ++
 	x ++ "\n" ++ y
 	, z, w)
 mkPegFile Nothing Nothing x y z w = (addModules ++ x ++ "\n" ++ y, z, w)
 
-addModules :: String
+addPragmas, addModules :: String
+addPragmas =
+	", FlexibleContexts, PackageImports, TypeFamilies #-}\n"
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n" ++
