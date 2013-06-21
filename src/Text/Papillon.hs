@@ -296,9 +296,10 @@ transLeaf' g th (n, Left v) = do
 		VarP _ -> sequence [
 			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M",
 			noBindS $ varE (returnN th) `appE` conE (mkName "()")]
-		WildP -> sequence [
-			bindS wildP $ varE $ mkName $ "dv_" ++ v ++ "M",
-			noBindS $ varE (returnN th) `appE` conE (mkName "()")]
+		WildP -> (: []) <$> noBindS (infixApp
+			(varE $ mkName $ "dv_" ++ v ++ "M")
+			(varE $ mkName ">>")
+			(varE (returnN th) `appE` tupE []))
 		_ -> do	gn <- runIO $ readIORef g
 			runIO $ modifyIORef g succ
 			t <- newName $ "xx" ++ show gn

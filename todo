@@ -1,6 +1,7 @@
 * transLeaf の refactoring
-	Here をまずは作って、それを使って NotAfter を作るようにする
-	型の再考も必要だ
+	型の再考必要
+	_ <- ...
+	return ()	=> ... >> return ()
 * [isLower] を [isLower c] のようにしてしまおう
 
 * 構文の変更
