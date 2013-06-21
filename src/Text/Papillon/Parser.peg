@@ -107,16 +107,13 @@ addModules =
 	"import \"monads-tf\" Control.Monad.Error\n" ++
 	"import Control.Monad.Trans.Error (Error (..))\n"
 
-true :: Bool
-true = True
-
 charP :: Char -> PatQ
 charP = litP . charL
 stringP :: String -> PatQ
 stringP = litP . stringL
 
 isAlphaNumOt, elemNTs :: Char -> Bool
-isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}"
+isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/"
 elemNTs = (`elem` "nt\\'")
 
 getNTs :: Char -> Char
@@ -125,30 +122,8 @@ getNTs 't' = '\t'
 getNTs '\\' = '\\'
 getNTs '\'' = '\''
 getNTs o = o
-
-isEqual, isSlash, isSemi, isColon, isOpenWave, isCloseWave, isLowerU, isNot,
-	isChon, isDQ, isBS :: Char -> Bool
-isEqual = (== '=')
-isSlash = (== '/')
-isSemi = (== ';')
-isColon = (== ':')
-isOpenWave = (== '{')
-isCloseWave = (== '}')
+isLowerU :: Char -> Bool
 isLowerU c = isLower c || c == '_'
-isNot = (== '!')
-isChon = (== '\'')
-isDQ = (== '"')
-isBS = (== '\\')
-
-isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL :: Char -> Bool
-[isOpenBr, isP, isA, isI, isL, isO, isN, isBar, isCloseBr, isNL] =
-	map (==) "[pailon|]\n"
-
-{-
-tString, tChar :: TypeQ
-tString = varT ''String
-tChar = varT ''Char
--}
 
 tString :: String
 tString = "String"
@@ -160,10 +135,10 @@ mkTTPeg s p =
 
 pegFile :: PegFile
 	= pr:pragma md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
-		p:peg _:spaces _:[isBar] _:[isCloseBr] _:[isNL] atp:afterPeg
+		p:peg _:spaces '|' ']' '\n' atp:afterPeg
 			{ mkPegFile pr md pip pp p atp }
 	/ pr:pragma md:moduleDec pp:prePeg _:pap p:peg _:spaces
-		_:[isBar] _:[isCloseBr] _:[isNL] atp:afterPeg
+		'|' ']' '\n' atp:afterPeg
 			{ mkPegFile pr md empty pp p atp }
 ;
 pragma :: MaybeString
@@ -189,15 +164,15 @@ whr :: Nil
 	= 'w' 'h' 'e' 'r' 'e'				{ nil }
 ;
 preImpPap :: String
-	= !_:importPapillon !_:pap c:[const true] pip:preImpPap	{ cons c pip }
+	= !_:importPapillon !_:pap c pip:preImpPap	{ cons c pip }
 	/					{ empty }
 ;
 prePeg :: String
-	= !_:pap c:[const true] pp:prePeg	{ cons c pp }
+	= !_:pap c pp:prePeg	{ cons c pp }
 	/					{ empty }
 ;
 afterPeg :: String
-	= c:[const true] atp:afterPeg		{ cons c atp }
+	= c atp:afterPeg		{ cons c atp }
 	/					{ empty }
 ;
 importPapillon :: Nil
@@ -211,8 +186,7 @@ typToken :: String
 	= t:typ _:spaces			{ t }
 ;
 pap :: Nil
-	= _:[isNL] _:[isOpenBr] _:[isP] _:[isA] _:[isP] _:[isI] _:[isL] _:[isL]
-		_:[isO] _:[isN] _:[isBar] _:[isNL]	{ nil }
+	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ nil }
 ;
 peg :: TTPeg
 	= _:spaces s:sourceType p:peg_		{ mkTTPeg s p }
@@ -226,41 +200,41 @@ peg_ :: Peg
 	/ 	{ empty }
 ;
 definition :: Definition
-	= v:variable _:spaces _:[isColon] _:[isColon]
-		_:spaces t:typ _:spaces _:[isEqual]
-		_:spaces sel:selection _:spaces _:[isSemi]	{ mkDef v t sel }
+	= v:variable _:spaces ':' ':'
+		_:spaces t:typ _:spaces '='
+		_:spaces sel:selection _:spaces ';'	{ mkDef v t sel }
 ;
 selection :: Selection
-	= ex:expressionHs _:spaces _:[isSlash] _:spaces sel:selection	{ cons ex sel }
+	= ex:expressionHs _:spaces '/' _:spaces sel:selection	{ cons ex sel }
 	/ ex:expressionHs	{ cons ex empty }
 ;
 expressionHs :: ExpressionHs
-	= e:expression _:spaces _:[isOpenWave] _:spaces h:hsExp
-		_:spaces _:[isCloseWave]	{ mkExpressionHs e h }
+	= e:expression _:spaces '{' _:spaces h:hsExp
+		_:spaces '}'	{ mkExpressionHs e h }
 ;
 expression :: Expression
 	= l:nameLeaf_ _:spaces e:expression	{ cons l e }
 	/ 	{ empty }
 ;
 nameLeaf_ :: NameLeaf_
-	= _:[isNot] nl:nameLeaf			{ notAfter nl }
+	= '!' nl:nameLeaf			{ notAfter nl }
 	/ nl:nameLeaf				{ here nl }
 ;
 nameLeaf :: NameLeaf
-	= n:pat _:[isColon] l:leaf		{ mkNameLeaf n l }
+	= n:pat ':' l:leaf		{ mkNameLeaf n l }
 	/ n:pat					{ mkNameLeaf n ctLeaf }
---	/ _:[isColon] l:leaf_			{ mkNameLeaf wildP l }
+--	/ ':' l:leaf_			{ mkNameLeaf wildP l }
 ;
 pat :: PatQ
 	= "_":variable				{ wildP }
 	/ n:variable				{ strToPatQ n }
 	/ t:typ _:spaces ps:pats		{ conToPatQ t ps }
-	/ _:[isChon] c:charLit _:[isChon]	{ charP c }
-	/ _:[isDQ] s:stringLit _:[isDQ]		{ stringP s }
+	/ '\'' c:charLit '\''			{ charP c }
+	/ '"' s:stringLit '"'			{ stringP s }
 ;
 charLit :: Char
-	= c:[isAlphaNumOt]			{ c }
-	/ _:[isBS] c:[elemNTs]			{ getNTs c }
+	= c:[isAlphaNumOt c]			{ c }
+	/ '\\' c:[elemNTs c]			{ getNTs c }
 ;
 stringLit :: String
 	= !_:dq c s:stringLit			{ cons c s }
@@ -282,7 +256,7 @@ leaf :: Leaf
 	/ v:variable	{ right v }
 ;
 test :: ExR
-	= _:[isOpenBr] h:hsExp _:[isCloseBr]	{ getEx h }
+	= '[' h:hsExp ']'		{ getEx h }
 ;
 hsExp :: Ex
 	= v:variable _:spaces h:hsExp	{ apply v h }
@@ -304,20 +278,20 @@ alpha :: Char
 	/ d:digit	{ d }
 ;
 upper :: Char
-	= u:[isUpper]	{ u }
+	= u:[isUpper u]		{ u }
 ;
 lower :: Char
-	= l:[isLowerU]	{ l }
+	= l:[isLowerU l]	{ l }
 ;
 digit :: Char
-	= d:[isDigit]	{ d }
+	= d:[isDigit d]		{ d }
 ;
 spaces :: Nil
 	= _:space _:spaces	{ nil }
 	/ 	{ nil }
 ;
 space :: Nil
-	= _:[isSpace]	{ nil }
+	= s:[isSpace s]			{ nil }
 	/ '-' '-' _:notNLString _:nl	{ nil }
 	/ _:comment			{ nil }
 ;
@@ -326,7 +300,7 @@ notNLString :: String
 	/			{ empty }
 ;
 nl :: Nil
-	= _:[isNL]		{ nil }
+	= '\n'			{ nil }
 ;
 comment :: Nil
 	= '{' '-' !'#' _:comments _:comEnd	{ nil }
