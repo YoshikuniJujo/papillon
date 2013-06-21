@@ -30,8 +30,8 @@ type YourTokens = [YourToken]
 
 cons :: a -> [a] -> [a]
 cons = (:)
-empty :: [a]
-empty = []
+emp :: [a]
+emp = []
 
 [papillon|
 
@@ -39,8 +39,8 @@ source: YourSource
 
 str :: YourTokens
 	= c s:str	{ cons c s }
-	/		{ empty }
+	/		{ emp }
 ;
-some :: YourToken = c	{ c };
+something :: YourToken = c	{ c };
 
 |]

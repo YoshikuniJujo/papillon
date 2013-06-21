@@ -9,8 +9,8 @@ nil :: Nil
 nil = ()
 cons :: a -> [a] -> [a]
 cons = (:)
-empty :: [a]
-empty = []
+emp :: [a]
+emp = []
 
 true :: Bool
 true = True
@@ -27,15 +27,15 @@ oneTwoThree :: Nil
 ;
 string :: String
 	= c s:string	{ cons c s }
-	/		{ empty }
+	/		{ emp }
 ;
 three :: Nil
 	= '3' '3' '3'	{ nil }
 ;
 other :: Nil
-	= '3':some	{ nil }
+	= '3':something	{ nil }
 ;
-some :: Char
+something :: Char
 	= c:[isDigit c]	{ c }
 ;
 

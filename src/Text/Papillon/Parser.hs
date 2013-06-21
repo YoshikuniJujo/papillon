@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, TemplateHaskell , FlexibleContexts, PackageImports, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell , FlexibleContexts, PackageImports, TypeFamilies, RankNTypes #-}
 module  Text.Papillon.Parser (
 	Peg,
 	Definition,
@@ -12,7 +12,7 @@ module  Text.Papillon.Parser (
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
 import Control.Monad.Trans.Error (Error (..))
-
+import Control.Applicative
 
 
 import Data.Char
@@ -88,8 +88,8 @@ apply f x = \g -> x (toExp f g)
 getEx :: Ex -> ExR
 getEx ex = ex (varE $ mkName "id")
 
-empty :: [a]
-empty = []
+emp :: [a]
+emp = []
 
 type PegFile = (String, TTPeg, String)
 mkPegFile :: Maybe String -> Maybe String -> String -> String -> b -> c -> (String, b, c)
@@ -110,11 +110,12 @@ mkPegFile Nothing Nothing x y z w = (addModules ++ x ++ "\n" ++ y, z, w)
 
 addPragmas, addModules :: String
 addPragmas =
-	", FlexibleContexts, PackageImports, TypeFamilies #-}\n"
+	", FlexibleContexts, PackageImports, TypeFamilies, RankNTypes #-}\n"
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n" ++
-	"import Control.Monad.Trans.Error (Error (..))\n"
+	"import Control.Monad.Trans.Error (Error (..))\n" ++
+	"import Control.Applicative"
 
 charP :: Char -> PatQ
 charP = litP . charL
@@ -472,7 +473,7 @@ p_pegFile = foldl1 mplus [do pr <- dv_pragmaM
                              atp <- dv_afterPegM
                              return ()
                              if True then return () else throwError (strMsg "not match")
-                             return (id mkPegFile pr md empty pp p atp)]
+                             return (id mkPegFile pr md emp pp p atp)]
 p_pragma = foldl1 mplus [do dv_spacesM >> return ()
                             if True then return () else throwError (strMsg "not match")
                             xx6_6 <- dvCharsM
@@ -520,7 +521,7 @@ p_pragmaStr = foldl1 mplus [do ddd9_9 <- get
                                return ()
                                if True then return () else throwError (strMsg "not match")
                                return (id cons c s),
-                            do return (id empty)]
+                            do return (id emp)]
 p_pragmaEnd = foldl1 mplus [do xx11_11 <- dvCharsM
                                case xx11_11 of
                                    '#' -> return ()
@@ -605,7 +606,7 @@ p_moduleDecStr = foldl1 mplus [do ddd20_20 <- get
                                   return ()
                                   if True then return () else throwError (strMsg "not match")
                                   return (id cons c s),
-                               do return (id empty)]
+                               do return (id emp)]
 p_whr = foldl1 mplus [do xx22_22 <- dvCharsM
                          case xx22_22 of
                              'w' -> return ()
@@ -661,7 +662,7 @@ p_preImpPap = foldl1 mplus [do ddd27_27 <- get
                                return ()
                                if True then return () else throwError (strMsg "not match")
                                return (id cons c pip),
-                            do return (id empty)]
+                            do return (id emp)]
 p_prePeg = foldl1 mplus [do ddd30_30 <- get
                             flipMaybe (do dv_papM >> return ()
                                           if True
@@ -675,7 +676,7 @@ p_prePeg = foldl1 mplus [do ddd30_30 <- get
                             return ()
                             if True then return () else throwError (strMsg "not match")
                             return (id cons c pp),
-                         do return (id empty)]
+                         do return (id emp)]
 p_afterPeg = foldl1 mplus [do xx32_32 <- dvCharsM
                               let c = xx32_32
                               if True then return () else throwError (strMsg "not match")
@@ -683,7 +684,7 @@ p_afterPeg = foldl1 mplus [do xx32_32 <- dvCharsM
                               return ()
                               if True then return () else throwError (strMsg "not match")
                               return (id cons c atp),
-                           do return (id empty)]
+                           do return (id emp)]
 p_importPapillon = foldl1 mplus [do xx33_33 <- dv_varTokenM
                                     case xx33_33 of
                                         "import" -> return ()
@@ -854,7 +855,7 @@ p_peg_ = foldl1 mplus [do dv_spacesM >> return ()
                           return ()
                           if True then return () else throwError (strMsg "not match")
                           return (id cons d p),
-                       do return (id empty)]
+                       do return (id emp)]
 p_definition = foldl1 mplus [do v <- dv_variableM
                                 return ()
                                 if True then return () else throwError (strMsg "not match")
@@ -924,7 +925,7 @@ p_selection = foldl1 mplus [do ex <- dv_expressionHsM
                             do ex <- dv_expressionHsM
                                return ()
                                if True then return () else throwError (strMsg "not match")
-                               return (id cons ex empty)]
+                               return (id cons ex emp)]
 p_expressionHs = foldl1 mplus [do e <- dv_expressionM
                                   return ()
                                   if True then return () else throwError (strMsg "not match")
@@ -961,7 +962,7 @@ p_expression = foldl1 mplus [do l <- dv_nameLeaf_M
                                 return ()
                                 if True then return () else throwError (strMsg "not match")
                                 return (id cons l e),
-                             do return (id empty)]
+                             do return (id emp)]
 p_nameLeaf_ = foldl1 mplus [do xx58_58 <- dvCharsM
                                case xx58_58 of
                                    '!' -> return ()
@@ -1082,7 +1083,7 @@ p_stringLit = foldl1 mplus [do ddd68_68 <- get
                                return ()
                                if True then return () else throwError (strMsg "not match")
                                return (id cons c s),
-                            do return (id empty)]
+                            do return (id emp)]
 p_dq = foldl1 mplus [do xx70_70 <- dvCharsM
                         case xx70_70 of
                             '"' -> return ()
@@ -1098,7 +1099,7 @@ p_pats = foldl1 mplus [do p <- dv_patM
                           return ()
                           if True then return () else throwError (strMsg "not match")
                           return (id cons p ps),
-                       do return (id empty)]
+                       do return (id emp)]
 p_leaf = foldl1 mplus [do t <- dv_testM
                           return ()
                           if True then return () else throwError (strMsg "not match")
@@ -1166,7 +1167,7 @@ p_tvtail = foldl1 mplus [do a <- dv_alphaM
                             return ()
                             if True then return () else throwError (strMsg "not match")
                             return (id cons a t),
-                         do return (id empty)]
+                         do return (id emp)]
 p_alpha = foldl1 mplus [do u <- dv_upperM
                            return ()
                            if True then return () else throwError (strMsg "not match")
@@ -1238,7 +1239,7 @@ p_notNLString = foldl1 mplus [do ddd79_79 <- get
                                  return ()
                                  if True then return () else throwError (strMsg "not match")
                                  return (id cons c s),
-                              do return (id empty)]
+                              do return (id emp)]
 p_nl = foldl1 mplus [do xx81_81 <- dvCharsM
                         case xx81_81 of
                             '\n' -> return ()
@@ -1332,3 +1333,8 @@ instance SourceList Char
 instance SourceList c => Source ([c])
     where type Token ([c]) = c
           getToken = listToken
+list :: forall m a . (MonadPlus m, Applicative m) => m a -> m ([a])
+list1 :: forall m a . (MonadPlus m, Applicative m) =>
+                      m a -> m ([a])
+list p = list1 p `mplus` return []
+list1 p = ((:) <$> p) <*> list p

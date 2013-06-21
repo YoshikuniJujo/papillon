@@ -30,7 +30,10 @@ source-repository	this
 library
   hs-source-dirs:	src
   exposed-modules:	Text.Papillon
-  other-modules:	Text.Papillon.Parser, Text.Papillon.Class
+  other-modules:
+    Text.Papillon.Parser,
+    Text.Papillon.Class,
+    Text.Papillon.List
   build-depends:	base > 3 && < 5, template-haskell, monads-tf, transformers
   ghc-options:		-Wall
 

@@ -3,7 +3,7 @@
 import Text.Papillon
 
 main :: IO ()
-main = case dv_some $ parse "abc\ndefn" of
+main = case dv_something $ parse "abc\ndefn" of
 	Right (r, _) -> print r
 	Left err -> putStrLn $ "not match: " ++ err
 
@@ -12,14 +12,14 @@ true = True
 
 cons :: a -> [a] -> [a]
 cons = (:)
-empty :: [a]
-empty = []
+emp :: [a]
+emp = []
 
 [papillon|
 
-some :: String
-	= !'\n' c s:some	{ cons c s }
-	/				{ empty }
+something :: String
+	= !'\n' c s:something	{ cons c s }
+	/				{ emp }
 ;
 
 |]

@@ -14,8 +14,8 @@ main = do
 
 cons :: a -> [a] -> [a]
 cons = (:)
-empty :: [a]
-empty = []
+emp :: [a]
+emp = []
 
 type MString = Maybe String
 just :: a -> Maybe a
@@ -29,16 +29,16 @@ onlyDigits :: String
 	= Just s:digits		{ s }
 ;
 digits :: MString
-	= s:some		{ just s }
+	= s:something		{ just s }
 	/ _:other		{ nothing }
 ;
-some :: String
-	= c:[isDigit c] s:some	{ cons c s }
-	/ c:[isDigit c]		{ cons c empty }
+something :: String
+	= c:[isDigit c] s:something	{ cons c s }
+	/ c:[isDigit c]		{ cons c emp }
 ;
 other :: String
 	= c:[isLower c] s:other	{ cons c s }
-	/ c:[isLower c]		{ cons c empty }
+	/ c:[isLower c]		{ cons c emp }
 ;
 
 |]

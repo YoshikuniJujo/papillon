@@ -4,7 +4,7 @@ import Text.Papillon
 
 main :: IO ()
 main = do
-	case dv_some $ parse "parse fail" of
+	case dv_something $ parse "parse fail" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left err -> putStrLn $ "OK! it's fail: " ++ show err
 	case dv_more $ parse "" of
@@ -16,20 +16,20 @@ nil :: Nil
 nil = ()
 cons :: a -> [a] -> [a]
 cons = (:)
-empty :: [a]
-empty = []
+emp :: [a]
+emp = []
 
 [papillon|
 
 more :: Char = c		{ c }
 ;
-some :: Nil = !_:other		{ nil }
+something :: Nil = !_:other		{ nil }
 ;
 other :: Nil = "parse fail":string	{ nil }
 ;
 string :: String
 	= c s:string		{ cons c s }
-	/			{ empty }
+	/			{ emp }
 ;
 
 |]

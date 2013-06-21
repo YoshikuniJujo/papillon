@@ -4,9 +4,10 @@ module Text.Papillon (
 	papillon,
 	papillonStr,
 	papillonStr',
-	classSourceQ,
+--	classSourceQ,
 	Source(..),
-	SourceList(..)
+	SourceList(..),
+--	listDec
 ) where
 
 import Language.Haskell.TH.Quote
@@ -22,8 +23,10 @@ import Text.Papillon.Parser
 import Data.IORef
 
 import Text.Papillon.Class
+import Text.Papillon.List
 
 classSourceQ True
+listDec True
 
 usingNames :: Peg -> [String]
 usingNames = concatMap getNamesFromDefinition
@@ -62,8 +65,9 @@ papillonStr' src = do
 	let (pp, decsQ, atp) = declaration' src
 	decs <- runQ decsQ
 	cls <- runQ $ classSourceQ False
+	lst <- runQ $ listDec False
 	return $ pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp ++
-		"\n" ++ show (ppr cls)
+		"\n" ++ show (ppr cls) ++ "\n" ++ show (ppr lst)
 
 flipMaybeS :: String
 flipMaybeS =

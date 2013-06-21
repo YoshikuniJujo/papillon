@@ -4,14 +4,14 @@ import Text.Papillon
 import Data.Char
 
 main :: IO ()
-main = case dv_some $ parse "zoi gy. hello myfriend .gy" of
+main = case dv_something $ parse "zoi gy. hello myfriend .gy" of
 	Right (r, _) -> print r
 	Left err -> putStrLn $ "not match: " ++ err
 
 cons :: a -> [a] -> [a]
 cons = (:)
-empty :: [a]
-empty = []
+emp :: [a]
+emp = []
 
 type Nil = ()
 nil :: Nil
@@ -28,13 +28,13 @@ type Strings = [String]
 
 [papillon|
 
-some :: Strings
+something :: Strings
 	= "zoi":var _:var '.' _:spaces v:vars { v }
 ;
 vars :: Strings
 	= v:var vs:vars			{ cons v vs }
 	/ '.' vs:vars			{ vs }
-	/				{ empty }
+	/				{ emp }
 ;
 vars_ :: TwoString
 	= v:var '.' _:spaces h:var[notEq v h]	{ tuple v h }
@@ -44,7 +44,7 @@ var :: String
 ;
 variable :: String
 	= !' ' !'.' c s:var	{ cons c s }
-	/ !' ' !'.' c		{ cons c empty }
+	/ !' ' !'.' c		{ cons c emp }
 ;
 spaces :: Nil
 	= s:[isSpace s] _:spaces	{ nil }
