@@ -71,7 +71,7 @@ true = True
 -- {-comment-}
 -}
 expression :: Integer
-	= _:spacing v:additive !_:[const true] { getMul v }
+	= _:spacing v:additive !_:[true] { getMul v }
 ;
 additive :: LeftMul
 	= l:multitive s:symbolA r:additive	{ comMul s l r }
@@ -84,7 +84,7 @@ multitive :: LeftMul
 ;
 primary :: Integer
 	= d:decimal				{ d }
-	/ _:[isOpenParen] _:spacing v:additive _:[isCloseParen] _:spacing
+	/ c:[isOpenParen c] _:spacing v:additive cc:[isCloseParen cc] _:spacing
 						{ getMul v }
 ;
 decimal :: Integer
@@ -95,7 +95,7 @@ digits :: LeftInteger
 	/ d:digit			{ toLeftInteger d }
 ;
 digit :: Int
-	= d:[isDigit]			{ readC d }
+	= d:[isDigit d]			{ readC d }
 ;
 symbolA :: Char
 	= s:symCharsA _:spacing		{ s }
@@ -104,13 +104,13 @@ symbolM :: Char
 	= s:symCharsM _:spacing		{ s }
 ;
 symCharsA :: Char
-	= s:[isSymA]			{ s }
+	= s:[isSymA s]			{ s }
 ;
 symCharsM :: Char
-	= s:[isSymM]			{ s }
+	= s:[isSymM s]			{ s }
 ;
 spacing :: Nil
-	= _:[isSpace] _:spacing	{ nil }
+	= s:[isSpace s] _:spacing	{ nil }
 	/				{ nil }
 ;
 |]

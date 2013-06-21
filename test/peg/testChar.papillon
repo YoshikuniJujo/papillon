@@ -36,7 +36,7 @@ other :: Nil
 	= '3':some	{ nil }
 ;
 some :: Char
-	= c:[isDigit]	{ c }
+	= c:[isDigit c]	{ c }
 ;
 
 |]

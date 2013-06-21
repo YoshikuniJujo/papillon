@@ -33,12 +33,12 @@ digits :: MString
 	/ _:other		{ nothing }
 ;
 some :: String
-	= c:[isDigit] s:some	{ cons c s }
-	/ c:[isDigit]		{ cons c empty }
+	= c:[isDigit c] s:some	{ cons c s }
+	/ c:[isDigit c]		{ cons c empty }
 ;
 other :: String
-	= c:[isLower] s:other	{ cons c s }
-	/ c:[isLower]		{ cons c empty }
+	= c:[isLower c] s:other	{ cons c s }
+	/ c:[isLower c]		{ cons c empty }
 ;
 
 |]

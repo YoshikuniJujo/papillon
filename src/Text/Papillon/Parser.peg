@@ -35,7 +35,7 @@ type Ex = ExpQ -> ExpQ
 type ExR = ExpQ
 
 ctLeaf :: Leaf
-ctLeaf = Right $ varE (mkName "const") `appE` conE (mkName "True")
+ctLeaf = Right $ conE (mkName "True") -- varE (mkName "const") `appE` conE (mkName "True")
 
 left :: b -> Either a b
 right :: a -> Either a b

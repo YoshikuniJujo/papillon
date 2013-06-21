@@ -253,8 +253,8 @@ pSome_ g th nls ret = fmap DoE $ do
 	r <- noBindS $ varE (returnN th) `appE` ret
 	return $ concat x ++ [r]
 
-afterCheck :: Bool -> Name -> ExpQ -> StmtQ
-afterCheck th t p = noBindS $ condE (p `appE` varE t)
+afterCheck :: Bool -> ExpQ -> StmtQ
+afterCheck th p = noBindS $ condE p -- `appE` varE t)
 	(varE (returnN th) `appE` conE (mkName "()"))
 	(varE (throwErrorN th) `appE` (varE (strMsgN th) `appE`
 						litE (stringL "not match")))
@@ -281,13 +281,13 @@ transLeaf' g th (n, Right p) = do
 		VarP _ -> sequence [
 			bindS (varP t) $ varE $ mkName "dvCharsM",
 			letS [flip (valD n) [] $ normalB $ varE t],
-			afterCheck th t p]
+			afterCheck th p]
 		WildP -> sequence [
-			bindS (varP t) $ varE $ mkName "dvCharsM",
-			afterCheck th t p]
+			bindS wildP $ varE $ mkName "dvCharsM",
+			afterCheck th p]
 		_ -> do	ret <- sequence [
 				bindS (varP t) $ varE $ mkName "dvCharsM",
-				afterCheck th t p]
+				afterCheck th p]
 			ret2 <- beforeMatch th t n
 			return $ ret ++ ret2
 transLeaf' g th (n, Left v) = do

@@ -39,7 +39,7 @@ type Ex = ExpQ -> ExpQ
 type ExR = ExpQ
 
 ctLeaf :: Leaf
-ctLeaf = Right $ varE (mkName "const") `appE` conE (mkName "True")
+ctLeaf = Right $ conE (mkName "True") -- varE (mkName "const") `appE` conE (mkName "True")
 
 left :: b -> Either a b
 right :: a -> Either a b
@@ -412,25 +412,40 @@ p_pegFile = foldl1 mplus [do pr <- dv_pragmaM
                              return ()
                              pip <- dv_preImpPapM
                              return ()
-                             dv_importPapillonM >> return ()
+                             _ <- dv_importPapillonM
+                             return ()
                              pp <- dv_prePegM
                              return ()
-                             dv_papM >> return ()
+                             _ <- dv_papM
+                             return ()
                              p <- dv_pegM
                              return ()
-                             dv_spacesM >> return ()
+                             _ <- dv_spacesM
+                             return ()
                              xx0_0 <- dvCharsM
                              if id isBar xx0_0
                               then return ()
                               else throwError (strMsg "not match")
+                             case xx0_0 of
+                                 _ -> return ()
+                             let _ = xx0_0
+                             return ()
                              xx1_1 <- dvCharsM
                              if id isCloseBr xx1_1
                               then return ()
                               else throwError (strMsg "not match")
+                             case xx1_1 of
+                                 _ -> return ()
+                             let _ = xx1_1
+                             return ()
                              xx2_2 <- dvCharsM
                              if id isNL xx2_2
                               then return ()
                               else throwError (strMsg "not match")
+                             case xx2_2 of
+                                 _ -> return ()
+                             let _ = xx2_2
+                             return ()
                              atp <- dv_afterPegM
                              return ()
                              return (id mkPegFile pr md pip pp p atp),
@@ -440,26 +455,41 @@ p_pegFile = foldl1 mplus [do pr <- dv_pragmaM
                              return ()
                              pp <- dv_prePegM
                              return ()
-                             dv_papM >> return ()
+                             _ <- dv_papM
+                             return ()
                              p <- dv_pegM
                              return ()
-                             dv_spacesM >> return ()
+                             _ <- dv_spacesM
+                             return ()
                              xx3_3 <- dvCharsM
                              if id isBar xx3_3
                               then return ()
                               else throwError (strMsg "not match")
+                             case xx3_3 of
+                                 _ -> return ()
+                             let _ = xx3_3
+                             return ()
                              xx4_4 <- dvCharsM
                              if id isCloseBr xx4_4
                               then return ()
                               else throwError (strMsg "not match")
+                             case xx4_4 of
+                                 _ -> return ()
+                             let _ = xx4_4
+                             return ()
                              xx5_5 <- dvCharsM
                              if id isNL xx5_5
                               then return ()
                               else throwError (strMsg "not match")
+                             case xx5_5 of
+                                 _ -> return ()
+                             let _ = xx5_5
+                             return ()
                              atp <- dv_afterPegM
                              return ()
                              return (id mkPegFile pr md empty pp p atp)]
-p_pragma = foldl1 mplus [do dv_spacesM >> return ()
+p_pragma = foldl1 mplus [do _ <- dv_spacesM
+                            return ()
                             xx6_6 <- dvCharsM
                             if const True xx6_6
                              then return ()
@@ -489,19 +519,26 @@ p_pragma = foldl1 mplus [do dv_spacesM >> return ()
                             return ()
                             s <- dv_pragmaStrM
                             return ()
-                            dv_pragmaEndM >> return ()
-                            dv_spacesM >> return ()
+                            _ <- dv_pragmaEndM
+                            return ()
+                            _ <- dv_spacesM
+                            return ()
                             return (id just s),
-                         do dv_spacesM >> return ()
+                         do _ <- dv_spacesM
+                            return ()
                             return (id nothing)]
 p_pragmaStr = foldl1 mplus [do d_9 <- get
-                               flipMaybe (do dv_pragmaEndM >> return ())
+                               flipMaybe (do _ <- dv_pragmaEndM
+                                             return ())
                                put d_9
                                xx9_10 <- dvCharsM
-                               let c = xx9_10
                                if const True xx9_10
                                 then return ()
                                 else throwError (strMsg "not match")
+                               case xx9_10 of
+                                   _ -> return ()
+                               let c = xx9_10
+                               return ()
                                s <- dv_pragmaStrM
                                return ()
                                return (id cons c s),
@@ -590,17 +627,22 @@ p_moduleDec = foldl1 mplus [do xx13_14 <- dvCharsM
                                return ()
                                s <- dv_moduleDecStrM
                                return ()
-                               dv_whrM >> return ()
+                               _ <- dv_whrM
+                               return ()
                                return (id just s),
                             do return (id nothing)]
 p_moduleDecStr = foldl1 mplus [do d_20 <- get
-                                  flipMaybe (do dv_whrM >> return ())
+                                  flipMaybe (do _ <- dv_whrM
+                                                return ())
                                   put d_20
                                   xx19_21 <- dvCharsM
-                                  let c = xx19_21
                                   if const True xx19_21
                                    then return ()
                                    else throwError (strMsg "not match")
+                                  case xx19_21 of
+                                      _ -> return ()
+                                  let c = xx19_21
+                                  return ()
                                   s <- dv_moduleDecStrM
                                   return ()
                                   return (id cons c s),
@@ -652,37 +694,49 @@ p_whr = foldl1 mplus [do xx20_22 <- dvCharsM
                          return ()
                          return (id nil)]
 p_preImpPap = foldl1 mplus [do d_27 <- get
-                               flipMaybe (do dv_importPapillonM >> return ())
+                               flipMaybe (do _ <- dv_importPapillonM
+                                             return ())
                                put d_27
                                d_28 <- get
-                               flipMaybe (do dv_papM >> return ())
+                               flipMaybe (do _ <- dv_papM
+                                             return ())
                                put d_28
                                xx25_29 <- dvCharsM
-                               let c = xx25_29
                                if id const true xx25_29
                                 then return ()
                                 else throwError (strMsg "not match")
+                               case xx25_29 of
+                                   _ -> return ()
+                               let c = xx25_29
+                               return ()
                                pip <- dv_preImpPapM
                                return ()
                                return (id cons c pip),
                             do return (id empty)]
 p_prePeg = foldl1 mplus [do d_30 <- get
-                            flipMaybe (do dv_papM >> return ())
+                            flipMaybe (do _ <- dv_papM
+                                          return ())
                             put d_30
                             xx26_31 <- dvCharsM
-                            let c = xx26_31
                             if id const true xx26_31
                              then return ()
                              else throwError (strMsg "not match")
+                            case xx26_31 of
+                                _ -> return ()
+                            let c = xx26_31
+                            return ()
                             pp <- dv_prePegM
                             return ()
                             return (id cons c pp),
                          do return (id empty)]
 p_afterPeg = foldl1 mplus [do xx27_32 <- dvCharsM
-                              let c = xx27_32
                               if id const true xx27_32
                                then return ()
                                else throwError (strMsg "not match")
+                              case xx27_32 of
+                                  _ -> return ()
+                              let c = xx27_32
+                              return ()
                               atp <- dv_afterPegM
                               return ()
                               return (id cons c atp),
@@ -691,14 +745,12 @@ p_importPapillon = foldl1 mplus [do xx28_33 <- dv_varTokenM
                                     case xx28_33 of
                                         "import" -> return ()
                                         _ -> throwError (strMsg "not match")
-                                    let "import" = xx28_33
-                                    return ()
+                                    "import" <- return xx28_33
                                     xx29_34 <- dv_typTokenM
                                     case xx29_34 of
                                         "Text" -> return ()
                                         _ -> throwError (strMsg "not match")
-                                    let "Text" = xx29_34
-                                    return ()
+                                    "Text" <- return xx29_34
                                     xx30_35 <- dvCharsM
                                     if const True xx30_35
                                      then return ()
@@ -708,72 +760,123 @@ p_importPapillon = foldl1 mplus [do xx28_33 <- dv_varTokenM
                                         _ -> throwError (strMsg "not match")
                                     let '.' = xx30_35
                                     return ()
-                                    dv_spacesM >> return ()
+                                    _ <- dv_spacesM
+                                    return ()
                                     xx31_36 <- dv_typTokenM
                                     case xx31_36 of
                                         "Papillon" -> return ()
                                         _ -> throwError (strMsg "not match")
-                                    let "Papillon" = xx31_36
-                                    return ()
+                                    "Papillon" <- return xx31_36
                                     return (id nil)]
 p_varToken = foldl1 mplus [do v <- dv_variableM
                               return ()
-                              dv_spacesM >> return ()
+                              _ <- dv_spacesM
+                              return ()
                               return (id v)]
 p_typToken = foldl1 mplus [do t <- dv_typM
                               return ()
-                              dv_spacesM >> return ()
+                              _ <- dv_spacesM
+                              return ()
                               return (id t)]
 p_pap = foldl1 mplus [do xx32_37 <- dvCharsM
                          if id isNL xx32_37
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx32_37 of
+                             _ -> return ()
+                         let _ = xx32_37
+                         return ()
                          xx33_38 <- dvCharsM
                          if id isOpenBr xx33_38
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx33_38 of
+                             _ -> return ()
+                         let _ = xx33_38
+                         return ()
                          xx34_39 <- dvCharsM
                          if id isP xx34_39
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx34_39 of
+                             _ -> return ()
+                         let _ = xx34_39
+                         return ()
                          xx35_40 <- dvCharsM
                          if id isA xx35_40
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx35_40 of
+                             _ -> return ()
+                         let _ = xx35_40
+                         return ()
                          xx36_41 <- dvCharsM
                          if id isP xx36_41
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx36_41 of
+                             _ -> return ()
+                         let _ = xx36_41
+                         return ()
                          xx37_42 <- dvCharsM
                          if id isI xx37_42
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx37_42 of
+                             _ -> return ()
+                         let _ = xx37_42
+                         return ()
                          xx38_43 <- dvCharsM
                          if id isL xx38_43
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx38_43 of
+                             _ -> return ()
+                         let _ = xx38_43
+                         return ()
                          xx39_44 <- dvCharsM
                          if id isL xx39_44
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx39_44 of
+                             _ -> return ()
+                         let _ = xx39_44
+                         return ()
                          xx40_45 <- dvCharsM
                          if id isO xx40_45
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx40_45 of
+                             _ -> return ()
+                         let _ = xx40_45
+                         return ()
                          xx41_46 <- dvCharsM
                          if id isN xx41_46
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx41_46 of
+                             _ -> return ()
+                         let _ = xx41_46
+                         return ()
                          xx42_47 <- dvCharsM
                          if id isBar xx42_47
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx42_47 of
+                             _ -> return ()
+                         let _ = xx42_47
+                         return ()
                          xx43_48 <- dvCharsM
                          if id isNL xx43_48
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx43_48 of
+                             _ -> return ()
+                         let _ = xx43_48
+                         return ()
                          return (id nil)]
-p_peg = foldl1 mplus [do dv_spacesM >> return ()
+p_peg = foldl1 mplus [do _ <- dv_spacesM
+                         return ()
                          s <- dv_sourceTypeM
                          return ()
                          p <- dv_peg_M
@@ -786,8 +889,7 @@ p_sourceType = foldl1 mplus [do xx44_49 <- dv_varTokenM
                                 case xx44_49 of
                                     "source" -> return ()
                                     _ -> throwError (strMsg "not match")
-                                let "source" = xx44_49
-                                return ()
+                                "source" <- return xx44_49
                                 xx45_50 <- dvCharsM
                                 if const True xx45_50
                                  then return ()
@@ -797,11 +899,13 @@ p_sourceType = foldl1 mplus [do xx44_49 <- dv_varTokenM
                                     _ -> throwError (strMsg "not match")
                                 let ':' = xx45_50
                                 return ()
-                                dv_spacesM >> return ()
+                                _ <- dv_spacesM
+                                return ()
                                 v <- dv_typTokenM
                                 return ()
                                 return (id v)]
-p_peg_ = foldl1 mplus [do dv_spacesM >> return ()
+p_peg_ = foldl1 mplus [do _ <- dv_spacesM
+                          return ()
                           d <- dv_definitionM
                           return ()
                           p <- dv_peg_M
@@ -810,40 +914,67 @@ p_peg_ = foldl1 mplus [do dv_spacesM >> return ()
                        do return (id empty)]
 p_definition = foldl1 mplus [do v <- dv_variableM
                                 return ()
-                                dv_spacesM >> return ()
+                                _ <- dv_spacesM
+                                return ()
                                 xx46_51 <- dvCharsM
                                 if id isColon xx46_51
                                  then return ()
                                  else throwError (strMsg "not match")
+                                case xx46_51 of
+                                    _ -> return ()
+                                let _ = xx46_51
+                                return ()
                                 xx47_52 <- dvCharsM
                                 if id isColon xx47_52
                                  then return ()
                                  else throwError (strMsg "not match")
-                                dv_spacesM >> return ()
+                                case xx47_52 of
+                                    _ -> return ()
+                                let _ = xx47_52
+                                return ()
+                                _ <- dv_spacesM
+                                return ()
                                 t <- dv_typM
                                 return ()
-                                dv_spacesM >> return ()
+                                _ <- dv_spacesM
+                                return ()
                                 xx48_53 <- dvCharsM
                                 if id isEqual xx48_53
                                  then return ()
                                  else throwError (strMsg "not match")
-                                dv_spacesM >> return ()
+                                case xx48_53 of
+                                    _ -> return ()
+                                let _ = xx48_53
+                                return ()
+                                _ <- dv_spacesM
+                                return ()
                                 sel <- dv_selectionM
                                 return ()
-                                dv_spacesM >> return ()
+                                _ <- dv_spacesM
+                                return ()
                                 xx49_54 <- dvCharsM
                                 if id isSemi xx49_54
                                  then return ()
                                  else throwError (strMsg "not match")
+                                case xx49_54 of
+                                    _ -> return ()
+                                let _ = xx49_54
+                                return ()
                                 return (id mkDef v t sel)]
 p_selection = foldl1 mplus [do ex <- dv_expressionHsM
                                return ()
-                               dv_spacesM >> return ()
+                               _ <- dv_spacesM
+                               return ()
                                xx50_55 <- dvCharsM
                                if id isSlash xx50_55
                                 then return ()
                                 else throwError (strMsg "not match")
-                               dv_spacesM >> return ()
+                               case xx50_55 of
+                                   _ -> return ()
+                               let _ = xx50_55
+                               return ()
+                               _ <- dv_spacesM
+                               return ()
                                sel <- dv_selectionM
                                return ()
                                return (id cons ex sel),
@@ -852,23 +983,35 @@ p_selection = foldl1 mplus [do ex <- dv_expressionHsM
                                return (id cons ex empty)]
 p_expressionHs = foldl1 mplus [do e <- dv_expressionM
                                   return ()
-                                  dv_spacesM >> return ()
+                                  _ <- dv_spacesM
+                                  return ()
                                   xx51_56 <- dvCharsM
                                   if id isOpenWave xx51_56
                                    then return ()
                                    else throwError (strMsg "not match")
-                                  dv_spacesM >> return ()
+                                  case xx51_56 of
+                                      _ -> return ()
+                                  let _ = xx51_56
+                                  return ()
+                                  _ <- dv_spacesM
+                                  return ()
                                   h <- dv_hsExpM
                                   return ()
-                                  dv_spacesM >> return ()
+                                  _ <- dv_spacesM
+                                  return ()
                                   xx52_57 <- dvCharsM
                                   if id isCloseWave xx52_57
                                    then return ()
                                    else throwError (strMsg "not match")
+                                  case xx52_57 of
+                                      _ -> return ()
+                                  let _ = xx52_57
+                                  return ()
                                   return (id mkExpressionHs e h)]
 p_expression = foldl1 mplus [do l <- dv_nameLeaf_M
                                 return ()
-                                dv_spacesM >> return ()
+                                _ <- dv_spacesM
+                                return ()
                                 e <- dv_expressionM
                                 return ()
                                 return (id cons l e),
@@ -877,6 +1020,10 @@ p_nameLeaf_ = foldl1 mplus [do xx53_58 <- dvCharsM
                                if id isNot xx53_58
                                 then return ()
                                 else throwError (strMsg "not match")
+                               case xx53_58 of
+                                   _ -> return ()
+                               let _ = xx53_58
+                               return ()
                                nl <- dv_nameLeafM
                                return ()
                                return (id notAfter nl),
@@ -889,6 +1036,10 @@ p_nameLeaf = foldl1 mplus [do n <- dv_patM
                               if id isColon xx54_59
                                then return ()
                                else throwError (strMsg "not match")
+                              case xx54_59 of
+                                  _ -> return ()
+                              let _ = xx54_59
+                              return ()
                               l <- dv_leafM
                               return ()
                               return (id mkNameLeaf n l),
@@ -899,15 +1050,15 @@ p_pat = foldl1 mplus [do xx55_60 <- dv_variableM
                          case xx55_60 of
                              "_" -> return ()
                              _ -> throwError (strMsg "not match")
-                         let "_" = xx55_60
-                         return ()
+                         "_" <- return xx55_60
                          return (id wildP),
                       do n <- dv_variableM
                          return ()
                          return (id strToPatQ n),
                       do t <- dv_typM
                          return ()
-                         dv_spacesM >> return ()
+                         _ <- dv_spacesM
+                         return ()
                          ps <- dv_patsM
                          return ()
                          return (id conToPatQ t ps),
@@ -915,48 +1066,78 @@ p_pat = foldl1 mplus [do xx55_60 <- dv_variableM
                          if id isChon xx56_61
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx56_61 of
+                             _ -> return ()
+                         let _ = xx56_61
+                         return ()
                          c <- dv_charLitM
                          return ()
                          xx57_62 <- dvCharsM
                          if id isChon xx57_62
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx57_62 of
+                             _ -> return ()
+                         let _ = xx57_62
+                         return ()
                          return (id charP c),
                       do xx58_63 <- dvCharsM
                          if id isDQ xx58_63
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx58_63 of
+                             _ -> return ()
+                         let _ = xx58_63
+                         return ()
                          s <- dv_stringLitM
                          return ()
                          xx59_64 <- dvCharsM
                          if id isDQ xx59_64
                           then return ()
                           else throwError (strMsg "not match")
+                         case xx59_64 of
+                             _ -> return ()
+                         let _ = xx59_64
+                         return ()
                          return (id stringP s)]
 p_charLit = foldl1 mplus [do xx60_65 <- dvCharsM
-                             let c = xx60_65
                              if id isAlphaNumOt xx60_65
                               then return ()
                               else throwError (strMsg "not match")
+                             case xx60_65 of
+                                 _ -> return ()
+                             let c = xx60_65
+                             return ()
                              return (id c),
                           do xx61_66 <- dvCharsM
                              if id isBS xx61_66
                               then return ()
                               else throwError (strMsg "not match")
+                             case xx61_66 of
+                                 _ -> return ()
+                             let _ = xx61_66
+                             return ()
                              xx62_67 <- dvCharsM
-                             let c = xx62_67
                              if id elemNTs xx62_67
                               then return ()
                               else throwError (strMsg "not match")
+                             case xx62_67 of
+                                 _ -> return ()
+                             let c = xx62_67
+                             return ()
                              return (id getNTs c)]
 p_stringLit = foldl1 mplus [do d_68 <- get
-                               flipMaybe (do dv_dqM >> return ())
+                               flipMaybe (do _ <- dv_dqM
+                                             return ())
                                put d_68
                                xx63_69 <- dvCharsM
-                               let c = xx63_69
                                if const True xx63_69
                                 then return ()
                                 else throwError (strMsg "not match")
+                               case xx63_69 of
+                                   _ -> return ()
+                               let c = xx63_69
+                               return ()
                                s <- dv_stringLitM
                                return ()
                                return (id cons c s),
@@ -987,16 +1168,25 @@ p_test = foldl1 mplus [do xx65_71 <- dvCharsM
                           if id isOpenBr xx65_71
                            then return ()
                            else throwError (strMsg "not match")
+                          case xx65_71 of
+                              _ -> return ()
+                          let _ = xx65_71
+                          return ()
                           h <- dv_hsExpM
                           return ()
                           xx66_72 <- dvCharsM
                           if id isCloseBr xx66_72
                            then return ()
                            else throwError (strMsg "not match")
+                          case xx66_72 of
+                              _ -> return ()
+                          let _ = xx66_72
+                          return ()
                           return (id getEx h)]
 p_hsExp = foldl1 mplus [do v <- dv_variableM
                            return ()
-                           dv_spacesM >> return ()
+                           _ <- dv_spacesM
+                           return ()
                            h <- dv_hsExpM
                            return ()
                            return (id apply v h),
@@ -1029,31 +1219,46 @@ p_alpha = foldl1 mplus [do u <- dv_upperM
                            return ()
                            return (id d)]
 p_upper = foldl1 mplus [do xx67_73 <- dvCharsM
-                           let u = xx67_73
                            if id isUpper xx67_73
                             then return ()
                             else throwError (strMsg "not match")
+                           case xx67_73 of
+                               _ -> return ()
+                           let u = xx67_73
+                           return ()
                            return (id u)]
 p_lower = foldl1 mplus [do xx68_74 <- dvCharsM
-                           let l = xx68_74
                            if id isLowerU xx68_74
                             then return ()
                             else throwError (strMsg "not match")
+                           case xx68_74 of
+                               _ -> return ()
+                           let l = xx68_74
+                           return ()
                            return (id l)]
 p_digit = foldl1 mplus [do xx69_75 <- dvCharsM
-                           let d = xx69_75
                            if id isDigit xx69_75
                             then return ()
                             else throwError (strMsg "not match")
+                           case xx69_75 of
+                               _ -> return ()
+                           let d = xx69_75
+                           return ()
                            return (id d)]
-p_spaces = foldl1 mplus [do dv_spaceM >> return ()
-                            dv_spacesM >> return ()
+p_spaces = foldl1 mplus [do _ <- dv_spaceM
+                            return ()
+                            _ <- dv_spacesM
+                            return ()
                             return (id nil),
                          do return (id nil)]
 p_space = foldl1 mplus [do xx70_76 <- dvCharsM
                            if id isSpace xx70_76
                             then return ()
                             else throwError (strMsg "not match")
+                           case xx70_76 of
+                               _ -> return ()
+                           let _ = xx70_76
+                           return ()
                            return (id nil),
                         do xx71_77 <- dvCharsM
                            if const True xx71_77
@@ -1073,19 +1278,26 @@ p_space = foldl1 mplus [do xx70_76 <- dvCharsM
                                _ -> throwError (strMsg "not match")
                            let '-' = xx72_78
                            return ()
-                           dv_notNLStringM >> return ()
-                           dv_nlM >> return ()
+                           _ <- dv_notNLStringM
+                           return ()
+                           _ <- dv_nlM
+                           return ()
                            return (id nil),
-                        do dv_commentM >> return ()
+                        do _ <- dv_commentM
+                           return ()
                            return (id nil)]
 p_notNLString = foldl1 mplus [do d_79 <- get
-                                 flipMaybe (do dv_nlM >> return ())
+                                 flipMaybe (do _ <- dv_nlM
+                                               return ())
                                  put d_79
                                  xx73_80 <- dvCharsM
-                                 let c = xx73_80
                                  if const True xx73_80
                                   then return ()
                                   else throwError (strMsg "not match")
+                                 case xx73_80 of
+                                     _ -> return ()
+                                 let c = xx73_80
+                                 return ()
                                  s <- dv_notNLStringM
                                  return ()
                                  return (id cons c s),
@@ -1094,6 +1306,10 @@ p_nl = foldl1 mplus [do xx74_81 <- dvCharsM
                         if id isNL xx74_81
                          then return ()
                          else throwError (strMsg "not match")
+                        case xx74_81 of
+                            _ -> return ()
+                        let _ = xx74_81
+                        return ()
                         return (id nil)]
 p_comment = foldl1 mplus [do xx75_82 <- dvCharsM
                              if const True xx75_82
@@ -1124,26 +1340,39 @@ p_comment = foldl1 mplus [do xx75_82 <- dvCharsM
                                            let '#' = xx77_85
                                            return ())
                              put d_84
-                             dv_commentsM >> return ()
-                             dv_comEndM >> return ()
+                             _ <- dv_commentsM
+                             return ()
+                             _ <- dv_comEndM
+                             return ()
                              return (id nil)]
-p_comments = foldl1 mplus [do dv_notComStrM >> return ()
-                              dv_commentM >> return ()
-                              dv_commentsM >> return ()
+p_comments = foldl1 mplus [do _ <- dv_notComStrM
+                              return ()
+                              _ <- dv_commentM
+                              return ()
+                              _ <- dv_commentsM
+                              return ()
                               return (id nil),
-                           do dv_notComStrM >> return ()
+                           do _ <- dv_notComStrM
+                              return ()
                               return (id nil)]
 p_notComStr = foldl1 mplus [do d_86 <- get
-                               flipMaybe (do dv_commentM >> return ())
+                               flipMaybe (do _ <- dv_commentM
+                                             return ())
                                put d_86
                                d_87 <- get
-                               flipMaybe (do dv_comEndM >> return ())
+                               flipMaybe (do _ <- dv_comEndM
+                                             return ())
                                put d_87
                                xx78_88 <- dvCharsM
                                if const True xx78_88
                                 then return ()
                                 else throwError (strMsg "not match")
-                               dv_notComStrM >> return ()
+                               case xx78_88 of
+                                   _ -> return ()
+                               let _ = xx78_88
+                               return ()
+                               _ <- dv_notComStrM
+                               return ()
                                return (id nil),
                             do return (id nil)]
 p_comEnd = foldl1 mplus [do xx79_89 <- dvCharsM
