@@ -3,8 +3,11 @@
 import Text.Papillon
 
 instance SourceList MyToken where
+	data ListPos MyToken = MyPos Int
 	listToken [] = Nothing
 	listToken (c : s) = Just (c, s)
+	listUpdatePos _ (MyPos n) = MyPos $ n + 1
+	listShowPos (MyPos n) = show n
 
 data MyToken = A | B | C deriving Show
 
@@ -13,12 +16,15 @@ data YourSource = Empty | TwoD | OneD | DEF | EF | OneF deriving Show
 
 instance Source YourSource where
 	type Token YourSource = YourToken
+	type Pos YourSource = Int
 	getToken Empty = Nothing
 	getToken TwoD = Just (D, OneD)
 	getToken OneD = Just (D, Empty)
 	getToken DEF = Just (D, EF)
 	getToken EF = Just (E, OneF)
 	getToken OneF = Just (F, Empty)
+	updatePos _ = succ
+	showPos = show
 
 main :: IO ()
 main = case dv_str $ parse DEF of
