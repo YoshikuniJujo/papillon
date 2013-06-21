@@ -1,0 +1,19 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = case dv_other $ parse "something" of
+	Right (r, _) -> print r
+	Left err -> putStrLn $ "not match " ++ show err
+
+[papillon|
+
+something :: Char
+	= c		{ c }
+;
+other :: String
+	= s:(c:something { c })* { s }
+;
+
+|]

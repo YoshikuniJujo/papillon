@@ -3,8 +3,9 @@
 module Text.Papillon.Parser (
 	Peg,
 	Definition,
+	Selection,
 	ExpressionHs,
-	NameLeaf,
+	NameLeaf(..),
 	NameLeaf_(..),
 	parse,
 	dv_peg,
@@ -19,7 +20,9 @@ type MaybeString = Maybe String
 type Nil = ()
 -- type Leaf = Either String ExR
 type Leaf = (Maybe String, ExR)
-type NameLeaf = (PatQ, Leaf)
+data NameLeaf
+	= NameLeaf PatQ Leaf
+	| NameLeafList PatQ Selection
 data NameLeaf_ = NotAfter NameLeaf | Here NameLeaf
 notAfter, here :: NameLeaf -> NameLeaf_
 notAfter = NotAfter
@@ -60,8 +63,11 @@ cons = (:)
 
 type PatQs = [PatQ]
 
-mkNameLeaf :: PatQ -> b -> (PatQ, b)
-mkNameLeaf = (,)
+mkNameLeaf :: PatQ -> Leaf -> NameLeaf
+mkNameLeaf = NameLeaf
+
+mkNameLeafList :: PatQ -> Selection -> NameLeaf
+mkNameLeafList = NameLeafList
 
 strToPatQ :: String -> PatQ
 strToPatQ = varP . mkName
@@ -119,8 +125,13 @@ stringP :: String -> PatQ
 stringP = litP . stringL
 
 isAlphaNumOt, elemNTs :: Char -> Bool
-isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ "
+isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *()"
 elemNTs = (`elem` "nt\\'")
+
+isKome, isOpen, isClose :: Char -> Bool
+isKome = (== '*')
+isOpen = (== '(')
+isClose = (== ')')
 
 getNTs :: Char -> Char
 getNTs 'n' = '\n'
@@ -227,7 +238,10 @@ nameLeaf_ :: NameLeaf_
 	/ nl:nameLeaf				{ here nl }
 ;
 nameLeaf :: NameLeaf
-	= n:pat ':' l:leaf		{ mkNameLeaf n l }
+	= n:pat ':' o:[isOpen o] ex:selection c:[isClose c] k:[isKome k] _:spaces
+		{ mkNameLeafList n ex }
+	/ o:[isOpen o] nl:nameLeaf c:[isClose c]	{ nl }
+	/ n:pat ':' l:leaf		{ mkNameLeaf n l }
 	/ n:pat					{ mkNameLeaf n ctLeaf }
 --	/ ':' l:leaf_			{ mkNameLeaf wildP l }
 ;

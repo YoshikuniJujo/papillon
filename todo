@@ -1,3 +1,5 @@
+* () に入れるべきなのは Selection だった
+
 * list, list1 の実装
 	list :: PackratQ a -> PackratQ [a]
 	list1 :: PackratQ a -> PackratQ [a]

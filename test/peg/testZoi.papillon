@@ -4,7 +4,7 @@ import Text.Papillon
 import Data.Char
 
 main :: IO ()
-main = case dv_something $ parse "zoi gy. hello myfriend .gy" of
+main = case dv_something $ parse "zoi gy. hello myfriend gy" of
 	Right (r, _) -> print r
 	Left err -> putStrLn $ "not match: " ++ err
 
@@ -17,19 +17,25 @@ type Nil = ()
 nil :: Nil
 nil = ()
 
-notEq :: Eq a => a -> a -> Bool
+eq, notEq :: Eq a => a -> a -> Bool
+eq = (==)
 notEq = (/=)
 
 tuple :: a -> b -> (a, b)
 tuple = (,)
+tuple3 :: a -> b -> c -> (a, b, c)
+tuple3 = (,,)
 
 type TwoString = (String, String)
+type Strings3 = (String, [String], String)
 type Strings = [String]
 
 [papillon|
 
-something :: Strings
-	= "zoi":var _:var '.' _:spaces v:vars { v }
+something :: Strings3
+	= "zoi":var open:var '.' _:spaces vs:(v:var[notEq open v] { v })*
+		close:var[eq open close]
+		{ tuple3 open vs close }
 ;
 vars :: Strings
 	= v:var vs:vars			{ cons v vs }

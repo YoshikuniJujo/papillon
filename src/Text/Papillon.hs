@@ -7,6 +7,7 @@ module Text.Papillon (
 --	classSourceQ,
 	Source(..),
 	SourceList(..),
+	list, list1,
 --	listDec
 ) where
 
@@ -36,12 +37,21 @@ getNamesFromDefinition (_, _, sel) =
 	concatMap getNamesFromExpressionHs sel
 
 getNamesFromExpressionHs :: ExpressionHs -> [String]
-getNamesFromExpressionHs = mapMaybe getLeafName . fst
+getNamesFromExpressionHs = concatMap getLeafName . fst
 
-getLeafName :: NameLeaf_ -> Maybe String
-getLeafName (Here (_, (Just n, _))) = Just n
-getLeafName (NotAfter (_, (Just n, _))) = Just n
-getLeafName _ = Nothing
+getLeafName :: NameLeaf_ -> [String]
+getLeafName (Here (NameLeaf _ (Just n, _))) = [n]
+getLeafName (NotAfter (NameLeaf _ (Just n, _))) = [n]
+getLeafName (Here (NameLeafList _ sel)) =
+	concatMap getNamesFromExpressionHs sel
+getLeafName (NotAfter (NameLeafList _ sel)) =
+	concatMap getNamesFromExpressionHs sel
+getLeafName _ = []
+
+getLeafName' :: NameLeaf -> [String]
+getLeafName' (NameLeaf _ (Just n, _)) = [n]
+getLeafName' (NameLeafList _ sel) =
+	concatMap getNamesFromExpressionHs sel
 
 flipMaybe :: (Error (ErrorType me), MonadError me) =>
 	StateT s me a -> StateT s me ()
@@ -223,8 +233,9 @@ dvSomeM th peg = mapM (dvSomeM1 th) $
 	filter ((`elem` usingNames peg) . (\(n, _, _) -> n)) peg
 
 dvSomeM1 :: Bool -> Definition -> DecQ
-dvSomeM1 th (name, _, _) = flip (valD $ varP $ mkName $ "dv_" ++ name ++ "M") [] $ normalB $
-	conE (stateTN' th) `appE` varE (mkName $ "dv_" ++ name)
+dvSomeM1 th (name, _, _) =
+	flip (valD $ varP $ mkName $ "dv_" ++ name ++ "M") [] $ normalB $
+		conE (stateTN' th) `appE` varE (mkName $ "dv_" ++ name)
 
 typeDvCharsM :: Bool -> TypeQ -> DecQ
 typeDvCharsM _ tkn =
@@ -243,8 +254,16 @@ pSomes :: IORef Int -> Bool -> Peg -> DecsQ
 pSomes g th = mapM $ pSomes1 g th
 
 pSomes1 :: IORef Int -> Bool -> Definition -> DecQ
-pSomes1 g th (name, _, sel) = flip (valD $ varP $ mkName $ "p_" ++ name) [] $ normalB $
-	varE (mkName "foldl1") `appE` varE (mplusN th) `appE` listE (map (uncurry $ pSome_ g th) sel)
+pSomes1 g th (name, _, sel) =
+	flip (valD $ varP $ mkName $ "p_" ++ name) [] $ normalB $ pSomes1Sel g th sel
+{-
+		varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
+			listE (map (uncurry $ pSome_ g th) sel)
+-}
+
+pSomes1Sel :: IORef Int -> Bool -> Selection -> ExpQ
+pSomes1Sel g th sel = varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
+	listE (map (uncurry $ pSome_ g th) sel)
 
 pSome_ :: IORef Int -> Bool -> [NameLeaf_] -> ExpQ -> ExpQ
 pSome_ g th nls ret = fmap DoE $ do
@@ -271,7 +290,22 @@ beforeMatch th t n = sequence [
  ]
 
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
-transLeaf' g th (n, (Nothing, p)) = do
+transLeaf' g th (NameLeafList n nl) = do
+	gn <- runIO $ readIORef g
+	runIO $ modifyIORef g succ
+	t <- newName $ "xx" ++ show gn
+	nn <- n
+	case nn of
+		WildP -> (: []) <$> bindS wildP (
+			(varE $ mkName "list") `appE` (pSomes1Sel g th nl))
+		VarP _ -> sequence [
+			bindS (varP t) $ (varE $ mkName "list") `appE`
+				(pSomes1Sel g th nl),
+			letS [flip (valD n) [] $ normalB $ varE t],
+			noBindS $ (varE $ mkName "return") `appE` tupE []
+		 ]
+		_ -> undefined
+transLeaf' g th (NameLeaf n (Nothing, p)) = do
 	gn <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	t <- newName $ "xx" ++ show gn
@@ -288,7 +322,7 @@ transLeaf' g th (n, (Nothing, p)) = do
 			ret2 <- beforeMatch th t n
 			ret3 <- afterCheck th p
 			return $ ret1 : ret2 ++ [ret3]
-transLeaf' g th (n, (Just v, p)) = do
+transLeaf' g th (NameLeaf n (Just v, p)) = do
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
