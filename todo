@@ -1,29 +1,4 @@
-* () に入れるべきなのは Selection だった
-
-* list, list1 の実装
-	list :: PackratQ a -> PackratQ [a]
-	list1 :: PackratQ a -> PackratQ [a]
-	といった感じで、
-	list = empty `or` list1
-	list1 = one `next` list
-	のような相互再帰を使おう
-	で、これらはちゃんと DecQ にしなくてはならない
-	もっと一般的な定義にしよう
-	list, list1 :: MonadPlus m => m a -> m [a]
-	のような感じ
-
 * list, list1 を使っているときだけ書き出すようにする
-
-* NameLeaf を type から data にする
-	data NameLeaf = ... | ListLeaf NameLeaf | List1Leaf NameLeaf | OptLeaf ...
-
-* nameleaf = ... / v:var ':' nameleaf '*' のような形にする
-
-* list list1 の追加
-	ss:_:some* のような書きかたで list を表現できるようにする
-	ss:_:some+ だと list1 だ
-	list と list1 は相互再帰できれいに書けるはずだ
-	とりあえず Leaf を type から data にする必要がある
 
 * ? の追加
 

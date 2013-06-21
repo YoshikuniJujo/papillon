@@ -16,7 +16,6 @@ import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
 import Control.Monad.Trans.Error (Error(..))
-import Data.Maybe
 
 import Control.Applicative
 
@@ -40,18 +39,14 @@ getNamesFromExpressionHs :: ExpressionHs -> [String]
 getNamesFromExpressionHs = concatMap getLeafName . fst
 
 getLeafName :: NameLeaf_ -> [String]
-getLeafName (Here (NameLeaf _ (Just n, _))) = [n]
-getLeafName (NotAfter (NameLeaf _ (Just n, _))) = [n]
-getLeafName (Here (NameLeafList _ sel)) =
-	concatMap getNamesFromExpressionHs sel
-getLeafName (NotAfter (NameLeafList _ sel)) =
-	concatMap getNamesFromExpressionHs sel
-getLeafName _ = []
+getLeafName (Here nl) = getLeafName' nl
+getLeafName (NotAfter nl) = getLeafName' nl
 
 getLeafName' :: NameLeaf -> [String]
 getLeafName' (NameLeaf _ (Just n, _)) = [n]
 getLeafName' (NameLeafList _ sel) =
 	concatMap getNamesFromExpressionHs sel
+getLeafName' _ = []
 
 flipMaybe :: (Error (ErrorType me), MonadError me) =>
 	StateT s me a -> StateT s me ()
