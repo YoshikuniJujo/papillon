@@ -28,6 +28,23 @@ import Text.Papillon.List
 classSourceQ True
 listDec True
 
+isListUsed :: Peg -> Bool
+isListUsed = any isListUsedDefinition
+
+isListUsedDefinition :: Definition -> Bool
+isListUsedDefinition (_, _, sel) = any isListUsedSelection sel
+
+isListUsedSelection :: ExpressionHs -> Bool
+isListUsedSelection = any isListUsedLeafName . fst
+
+isListUsedLeafName :: NameLeaf_ -> Bool
+isListUsedLeafName (Here nl) = isListUsedLeafName' nl
+isListUsedLeafName (NotAfter nl) = isListUsedLeafName' nl
+
+isListUsedLeafName' :: NameLeaf -> Bool
+isListUsedLeafName' (NameLeafList _ _) = True
+isListUsedLeafName' _ = False
+
 usingNames :: Peg -> [String]
 usingNames = concatMap getNamesFromDefinition
 
@@ -67,12 +84,17 @@ papillonStr src = show . ppr <$> runQ (declaration False src)
 
 papillonStr' :: String -> IO String
 papillonStr' src = do
-	let (pp, decsQ, atp) = declaration' src
+	let (ppp, pp, decsQ, atp, peg) = declaration' src
+--	let (pp, decsQ, atp, peg) = declaration' src
 	decs <- runQ decsQ
 	cls <- runQ $ classSourceQ False
 	lst <- runQ $ listDec False
-	return $ pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp ++
-		"\n" ++ show (ppr cls) ++ "\n" ++ show (ppr lst)
+--	return $ pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp ++
+	return $ ppp ++
+		(if isListUsed peg then "\nimport Control.Applicative\n" else "") ++
+		pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp ++
+		"\n" ++ show (ppr cls) ++ "\n" ++
+		if isListUsed peg then show (ppr lst) else ""
 
 flipMaybeS :: String
 flipMaybeS =
@@ -130,10 +152,10 @@ declaration th str = do
 		_ -> error "bad"
 	decParsed th src tkn parsed
 
-declaration' :: String -> (String, DecsQ, String)
+declaration' :: String -> (String, String, DecsQ, String, Peg)
 declaration' src = case dv_pegFile $ parse src of
-	Right ((pp, (s, t, p), atp), _) ->
-		(pp, decParsed False s t p, atp)
+	Right ((ppp, pp, (s, t, p), atp), _) ->
+		(ppp, pp, decParsed False s t p, atp, p)
 	_ -> error "bad"
 
 decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ

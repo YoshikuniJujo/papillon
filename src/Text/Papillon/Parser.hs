@@ -13,7 +13,7 @@ module  Text.Papillon.Parser (
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
 import Control.Monad.Trans.Error (Error (..))
-import Control.Applicative
+
 
 
 import Data.Char
@@ -97,22 +97,23 @@ getEx ex = ex (varE $ mkName "id")
 emp :: [a]
 emp = []
 
-type PegFile = (String, TTPeg, String)
-mkPegFile :: Maybe String -> Maybe String -> String -> String -> b -> c -> (String, b, c)
+type PegFile = (String, String, TTPeg, String)
+mkPegFile :: Maybe String -> Maybe String -> String -> String -> TTPeg -> String
+	-> PegFile
 mkPegFile (Just p) (Just md) x y z w =
 	("{-#" ++ p ++ addPragmas ++ "module " ++ md ++ " where\n" ++
-	addModules ++
+	addModules,
 	x ++ "\n" ++ y, z, w)
 mkPegFile Nothing (Just md) x y z w =
 	(x ++ "\n" ++ "module " ++ md ++ " where\n" ++
-	addModules ++
+	addModules,
 	x ++ "\n" ++ y, z, w)
 mkPegFile (Just p) Nothing x y z w = (
 	"{-#" ++ p ++ addPragmas ++
-	addModules ++
+	addModules,
 	x ++ "\n" ++ y
 	, z, w)
-mkPegFile Nothing Nothing x y z w = (addModules ++ x ++ "\n" ++ y, z, w)
+mkPegFile Nothing Nothing x y z w = (addModules, x ++ "\n" ++ y, z, w)
 
 addPragmas, addModules :: String
 addPragmas =
@@ -120,8 +121,7 @@ addPragmas =
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n" ++
-	"import Control.Monad.Trans.Error (Error (..))\n" ++
-	"import Control.Applicative"
+	"import Control.Monad.Trans.Error (Error (..))\n"
 
 charP :: Char -> PatQ
 charP = litP . charL
@@ -1379,8 +1379,3 @@ instance SourceList Char
 instance SourceList c => Source ([c])
     where type Token ([c]) = c
           getToken = listToken
-list :: forall m a . (MonadPlus m, Applicative m) => m a -> m ([a])
-list1 :: forall m a . (MonadPlus m, Applicative m) =>
-                      m a -> m ([a])
-list p = list1 p `mplus` return []
-list1 p = ((:) <$> p) <*> list p
