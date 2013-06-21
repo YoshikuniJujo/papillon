@@ -1,8 +1,3 @@
-* +, ? の追加
-
-* 式のなかで selection を使えるようにする
-	_:head (_:some / _:other) :tail のような形
-		
 * 構文の変更
 	パターンマッチの部分で複数の要素からなるものは () でくくることにしよう
 	そうしないと Token _:some が Token (_:some) か (Token _):some
@@ -40,6 +35,11 @@
 	papillon -+
 	とすることで、Papillon が papillonStr 等を export せずにすむ。
 	ただし、papillonStr を export するのが役立つ可能性もあるので考えること
+		
+* +, ? の追加
+
+* 式のなかで selection を使えるようにする
+	_:head (_:some / _:other) :tail のような形
 
 * {-# LANGUAGE ... #-} がないときにはそれを追加する
 
