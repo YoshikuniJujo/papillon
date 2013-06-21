@@ -4,10 +4,10 @@ import Text.Papillon
 
 main :: IO ()
 main = do
-	case dv_something $ parse "parse fail" of
+	case dv_something $ parse initialPos "parse fail" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left err -> putStrLn $ "OK! it's fail: " ++ show err
-	case dv_more $ parse "" of
+	case dv_more $ parse initialPos "" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left err -> putStrLn $ "OK! it's fail: " ++ show err
 

@@ -6,7 +6,7 @@ import Data.Char
 
 main :: IO ()
 main = do
-	case dv_onlyDigits $ parse "123" of
+	case dv_onlyDigits $ parse initialPos "123" of
 		Right (str, _) -> print str
 		Left "" -> putStrLn $ "error: empty"
 		Left err -> putStrLn $ "error: " ++ err

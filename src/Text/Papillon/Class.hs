@@ -24,7 +24,8 @@ charN True = ''Char
 charN False = mkName "Char"
 
 source, sourceList, listTokenN, tokenN, getTokenN, posN, updatePosN, showPosN,
-	listPosN, listUpdatePosN, listShowPosN :: Name
+	listPosN, listUpdatePosN, listShowPosN, initialPosN, listInitialPosN
+	:: Name
 sourceList = mkName "SourceList"
 listTokenN = mkName "listToken"
 source = mkName "Source"
@@ -36,23 +37,27 @@ showPosN = mkName "showPos"
 listPosN = mkName "ListPos"
 listUpdatePosN = mkName "listUpdatePos"
 listShowPosN = mkName "listShowPos"
+initialPosN = mkName "initialPos"
+listInitialPosN = mkName "listInitialPos"
 
 classS, classSL, instanceSLC, instanceSrcStr :: Bool -> DecQ
 
 {-
 class Source sl where
 	type Token sl
-	type Pos sl
+	data Pos sl
 	getToken :: sl -> Maybe (Token sl, sl)
+	initialPos :: Pos sl
 	updatePos :: Token sl -> Pos sl -> Pos sl
 	showPos :: Pos sl -> String
 -}
 
 classS th = classD (cxt []) source [PlainTV sl] [] [
 	familyNoKindD typeFam tokenN [PlainTV sl],
-	familyNoKindD typeFam posN [PlainTV sl],
+	familyNoKindD dataFam posN [PlainTV sl],
 	sigD getTokenN $ arrowT `appT` varT sl `appT`
 		(conT (maybeN th) `appT` tupleBody),
+	sigD initialPosN $ conT posN `appT` varT sl,
 	sigD updatePosN $ arrowT
 		`appT` (conT tokenN `appT` varT sl)
 		`appT` (arrowT
@@ -71,6 +76,7 @@ classS th = classD (cxt []) source [PlainTV sl] [] [
 class SourceList c where
 	data ListPos c
 	listToken :: [c] -> Maybe (c, [c])
+	listInitialPos :: ListPos c
 	listUpdatePos :: c -> ListPos c -> ListPos c
 	listShowPos :: ListPos c -> String
 -}
@@ -79,6 +85,7 @@ classSL th = classD (cxt []) sourceList [PlainTV c] [] [
 	familyNoKindD dataFam listPosN [PlainTV c],
 	sigD listTokenN $ arrowT `appT` (listT `appT` varT c) `appT`
 		(conT (maybeN th) `appT` tupleBody),
+	sigD listInitialPosN $ conT listPosN `appT` varT c,
 	sigD listUpdatePosN $ arrowT
 		`appT` varT c
 		`appT` (arrowT
@@ -94,22 +101,35 @@ classSL th = classD (cxt []) sourceList [PlainTV c] [] [
 {-
 instance (SourceList c) => Source [c] where
 	type Token [c] = c
-	type Pos [c] = ListPos c
+	newtype Pos [c] = ListPos (ListPos c)
 	getToken = listToken
-	updatePos = listUpdatePos
-	showPos = listShowPos
+	initialPos = ListPos listInitialPos
+	updatePos c (ListPos p) = ListPos (listUpdatePos c p)
+	showPos (ListPos p) = listShowPos p
 -}
 
 instanceSrcStr _ =
 	instanceD (cxt [classP sourceList [varT c]]) (conT source `appT` listC) [
 		tySynInstD tokenN [listC] $ varT c,
-		tySynInstD posN [listC] $ conT listPosN `appT` varT c,
+		flip (newtypeInstD (cxt []) posN [listC]) [] $
+			normalC listPosN [strictType notStrict $
+				conT listPosN `appT` varT c],
 		valD (varP getTokenN) (normalB $ varE listTokenN) [],
-		valD (varP updatePosN) (normalB $ varE listUpdatePosN) [],
-		valD (varP showPosN) (normalB $ varE listShowPosN) []
+		flip (valD $ varP initialPosN) [] $ normalB $
+			conE listPosN `appE` varE listInitialPosN,
+--		valD (varP updatePosN) (normalB $ varE listUpdatePosN) [],
+		funD updatePosN $ (: []) $ flip (clause [pc, lp]) [] $ normalB $
+			conE listPosN `appE`
+				(varE listUpdatePosN `appE` varE c `appE` varE p),
+		funD showPosN $ (: []) $ flip (clause [lp]) [] $ normalB $
+			varE listShowPosN `appE` varE p
+--		valD (varP showPosN) (normalB $ varE listShowPosN) []
 	 ]
 	where
 	c = mkName "c"
+	p = mkName "p"
+	pc = varP c
+	lp = conP listPosN [varP p]
 	listC = listT `appT` varT c
 
 {-
@@ -117,6 +137,7 @@ instance SourceList Char where
 	newtype ListPos Char = CharPos (Int, Int)
 	listToken (c : s) = Just (c, s)
 	listToken _ = Nothing
+	listInitialPos = CharPos (0, 0)
 	listUpdatePos '\n' (CharPos (y, x)) = CharPos (y + 1, 0)
 	listUpdatePos '\t' (CharPOs (y, x)) = CharPos (y, x + 8)
 	listUpdatePos _ (CharPos (y, x)) = CharPos (y, x + 1)
@@ -136,6 +157,8 @@ instanceSLC th = instanceD (cxt []) (conT sourceList `appT` conT (charN th)) [
 			(normalB $ conE (justN th) `appE` tupleBody) [],
 		clause [wildP] (normalB $ conE $ nothingN th) []
 	 ],
+	flip (valD $ varP listInitialPosN) [] $ normalB $
+		conE (mkName "CharPos") `appE` tupE [zero, zero],
 	funD listUpdatePosN [
 		flip (clause [litP $ charL '\n', pCharPos [tupP [varP y, wildP]]]) [] $
 			normalB $ eCharPos `appE` tupE [

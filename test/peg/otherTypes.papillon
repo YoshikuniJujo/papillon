@@ -6,6 +6,7 @@ instance SourceList MyToken where
 	data ListPos MyToken = MyPos Int
 	listToken [] = Nothing
 	listToken (c : s) = Just (c, s)
+	listInitialPos = MyPos 0
 	listUpdatePos _ (MyPos n) = MyPos $ n + 1
 	listShowPos (MyPos n) = show n
 
@@ -16,18 +17,19 @@ data YourSource = Empty | TwoD | OneD | DEF | EF | OneF deriving Show
 
 instance Source YourSource where
 	type Token YourSource = YourToken
-	type Pos YourSource = Int
+	newtype Pos YourSource = YourPos Int
 	getToken Empty = Nothing
 	getToken TwoD = Just (D, OneD)
 	getToken OneD = Just (D, Empty)
 	getToken DEF = Just (D, EF)
 	getToken EF = Just (E, OneF)
 	getToken OneF = Just (F, Empty)
-	updatePos _ = succ
-	showPos = show
+	initialPos = YourPos 0
+	updatePos _ (YourPos p) = YourPos $ succ p
+	showPos (YourPos p) = show p
 
 main :: IO ()
-main = case dv_str $ parse DEF of
+main = case dv_str $ parse initialPos DEF of
 	Right (r, _) -> print r
 	Left err -> putStrLn $ "not match: " ++ err
 

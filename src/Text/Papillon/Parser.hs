@@ -1401,25 +1401,12 @@ p_comEnd = foldl1 mplus [do xx97_96 <- dvCharsM
 
 class Source sl
     where type Token sl
-          type Pos sl
           getToken :: sl -> Maybe ((Token sl, sl))
-          updatePos :: Token sl -> Pos sl -> Pos sl
-          showPos :: Pos sl -> String
 class SourceList c
-    where data ListPos c
-          listToken :: [c] -> Maybe ((c, [c]))
-          listUpdatePos :: c -> ListPos c -> ListPos c
-          listShowPos :: ListPos c -> String
+    where listToken :: [c] -> Maybe ((c, [c]))
 instance SourceList Char
-    where newtype ListPos Char = CharPos ((Int, Int))
-          listToken (c : s) = Just (c, s)
+    where listToken (c : s) = Just (c, s)
           listToken _ = Nothing
-          listUpdatePos '\n' (CharPos (y, _)) = CharPos (y + 1, 0)
-          listUpdatePos _ (CharPos (y, x)) = CharPos (y, x + 1)
-          listShowPos (CharPos pos) = show pos
 instance SourceList c => Source ([c])
     where type Token ([c]) = c
-          type Pos ([c]) = ListPos c
           getToken = listToken
-          updatePos = listUpdatePos
-          showPos = listShowPos

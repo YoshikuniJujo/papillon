@@ -4,11 +4,10 @@ module Text.Papillon (
 	papillon,
 	papillonStr,
 	papillonStr',
---	classSourceQ,
 	Source(..),
 	SourceList(..),
+	ListPos(..),
 	list, list1,
---	listDec
 ) where
 
 import Language.Haskell.TH.Quote
@@ -85,11 +84,9 @@ papillonStr src = show . ppr <$> runQ (declaration False src)
 papillonStr' :: String -> IO String
 papillonStr' src = do
 	let (ppp, pp, decsQ, atp, peg) = declaration' src
---	let (pp, decsQ, atp, peg) = declaration' src
 	decs <- runQ decsQ
 	cls <- runQ $ classSourceQ False
 	lst <- runQ $ listDec False
---	return $ pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp ++
 	return $ ppp ++
 		(if isListUsed peg then "\nimport Control.Applicative\n" else "") ++
 		pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp ++
@@ -98,13 +95,6 @@ papillonStr' src = do
 
 flipMaybeS :: String
 flipMaybeS =
-{-
-	"instance MonadError Maybe where\n" ++
-	"\ttype ErrorType Maybe = ()\n" ++
-	"\tthrowError () = Nothing\n" ++
-	"\tcatchError action recover = recover ()\n\n" ++
--}
-
 	"flipMaybe :: (Error (ErrorType me), MonadError me) =>\n" ++
 	"\tStateT s me a -> StateT s me ()\n" ++
 	"flipMaybe action = do\n" ++
@@ -198,12 +188,15 @@ pmonad th = tySynD (mkName "PackratM") [] $ conT (stateTN th) `appT`
 		(conT (eitherN th) `appT` conT (stringN th))
 
 parseT :: TypeQ -> Bool -> DecQ
-parseT src _ = sigD (mkName "parse") $
-	arrowT `appT` src `appT` conT (mkName "Derivs")
+parseT src _ = sigD (mkName "parse") $ arrowT
+	`appT` (conT (mkName "Pos") `appT` src) 
+	`appT` (arrowT
+		`appT` src
+		`appT` conT (mkName "Derivs"))
 parseE :: Bool -> Peg -> ClauseQ
 parseE th = parseE' th . map (\(n, _, _) -> n)
 parseE' :: Bool -> [String] -> ClauseQ
-parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
+parseE' th names = clause [varP $ mkName "pos", varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 	flip (valD $ varP $ mkName "d") [] $ normalB $ appsE $
 		conE (mkName "Derivs") :
 			map (varE . mkName) names
@@ -212,25 +205,30 @@ parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 	flip (valD $ varP $ mkName "char") [] $ normalB $
 		varE (mkName "flip") `appE` varE (runStateTN th) `appE`
 			varE (mkName "d") `appE` caseE (varE (getTokenN th) `appE`
-								varE (mkName "s")) [
-					match	(justN th `conP` [
-							tupP [varP (mkName "c"),
-							varP (mkName "s'")]])
-						(normalB $ doE [
-							noBindS $ varE (putN th)
-								`appE`
-								(varE (mkName "parse") `appE` varE (mkName "s'")),
-							noBindS $ varE (returnN th) `appE`
-								varE (mkName "c")
-						 ])
-						[],
-					match	wildP
-						(normalB $ varE (throwErrorN th) `appE`
-							(varE (strMsgN th) `appE`
-							litE (stringL "eof")))
-						[]
-				 ]
+							varE (mkName "s")) [
+				match	(justN th `conP` [
+						tupP [varP (mkName "c"),
+						varP (mkName "s'")]])
+					(normalB $ doE [
+						noBindS $ varE (putN th)
+							`appE`
+							(varE (mkName "parse") `appE`
+								newPos `appE` varE (mkName "s'")),
+						noBindS $ varE (returnN th) `appE`
+							varE (mkName "c")
+					 ])
+					[],
+				match	wildP
+					(normalB $ varE (throwErrorN th) `appE`
+						(varE (strMsgN th) `appE`
+						litE (stringL "eof")))
+					[]
+			 ]
  ]
+	where
+	newPos = varE (mkName "updatePos")
+		`appE` varE (mkName "c")
+		`appE` varE (mkName "pos")
 parseE1 :: Bool -> String -> DecQ
 parseE1 th name = flip (valD $ varP $ mkName name) [] $ normalB $
 	varE (runStateTN th) `appE` varE (mkName $ "p_" ++ name)
