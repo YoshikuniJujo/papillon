@@ -1,0 +1,54 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+import Text.Papillon
+import Data.Char
+
+main :: IO ()
+main = case dv_some $ parse "zoi gy. hello myfriend .gy" of
+	Right (r, _) -> print r
+	Left err -> putStrLn $ "not match: " ++ err
+
+cons :: a -> [a] -> [a]
+cons = (:)
+empty :: [a]
+empty = []
+
+type Nil = ()
+nil :: Nil
+nil = ()
+
+notEq :: Eq a => a -> a -> Bool
+notEq = (/=)
+
+tuple :: a -> b -> (a, b)
+tuple = (,)
+
+type TwoString = (String, String)
+type Strings = [String]
+
+[papillon|
+
+some :: Strings
+	= "zoi":var _:var '.' _:spaces v:vars { v }
+;
+vars :: Strings
+	= v:var vs:vars			{ cons v vs }
+	/ '.' vs:vars			{ vs }
+	/				{ empty }
+;
+vars_ :: TwoString
+	= v:var '.' _:spaces h:var[notEq v h]	{ tuple v h }
+;
+var :: String
+	= v:variable _:spaces	{ v }
+;
+variable :: String
+	= !' ' !'.' c s:var	{ cons c s }
+	/ !' ' !'.' c		{ cons c empty }
+;
+spaces :: Nil
+	= s:[isSpace s] _:spaces	{ nil }
+	/				{ nil }
+;
+
+|]

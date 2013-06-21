@@ -82,3 +82,23 @@ case getToken s of
 !var:hoge のような形にするべきだろう。
 もちろん !var:hoge は !_:hoge と書くべきだが、
 !"hoge":str のような形が作れるし、さらに言えば !'\n' のような形は便利だ。
+
+2013.06.21 Fri.
+
+同じ式のなかでは前の変数は見えるが、
+そのなかの式にはそれを伝えられない。
+zoi を実装するには何らかの形でそれが必要だと思う。
+あるいはくりかえしを内部で実装してしまうか、だ。
+"zoi":var sep:var strs:(str:var[notEq sep str])* cSep:[eq sep cSep]
+のような形だ。
+これは内部では以下のようになる。
+"zoi" <- var
+sep <- var
+strs <- list $ do
+	str <- var
+	unless (notEq sep str) $ throwError ...
+cSep <- var
+unless (eq sep cSep) $ throwError ...
+これはいい考えだな。
+つまり leaf = ... / v:var ':' leaf '*' のようにする。
+Leaf を type から data にする必要があるな。

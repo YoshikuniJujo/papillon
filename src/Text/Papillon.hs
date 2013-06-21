@@ -38,8 +38,6 @@ getNamesFromExpressionHs = mapMaybe getLeafName . fst
 getLeafName :: NameLeaf_ -> Maybe String
 getLeafName (Here (_, (Just n, _))) = Just n
 getLeafName (NotAfter (_, (Just n, _))) = Just n
--- getLeafName (Here (_, Left n)) = Just n
--- getLeafName (NotAfter (_, Left n)) = Just n
 getLeafName _ = Nothing
 
 flipMaybe :: (Error (ErrorType me), MonadError me) =>
@@ -118,7 +116,6 @@ getTokenN False = mkName "getToken"
 
 declaration :: Bool -> String -> DecsQ
 declaration th str = do
---	fm <- dFlipMaybe
 	let (src, tkn, parsed) = case dv_peg $ parse str of
 		Right ((s, t, p), _) -> (s, t, p)
 		_ -> error "bad"
@@ -132,8 +129,6 @@ declaration' src = case dv_pegFile $ parse src of
 
 decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
 decParsed th src tkn parsed = do
---	debug <- flip (valD $ varP $ mkName "debug") [] $ normalB $
---		appE (varE $ mkName "putStrLn") (litE $ stringL "debug")
 	glb <- runIO $ newIORef 0
 	r <- result th
 	pm <- pmonad th
@@ -145,10 +140,8 @@ decParsed th src tkn parsed = do
 	tdvcm <- typeDvCharsM th tkn
 	dvcm <- dvCharsM th
 	pts <- typeP parsed
-	ps <- pSomes glb th parsed -- name expr
+	ps <- pSomes glb th parsed
 	return $ {- fm ++ -} [pm, r, d, pt, p] ++ tdvm ++ dvsm ++ [tdvcm, dvcm] ++ pts ++ ps
-	where
---	c = clause [wildP] (normalB $ conE $ mkName "Nothing") []
 
 derivs :: Bool -> TypeQ -> Peg -> DecQ
 derivs _ tkn peg = dataD (cxt []) (mkName "Derivs") [] [
@@ -256,7 +249,7 @@ pSome_ g th nls ret = fmap DoE $ do
 	return $ concat x ++ [r]
 
 afterCheck :: Bool -> ExpQ -> StmtQ
-afterCheck th p = noBindS $ condE p -- `appE` varE t)
+afterCheck th p = noBindS $ condE p
 	(varE (returnN th) `appE` conE (mkName "()"))
 	(varE (throwErrorN th) `appE` (varE (strMsgN th) `appE`
 						litE (stringL "not match")))
@@ -275,7 +268,6 @@ beforeMatch th t n = sequence [
 
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
 transLeaf' g th (n, (Nothing, p)) = do
--- transLeaf' g th (n, Right p) = do
 	gn <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	t <- newName $ "xx" ++ show gn
@@ -292,28 +284,33 @@ transLeaf' g th (n, (Nothing, p)) = do
 			ret2 <- beforeMatch th t n
 			ret3 <- afterCheck th p
 			return $ ret1 : ret2 ++ [ret3]
-transLeaf' g th (n, (Just v, _)) = do
--- transLeaf' g th (n, Left v) = do
+transLeaf' g th (n, (Just v, p)) = do
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
 			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M",
-			noBindS $ varE (returnN th) `appE` conE (mkName "()")]
-		WildP -> (: []) <$> noBindS (infixApp
-			(varE $ mkName $ "dv_" ++ v ++ "M")
-			(varE $ mkName ">>")
-			(varE (returnN th) `appE` tupE []))
+			noBindS $ varE (returnN th) `appE` conE (mkName "()"),
+			afterCheck th p]
+		WildP -> (:)
+			<$> noBindS (infixApp
+				(varE $ mkName $ "dv_" ++ v ++ "M")
+				(varE $ mkName ">>")
+				(varE (returnN th) `appE` tupE []))
+			<*> ((:[]) <$> afterCheck th p)
 		_ -> do	gn <- runIO $ readIORef g
 			runIO $ modifyIORef g succ
 			t <- newName $ "xx" ++ show gn
 			(:)	<$> bindS (varP t)
 					(varE $ mkName $ "dv_" ++ v ++ "M")
-				<*> beforeMatch th t n
+				<*> ((++) <$> beforeMatch th t n <*>
+					((: []) <$> afterCheck th p))
 
 transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
 transLeaf g th (Here nl) = transLeaf' g th nl
 transLeaf g th (NotAfter nl) = do
-	d <- newName "d"
+	n <- runIO $ readIORef g
+	d <- newName $ "ddd" ++ show n
+	runIO $ modifyIORef g succ
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ varE (flipMaybeN th) `appE`

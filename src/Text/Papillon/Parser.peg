@@ -39,10 +39,13 @@ ctLeaf :: Leaf
 -- ctLeaf = Right $ conE (mkName "True") -- varE (mkName "const") `appE` conE (mkName "True")
 ctLeaf = (Nothing, conE $ mkName "True")
 
-ruleLeaf :: String -> Leaf
+ruleLeaf :: String -> ExpQ -> Leaf
 boolLeaf :: ExpQ -> Leaf
-ruleLeaf r = (Just r, varE $ mkName "undefined") -- Left
+ruleLeaf r t = (Just r, t) -- Left
 boolLeaf p = (Nothing, p) -- Right
+
+true :: ExpQ
+true = conE $ mkName "True"
 
 just :: a -> Maybe a
 just = Just
@@ -115,7 +118,7 @@ stringP :: String -> PatQ
 stringP = litP . stringL
 
 isAlphaNumOt, elemNTs :: Char -> Bool
-isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/"
+isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ "
 elemNTs = (`elem` "nt\\'")
 
 getNTs :: Char -> Char
@@ -249,13 +252,10 @@ pats :: PatQs
 	= p:pat ps:pats				{ cons p ps }
 	/					{ empty }
 ;
--- leaf_ :: Leaf_
---	= _:[isNot] l:leaf	{ notAfter l }
---	/ l:leaf		{ here l }
--- ;
 leaf :: Leaf
-	= t:test	{ boolLeaf t }
-	/ v:variable	{ ruleLeaf v }
+	= t:test				{ boolLeaf t }
+	/ v:variable t:test			{ ruleLeaf v t }
+	/ v:variable				{ ruleLeaf v true }
 ;
 test :: ExR
 	= '[' h:hsExp ']'		{ getEx h }

@@ -27,3 +27,8 @@ runhaskell -isrc -Wall src/papillon test/peg/parseError.papillon > tmp/parseErro
 runhaskell -isrc -Wall tmp/parseError.hs
 cp test/peg/parseError.papillon tmp/parseError_th.hs
 runhaskell -isrc -Wall tmp/parseError_th.hs
+
+runhaskell -isrc -Wall src/papillon test/peg/testZoi.papillon > tmp/testZoi.hs && \
+runhaskell -isrc -Wall tmp/testZoi.hs
+cp test/peg/testZoi.papillon tmp/testZoi_th.hs
+runhaskell -isrc -Wall tmp/testZoi_th.hs
