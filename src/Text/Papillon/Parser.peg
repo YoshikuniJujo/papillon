@@ -238,19 +238,24 @@ nameLeaf_ :: NameLeaf_
 	/ nl:nameLeaf				{ here nl }
 ;
 nameLeaf :: NameLeaf
-	= n:pat ':' o:[isOpen o] ex:selection c:[isClose c] k:[isKome k] _:spaces
+	= n:pat1 ':' o:[isOpen o] ex:selection c:[isClose c] k:[isKome k] _:spaces
 		{ mkNameLeafList n ex }
 	/ o:[isOpen o] nl:nameLeaf c:[isClose c]	{ nl }
-	/ n:pat ':' l:leaf		{ mkNameLeaf n l }
-	/ n:pat					{ mkNameLeaf n ctLeaf }
+	/ n:pat1 ':' l:leaf		{ mkNameLeaf n l }
+	/ n:pat1					{ mkNameLeaf n ctLeaf }
 --	/ ':' l:leaf_			{ mkNameLeaf wildP l }
 ;
 pat :: PatQ
+	= t:typ _:spaces ps:pats		{ conToPatQ t ps }
+	/ p:pat1				{ p }
+;
+pat1 :: PatQ
 	= "_":variable				{ wildP }
 	/ n:variable				{ strToPatQ n }
-	/ t:typ _:spaces ps:pats		{ conToPatQ t ps }
 	/ '\'' c:charLit '\''			{ charP c }
 	/ '"' s:stringLit '"'			{ stringP s }
+	/ t:typ					{ conToPatQ t emp }
+	/ '(' p:pat ')'				{ p }
 ;
 charLit :: Char
 	= c:[isAlphaNumOt c]			{ c }

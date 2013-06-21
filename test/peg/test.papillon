@@ -26,7 +26,7 @@ nothing = Nothing
 [papillon|
 
 onlyDigits :: String
-	= Just s:digits		{ s }
+	= (Just s):digits		{ s }
 ;
 digits :: MString
 	= s:something		{ just s }
