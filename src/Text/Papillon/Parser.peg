@@ -17,7 +17,8 @@ import Language.Haskell.TH
 type MaybeString = Maybe String
 
 type Nil = ()
-type Leaf = Either String ExR
+-- type Leaf = Either String ExR
+type Leaf = (Maybe String, ExR)
 type NameLeaf = (PatQ, Leaf)
 data NameLeaf_ = NotAfter NameLeaf | Here NameLeaf
 notAfter, here :: NameLeaf -> NameLeaf_
@@ -35,12 +36,13 @@ type Ex = ExpQ -> ExpQ
 type ExR = ExpQ
 
 ctLeaf :: Leaf
-ctLeaf = Right $ conE (mkName "True") -- varE (mkName "const") `appE` conE (mkName "True")
+-- ctLeaf = Right $ conE (mkName "True") -- varE (mkName "const") `appE` conE (mkName "True")
+ctLeaf = (Nothing, conE $ mkName "True")
 
-left :: b -> Either a b
-right :: a -> Either a b
-left = Right
-right = Left
+ruleLeaf :: String -> Leaf
+boolLeaf :: ExpQ -> Leaf
+ruleLeaf r = (Just r, varE $ mkName "undefined") -- Left
+boolLeaf p = (Nothing, p) -- Right
 
 just :: a -> Maybe a
 just = Just
@@ -252,8 +254,8 @@ pats :: PatQs
 --	/ l:leaf		{ here l }
 -- ;
 leaf :: Leaf
-	= t:test	{ left t }
-	/ v:variable	{ right v }
+	= t:test	{ boolLeaf t }
+	/ v:variable	{ ruleLeaf v }
 ;
 test :: ExR
 	= '[' h:hsExp ']'		{ getEx h }

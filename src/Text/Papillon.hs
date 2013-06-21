@@ -36,8 +36,10 @@ getNamesFromExpressionHs :: ExpressionHs -> [String]
 getNamesFromExpressionHs = mapMaybe getLeafName . fst
 
 getLeafName :: NameLeaf_ -> Maybe String
-getLeafName (Here (_, Left n)) = Just n
-getLeafName (NotAfter (_, Left n)) = Just n
+getLeafName (Here (_, (Just n, _))) = Just n
+getLeafName (NotAfter (_, (Just n, _))) = Just n
+-- getLeafName (Here (_, Left n)) = Just n
+-- getLeafName (NotAfter (_, Left n)) = Just n
 getLeafName _ = Nothing
 
 flipMaybe :: (Error (ErrorType me), MonadError me) =>
@@ -272,7 +274,8 @@ beforeMatch th t n = sequence [
  ]
 
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
-transLeaf' g th (n, Right p) = do
+transLeaf' g th (n, (Nothing, p)) = do
+-- transLeaf' g th (n, Right p) = do
 	gn <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	t <- newName $ "xx" ++ show gn
@@ -285,12 +288,12 @@ transLeaf' g th (n, Right p) = do
 		WildP -> sequence [
 			bindS wildP $ varE $ mkName "dvCharsM",
 			afterCheck th p]
-		_ -> do	ret <- sequence [
-				bindS (varP t) $ varE $ mkName "dvCharsM",
-				afterCheck th p]
+		_ -> do	ret1 <- bindS (varP t) $ varE $ mkName "dvCharsM"
 			ret2 <- beforeMatch th t n
-			return $ ret ++ ret2
-transLeaf' g th (n, Left v) = do
+			ret3 <- afterCheck th p
+			return $ ret1 : ret2 ++ [ret3]
+transLeaf' g th (n, (Just v, _)) = do
+-- transLeaf' g th (n, Left v) = do
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
