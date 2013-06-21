@@ -188,8 +188,8 @@ parseE' th names = clause [varP $ mkName "s"] (normalB $ varE $ mkName "d") $ [
 			varE (mkName "d") `appE` caseE (varE (getTokenN th) `appE`
 								varE (mkName "s")) [
 					match	(justN th `conP` [
-							tupP [(varP (mkName "c")),
-							(varP (mkName "s'"))]])
+							tupP [varP (mkName "c"),
+							varP (mkName "s'")]])
 						(normalB $ doE [
 							noBindS $ varE (putN th)
 								`appE`
@@ -253,8 +253,26 @@ pSome_ g th nls ret = fmap DoE $ do
 	r <- noBindS $ varE (returnN th) `appE` ret
 	return $ concat x ++ [r]
 
-transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
-transLeaf g th (Here (n, Right p)) = do
+afterCheck :: Bool -> Name -> ExpQ -> StmtQ
+afterCheck th t p = noBindS $ condE (p `appE` varE t)
+	(varE (returnN th) `appE` conE (mkName "()"))
+	(varE (throwErrorN th) `appE` (varE (strMsgN th) `appE`
+						litE (stringL "not match")))
+
+beforeMatch :: Bool -> Name -> PatQ -> Q [Stmt]
+beforeMatch th t n = sequence [
+	noBindS $ caseE (varE t) [
+		flip (match $ varPToWild n) [] $ normalB $
+			varE (returnN th) `appE` tupE [],
+		flip (match wildP) [] $ normalB $ varE (throwErrorN th) `appE`
+			(varE (strMsgN th) `appE` litE (stringL "not match"))
+	 ],
+	letS [flip (valD n) [] $ normalB $ varE t],
+	noBindS $ varE (returnN th) `appE` tupE []
+ ]
+
+transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
+transLeaf' g th (n, Right p) = do
 	gn <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	t <- newName $ "xx" ++ show gn
@@ -262,49 +280,17 @@ transLeaf g th (Here (n, Right p)) = do
 	case nn of
 		VarP _ -> sequence [
 			bindS (varP t) $ varE $ mkName "dvCharsM",
-			noBindS $ condE (p `appE` varE t)
-				(varE (returnN th) `appE` conE (mkName "()"))
-				(varE (throwErrorN th) `appE`
-					(varE (strMsgN th) `appE`
-						litE (stringL "not match"))),
-			noBindS $ caseE (varE t) [
-				flip (match $ varPToWild n) [] $ normalB $
-					varE (returnN th) `appE` tupE []
-			 ],
 			letS [flip (valD n) [] $ normalB $ varE t],
-			noBindS $ varE (returnN th) `appE` tupE []
-		 ]
+			afterCheck th t p]
 		WildP -> sequence [
 			bindS (varP t) $ varE $ mkName "dvCharsM",
-			noBindS $ condE (p `appE` varE t)
-				(varE (returnN th) `appE` conE (mkName "()"))
-				(varE (throwErrorN th) `appE`
-					(varE (strMsgN th) `appE`
-						litE (stringL "not match"))),
-			noBindS $ caseE (varE t) [
-				flip (match $ varPToWild n) [] $ normalB $
-					varE (returnN th) `appE` tupE []
-			 ],
-			letS [flip (valD n) [] $ normalB $ varE t],
-			noBindS $ varE (returnN th) `appE` tupE []
-		 ]
-		_ -> sequence [
-			bindS (varP t) $ varE $ mkName "dvCharsM",
-			noBindS $ condE (p `appE` varE t)
-				(varE (returnN th) `appE` conE (mkName "()"))
-				(varE (throwErrorN th) `appE`
-					(varE (strMsgN th) `appE`
-						litE (stringL "not match"))),
-			noBindS $ caseE (varE t) [
-				flip (match $ varPToWild n) [] $ normalB $
-					varE (returnN th) `appE` tupE [],
-				flip (match wildP) [] $ normalB $ varE (throwErrorN th) `appE`
-					(varE (strMsgN th) `appE` litE (stringL "not match"))
-			 ],
-			letS [flip (valD n) [] $ normalB $ varE t],
-			noBindS $ varE (returnN th) `appE` tupE []
-		 ]
-transLeaf g th (Here (n, Left v)) = do
+			afterCheck th t p]
+		_ -> do	ret <- sequence [
+				bindS (varP t) $ varE $ mkName "dvCharsM",
+				afterCheck th t p]
+			ret2 <- beforeMatch th t n
+			return $ ret ++ ret2
+transLeaf' g th (n, Left v) = do
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
@@ -316,36 +302,18 @@ transLeaf g th (Here (n, Left v)) = do
 		_ -> do	gn <- runIO $ readIORef g
 			runIO $ modifyIORef g succ
 			t <- newName $ "xx" ++ show gn
-			sequence [
-				bindS (varP t) $ varE $ mkName $ "dv_" ++ v ++ "M",
-				noBindS $ caseE (varE t) [
-					flip (match $ varPToWild n) [] $ normalB $
-						varE (returnN th) `appE`
-							tupE [],
-					flip (match wildP) [] $ normalB $
-						varE (throwErrorN th) `appE`
-							(varE (strMsgN th) `appE`
-								litE (stringL "not match"))
-				 ],
-				bindS n $ varE (returnN th) `appE` varE t
-			 ]
-transLeaf g th (NotAfter (n, Right p)) = do
+			(:)	<$> bindS (varP t)
+					(varE $ mkName $ "dv_" ++ v ++ "M")
+				<*> beforeMatch th t n
+
+transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
+transLeaf g th (Here nl) = transLeaf' g th nl
+transLeaf g th (NotAfter nl) = do
 	d <- newName "d"
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ varE (flipMaybeN th) `appE`
-			(DoE <$> transLeaf g th (Here (n, Right p))),
-		noBindS $ varE (putN th) `appE` varE d]
-transLeaf g th (NotAfter (n, Left v)) = do
-	d <- newName "d"
-	sequence [
-		bindS (varP d) $ varE (getN th),
-		noBindS $ varE (flipMaybeN th) `appE`
-			(DoE <$> transLeaf g th (Here (n, Left v))),
-{-
-		noBindS $ varE (flipMaybeN th) `appE`
-			varE (mkName $ "dv_" ++ v ++ "M"),
--}
+			(DoE <$> transLeaf' g th nl),
 		noBindS $ varE (putN th) `appE` varE d]
 
 varPToWild :: PatQ -> PatQ

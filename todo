@@ -1,4 +1,47 @@
+* transLeaf の refactoring
+	Here をまずは作って、それを使って NotAfter を作るようにする
+	型の再考も必要だ
+* [isLower] を [isLower c] のようにしてしまおう
+
+* 構文の変更
+	(Just c):some[isAlpha c] のようにすると、
+	some を match して、それを Just c に入れてそのなかの c から Bool を取り出す
+	some は省略可能で省略すると基本的なトークンからとなる
+	また [...] も省略可能でそれは [const True] と同じこと
+	これは大きな変更だ
+	Parser.peg を変更して test が通ったらとりあえず commit する。
+	その後新文法に対応した Parser.peg を書き直す
+	-1. transLeaf を refactoring したほうがいいな
+		今のままだとごちゃごちゃでうまく変更ができない
+		とりあえずは、NotAfter を後からつけられるようにしよう
+		この項目を独立した項目として扱おうかな
+	0. [isLower] を [isLower c] のようにしてしまおう
+	1. type Leaf = (Maybe String, ExpQ) としよう
+		default の ExpQ は True とする
+		この時点では動きは変えない
+	2. 次に NameLeaf の結合性を変えよう
+		おそらく c:(some[isAlpha c]) よりも (c:some)[isAlpha c] のように
+		解釈したほうが後の操作が楽になるだろう
+		この段階でも動くだろうか
+	3. 実際の動作を変える
+		もしかしたら 2 よりも先にこっちをやるべきかもしれない
+		
+* 構文の変更
+	パターンマッチの部分で複数の要素からなるものは () でくくることにしよう
+	そうしないと Token _:some が Token (_:some) か (Token _):some
+	かで曖昧になるから
+
+* Pos を取れるようにする
+	Token -> Pos -> Pos のようにする
+	また showPos も必要か
+	parse pos str とし Derivs にも pos を入れるところをつくろう
+	そうするといろいろなところで、pos が利用できるようになる
+	pos をもっと一般的に state として使うというアイデアもあるが
+	それはとりあえず error のあった位置を表示するという当初の
+	目的を実現してから考えよう
+
 * Either String ではなく Either ParseError とする
+	type ParseError pos または data ParseError pos としようかな
 
 * haskell の exp をちゃんとパースしよう
 	まずは、type のところを Maybe Int とかができるようにしようかな
@@ -37,3 +80,7 @@
 * cabal に examples directory を追加する
 * cabal の description をもうすこしましにする
 * homepage に example をのせる
+
+* id is... 等の id をなくす
+	左結合への変換の部分で ExpQ -> ExpQ ではなく (ExpQ -> ExpQ) -> ExpQ を
+	使えばできる気がする
