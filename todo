@@ -1,4 +1,14 @@
-* pos0 をつくろう
+* module 構成について
+	Text.Papillon
+		|
+		+--- Text.Papillon.Parse
+			|
+			+--- Text.Papillon.Class
+	上のようにする必要があるかもしれない。
+	もしかしたら違うかも。
+	いずれにしても、Text.Papillon.Parse の initialPos と
+	Text.Papillon の initialPos を区別するかあるいは別の方法で何とかする必要がある。
+	それまでは papillon を install してはならない
 
 * 下記 2 つについて、どこから手をつけようか迷う
 	できるだけ早く結果を見たい
