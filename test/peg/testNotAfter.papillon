@@ -5,7 +5,7 @@ import Text.Papillon
 main :: IO ()
 main = case dv_something $ parse initialPos "abc\ndefn" of
 	Right (r, _) -> print r
-	Left err -> putStrLn $ "not match: " ++ err
+	Left err -> putStrLn $ "not match: " ++ show err
 
 true :: Bool
 true = True

@@ -8,8 +8,7 @@ main :: IO ()
 main = do
 	case dv_onlyDigits $ parse initialPos "123" of
 		Right (str, _) -> print str
-		Left "" -> putStrLn $ "error: empty"
-		Left err -> putStrLn $ "error: " ++ err
+		Left err -> putStrLn $ "error: " ++ show err
 	putStrLn "here"
 
 cons :: a -> [a] -> [a]

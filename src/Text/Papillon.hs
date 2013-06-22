@@ -65,11 +65,13 @@ getLeafName' (NameLeafList _ sel) =
 	concatMap getNamesFromExpressionHs sel
 getLeafName' _ = []
 
-catchErrorN, unlessN :: Bool -> Name
+catchErrorN, unlessN, errorN :: Bool -> Name
 catchErrorN True = 'catchError
 catchErrorN False = mkName "catchError"
 unlessN True = 'unless
 unlessN False = mkName "unless"
+errorN True = ''Error
+errorN False = mkName "Error"
 
 {-
 flipMaybe :: PackratM a -> PackratM ()
@@ -131,26 +133,16 @@ papillonStr' src = do
 	lst <- runQ $ listDec False
 	return $ ppp ++
 		(if isListUsed peg then "\nimport Control.Applicative\n" else "") ++
-		pp ++ "\n" ++ flipMaybeS ++ show (ppr decs) ++ "\n" ++ atp ++
+		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++
 		"\n" ++ show (ppr cls) ++ "\n" ++
 		if isListUsed peg then show (ppr lst) else ""
-
-flipMaybeS :: String
-flipMaybeS = ""
-{-
-	"flipMaybe :: (Error (ErrorType me), MonadError me) =>\n" ++
-	"\tStateT s me a -> StateT s me ()\n" ++
-	"flipMaybe action = do\n" ++
-	"\terr <- (action >> return False) `catchError` const (return True)\n" ++
-	"\tunless err $ throwError $ strMsg \"not error\"\n"
--}
 
 flipMaybeN :: Bool -> Name
 flipMaybeN True = mkName "flipMaybe" -- 'flipMaybe
 flipMaybeN False = mkName "flipMaybe"
 
-returnN, stateTN, stringN, putN, stateTN', getN,
-	eitherN, strMsgN, throwErrorN, runStateTN, justN, mplusN,
+returnN, stateTN, putN, stateTN', getN,
+	strMsgN, throwErrorN, runStateTN, justN, mplusN,
 	getTokenN, getsN :: Bool -> Name
 returnN True = 'return
 returnN False = mkName "return"
@@ -160,8 +152,6 @@ strMsgN True = 'strMsg
 strMsgN False = mkName "strMsg"
 stateTN True = ''StateT
 stateTN False = mkName "StateT"
-stringN True = ''String
-stringN False = mkName "String"
 putN True = 'put
 putN False = mkName "put"
 getsN True = 'gets
@@ -172,14 +162,15 @@ mplusN True = 'mplus
 mplusN False = mkName "mplus"
 getN True = 'get
 getN False = mkName "get"
-eitherN True = ''Either
-eitherN False = mkName "Either"
 runStateTN True = 'runStateT
 runStateTN False = mkName "runStateT"
 justN True = 'Just
 justN False = mkName "Just"
 getTokenN True = 'getToken
 getTokenN False = mkName "getToken"
+
+eitherN :: Name
+eitherN = mkName "Either"
 
 declaration :: Bool -> String -> DecsQ
 declaration th str = do
@@ -197,8 +188,10 @@ declaration' src = case dv_pegFile $ parse P.initialPos src of
 decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
 decParsed th src tkn parsed = do
 	glb <- runIO $ newIORef 0
-	r <- result th
-	pm <- pmonad th
+	pet <- parseErrorT
+	iepe <- instanceErrorParseError th
+	r <- result src
+	pm <- pmonad th src
 	d <- derivs th src tkn parsed
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseE th parsed]
@@ -209,7 +202,8 @@ decParsed th src tkn parsed = do
 	pts <- typeP parsed
 	ps <- pSomes glb th parsed
 	fm <- flipMaybeQ glb th
-	return $ fm ++ [pm, r, d, pt, p] ++ tdvm ++ dvsm ++ [tdvcm, dvcm] ++ pts ++ ps
+	return $ pet : iepe : fm ++ [pm, r, d, pt, p] ++ tdvm ++ dvsm ++
+		[tdvcm, dvcm] ++ pts ++ ps
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
@@ -226,15 +220,40 @@ derivs1 (name, typ, _) =
 	varStrictType (mkName $ "dv_" ++ name) $ strictType notStrict $
 		conT (mkName "Result") `appT` conT typ
 
-result :: Bool -> DecQ
-result th = tySynD (mkName "Result") [PlainTV $ mkName "v"] $
-	conT (eitherN th) `appT` conT (stringN th) `appT`
-		(tupleT 2 `appT` varT (mkName "v") `appT` conT (mkName "Derivs"))
+parseErrorT :: DecQ
+parseErrorT = dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"]
+	[normalC (mkName "Hoge") [strictType isStrict $ conT $ mkName "String"]]
+	[mkName "Show"]
+{- tySynD (mkName "ParseError") [PlainTV $ mkName "pos"] $
+	conT (mkName "String") -}
 
-pmonad :: Bool -> DecQ
-pmonad th = tySynD (mkName "PackratM") [] $ conT (stateTN th) `appT`
+{-
+
+instance Error (ParseError pos) where
+	noMsg = Hoge ""
+
+-}
+
+instanceErrorParseError :: Bool -> DecQ
+instanceErrorParseError th = instanceD (cxt [])
+	(conT (errorN th) `appT`
+		(conT (mkName "ParseError") `appT` varT (mkName "pos")))
+	[flip (valD $ varP $ strMsgN th) [] $ normalB $
+		conE (mkName "Hoge")]
+
+result :: TypeQ -> DecQ
+result src = tySynD (mkName "Result") [PlainTV $ mkName "v"] $
+	conT eitherN `appT` pe `appT`
+		(tupleT 2 `appT` varT (mkName "v") `appT` conT (mkName "Derivs"))
+	where
+	pe = conT (mkName "ParseError") `appT` (conT (mkName "Pos") `appT` src)
+
+pmonad :: Bool -> TypeQ -> DecQ
+pmonad th src = tySynD (mkName "PackratM") [] $ conT (stateTN th) `appT`
 	conT (mkName "Derivs") `appT`
-		(conT (eitherN th) `appT` conT (stringN th))
+		(conT eitherN `appT` pe)
+	where
+	pe = conT (mkName "ParseError") `appT` (conT (mkName "Pos") `appT` src)
 
 parseT :: TypeQ -> Bool -> DecQ
 parseT src _ = sigD (mkName "parse") $ arrowT

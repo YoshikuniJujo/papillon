@@ -31,7 +31,7 @@ instance Source YourSource where
 main :: IO ()
 main = case dv_str $ parse initialPos DEF of
 	Right (r, _) -> print r
-	Left err -> putStrLn $ "not match: " ++ err
+	Left err -> putStrLn $ "not match: " ++ show err
 
 type MyTokens = [MyToken]
 type YourTokens = [YourToken]

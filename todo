@@ -7,6 +7,9 @@
 	throwError $ parseError pos のようにする
 	とりあえず、data ParseError pos で作っておいたほうが無難かと思う
 
+* ParseError の field に error になったコードとそれについていたコメントをいれる
+	コメントはとりあえず {-# "..." #-}  でいれることにしよう
+
 * haskell の exp をちゃんとパースしよう
 	まずは、type のところを Maybe Int とかができるようにしようかな
 	(...) を許すようにしよう
@@ -53,3 +56,6 @@
 * id is... 等の id をなくす
 	左結合への変換の部分で ExpQ -> ExpQ ではなく (ExpQ -> ExpQ) -> ExpQ を
 	使えばできる気がする
+
+* papillonStr' 等を String 以外も取れるようにする
+	StringLike とかかな
