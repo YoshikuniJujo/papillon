@@ -1,53 +1,10 @@
-* module 構成について
-	Text.Papillon
-		|
-		+--- Text.Papillon.Parse
-			|
-			+--- Text.Papillon.Class
-	上のようにする必要があるかもしれない。
-	もしかしたら違うかも。
-	いずれにしても、Text.Papillon.Parse の initialPos と
-	Text.Papillon の initialPos を区別するかあるいは別の方法で何とかする必要がある。
-	それまでは papillon を install してはならない
-
-* 下記 2 つについて、どこから手をつけようか迷う
-	できるだけ早く結果を見たい
-	細かく変化させたい
-	上記について、type ParseError pos = pos でもいい気もする
-	あるいは今のところは pos 以外に情報もないので、
-	(まあ eof とそれ以外とか flipMaybe あたりとかもあるけど ...)
-	でもやっぱり data で定義しておいたほうがあとあと助かる気もするので、
-	data ParseError pos = ParseError pos String とかにしておこうかな
-		deriving Show もね。
-
-	とりあえず Text.Papillon.Class をうめた
-
-* Pos を取れるようにする
-	Token -> Pos -> Pos のようにする
-	また showPos も必要か
-	parse pos str とし Derivs にも pos を入れるところをつくろう
-	そうするといろいろなところで、pos が利用できるようになる
-	pos をもっと一般的に state として使うというアイデアもあるが
-	それはとりあえず error のあった位置を表示するという当初の
-	目的を実現してから考えよう
-
-	parse pos str とし、
-	char = ... parse (updatePos c pos) str とする
-	また、d = Derivs ... pos とする
-	こうしておけば、どこにいても PackratM 内なら pos が入手できる
-	変更もできるけど、ね。
-
-	instance TokenList Char where
-		...
-		type ListPos = (Int, Int)
-		...
-
-	な感じでどうだろうか
-
 * Either String ではなく Either ParseError とする
 	type ParseError pos または data ParseError pos としようかな
 
-	上とからめて、throwError $ parseError pos のようにする
+	data ParseError pos = ParseError pos String とかにしておこうかな
+		deriving Show もね。
+
+	throwError $ parseError pos のようにする
 	とりあえず、data ParseError pos で作っておいたほうが無難かと思う
 
 * haskell の exp をちゃんとパースしよう
