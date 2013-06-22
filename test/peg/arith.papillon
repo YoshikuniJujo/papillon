@@ -6,16 +6,25 @@ import Text.Papillon
 
 import Data.Char
 
-testExp, testExp', testExp'', testExp''' :: String
+testExp, testExp', testExp'', testExp''', testErr, testErr' :: String
 testExp = "3 * (2 + 24) / 8 / 3"
 testExp' = "3 + 2 + 24 / 8 / 3"
 testExp'' = "50 + 3 * 6"
 testExp''' = "3 * (50 + 5) / 8"
+testErr = "8 * 2 + + 5 "
+testErr' = "***"
 
 main :: IO ()
-main = case dv_expression $ parse initialPos testExp of
-	Right (d, _) -> print d
-	Left s -> putStrLn $ "error: " ++ s
+main = do
+	case dv_expression $ parse initialPos testExp of
+		Right (d, _) -> print d
+		Left s -> putStrLn $ "error: " ++ s
+	case dv_expression $ parse initialPos testErr of
+		Right (d, _) -> print d
+		Left s -> putStrLn $ "error: " ++ s
+	case dv_expression $ parse initialPos testErr' of
+		Right (d, _) -> print d
+		Left s -> putStrLn $ "error: " ++ s
 
 type LeftInteger = Integer -> Integer
 type Nil = ()

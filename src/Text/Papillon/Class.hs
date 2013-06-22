@@ -137,7 +137,7 @@ instance SourceList Char where
 	newtype ListPos Char = CharPos (Int, Int)
 	listToken (c : s) = Just (c, s)
 	listToken _ = Nothing
-	listInitialPos = CharPos (0, 0)
+	listInitialPos = CharPos (1, 1)
 	listUpdatePos '\n' (CharPos (y, x)) = CharPos (y + 1, 0)
 	listUpdatePos '\t' (CharPOs (y, x)) = CharPos (y, x + 8)
 	listUpdatePos _ (CharPos (y, x)) = CharPos (y, x + 1)
@@ -158,7 +158,7 @@ instanceSLC th = instanceD (cxt []) (conT sourceList `appT` conT (charN th)) [
 		clause [wildP] (normalB $ conE $ nothingN th) []
 	 ],
 	flip (valD $ varP listInitialPosN) [] $ normalB $
-		conE (mkName "CharPos") `appE` tupE [zero, zero],
+		conE (mkName "CharPos") `appE` tupE [one, one],
 	funD listUpdatePosN [
 		flip (clause [litP $ charL '\n', pCharPos [tupP [varP y, wildP]]]) [] $
 			normalB $ eCharPos `appE` tupE [

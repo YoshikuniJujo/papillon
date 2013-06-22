@@ -10,6 +10,9 @@ main = do
 	case dv_more $ parse initialPos "" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left err -> putStrLn $ "OK! it's fail: " ++ show err
+	case dv_other $ parse initialPos "parse hoge" of
+		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
+		Left err -> putStrLn $ "OK! it's fail: " ++ show err
 
 type Nil = ()
 nil :: Nil
