@@ -10,6 +10,7 @@ module Text.Papillon.Parser (
 	parse,
 	dv_peg,
 	dv_pegFile,
+	initialPos,
 ) where
 
 import Data.Char

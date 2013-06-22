@@ -18,7 +18,8 @@ import Control.Monad.Trans.Error (Error(..))
 
 import Control.Applicative
 
-import Text.Papillon.Parser
+import Text.Papillon.Parser hiding (initialPos)
+import qualified Text.Papillon.Parser as P
 import Data.IORef
 
 import Text.Papillon.Class
@@ -137,13 +138,13 @@ getTokenN False = mkName "getToken"
 
 declaration :: Bool -> String -> DecsQ
 declaration th str = do
-	let (src, tkn, parsed) = case dv_peg $ parse str of
+	let (src, tkn, parsed) = case dv_peg $ parse P.initialPos str of
 		Right ((s, t, p), _) -> (s, t, p)
 		_ -> error "bad"
 	decParsed th src tkn parsed
 
 declaration' :: String -> (String, String, DecsQ, String, Peg)
-declaration' src = case dv_pegFile $ parse src of
+declaration' src = case dv_pegFile $ parse P.initialPos src of
 	Right ((ppp, pp, (s, t, p), atp), _) ->
 		(ppp, pp, decParsed False s t p, atp, p)
 	_ -> error "bad"

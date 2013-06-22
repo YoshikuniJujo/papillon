@@ -9,6 +9,7 @@ module  Text.Papillon.Parser (
 	parse,
 	dv_peg,
 	dv_pegFile,
+	initialPos,
 )  where
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
@@ -208,8 +209,8 @@ data Derivs
               dv_notComStr :: (Result Nil),
               dv_comEnd :: (Result Nil),
               dvChars :: (Result (Token String))}
-parse :: String -> Derivs
-parse s = d
+parse :: Pos String -> String -> Derivs
+parse pos s = d
           where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf pat pat1 charLit stringLit dq pats leaf test hsExp typ variable tvtail alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char
                 pegFile = runStateT p_pegFile d
                 pragma = runStateT p_pragma d
@@ -259,7 +260,7 @@ parse s = d
                 notComStr = runStateT p_notComStr d
                 comEnd = runStateT p_comEnd d
                 char = flip runStateT d (case getToken s of
-                                             Just (c, s') -> do put (parse s')
+                                             Just (c, s') -> do put (parse (updatePos c pos) s')
                                                                 return c
                                              _ -> throwError (strMsg "eof"))
 dv_pragmaM :: PackratM MaybeString
@@ -1401,12 +1402,29 @@ p_comEnd = foldl1 mplus [do xx97_96 <- dvCharsM
 
 class Source sl
     where type Token sl
+          data Pos sl
           getToken :: sl -> Maybe ((Token sl, sl))
+          initialPos :: Pos sl
+          updatePos :: Token sl -> Pos sl -> Pos sl
+          showPos :: Pos sl -> String
 class SourceList c
-    where listToken :: [c] -> Maybe ((c, [c]))
+    where data ListPos c
+          listToken :: [c] -> Maybe ((c, [c]))
+          listInitialPos :: ListPos c
+          listUpdatePos :: c -> ListPos c -> ListPos c
+          listShowPos :: ListPos c -> String
 instance SourceList Char
-    where listToken (c : s) = Just (c, s)
+    where newtype ListPos Char = CharPos ((Int, Int))
+          listToken (c : s) = Just (c, s)
           listToken _ = Nothing
+          listInitialPos = CharPos (0, 0)
+          listUpdatePos '\n' (CharPos (y, _)) = CharPos (y + 1, 0)
+          listUpdatePos _ (CharPos (y, x)) = CharPos (y, x + 1)
+          listShowPos (CharPos pos) = show pos
 instance SourceList c => Source ([c])
     where type Token ([c]) = c
+          newtype Pos ([c]) = ListPos (ListPos c)
           getToken = listToken
+          initialPos = ListPos listInitialPos
+          updatePos c (ListPos p) = ListPos (listUpdatePos c p)
+          showPos (ListPos p) = listShowPos p
