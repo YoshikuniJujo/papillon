@@ -156,10 +156,23 @@ test :: ExR
 	= '[' h:hsExp ']'		{ getEx h }
 ;
 hsExp :: Ex
-	= v:variable _:spaces h:hsExp	{ apply v h }
-	/ '(' e:hsExp ')'		{ toExGetEx e }
-	/ v:variable			{ toExp v }
+	= e:hsExp1 _:spaces h:hsExp	{ applyExR e h }
+--	/ '(' et:hsExpTpl ')'		{ toEx (tupE e) }
+--	/ '(' e:hsExp ')'		{ toExGetEx e }
+	/ e:hsExp1			{ toEx e }
 ;
+hsExp1 :: ExR
+	= '(' e:hsExp ')'		{ getEx e }
+	/ v:variable			{ varE (mkName v) }
+;
+{-
+hsExpTpl :: ExRL
+	= e:hsExp _:spaces c:[isComma c] _:spaces et:hsExpTpl
+					{ cons (getEx e) et }
+	/ e:hsExp			{ cons (getEx e) empty }
+	/				{ empty }
+;
+-}
 typ :: String
 	= u:upper t:tvtail	{ cons u t }
 ;

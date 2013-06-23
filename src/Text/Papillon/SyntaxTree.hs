@@ -26,6 +26,7 @@ type TTPeg = (TypeQ, TypeQ, Peg)
 
 type Ex = (ExpQ -> ExpQ) -> ExpQ
 type ExR = ExpQ
+type ExRL = [ExpQ]
 
 ctLeaf :: Leaf
 -- ctLeaf = Right $ conE (mkName "True") -- varE (mkName "const") `appE` conE (mkName "True")
@@ -80,6 +81,9 @@ toEx v = \f -> f v
 apply :: String -> Ex -> Ex
 apply f x = \g -> x (toExp f g `appE`)
 
+applyExR :: ExR -> Ex -> Ex
+applyExR f x = \g -> x (toEx f g `appE`)
+
 getEx :: Ex -> ExR
 getEx ex = ex id -- (varE $ mkName "id")
 
@@ -122,10 +126,11 @@ stringP :: String -> PatQ
 stringP = litP . stringL
 
 isAlphaNumOt, elemNTs :: Char -> Bool
-isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *()"
+isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),"
 elemNTs = (`elem` "nt\\'")
 
-isKome, isOpen, isClose :: Char -> Bool
+isComma, isKome, isOpen, isClose :: Char -> Bool
+isComma = (== ',')
 isKome = (== '*')
 isOpen = (== '(')
 isClose = (== ')')

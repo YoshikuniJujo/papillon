@@ -65,6 +65,7 @@ data Derivs
               dv_leaf :: (Result Leaf),
               dv_test :: (Result ExR),
               dv_hsExp :: (Result Ex),
+              dv_hsExp1 :: (Result ExR),
               dv_typ :: (Result String),
               dv_variable :: (Result String),
               dv_tvtail :: (Result String),
@@ -84,7 +85,7 @@ data Derivs
               dvPos :: (Pos String)}
 parse :: Pos String -> String -> Derivs
 parse pos___hoge s = d
-          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf pat pat1 charLit stringLit dq pats leaf test hsExp typ variable tvtail alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char pos___hoge
+          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf pat pat1 charLit stringLit dq pats leaf test hsExp hsExp1 typ variable tvtail alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char pos___hoge
                 pegFile = runStateT p_pegFile d
                 pragma = runStateT p_pragma d
                 pragmaStr = runStateT p_pragmaStr d
@@ -117,6 +118,7 @@ parse pos___hoge s = d
                 leaf = runStateT p_leaf d
                 test = runStateT p_test d
                 hsExp = runStateT p_hsExp d
+                hsExp1 = runStateT p_hsExp1 d
                 typ = runStateT p_typ d
                 variable = runStateT p_variable d
                 tvtail = runStateT p_tvtail d
@@ -168,6 +170,7 @@ dv_patsM :: PackratM PatQs
 dv_leafM :: PackratM Leaf
 dv_testM :: PackratM ExR
 dv_hsExpM :: PackratM Ex
+dv_hsExp1M :: PackratM ExR
 dv_typM :: PackratM String
 dv_variableM :: PackratM String
 dv_tvtailM :: PackratM String
@@ -214,6 +217,7 @@ dv_patsM = StateT dv_pats
 dv_leafM = StateT dv_leaf
 dv_testM = StateT dv_test
 dv_hsExpM = StateT dv_hsExp
+dv_hsExp1M = StateT dv_hsExp1
 dv_typM = StateT dv_typ
 dv_variableM = StateT dv_variable
 dv_tvtailM = StateT dv_tvtail
@@ -263,6 +267,7 @@ p_pats :: PackratM PatQs
 p_leaf :: PackratM Leaf
 p_test :: PackratM ExR
 p_hsExp :: PackratM Ex
+p_hsExp1 :: PackratM ExR
 p_typ :: PackratM String
 p_variable :: PackratM String
 p_tvtail :: PackratM String
@@ -1118,7 +1123,7 @@ p_test = foldl1 mplus [do xx81_81 <- dvCharsM
                           return ()
                           if True then return () else throwErrorPackratM "True" "not match"
                           return (getEx h)]
-p_hsExp = foldl1 mplus [do v <- dv_variableM
+p_hsExp = foldl1 mplus [do e <- dv_hsExp1M
                            return ()
                            if True then return () else throwErrorPackratM "True" "not match"
                            dv_spacesM >> return ()
@@ -1126,29 +1131,33 @@ p_hsExp = foldl1 mplus [do v <- dv_variableM
                            h <- dv_hsExpM
                            return ()
                            if True then return () else throwErrorPackratM "True" "not match"
-                           return (apply v h),
-                        do xx83_83 <- dvCharsM
-                           case xx83_83 of
-                               '(' -> return ()
-                               _ -> throwErrorPackratM "'('" "not match pattern"
-                           let '(' = xx83_83
+                           return (applyExR e h),
+                        do e <- dv_hsExp1M
                            return ()
                            if True then return () else throwErrorPackratM "True" "not match"
-                           e <- dv_hsExpM
-                           return ()
-                           if True then return () else throwErrorPackratM "True" "not match"
-                           xx84_84 <- dvCharsM
-                           case xx84_84 of
-                               ')' -> return ()
-                               _ -> throwErrorPackratM "')'" "not match pattern"
-                           let ')' = xx84_84
-                           return ()
-                           if True then return () else throwErrorPackratM "True" "not match"
-                           return (toExGetEx e),
-                        do v <- dv_variableM
-                           return ()
-                           if True then return () else throwErrorPackratM "True" "not match"
-                           return (toExp v)]
+                           return (toEx e)]
+p_hsExp1 = foldl1 mplus [do xx83_83 <- dvCharsM
+                            case xx83_83 of
+                                '(' -> return ()
+                                _ -> throwErrorPackratM "'('" "not match pattern"
+                            let '(' = xx83_83
+                            return ()
+                            if True then return () else throwErrorPackratM "True" "not match"
+                            e <- dv_hsExpM
+                            return ()
+                            if True then return () else throwErrorPackratM "True" "not match"
+                            xx84_84 <- dvCharsM
+                            case xx84_84 of
+                                ')' -> return ()
+                                _ -> throwErrorPackratM "')'" "not match pattern"
+                            let ')' = xx84_84
+                            return ()
+                            if True then return () else throwErrorPackratM "True" "not match"
+                            return (getEx e),
+                         do v <- dv_variableM
+                            return ()
+                            if True then return () else throwErrorPackratM "True" "not match"
+                            return (varE (mkName v))]
 p_typ = foldl1 mplus [do u <- dv_upperM
                          return ()
                          if True then return () else throwErrorPackratM "True" "not match"
