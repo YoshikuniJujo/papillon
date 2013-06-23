@@ -155,14 +155,14 @@ mkTTPeg s p =
 	(conT $ mkName s, conT (mkName "Token") `appT` conT (mkName s), p)
 
 data ParseError pos = ParseError String String pos deriving (Show)
-throwErrorPackratM :: forall a . String -> PackratM a
-throwErrorPackratM msg = do pos <- gets dvPos
-                            throwError (ParseError "" msg pos)
+throwErrorPackratM :: forall a . String -> String -> PackratM a
+throwErrorPackratM code msg = do pos <- gets dvPos
+                                 throwError (ParseError code msg pos)
 instance (Source s, Pos s ~ pos) => Error (ParseError pos)
     where strMsg msg = ParseError "" msg initialPos
 flipMaybe :: forall a . PackratM a -> PackratM ()
 flipMaybe act = do err <- (act >> return False) `catchError` const (return True)
-                   unless err (throwErrorPackratM "not not match")
+                   unless err (throwErrorPackratM "" "not not match")
 type PackratM = StateT Derivs (Either (ParseError (Pos String)))
 type Result v = Either (ParseError (Pos String)) ((v, Derivs))
 data Derivs
@@ -269,7 +269,7 @@ parse pos___hoge s = d
                                              Just (c,
                                                    s') -> do put (parse (updatePos c pos___hoge) s')
                                                              return c
-                                             _ -> throwErrorPackratM "eof")
+                                             _ -> throwErrorPackratM "" "eof")
 dv_pragmaM :: PackratM MaybeString
 dv_pragmaStrM :: PackratM String
 dv_pragmaEndM :: PackratM Nil
@@ -413,996 +413,1026 @@ p_notComStr :: PackratM Nil
 p_comEnd :: PackratM Nil
 p_pegFile = foldl1 mplus [do pr <- dv_pragmaM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              md <- dv_moduleDecM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              pip <- dv_preImpPapM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              dv_importPapillonM >> return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              pp <- dv_prePegM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              dv_papM >> return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              p <- dv_pegM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              dv_spacesM >> return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              xx0_0 <- dvCharsM
                              case xx0_0 of
                                  '|' -> return ()
-                                 _ -> throwErrorPackratM "not match pattern"
+                                 _ -> throwErrorPackratM "'|'" "not match pattern"
                              let '|' = xx0_0
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              xx1_1 <- dvCharsM
                              case xx1_1 of
                                  ']' -> return ()
-                                 _ -> throwErrorPackratM "not match pattern"
+                                 _ -> throwErrorPackratM "']'" "not match pattern"
                              let ']' = xx1_1
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              xx2_2 <- dvCharsM
                              case xx2_2 of
                                  '\n' -> return ()
-                                 _ -> throwErrorPackratM "not match pattern"
+                                 _ -> throwErrorPackratM "'\\n'" "not match pattern"
                              let '\n' = xx2_2
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              atp <- dv_afterPegM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              return (id mkPegFile pr md pip pp p atp),
                           do pr <- dv_pragmaM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              md <- dv_moduleDecM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              pp <- dv_prePegM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              dv_papM >> return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              p <- dv_pegM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              dv_spacesM >> return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              xx3_3 <- dvCharsM
                              case xx3_3 of
                                  '|' -> return ()
-                                 _ -> throwErrorPackratM "not match pattern"
+                                 _ -> throwErrorPackratM "'|'" "not match pattern"
                              let '|' = xx3_3
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              xx4_4 <- dvCharsM
                              case xx4_4 of
                                  ']' -> return ()
-                                 _ -> throwErrorPackratM "not match pattern"
+                                 _ -> throwErrorPackratM "']'" "not match pattern"
                              let ']' = xx4_4
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              xx5_5 <- dvCharsM
                              case xx5_5 of
                                  '\n' -> return ()
-                                 _ -> throwErrorPackratM "not match pattern"
+                                 _ -> throwErrorPackratM "'\\n'" "not match pattern"
                              let '\n' = xx5_5
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              atp <- dv_afterPegM
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              return (id mkPegFile pr md emp pp p atp)]
 p_pragma = foldl1 mplus [do dv_spacesM >> return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             xx6_6 <- dvCharsM
                             case xx6_6 of
                                 '{' -> return ()
-                                _ -> throwErrorPackratM "not match pattern"
+                                _ -> throwErrorPackratM "'{'" "not match pattern"
                             let '{' = xx6_6
                             return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             xx7_7 <- dvCharsM
                             case xx7_7 of
                                 '-' -> return ()
-                                _ -> throwErrorPackratM "not match pattern"
+                                _ -> throwErrorPackratM "'-'" "not match pattern"
                             let '-' = xx7_7
                             return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             xx8_8 <- dvCharsM
                             case xx8_8 of
                                 '#' -> return ()
-                                _ -> throwErrorPackratM "not match pattern"
+                                _ -> throwErrorPackratM "'#'" "not match pattern"
                             let '#' = xx8_8
                             return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             s <- dv_pragmaStrM
                             return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             dv_pragmaEndM >> return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             dv_spacesM >> return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             return (id just s),
                          do dv_spacesM >> return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             return (id nothing)]
 p_pragmaStr = foldl1 mplus [do ddd9_9 <- get
                                flipMaybe (do dv_pragmaEndM >> return ()
                                              if True
                                               then return ()
-                                              else throwErrorPackratM "not match")
+                                              else throwErrorPackratM "True" "not match")
                                put ddd9_9
                                xx10_10 <- dvCharsM
                                let c = xx10_10
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                s <- dv_pragmaStrM
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id cons c s),
                             do return (id emp)]
 p_pragmaEnd = foldl1 mplus [do xx11_11 <- dvCharsM
                                case xx11_11 of
                                    '#' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'#'" "not match pattern"
                                let '#' = xx11_11
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                xx12_12 <- dvCharsM
                                case xx12_12 of
                                    '-' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'-'" "not match pattern"
                                let '-' = xx12_12
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                xx13_13 <- dvCharsM
                                case xx13_13 of
                                    '}' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'}'" "not match pattern"
                                let '}' = xx13_13
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id nil)]
 p_moduleDec = foldl1 mplus [do xx14_14 <- dvCharsM
                                case xx14_14 of
                                    'm' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'m'" "not match pattern"
                                let 'm' = xx14_14
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                xx15_15 <- dvCharsM
                                case xx15_15 of
                                    'o' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'o'" "not match pattern"
                                let 'o' = xx15_15
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                xx16_16 <- dvCharsM
                                case xx16_16 of
                                    'd' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'d'" "not match pattern"
                                let 'd' = xx16_16
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                xx17_17 <- dvCharsM
                                case xx17_17 of
                                    'u' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'u'" "not match pattern"
                                let 'u' = xx17_17
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                xx18_18 <- dvCharsM
                                case xx18_18 of
                                    'l' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'l'" "not match pattern"
                                let 'l' = xx18_18
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                xx19_19 <- dvCharsM
                                case xx19_19 of
                                    'e' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'e'" "not match pattern"
                                let 'e' = xx19_19
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                s <- dv_moduleDecStrM
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                dv_whrM >> return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id just s),
                             do return (id nothing)]
 p_moduleDecStr = foldl1 mplus [do ddd20_20 <- get
                                   flipMaybe (do dv_whrM >> return ()
                                                 if True
                                                  then return ()
-                                                 else throwErrorPackratM "not match")
+                                                 else throwErrorPackratM "True" "not match")
                                   put ddd20_20
                                   xx21_21 <- dvCharsM
                                   let c = xx21_21
-                                  if True then return () else throwErrorPackratM "not match"
+                                  if True then return () else throwErrorPackratM "True" "not match"
                                   s <- dv_moduleDecStrM
                                   return ()
-                                  if True then return () else throwErrorPackratM "not match"
+                                  if True then return () else throwErrorPackratM "True" "not match"
                                   return (id cons c s),
                                do return (id emp)]
 p_whr = foldl1 mplus [do xx22_22 <- dvCharsM
                          case xx22_22 of
                              'w' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'w'" "not match pattern"
                          let 'w' = xx22_22
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx23_23 <- dvCharsM
                          case xx23_23 of
                              'h' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'h'" "not match pattern"
                          let 'h' = xx23_23
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx24_24 <- dvCharsM
                          case xx24_24 of
                              'e' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'e'" "not match pattern"
                          let 'e' = xx24_24
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx25_25 <- dvCharsM
                          case xx25_25 of
                              'r' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'r'" "not match pattern"
                          let 'r' = xx25_25
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx26_26 <- dvCharsM
                          case xx26_26 of
                              'e' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'e'" "not match pattern"
                          let 'e' = xx26_26
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          return (id nil)]
 p_preImpPap = foldl1 mplus [do ddd27_27 <- get
                                flipMaybe (do dv_importPapillonM >> return ()
                                              if True
                                               then return ()
-                                              else throwErrorPackratM "not match")
+                                              else throwErrorPackratM "True" "not match")
                                put ddd27_27
                                ddd28_28 <- get
                                flipMaybe (do dv_papM >> return ()
                                              if True
                                               then return ()
-                                              else throwErrorPackratM "not match")
+                                              else throwErrorPackratM "True" "not match")
                                put ddd28_28
                                xx29_29 <- dvCharsM
                                let c = xx29_29
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                pip <- dv_preImpPapM
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id cons c pip),
                             do return (id emp)]
 p_prePeg = foldl1 mplus [do ddd30_30 <- get
                             flipMaybe (do dv_papM >> return ()
                                           if True
                                            then return ()
-                                           else throwErrorPackratM "not match")
+                                           else throwErrorPackratM "True" "not match")
                             put ddd30_30
                             xx31_31 <- dvCharsM
                             let c = xx31_31
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             pp <- dv_prePegM
                             return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             return (id cons c pp),
                          do return (id emp)]
 p_afterPeg = foldl1 mplus [do xx32_32 <- dvCharsM
                               let c = xx32_32
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               atp <- dv_afterPegM
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               return (id cons c atp),
                            do return (id emp)]
 p_importPapillon = foldl1 mplus [do xx33_33 <- dv_varTokenM
                                     case xx33_33 of
                                         "import" -> return ()
-                                        _ -> throwErrorPackratM "not match pattern"
+                                        _ -> throwErrorPackratM "\"import\"" "not match pattern"
                                     let "import" = xx33_33
                                     return ()
-                                    if True then return () else throwErrorPackratM "not match"
+                                    if True
+                                     then return ()
+                                     else throwErrorPackratM "True" "not match"
                                     xx34_34 <- dv_typTokenM
                                     case xx34_34 of
                                         "Text" -> return ()
-                                        _ -> throwErrorPackratM "not match pattern"
+                                        _ -> throwErrorPackratM "\"Text\"" "not match pattern"
                                     let "Text" = xx34_34
                                     return ()
-                                    if True then return () else throwErrorPackratM "not match"
+                                    if True
+                                     then return ()
+                                     else throwErrorPackratM "True" "not match"
                                     xx35_35 <- dvCharsM
                                     case xx35_35 of
                                         '.' -> return ()
-                                        _ -> throwErrorPackratM "not match pattern"
+                                        _ -> throwErrorPackratM "'.'" "not match pattern"
                                     let '.' = xx35_35
                                     return ()
-                                    if True then return () else throwErrorPackratM "not match"
+                                    if True
+                                     then return ()
+                                     else throwErrorPackratM "True" "not match"
                                     dv_spacesM >> return ()
-                                    if True then return () else throwErrorPackratM "not match"
+                                    if True
+                                     then return ()
+                                     else throwErrorPackratM "True" "not match"
                                     xx36_36 <- dv_typTokenM
                                     case xx36_36 of
                                         "Papillon" -> return ()
-                                        _ -> throwErrorPackratM "not match pattern"
+                                        _ -> throwErrorPackratM "\"Papillon\"" "not match pattern"
                                     let "Papillon" = xx36_36
                                     return ()
-                                    if True then return () else throwErrorPackratM "not match"
+                                    if True
+                                     then return ()
+                                     else throwErrorPackratM "True" "not match"
                                     return (id nil)]
 p_varToken = foldl1 mplus [do v <- dv_variableM
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               dv_spacesM >> return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               return (id v)]
 p_typToken = foldl1 mplus [do t <- dv_typM
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               dv_spacesM >> return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               return (id t)]
 p_pap = foldl1 mplus [do xx37_37 <- dvCharsM
                          case xx37_37 of
                              '\n' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'\\n'" "not match pattern"
                          let '\n' = xx37_37
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx38_38 <- dvCharsM
                          case xx38_38 of
                              '[' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'['" "not match pattern"
                          let '[' = xx38_38
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx39_39 <- dvCharsM
                          case xx39_39 of
                              'p' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'p'" "not match pattern"
                          let 'p' = xx39_39
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx40_40 <- dvCharsM
                          case xx40_40 of
                              'a' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'a'" "not match pattern"
                          let 'a' = xx40_40
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx41_41 <- dvCharsM
                          case xx41_41 of
                              'p' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'p'" "not match pattern"
                          let 'p' = xx41_41
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx42_42 <- dvCharsM
                          case xx42_42 of
                              'i' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'i'" "not match pattern"
                          let 'i' = xx42_42
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx43_43 <- dvCharsM
                          case xx43_43 of
                              'l' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'l'" "not match pattern"
                          let 'l' = xx43_43
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx44_44 <- dvCharsM
                          case xx44_44 of
                              'l' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'l'" "not match pattern"
                          let 'l' = xx44_44
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx45_45 <- dvCharsM
                          case xx45_45 of
                              'o' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'o'" "not match pattern"
                          let 'o' = xx45_45
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx46_46 <- dvCharsM
                          case xx46_46 of
                              'n' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'n'" "not match pattern"
                          let 'n' = xx46_46
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx47_47 <- dvCharsM
                          case xx47_47 of
                              '|' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'|'" "not match pattern"
                          let '|' = xx47_47
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          xx48_48 <- dvCharsM
                          case xx48_48 of
                              '\n' -> return ()
-                             _ -> throwErrorPackratM "not match pattern"
+                             _ -> throwErrorPackratM "'\\n'" "not match pattern"
                          let '\n' = xx48_48
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          return (id nil)]
 p_peg = foldl1 mplus [do dv_spacesM >> return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          s <- dv_sourceTypeM
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          p <- dv_peg_M
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          return (id mkTTPeg s p),
                       do p <- dv_peg_M
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          return (id mkTTPeg tString p)]
 p_sourceType = foldl1 mplus [do xx49_49 <- dv_varTokenM
                                 case xx49_49 of
                                     "source" -> return ()
-                                    _ -> throwErrorPackratM "not match pattern"
+                                    _ -> throwErrorPackratM "\"source\"" "not match pattern"
                                 let "source" = xx49_49
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 xx50_50 <- dvCharsM
                                 case xx50_50 of
                                     ':' -> return ()
-                                    _ -> throwErrorPackratM "not match pattern"
+                                    _ -> throwErrorPackratM "':'" "not match pattern"
                                 let ':' = xx50_50
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 dv_spacesM >> return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 v <- dv_typTokenM
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 return (id v)]
 p_peg_ = foldl1 mplus [do dv_spacesM >> return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           d <- dv_definitionM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           p <- dv_peg_M
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id cons d p),
                        do return (id emp)]
 p_definition = foldl1 mplus [do v <- dv_variableM
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 dv_spacesM >> return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 xx51_51 <- dvCharsM
                                 case xx51_51 of
                                     ':' -> return ()
-                                    _ -> throwErrorPackratM "not match pattern"
+                                    _ -> throwErrorPackratM "':'" "not match pattern"
                                 let ':' = xx51_51
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 xx52_52 <- dvCharsM
                                 case xx52_52 of
                                     ':' -> return ()
-                                    _ -> throwErrorPackratM "not match pattern"
+                                    _ -> throwErrorPackratM "':'" "not match pattern"
                                 let ':' = xx52_52
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 dv_spacesM >> return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 t <- dv_typM
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 dv_spacesM >> return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 xx53_53 <- dvCharsM
                                 case xx53_53 of
                                     '=' -> return ()
-                                    _ -> throwErrorPackratM "not match pattern"
+                                    _ -> throwErrorPackratM "'='" "not match pattern"
                                 let '=' = xx53_53
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 dv_spacesM >> return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 sel <- dv_selectionM
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 dv_spacesM >> return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 xx54_54 <- dvCharsM
                                 case xx54_54 of
                                     ';' -> return ()
-                                    _ -> throwErrorPackratM "not match pattern"
+                                    _ -> throwErrorPackratM "';'" "not match pattern"
                                 let ';' = xx54_54
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 return (id mkDef v t sel)]
 p_selection = foldl1 mplus [do ex <- dv_expressionHsM
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                dv_spacesM >> return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                xx55_55 <- dvCharsM
                                case xx55_55 of
                                    '/' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'/'" "not match pattern"
                                let '/' = xx55_55
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                dv_spacesM >> return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                sel <- dv_selectionM
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id cons ex sel),
                             do ex <- dv_expressionHsM
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id cons ex emp)]
 p_expressionHs = foldl1 mplus [do e <- dv_expressionM
                                   return ()
-                                  if True then return () else throwErrorPackratM "not match"
+                                  if True then return () else throwErrorPackratM "True" "not match"
                                   dv_spacesM >> return ()
-                                  if True then return () else throwErrorPackratM "not match"
+                                  if True then return () else throwErrorPackratM "True" "not match"
                                   xx56_56 <- dvCharsM
                                   case xx56_56 of
                                       '{' -> return ()
-                                      _ -> throwErrorPackratM "not match pattern"
+                                      _ -> throwErrorPackratM "'{'" "not match pattern"
                                   let '{' = xx56_56
                                   return ()
-                                  if True then return () else throwErrorPackratM "not match"
+                                  if True then return () else throwErrorPackratM "True" "not match"
                                   dv_spacesM >> return ()
-                                  if True then return () else throwErrorPackratM "not match"
+                                  if True then return () else throwErrorPackratM "True" "not match"
                                   h <- dv_hsExpM
                                   return ()
-                                  if True then return () else throwErrorPackratM "not match"
+                                  if True then return () else throwErrorPackratM "True" "not match"
                                   dv_spacesM >> return ()
-                                  if True then return () else throwErrorPackratM "not match"
+                                  if True then return () else throwErrorPackratM "True" "not match"
                                   xx57_57 <- dvCharsM
                                   case xx57_57 of
                                       '}' -> return ()
-                                      _ -> throwErrorPackratM "not match pattern"
+                                      _ -> throwErrorPackratM "'}'" "not match pattern"
                                   let '}' = xx57_57
                                   return ()
-                                  if True then return () else throwErrorPackratM "not match"
+                                  if True then return () else throwErrorPackratM "True" "not match"
                                   return (id mkExpressionHs e h)]
 p_expression = foldl1 mplus [do l <- dv_nameLeaf_M
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 dv_spacesM >> return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 e <- dv_expressionM
                                 return ()
-                                if True then return () else throwErrorPackratM "not match"
+                                if True then return () else throwErrorPackratM "True" "not match"
                                 return (id cons l e),
                              do return (id emp)]
 p_nameLeaf_ = foldl1 mplus [do xx58_58 <- dvCharsM
                                case xx58_58 of
                                    '!' -> return ()
-                                   _ -> throwErrorPackratM "not match pattern"
+                                   _ -> throwErrorPackratM "'!'" "not match pattern"
                                let '!' = xx58_58
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                nl <- dv_nameLeafM
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id notAfter nl),
                             do nl <- dv_nameLeafM
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id here nl)]
 p_nameLeaf = foldl1 mplus [do n <- dv_pat1M
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               xx59_59 <- dvCharsM
                               case xx59_59 of
                                   ':' -> return ()
-                                  _ -> throwErrorPackratM "not match pattern"
+                                  _ -> throwErrorPackratM "':'" "not match pattern"
                               let ':' = xx59_59
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               xx60_60 <- dvCharsM
                               let o = xx60_60
-                              if id isOpen o then return () else throwErrorPackratM "not match"
+                              if id isOpen o
+                               then return ()
+                               else throwErrorPackratM "id isOpen o" "not match"
                               ex <- dv_selectionM
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               xx61_61 <- dvCharsM
                               let c = xx61_61
-                              if id isClose c then return () else throwErrorPackratM "not match"
+                              if id isClose c
+                               then return ()
+                               else throwErrorPackratM "id isClose c" "not match"
                               xx62_62 <- dvCharsM
                               let k = xx62_62
-                              if id isKome k then return () else throwErrorPackratM "not match"
+                              if id isKome k
+                               then return ()
+                               else throwErrorPackratM "id isKome k" "not match"
                               dv_spacesM >> return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               return (id mkNameLeafList n ex),
                            do xx63_63 <- dvCharsM
                               let o = xx63_63
-                              if id isOpen o then return () else throwErrorPackratM "not match"
+                              if id isOpen o
+                               then return ()
+                               else throwErrorPackratM "id isOpen o" "not match"
                               nl <- dv_nameLeafM
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               xx64_64 <- dvCharsM
                               let c = xx64_64
-                              if id isClose c then return () else throwErrorPackratM "not match"
+                              if id isClose c
+                               then return ()
+                               else throwErrorPackratM "id isClose c" "not match"
                               return (id nl),
                            do n <- dv_pat1M
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               xx65_65 <- dvCharsM
                               case xx65_65 of
                                   ':' -> return ()
-                                  _ -> throwErrorPackratM "not match pattern"
+                                  _ -> throwErrorPackratM "':'" "not match pattern"
                               let ':' = xx65_65
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               l <- dv_leafM
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               return (id mkNameLeaf n l),
                            do n <- dv_pat1M
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               return (id mkNameLeaf n ctLeaf)]
 p_pat = foldl1 mplus [do t <- dv_typM
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          dv_spacesM >> return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          ps <- dv_patsM
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          return (id conToPatQ t ps),
                       do p <- dv_pat1M
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          return (id p)]
 p_pat1 = foldl1 mplus [do xx66_66 <- dv_variableM
                           case xx66_66 of
                               "_" -> return ()
-                              _ -> throwErrorPackratM "not match pattern"
+                              _ -> throwErrorPackratM "\"_\"" "not match pattern"
                           let "_" = xx66_66
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id wildP),
                        do n <- dv_variableM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id strToPatQ n),
                        do xx67_67 <- dvCharsM
                           case xx67_67 of
                               '\'' -> return ()
-                              _ -> throwErrorPackratM "not match pattern"
+                              _ -> throwErrorPackratM "'\\''" "not match pattern"
                           let '\'' = xx67_67
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           c <- dv_charLitM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           xx68_68 <- dvCharsM
                           case xx68_68 of
                               '\'' -> return ()
-                              _ -> throwErrorPackratM "not match pattern"
+                              _ -> throwErrorPackratM "'\\''" "not match pattern"
                           let '\'' = xx68_68
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id charP c),
                        do xx69_69 <- dvCharsM
                           case xx69_69 of
                               '"' -> return ()
-                              _ -> throwErrorPackratM "not match pattern"
+                              _ -> throwErrorPackratM "'\"'" "not match pattern"
                           let '"' = xx69_69
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           s <- dv_stringLitM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           xx70_70 <- dvCharsM
                           case xx70_70 of
                               '"' -> return ()
-                              _ -> throwErrorPackratM "not match pattern"
+                              _ -> throwErrorPackratM "'\"'" "not match pattern"
                           let '"' = xx70_70
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id stringP s),
                        do t <- dv_typM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id conToPatQ t emp),
                        do xx71_71 <- dvCharsM
                           case xx71_71 of
                               '(' -> return ()
-                              _ -> throwErrorPackratM "not match pattern"
+                              _ -> throwErrorPackratM "'('" "not match pattern"
                           let '(' = xx71_71
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           p <- dv_patM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           xx72_72 <- dvCharsM
                           case xx72_72 of
                               ')' -> return ()
-                              _ -> throwErrorPackratM "not match pattern"
+                              _ -> throwErrorPackratM "')'" "not match pattern"
                           let ')' = xx72_72
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id p)]
 p_charLit = foldl1 mplus [do xx73_73 <- dvCharsM
                              let c = xx73_73
                              if id isAlphaNumOt c
                               then return ()
-                              else throwErrorPackratM "not match"
+                              else throwErrorPackratM "id isAlphaNumOt c" "not match"
                              return (id c),
                           do xx74_74 <- dvCharsM
                              case xx74_74 of
                                  '\\' -> return ()
-                                 _ -> throwErrorPackratM "not match pattern"
+                                 _ -> throwErrorPackratM "'\\\\'" "not match pattern"
                              let '\\' = xx74_74
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              xx75_75 <- dvCharsM
                              let c = xx75_75
-                             if id elemNTs c then return () else throwErrorPackratM "not match"
+                             if id elemNTs c
+                              then return ()
+                              else throwErrorPackratM "id elemNTs c" "not match"
                              return (id getNTs c)]
 p_stringLit = foldl1 mplus [do ddd76_76 <- get
                                flipMaybe (do dv_dqM >> return ()
                                              if True
                                               then return ()
-                                              else throwErrorPackratM "not match")
+                                              else throwErrorPackratM "True" "not match")
                                put ddd76_76
                                xx77_77 <- dvCharsM
                                let c = xx77_77
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                s <- dv_stringLitM
                                return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id cons c s),
                             do return (id emp)]
 p_dq = foldl1 mplus [do xx78_78 <- dvCharsM
                         case xx78_78 of
                             '"' -> return ()
-                            _ -> throwErrorPackratM "not match pattern"
+                            _ -> throwErrorPackratM "'\"'" "not match pattern"
                         let '"' = xx78_78
                         return ()
-                        if True then return () else throwErrorPackratM "not match"
+                        if True then return () else throwErrorPackratM "True" "not match"
                         return (id nil)]
 p_pats = foldl1 mplus [do p <- dv_patM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           ps <- dv_patsM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id cons p ps),
                        do return (id emp)]
 p_leaf = foldl1 mplus [do t <- dv_testM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id boolLeaf t),
                        do v <- dv_variableM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           t <- dv_testM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id ruleLeaf v t),
                        do v <- dv_variableM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id ruleLeaf v true)]
 p_test = foldl1 mplus [do xx79_79 <- dvCharsM
                           case xx79_79 of
                               '[' -> return ()
-                              _ -> throwErrorPackratM "not match pattern"
+                              _ -> throwErrorPackratM "'['" "not match pattern"
                           let '[' = xx79_79
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           h <- dv_hsExpM
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           xx80_80 <- dvCharsM
                           case xx80_80 of
                               ']' -> return ()
-                              _ -> throwErrorPackratM "not match pattern"
+                              _ -> throwErrorPackratM "']'" "not match pattern"
                           let ']' = xx80_80
                           return ()
-                          if True then return () else throwErrorPackratM "not match"
+                          if True then return () else throwErrorPackratM "True" "not match"
                           return (id getEx h)]
 p_hsExp = foldl1 mplus [do v <- dv_variableM
                            return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            dv_spacesM >> return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            h <- dv_hsExpM
                            return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            return (id apply v h),
                         do v <- dv_variableM
                            return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            return (id toExp v)]
 p_typ = foldl1 mplus [do u <- dv_upperM
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          t <- dv_tvtailM
                          return ()
-                         if True then return () else throwErrorPackratM "not match"
+                         if True then return () else throwErrorPackratM "True" "not match"
                          return (id cons u t)]
 p_variable = foldl1 mplus [do l <- dv_lowerM
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               t <- dv_tvtailM
                               return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               return (id cons l t)]
 p_tvtail = foldl1 mplus [do a <- dv_alphaM
                             return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             t <- dv_tvtailM
                             return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             return (id cons a t),
                          do return (id emp)]
 p_alpha = foldl1 mplus [do u <- dv_upperM
                            return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            return (id u),
                         do l <- dv_lowerM
                            return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            return (id l),
                         do d <- dv_digitM
                            return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            return (id d)]
 p_upper = foldl1 mplus [do xx81_81 <- dvCharsM
                            let u = xx81_81
-                           if id isUpper u then return () else throwErrorPackratM "not match"
+                           if id isUpper u
+                            then return ()
+                            else throwErrorPackratM "id isUpper u" "not match"
                            return (id u)]
 p_lower = foldl1 mplus [do xx82_82 <- dvCharsM
                            let l = xx82_82
-                           if id isLowerU l then return () else throwErrorPackratM "not match"
+                           if id isLowerU l
+                            then return ()
+                            else throwErrorPackratM "id isLowerU l" "not match"
                            return (id l)]
 p_digit = foldl1 mplus [do xx83_83 <- dvCharsM
                            let d = xx83_83
-                           if id isDigit d then return () else throwErrorPackratM "not match"
+                           if id isDigit d
+                            then return ()
+                            else throwErrorPackratM "id isDigit d" "not match"
                            return (id d)]
 p_spaces = foldl1 mplus [do dv_spaceM >> return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             dv_spacesM >> return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             return (id nil),
                          do return (id nil)]
 p_space = foldl1 mplus [do xx84_84 <- dvCharsM
                            let s = xx84_84
-                           if id isSpace s then return () else throwErrorPackratM "not match"
+                           if id isSpace s
+                            then return ()
+                            else throwErrorPackratM "id isSpace s" "not match"
                            return (id nil),
                         do xx85_85 <- dvCharsM
                            case xx85_85 of
                                '-' -> return ()
-                               _ -> throwErrorPackratM "not match pattern"
+                               _ -> throwErrorPackratM "'-'" "not match pattern"
                            let '-' = xx85_85
                            return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            xx86_86 <- dvCharsM
                            case xx86_86 of
                                '-' -> return ()
-                               _ -> throwErrorPackratM "not match pattern"
+                               _ -> throwErrorPackratM "'-'" "not match pattern"
                            let '-' = xx86_86
                            return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            dv_notNLStringM >> return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            dv_nlM >> return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            return (id nil),
                         do dv_commentM >> return ()
-                           if True then return () else throwErrorPackratM "not match"
+                           if True then return () else throwErrorPackratM "True" "not match"
                            return (id nil)]
 p_notNLString = foldl1 mplus [do ddd87_87 <- get
                                  flipMaybe (do dv_nlM >> return ()
                                                if True
                                                 then return ()
-                                                else throwErrorPackratM "not match")
+                                                else throwErrorPackratM "True" "not match")
                                  put ddd87_87
                                  xx88_88 <- dvCharsM
                                  let c = xx88_88
-                                 if True then return () else throwErrorPackratM "not match"
+                                 if True then return () else throwErrorPackratM "True" "not match"
                                  s <- dv_notNLStringM
                                  return ()
-                                 if True then return () else throwErrorPackratM "not match"
+                                 if True then return () else throwErrorPackratM "True" "not match"
                                  return (id cons c s),
                               do return (id emp)]
 p_nl = foldl1 mplus [do xx89_89 <- dvCharsM
                         case xx89_89 of
                             '\n' -> return ()
-                            _ -> throwErrorPackratM "not match pattern"
+                            _ -> throwErrorPackratM "'\\n'" "not match pattern"
                         let '\n' = xx89_89
                         return ()
-                        if True then return () else throwErrorPackratM "not match"
+                        if True then return () else throwErrorPackratM "True" "not match"
                         return (id nil)]
 p_comment = foldl1 mplus [do xx90_90 <- dvCharsM
                              case xx90_90 of
                                  '{' -> return ()
-                                 _ -> throwErrorPackratM "not match pattern"
+                                 _ -> throwErrorPackratM "'{'" "not match pattern"
                              let '{' = xx90_90
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              xx91_91 <- dvCharsM
                              case xx91_91 of
                                  '-' -> return ()
-                                 _ -> throwErrorPackratM "not match pattern"
+                                 _ -> throwErrorPackratM "'-'" "not match pattern"
                              let '-' = xx91_91
                              return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              ddd92_92 <- get
                              flipMaybe (do xx93_93 <- dvCharsM
                                            case xx93_93 of
                                                '#' -> return ()
-                                               _ -> throwErrorPackratM "not match pattern"
+                                               _ -> throwErrorPackratM "'#'" "not match pattern"
                                            let '#' = xx93_93
                                            return ()
                                            if True
                                             then return ()
-                                            else throwErrorPackratM "not match")
+                                            else throwErrorPackratM "True" "not match")
                              put ddd92_92
                              dv_commentsM >> return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              dv_comEndM >> return ()
-                             if True then return () else throwErrorPackratM "not match"
+                             if True then return () else throwErrorPackratM "True" "not match"
                              return (id nil)]
 p_comments = foldl1 mplus [do dv_notComStrM >> return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               dv_commentM >> return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               dv_commentsM >> return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               return (id nil),
                            do dv_notComStrM >> return ()
-                              if True then return () else throwErrorPackratM "not match"
+                              if True then return () else throwErrorPackratM "True" "not match"
                               return (id nil)]
 p_notComStr = foldl1 mplus [do ddd94_94 <- get
                                flipMaybe (do dv_commentM >> return ()
                                              if True
                                               then return ()
-                                              else throwErrorPackratM "not match")
+                                              else throwErrorPackratM "True" "not match")
                                put ddd94_94
                                ddd95_95 <- get
                                flipMaybe (do dv_comEndM >> return ()
                                              if True
                                               then return ()
-                                              else throwErrorPackratM "not match")
+                                              else throwErrorPackratM "True" "not match")
                                put ddd95_95
                                _ <- dvCharsM
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                dv_notComStrM >> return ()
-                               if True then return () else throwErrorPackratM "not match"
+                               if True then return () else throwErrorPackratM "True" "not match"
                                return (id nil),
                             do return (id nil)]
 p_comEnd = foldl1 mplus [do xx97_96 <- dvCharsM
                             case xx97_96 of
                                 '-' -> return ()
-                                _ -> throwErrorPackratM "not match pattern"
+                                _ -> throwErrorPackratM "'-'" "not match pattern"
                             let '-' = xx97_96
                             return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             xx98_97 <- dvCharsM
                             case xx98_97 of
                                 '}' -> return ()
-                                _ -> throwErrorPackratM "not match pattern"
+                                _ -> throwErrorPackratM "'}'" "not match pattern"
                             let '}' = xx98_97
                             return ()
-                            if True then return () else throwErrorPackratM "not match"
+                            if True then return () else throwErrorPackratM "True" "not match"
                             return (id nil)]
 
 class Source sl
