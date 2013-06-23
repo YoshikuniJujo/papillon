@@ -123,7 +123,7 @@ symCharsM :: Char
 	= s:[isSymM s]			{ s }
 ;
 spacing :: Nil
-	= s:[isSpace s] _:spacing	{ nil }
-	/				{ nil }
+	= s:[isSpace s] _:spacing	{ () }
+	/				{ () }
 ;
 |]

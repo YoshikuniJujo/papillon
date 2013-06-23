@@ -4,13 +4,14 @@ import Text.Papillon
 import Data.Char
 
 main :: IO ()
-main = case dv_numbers $ parse initialPos "335" of
+main = case dv_something $ parse initialPos "335,287" of
 	Right (n, _) -> print n
 	Left err -> putStrLn $ "not match: " ++ show err
 
 single :: a -> [a]
 single = (: [])
 
+type MyTup = (IntL, IntL)
 type IntL = [Int]
 
 empty :: [a]
@@ -20,6 +21,9 @@ cons = (:)
 
 [papillon|
 
+something :: MyTup
+	= n1:numbers ',' n2:numbers	{ (n1, n2) }
+;
 numbers :: IntL
 	= d:[isDigit d] ns:numbers	{ cons (read (single d)) ns }
 	/				{ empty }
