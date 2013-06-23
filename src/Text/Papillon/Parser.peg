@@ -86,11 +86,17 @@ toExp :: String -> Ex
 -- toExp v = \f -> f `appE` varE (mkName v)
 toExp v = \f -> f $ varE (mkName v)
 
+toEx :: ExR -> Ex
+toEx v = \f -> f v
+
 apply :: String -> Ex -> Ex
 apply f x = \g -> x (toExp f g `appE`)
 
 getEx :: Ex -> ExR
 getEx ex = ex id -- (varE $ mkName "id")
+
+toExGetEx :: Ex -> Ex
+toExGetEx = toEx . getEx
 
 emp :: [a]
 emp = []
@@ -290,7 +296,8 @@ test :: ExR
 ;
 hsExp :: Ex
 	= v:variable _:spaces h:hsExp	{ apply v h }
-	/ v:variable	{ toExp v }
+	/ '(' e:hsExp ')'		{ toExGetEx e }
+	/ v:variable			{ toExp v }
 ;
 typ :: String
 	= u:upper t:tvtail	{ cons u t }

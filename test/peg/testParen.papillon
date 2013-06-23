@@ -1,0 +1,20 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies, UndecidableInstances #-}
+
+import Text.Papillon
+import Data.Char
+
+main :: IO ()
+main = case dv_number $ parse initialPos "335" of
+	Right (n, _) -> print n
+	Left err -> putStrLn $ "not match: " ++ show err
+
+single :: a -> [a]
+single = (: [])
+
+[papillon|
+
+number :: Int
+	= d:[isDigit d]		{ read (single d) }
+;
+
+|]

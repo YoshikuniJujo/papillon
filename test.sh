@@ -37,3 +37,8 @@ runhaskell -isrc -Wall src/papillon test/peg/testList.papillon > tmp/testList.hs
 runhaskell -isrc -Wall tmp/testList.hs
 cp test/peg/testList.papillon tmp/testList_th.hs
 runhaskell -isrc -Wall tmp/testList_th.hs
+
+runhaskell -isrc -Wall src/papillon test/peg/testParen.papillon > tmp/testParen.hs && \
+runhaskell -isrc -Wall tmp/testParen.hs
+cp test/peg/testParen.papillon tmp/testParen_th.hs
+runhaskell -isrc -Wall tmp/testParen_th.hs
