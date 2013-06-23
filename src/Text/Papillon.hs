@@ -411,6 +411,17 @@ getNewName g n = do
 	runIO $ modifyIORef g succ
 	newName $ n ++ show gn
 
+{-
+
+showSelection :: Selection -> Q String = mapM showExpression
+
+showNameLeaf :: NameLeaf -> Q String
+showNameLeaf (NameLeafList pat sel) =
+	(\ps ss -> sho (ppr ps) ++ ":(" ++ selS ++ ")*")
+		<$> pat <*> showSelection sel
+
+-}
+
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
 transLeaf' g th (NameLeafList n nl) = do
 	t <- getNewName g "xx"
