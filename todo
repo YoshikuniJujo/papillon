@@ -3,14 +3,17 @@
 **************************
 
 * haskell の exp をちゃんとパースしよう
-	まずは、type のところを Maybe Int とかができるようにしようかな
 	(...) を許すようにしよう
 	3 + 2 とか x : xs とかを可能にしよう
-	Maybe Int とかも
 	変数のパターンも
+* type のところを Maybe Int とかができるようにしようかな
+	型を変える必要がある
+	Typ = Name ---> Typ = TypeQ とする必要がある
 * +, ? の追加
 * 式のなかで selection を使えるようにする
 	_:head (_:some / _:other) :tail のような形
+	これはすでに出来る気がするのであとで test を書いてみて
+	それが通れば OK ということにする
 
 **************************
 *  エラーメッセージ関係  *
@@ -50,9 +53,6 @@
 	ただし、papillonStr を export するのが役立つ可能性もあるので考えること
 * Text/Papillon/Parser.hs を git から外す
 	これは papillon 自体がある程度安定してから、となるだろう。
-* id is... 等の id をなくす
-	左結合への変換の部分で ExpQ -> ExpQ ではなく (ExpQ -> ExpQ) -> ExpQ を
-	使えばできる気がする
 * UndecidableInstances が必要な部分について
 	これを取ることが可能かどうか考える
 * showPos は必要ないかもしれない
@@ -80,3 +80,9 @@
 * cabal に examples directory を追加する
 * cabal の description をもうすこしましにする
 * homepage に example をのせる
+
+**************************
+*  後々やること          *
+**************************
+
+* 出来上がったコードを hlint で refactoring

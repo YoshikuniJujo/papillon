@@ -36,7 +36,7 @@ type Definition = (String, Typ, Selection)
 type Peg = [Definition]
 type TTPeg = (TypeQ, TypeQ, Peg)
 
-type Ex = ExpQ -> ExpQ
+type Ex = (ExpQ -> ExpQ) -> ExpQ
 type ExR = ExpQ
 
 ctLeaf :: Leaf
@@ -83,13 +83,14 @@ mkDef :: a -> String -> c -> (a, Name, c)
 mkDef x y z = (x, mkName y, z)
 
 toExp :: String -> Ex
-toExp v = \f -> f `appE` varE (mkName v)
+-- toExp v = \f -> f `appE` varE (mkName v)
+toExp v = \f -> f $ varE (mkName v)
 
 apply :: String -> Ex -> Ex
-apply f x = \g -> x (toExp f g)
+apply f x = \g -> x (toExp f g `appE`)
 
 getEx :: Ex -> ExR
-getEx ex = ex (varE $ mkName "id")
+getEx ex = ex id -- (varE $ mkName "id")
 
 emp :: [a]
 emp = []
@@ -223,13 +224,18 @@ definition :: Definition
 		_:spaces t:typ _:spaces '='
 		_:spaces sel:selection _:spaces ';'	{ mkDef v t sel }
 ;
+{-
+typeExp :: TypeQ
+	= typToken					{ 
+;
+-}
 selection :: Selection
 	= ex:expressionHs _:spaces '/' _:spaces sel:selection	{ cons ex sel }
 	/ ex:expressionHs	{ cons ex emp }
 ;
 expressionHs :: ExpressionHs
-	= e:expression _:spaces '{' _:spaces h:hsExp
-		_:spaces '}'	{ mkExpressionHs e h }
+	= e:expression _:spaces '{' _:spaces h:hsExp _:spaces '}'
+		{ mkExpressionHs e h }
 ;
 expression :: Expression
 	= l:nameLeaf_ _:spaces e:expression	{ cons l e }
