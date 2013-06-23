@@ -67,6 +67,8 @@ data Derivs
               dv_hsExp :: (Result Ex),
               dv_hsExp1 :: (Result ExR),
               dv_hsExpTpl :: (Result ExRL),
+              dv_hsType :: (Result Typ),
+              dv_hsType1 :: (Result TypeQ),
               dv_typ :: (Result String),
               dv_variable :: (Result String),
               dv_tvtail :: (Result String),
@@ -86,7 +88,7 @@ data Derivs
               dvPos :: (Pos String)}
 parse :: Pos String -> String -> Derivs
 parse pos___hoge s = d
-          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf pat pat1 charLit stringLit dq pats leaf test hsExp hsExp1 hsExpTpl typ variable tvtail alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char pos___hoge
+          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf pat pat1 charLit stringLit dq pats leaf test hsExp hsExp1 hsExpTpl hsType hsType1 typ variable tvtail alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char pos___hoge
                 pegFile = runStateT p_pegFile d
                 pragma = runStateT p_pragma d
                 pragmaStr = runStateT p_pragmaStr d
@@ -121,6 +123,8 @@ parse pos___hoge s = d
                 hsExp = runStateT p_hsExp d
                 hsExp1 = runStateT p_hsExp1 d
                 hsExpTpl = runStateT p_hsExpTpl d
+                hsType = runStateT p_hsType d
+                hsType1 = runStateT p_hsType1 d
                 typ = runStateT p_typ d
                 variable = runStateT p_variable d
                 tvtail = runStateT p_tvtail d
@@ -174,6 +178,8 @@ dv_testM :: PackratM ExR
 dv_hsExpM :: PackratM Ex
 dv_hsExp1M :: PackratM ExR
 dv_hsExpTplM :: PackratM ExRL
+dv_hsTypeM :: PackratM Typ
+dv_hsType1M :: PackratM TypeQ
 dv_typM :: PackratM String
 dv_variableM :: PackratM String
 dv_tvtailM :: PackratM String
@@ -222,6 +228,8 @@ dv_testM = StateT dv_test
 dv_hsExpM = StateT dv_hsExp
 dv_hsExp1M = StateT dv_hsExp1
 dv_hsExpTplM = StateT dv_hsExpTpl
+dv_hsTypeM = StateT dv_hsType
+dv_hsType1M = StateT dv_hsType1
 dv_typM = StateT dv_typ
 dv_variableM = StateT dv_variable
 dv_tvtailM = StateT dv_tvtail
@@ -273,6 +281,8 @@ p_test :: PackratM ExR
 p_hsExp :: PackratM Ex
 p_hsExp1 :: PackratM ExR
 p_hsExpTpl :: PackratM ExRL
+p_hsType :: PackratM Typ
+p_hsType1 :: PackratM TypeQ
 p_typ :: PackratM String
 p_variable :: PackratM String
 p_tvtail :: PackratM String
@@ -799,7 +809,7 @@ p_definition = foldl1 mplus [do v <- dv_variableM
                                 if True then return () else throwErrorPackratM "True" "not match"
                                 dv_spacesM >> return ()
                                 if True then return () else throwErrorPackratM "True" "not match"
-                                t <- dv_typTokenM
+                                t <- dv_hsTypeM
                                 return ()
                                 if True then return () else throwErrorPackratM "True" "not match"
                                 xx55_55 <- dvCharsM
@@ -823,7 +833,7 @@ p_definition = foldl1 mplus [do v <- dv_variableM
                                 let ';' = xx56_56
                                 return ()
                                 if True then return () else throwErrorPackratM "True" "not match"
-                                return (mkDef v t sel)]
+                                return (mkDef v (getTyp t) sel)]
 p_selection = foldl1 mplus [do ex <- dv_expressionHsM
                                return ()
                                if True then return () else throwErrorPackratM "True" "not match"
@@ -1182,6 +1192,21 @@ p_hsExpTpl = foldl1 mplus [do e <- dv_hsExpM
                               if True then return () else throwErrorPackratM "True" "not match"
                               return (cons (getEx e) emp),
                            do return emp]
+p_hsType = foldl1 mplus [do t <- dv_hsType1M
+                            return ()
+                            if True then return () else throwErrorPackratM "True" "not match"
+                            ts <- dv_hsTypeM
+                            return ()
+                            if True then return () else throwErrorPackratM "True" "not match"
+                            return (applyTyp (toTyp t) ts),
+                         do t <- dv_hsType1M
+                            return ()
+                            if True then return () else throwErrorPackratM "True" "not match"
+                            return (toTyp t)]
+p_hsType1 = foldl1 mplus [do t <- dv_typTokenM
+                             return ()
+                             if True then return () else throwErrorPackratM "True" "not match"
+                             return (conT (mkName t))]
 p_typ = foldl1 mplus [do u <- dv_upperM
                          return ()
                          if True then return () else throwErrorPackratM "True" "not match"

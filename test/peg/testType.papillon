@@ -1,0 +1,36 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies, UndecidableInstances #-}
+
+import Text.Papillon
+import Data.Char
+
+main :: IO ()
+main = do
+	case dv_testType $ parse initialPos "3351559" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
+	case dv_testType $ parse initialPos "8351559" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
+
+single :: a -> [a]
+single = (: [])
+
+just :: a -> Maybe a
+just = Just
+nothing :: Maybe a
+nothing = Nothing
+
+isThree :: Int -> Bool
+isThree = (== 3)
+
+[papillon|
+
+testType :: Maybe Int
+	= d:digit[isThree d]	{ nothing }
+	/ d:digit		{ just d }
+;
+digit :: Int
+	= d:[isDigit d]		{ read (single d) }
+;
+
+|]

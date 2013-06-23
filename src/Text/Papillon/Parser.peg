@@ -88,8 +88,8 @@ peg_ :: Peg
 ;
 definition :: Definition
 	= v:variable _:spaces ':' ':'
-		_:spaces t:typToken '='
-		_:spaces sel:selection _:spaces ';'	{ mkDef v t sel }
+		_:spaces t:hsType '='
+		_:spaces sel:selection _:spaces ';'	{ mkDef v (getTyp t) sel }
 ;
 selection :: Selection
 	= ex:expressionHs _:spaces '/' _:spaces sel:selection	{ cons ex sel }
@@ -152,8 +152,6 @@ test :: ExR
 ;
 hsExp :: Ex
 	= e:hsExp1 _:spaces h:hsExp	{ applyExR e h }
---	/ '(' et:hsExpTpl ')'		{ toEx (tupE e) }
---	/ '(' e:hsExp ')'		{ toExGetEx e }
 	/ e:hsExp1			{ toEx e }
 ;
 hsExp1 :: ExR
@@ -166,11 +164,13 @@ hsExpTpl :: ExRL
 	/ e:hsExp			{ cons (getEx e) emp }
 	/				{ emp }
 ;
-{-
-typeExp1 :: TypeQ
-	= t:typToken			{ t }
+hsType :: Typ
+	= t:hsType1 ts:hsType		{ applyTyp (toTyp t) ts }
+	/ t:hsType1			{ toTyp t }
 ;
--}
+hsType1 :: TypeQ
+	= t:typToken			{ conT (mkName t) }
+;
 typ :: String
 	= u:upper t:tvtail	{ cons u t }
 ;
