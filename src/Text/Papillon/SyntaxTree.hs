@@ -19,7 +19,7 @@ here = Here
 type Expression = [NameLeaf_]
 type ExpressionHs = (Expression, ExR)
 type Selection = [ExpressionHs]
-type Typ = Name
+type Typ = TypeQ
 type Definition = (String, Typ, Selection)
 type Peg = [Definition]
 type TTPeg = (TypeQ, TypeQ, Peg)
@@ -68,8 +68,8 @@ conToPatQ t ps = conP (mkName t) ps
 mkExpressionHs :: a -> Ex -> (a, ExR)
 mkExpressionHs x y = (x, getEx y)
 
-mkDef :: a -> String -> c -> (a, Name, c)
-mkDef x y z = (x, mkName y, z)
+mkDef :: a -> String -> c -> (a, TypeQ, c)
+mkDef x y z = (x, conT $ mkName y, z)
 
 toExp :: String -> Ex
 -- toExp v = \f -> f `appE` varE (mkName v)

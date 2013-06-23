@@ -210,7 +210,7 @@ derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
 derivs1 :: Definition -> VarStrictTypeQ
 derivs1 (name, typ, _) =
 	varStrictType (mkName $ "dv_" ++ name) $ strictType notStrict $
-		conT (mkName "Result") `appT` conT typ
+		conT (mkName "Result") `appT` typ
 
 parseErrorT :: DecQ
 parseErrorT = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"])
@@ -342,8 +342,9 @@ typeDvM peg = let
 	uncurry (zipWithM typeDvM1) $ unzip $ filter ((`elem` used) . fst)
 		$ map (\(n, t, _) -> (n, t)) peg
 
-typeDvM1 :: String -> Name -> DecQ
-typeDvM1 f t = sigD (mkName $ "dv_" ++ f ++ "M") $ conT (mkName "PackratM") `appT` conT t
+typeDvM1 :: String -> TypeQ -> DecQ
+typeDvM1 f t = sigD (mkName $ "dv_" ++ f ++ "M") $
+	conT (mkName "PackratM") `appT` t
 
 dvSomeM :: Bool -> Peg -> DecsQ
 dvSomeM th peg = mapM (dvSomeM1 th) $
@@ -364,8 +365,8 @@ dvCharsM th = flip (valD $ varP $ mkName "dvCharsM") [] $ normalB $
 typeP :: Peg -> DecsQ
 typeP = uncurry (zipWithM typeP1) . unzip . map (\(n, t, _) -> (n, t))
 
-typeP1 :: String -> Name -> DecQ
-typeP1 f t = sigD (mkName $ "p_" ++ f) $ conT (mkName "PackratM") `appT` conT t
+typeP1 :: String -> TypeQ -> DecQ
+typeP1 f t = sigD (mkName $ "p_" ++ f) $ conT (mkName "PackratM") `appT` t
 
 pSomes :: IORef Int -> Bool -> Peg -> DecsQ
 pSomes g th = mapM $ pSomes1 g th
