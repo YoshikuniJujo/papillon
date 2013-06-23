@@ -82,23 +82,21 @@ flipMaybe action = do
 -}
 
 flipMaybeQ :: IORef Int -> Bool -> DecsQ
-flipMaybeQ _ th = do
-	sequence [
-		sigD (mkName "flipMaybe") $ forallT [PlainTV $ mkName "a"] (cxt []) $ arrowT
-			`appT` (conT (mkName "PackratM") `appT` varT (mkName "a"))
-			`appT` (conT (mkName "PackratM") `appT` tupleT 0), -- (mkName "()")),
-		funD (mkName "flipMaybe") $ (: []) $
-			flip (clause [varP $ mkName "act"]) [] $ normalB $ doE [
-				bindS (varP $ mkName "err") $ infixApp
-					actionReturnFalse
-					(varE $ catchErrorN th)
-					constReturnTrue,
-				noBindS $ varE (unlessN th)
-					`appE` varE (mkName "err")
-					`appE` newThrowQ "" "not not match"
-			 ]
-	 ]
-	where
+flipMaybeQ _ th = sequence [
+	sigD (mkName "flipMaybe") $ forallT [PlainTV $ mkName "a"] (cxt []) $ arrowT
+		`appT` (conT (mkName "PackratM") `appT` varT (mkName "a"))
+		`appT` (conT (mkName "PackratM") `appT` tupleT 0), -- (mkName "()")),
+	funD (mkName "flipMaybe") $ (: []) $
+		flip (clause [varP $ mkName "act"]) [] $ normalB $ doE [
+			bindS (varP $ mkName "err") $ infixApp
+				actionReturnFalse
+				(varE $ catchErrorN th)
+				constReturnTrue,
+			noBindS $ varE (unlessN th)
+				`appE` varE (mkName "err")
+				`appE` newThrowQ "" "not not match"
+		 ]
+ ]	where
 	actionReturnFalse = infixApp
 		(varE $ mkName "act")
 		(varE $ mkName ">>")
@@ -205,7 +203,7 @@ derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
 		varStrictType (mkName "dvChars") $ strictType notStrict $
 			conT (mkName "Result") `appT` tkn,
 		varStrictType (mkName "dvPos") $ strictType notStrict $
-			(conT (mkName "Pos") `appT` src)
+			conT (mkName "Pos") `appT` src
 	 ]
  ] []
 
@@ -223,8 +221,6 @@ parseErrorT = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"
 		strictType notStrict $ varT $ mkName "pos"
 	 ]
 
-{- tySynD (mkName "ParseError") [PlainTV $ mkName "pos"] $
-	conT (mkName "String") -}
 
 {-
 
@@ -241,7 +237,7 @@ instanceErrorParseError th = instanceD
 			(varT $ mkName "pos")])
 	(conT (errorN th) `appT`
 		(conT (mkName "ParseError") `appT` varT (mkName "pos")))
-	[funD (strMsgN th) $ (: []) $ flip (clause [varP msg]) [] $ normalB $ ret]
+	[funD (strMsgN th) $ (: []) $ flip (clause [varP msg]) [] $ normalB ret]
 	where
 	msg = mkName "msg"
 	ret = conE (mkName "ParseError") `appE` litE (stringL "") `appE`
@@ -272,9 +268,9 @@ throwErrorPackratMQ th = sequence [
 				varE (getsN th) `appE` varE (mkName "dvPos"),
 			noBindS $ varE (throwErrorN th) `appE`
 				(conE (mkName "ParseError")
-					`appE` (varE $ mkName "code")
-					`appE` (varE $ mkName "msg")
-					`appE` (varE $ mkName "pos"))
+					`appE` varE (mkName "code")
+					`appE` varE (mkName "msg")
+					`appE` varE (mkName "pos"))
 		 ]
  ]
 
@@ -375,12 +371,8 @@ pSomes :: IORef Int -> Bool -> Peg -> DecsQ
 pSomes g th = mapM $ pSomes1 g th
 
 pSomes1 :: IORef Int -> Bool -> Definition -> DecQ
-pSomes1 g th (name, _, sel) =
-	flip (valD $ varP $ mkName $ "p_" ++ name) [] $ normalB $ pSomes1Sel g th sel
-{-
-		varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
-			listE (map (uncurry $ pSome_ g th) sel)
--}
+pSomes1 g th (name, _, sel) = flip (valD $ varP $ mkName $ "p_" ++ name) [] $
+	normalB $ pSomes1Sel g th sel
 
 pSomes1Sel :: IORef Int -> Bool -> Selection -> ExpQ
 pSomes1Sel g th sel = varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
@@ -413,26 +405,28 @@ beforeMatch th t n = do
 		noBindS $ varE (returnN th) `appE` tupE []
 	 ]
 
-transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
-transLeaf' g th (NameLeafList n nl) = do
+getNewName :: IORef Int -> String -> Q Name
+getNewName g n = do
 	gn <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
-	t <- newName $ "xx" ++ show gn
+	newName $ n ++ show gn
+
+transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
+transLeaf' g th (NameLeafList n nl) = do
+	t <- getNewName g "xx"
 	nn <- n
 	case nn of
 		WildP -> (: []) <$> bindS wildP (
-			(varE $ mkName "list") `appE` (pSomes1Sel g th nl))
+			varE (mkName "list") `appE` pSomes1Sel g th nl)
 		VarP _ -> sequence [
-			bindS (varP t) $ (varE $ mkName "list") `appE`
-				(pSomes1Sel g th nl),
+			bindS (varP t) $ varE (mkName "list") `appE`
+				pSomes1Sel g th nl,
 			letS [flip (valD n) [] $ normalB $ varE t],
-			noBindS $ (varE $ mkName "return") `appE` tupE []
+			noBindS $ varE (mkName "return") `appE` tupE []
 		 ]
 		_ -> undefined
 transLeaf' g th (NameLeaf n (Nothing, p)) = do
-	gn <- runIO $ readIORef g
-	runIO $ modifyIORef g succ
-	t <- newName $ "xx" ++ show gn
+	t <- getNewName g "xx"
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
@@ -459,9 +453,7 @@ transLeaf' g th (NameLeaf n (Just v, p)) = do
 				(varE $ mkName ">>")
 				(varE (returnN th) `appE` tupE []))
 			<*> ((:[]) <$> afterCheck th p)
-		_ -> do	gn' <- runIO $ readIORef g
-			runIO $ modifyIORef g succ
-			t <- newName $ "xx" ++ show gn'
+		_ -> do	t <- getNewName g "xx"
 			(:)	<$> bindS (varP t)
 					(varE $ mkName $ "dv_" ++ v ++ "M")
 				<*> ((++) <$> beforeMatch th t n <*>
@@ -470,9 +462,7 @@ transLeaf' g th (NameLeaf n (Just v, p)) = do
 transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
 transLeaf g th (Here nl) = transLeaf' g th nl
 transLeaf g th (NotAfter nl) = do
-	n <- runIO $ readIORef g
-	d <- newName $ "ddd" ++ show n
-	runIO $ modifyIORef g succ
+	d <- getNewName g "ddd"
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ varE (mkName "flipMaybe") `appE`

@@ -30,11 +30,11 @@ listDec th = sequence [
 	sigD list $ forallT [PlainTV m, PlainTV a]
 		(cxt [classP (monadPlusN th) [vm], classP (applicativeN th) [vm]]) $
 		arrowT	`appT` (varT m `appT` varT a)
-			`appT` (varT m `appT` (listT `appT` (varT a))),
+			`appT` (varT m `appT` (listT `appT` varT a)),
 	sigD list1 $ forallT [PlainTV m, PlainTV a]
 		(cxt [classP (monadPlusN th) [vm], classP (applicativeN th) [vm]]) $
 		arrowT	`appT` (varT m `appT` varT a)
-			`appT` (varT m `appT` (listT `appT` (varT a))),
+			`appT` (varT m `appT` (listT `appT` varT a)),
 	funD list $ (: []) $ flip (clause [varP p]) [] $ normalB $
 		infixApp (varE list1 `appE` varE p) (varE $ mplusN th) returnEmpty,
 	funD list1 $ (: []) $ flip (clause [varP p]) [] $ normalB $
