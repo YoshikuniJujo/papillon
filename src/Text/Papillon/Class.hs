@@ -9,7 +9,8 @@ import Language.Haskell.TH
 
 classSourceQ :: Bool -> DecsQ
 classSourceQ th = sequence
-	[classS th, classSL th, instanceSLC th, instanceSrcStr th]
+	[classS th, classSL th, instanceSLC th, instanceShowListPosPos,
+		instanceSrcStr th]
 
 maybeN, nothingN, justN, consN, charN :: Bool -> Name
 maybeN True = ''Maybe
@@ -133,6 +134,35 @@ instanceSrcStr _ =
 	listC = listT `appT` varT c
 
 {-
+
+instance Show (ListPos a) => Show (Pos [a]) where
+	show (ListPos x) = "ListPos " ++ show x
+
+-}
+
+instanceShowListPosPos :: DecQ
+instanceShowListPosPos = instanceD (cxt [cxtShowListPos]) decType [body]
+	where
+	cxtShowListPos = classP (mkName "Show")
+		[conT (mkName "ListPos") `appT` varT (mkName "a")]
+	decType = conT (mkName "Show") `appT`
+		(conT (mkName "Pos") `appT` (listT  `appT` varT (mkName "a")))
+	body = funD (mkName "show") $ (: []) $ flip (clause [patListPos]) [] $
+		normalB $ addParens $ infixApp
+			(litE $ stringL "ListPos (")
+			(varE $ mkName "++") $ infixApp
+				(varE (mkName "show") `appE` varE (mkName "x"))
+				(varE $ mkName "++")
+				(litE $ stringL ")")
+	patListPos = conP (mkName "ListPos") [varP $ mkName "x"]
+	addParens str = infixApp
+		(litE $ stringL "(")
+		(varE $ mkName "++") $ infixApp
+			str
+			(varE $ mkName "++")
+			(litE $ stringL ")")
+
+{-
 instance SourceList Char where
 	newtype ListPos Char = CharPos (Int, Int)
 	listToken (c : s) = Just (c, s)
@@ -151,7 +181,7 @@ instanceSLC th = instanceD (cxt []) (conT sourceList `appT` conT (charN th)) [
 			strictType notStrict $ tupleT 2
 				`appT` conT (mkName "Int")
 				`appT` conT (mkName "Int")]
-	 ) [],
+	 ) [mkName "Show"],
 	funD listTokenN [
 		clause [infixP (varP c) (consN th) (varP s)]
 			(normalB $ conE (justN th) `appE` tupleBody) [],

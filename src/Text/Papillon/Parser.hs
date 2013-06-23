@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, TemplateHaskell , FlexibleContexts, PackageImports, TypeFamilies, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell, UndecidableInstances , FlexibleContexts, PackageImports, TypeFamilies, RankNTypes, FlexibleInstances #-}
 module  Text.Papillon.Parser (
 	Peg,
 	Definition,
@@ -118,7 +118,8 @@ mkPegFile Nothing Nothing x y z w = (addModules, x ++ "\n" ++ y, z, w)
 
 addPragmas, addModules :: String
 addPragmas =
-	", FlexibleContexts, PackageImports, TypeFamilies, RankNTypes #-}\n"
+	", FlexibleContexts, PackageImports, TypeFamilies, RankNTypes, " ++
+	"FlexibleInstances #-}\n"
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n" ++
@@ -153,12 +154,17 @@ mkTTPeg :: String -> Peg -> TTPeg
 mkTTPeg s p =
 	(conT $ mkName s, conT (mkName "Token") `appT` conT (mkName s), p)
 
+data ParseError pos = ParseError String String pos deriving (Show)
+throwErrorPackratM :: forall a . String -> PackratM a
+throwErrorPackratM msg = do pos <- gets dvPos
+                            throwError (ParseError "" msg pos)
+instance (Source s, Pos s ~ pos) => Error (ParseError pos)
+    where strMsg msg = ParseError "" msg initialPos
 flipMaybe :: forall a . PackratM a -> PackratM ()
-flipMaybe act = do pos382_0 <- gets dvPos
-                   err <- (act >> return False) `catchError` const (return True)
-                   unless err (throwError (strMsg ("not not match: pos: " ++ showPos pos382_0)))
-type PackratM = StateT Derivs (Either String)
-type Result v = Either String ((v, Derivs))
+flipMaybe act = do err <- (act >> return False) `catchError` const (return True)
+                   unless err (throwErrorPackratM "not not match")
+type PackratM = StateT Derivs (Either (ParseError (Pos String)))
+type Result v = Either (ParseError (Pos String)) ((v, Derivs))
 data Derivs
     = Derivs {dv_pegFile :: (Result PegFile),
               dv_pragma :: (Result MaybeString),
@@ -263,7 +269,7 @@ parse pos___hoge s = d
                                              Just (c,
                                                    s') -> do put (parse (updatePos c pos___hoge) s')
                                                              return c
-                                             _ -> throwError (strMsg "eof"))
+                                             _ -> throwErrorPackratM "eof")
 dv_pragmaM :: PackratM MaybeString
 dv_pragmaStrM :: PackratM String
 dv_pragmaEndM :: PackratM Nil
@@ -405,1685 +411,998 @@ p_comment :: PackratM Nil
 p_comments :: PackratM Nil
 p_notComStr :: PackratM Nil
 p_comEnd :: PackratM Nil
-p_pegFile = foldl1 mplus [do pos0_1 <- gets dvPos
-                             pr <- dv_pragmaM
+p_pegFile = foldl1 mplus [do pr <- dv_pragmaM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos0_1))
-                             pos1_2 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              md <- dv_moduleDecM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos1_2))
-                             pos2_3 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              pip <- dv_preImpPapM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos2_3))
-                             pos3_4 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              dv_importPapillonM >> return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos3_4))
-                             pos4_5 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              pp <- dv_prePegM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos4_5))
-                             pos5_6 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              dv_papM >> return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos5_6))
-                             pos6_7 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              p <- dv_pegM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos6_7))
-                             pos7_8 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              dv_spacesM >> return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos7_8))
-                             xx8_9 <- dvCharsM
-                             pos10_10 <- gets dvPos
-                             case xx8_9 of
+                             if True then return () else throwErrorPackratM "not match"
+                             xx0_0 <- dvCharsM
+                             case xx0_0 of
                                  '|' -> return ()
-                                 _ -> throwError (strMsg ("not match: pos: " ++ showPos pos10_10))
-                             let '|' = xx8_9
+                                 _ -> throwErrorPackratM "not match pattern"
+                             let '|' = xx0_0
                              return ()
-                             pos9_11 <- gets dvPos
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos9_11))
-                             xx11_12 <- dvCharsM
-                             pos13_13 <- gets dvPos
-                             case xx11_12 of
+                             if True then return () else throwErrorPackratM "not match"
+                             xx1_1 <- dvCharsM
+                             case xx1_1 of
                                  ']' -> return ()
-                                 _ -> throwError (strMsg ("not match: pos: " ++ showPos pos13_13))
-                             let ']' = xx11_12
+                                 _ -> throwErrorPackratM "not match pattern"
+                             let ']' = xx1_1
                              return ()
-                             pos12_14 <- gets dvPos
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos12_14))
-                             xx14_15 <- dvCharsM
-                             pos16_16 <- gets dvPos
-                             case xx14_15 of
+                             if True then return () else throwErrorPackratM "not match"
+                             xx2_2 <- dvCharsM
+                             case xx2_2 of
                                  '\n' -> return ()
-                                 _ -> throwError (strMsg ("not match: pos: " ++ showPos pos16_16))
-                             let '\n' = xx14_15
+                                 _ -> throwErrorPackratM "not match pattern"
+                             let '\n' = xx2_2
                              return ()
-                             pos15_17 <- gets dvPos
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos15_17))
-                             pos17_18 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              atp <- dv_afterPegM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos17_18))
+                             if True then return () else throwErrorPackratM "not match"
                              return (id mkPegFile pr md pip pp p atp),
-                          do pos18_19 <- gets dvPos
-                             pr <- dv_pragmaM
+                          do pr <- dv_pragmaM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos18_19))
-                             pos19_20 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              md <- dv_moduleDecM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos19_20))
-                             pos20_21 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              pp <- dv_prePegM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos20_21))
-                             pos21_22 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              dv_papM >> return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos21_22))
-                             pos22_23 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              p <- dv_pegM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos22_23))
-                             pos23_24 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              dv_spacesM >> return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos23_24))
-                             xx24_25 <- dvCharsM
-                             pos26_26 <- gets dvPos
-                             case xx24_25 of
+                             if True then return () else throwErrorPackratM "not match"
+                             xx3_3 <- dvCharsM
+                             case xx3_3 of
                                  '|' -> return ()
-                                 _ -> throwError (strMsg ("not match: pos: " ++ showPos pos26_26))
-                             let '|' = xx24_25
+                                 _ -> throwErrorPackratM "not match pattern"
+                             let '|' = xx3_3
                              return ()
-                             pos25_27 <- gets dvPos
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos25_27))
-                             xx27_28 <- dvCharsM
-                             pos29_29 <- gets dvPos
-                             case xx27_28 of
+                             if True then return () else throwErrorPackratM "not match"
+                             xx4_4 <- dvCharsM
+                             case xx4_4 of
                                  ']' -> return ()
-                                 _ -> throwError (strMsg ("not match: pos: " ++ showPos pos29_29))
-                             let ']' = xx27_28
+                                 _ -> throwErrorPackratM "not match pattern"
+                             let ']' = xx4_4
                              return ()
-                             pos28_30 <- gets dvPos
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos28_30))
-                             xx30_31 <- dvCharsM
-                             pos32_32 <- gets dvPos
-                             case xx30_31 of
+                             if True then return () else throwErrorPackratM "not match"
+                             xx5_5 <- dvCharsM
+                             case xx5_5 of
                                  '\n' -> return ()
-                                 _ -> throwError (strMsg ("not match: pos: " ++ showPos pos32_32))
-                             let '\n' = xx30_31
+                                 _ -> throwErrorPackratM "not match pattern"
+                             let '\n' = xx5_5
                              return ()
-                             pos31_33 <- gets dvPos
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos31_33))
-                             pos33_34 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              atp <- dv_afterPegM
                              return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos33_34))
+                             if True then return () else throwErrorPackratM "not match"
                              return (id mkPegFile pr md emp pp p atp)]
-p_pragma = foldl1 mplus [do pos34_35 <- gets dvPos
-                            dv_spacesM >> return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos34_35))
-                            xx35_36 <- dvCharsM
-                            pos37_37 <- gets dvPos
-                            case xx35_36 of
+p_pragma = foldl1 mplus [do dv_spacesM >> return ()
+                            if True then return () else throwErrorPackratM "not match"
+                            xx6_6 <- dvCharsM
+                            case xx6_6 of
                                 '{' -> return ()
-                                _ -> throwError (strMsg ("not match: pos: " ++ showPos pos37_37))
-                            let '{' = xx35_36
+                                _ -> throwErrorPackratM "not match pattern"
+                            let '{' = xx6_6
                             return ()
-                            pos36_38 <- gets dvPos
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos36_38))
-                            xx38_39 <- dvCharsM
-                            pos40_40 <- gets dvPos
-                            case xx38_39 of
+                            if True then return () else throwErrorPackratM "not match"
+                            xx7_7 <- dvCharsM
+                            case xx7_7 of
                                 '-' -> return ()
-                                _ -> throwError (strMsg ("not match: pos: " ++ showPos pos40_40))
-                            let '-' = xx38_39
+                                _ -> throwErrorPackratM "not match pattern"
+                            let '-' = xx7_7
                             return ()
-                            pos39_41 <- gets dvPos
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos39_41))
-                            xx41_42 <- dvCharsM
-                            pos43_43 <- gets dvPos
-                            case xx41_42 of
+                            if True then return () else throwErrorPackratM "not match"
+                            xx8_8 <- dvCharsM
+                            case xx8_8 of
                                 '#' -> return ()
-                                _ -> throwError (strMsg ("not match: pos: " ++ showPos pos43_43))
-                            let '#' = xx41_42
+                                _ -> throwErrorPackratM "not match pattern"
+                            let '#' = xx8_8
                             return ()
-                            pos42_44 <- gets dvPos
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos42_44))
-                            pos44_45 <- gets dvPos
+                            if True then return () else throwErrorPackratM "not match"
                             s <- dv_pragmaStrM
                             return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos44_45))
-                            pos45_46 <- gets dvPos
+                            if True then return () else throwErrorPackratM "not match"
                             dv_pragmaEndM >> return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos45_46))
-                            pos46_47 <- gets dvPos
+                            if True then return () else throwErrorPackratM "not match"
                             dv_spacesM >> return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos46_47))
+                            if True then return () else throwErrorPackratM "not match"
                             return (id just s),
-                         do pos47_48 <- gets dvPos
-                            dv_spacesM >> return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos47_48))
+                         do dv_spacesM >> return ()
+                            if True then return () else throwErrorPackratM "not match"
                             return (id nothing)]
-p_pragmaStr = foldl1 mplus [do ddd48_49 <- get
-                               flipMaybe (do pos49_50 <- gets dvPos
-                                             dv_pragmaEndM >> return ()
+p_pragmaStr = foldl1 mplus [do ddd9_9 <- get
+                               flipMaybe (do dv_pragmaEndM >> return ()
                                              if True
                                               then return ()
-                                              else throwError (strMsg ("not match: pos: " ++ showPos pos49_50)))
-                               put ddd48_49
-                               xx50_51 <- dvCharsM
-                               let c = xx50_51
-                               pos51_52 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos51_52))
-                               pos52_53 <- gets dvPos
+                                              else throwErrorPackratM "not match")
+                               put ddd9_9
+                               xx10_10 <- dvCharsM
+                               let c = xx10_10
+                               if True then return () else throwErrorPackratM "not match"
                                s <- dv_pragmaStrM
                                return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos52_53))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id cons c s),
                             do return (id emp)]
-p_pragmaEnd = foldl1 mplus [do xx53_54 <- dvCharsM
-                               pos55_55 <- gets dvPos
-                               case xx53_54 of
+p_pragmaEnd = foldl1 mplus [do xx11_11 <- dvCharsM
+                               case xx11_11 of
                                    '#' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos55_55))
-                               let '#' = xx53_54
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let '#' = xx11_11
                                return ()
-                               pos54_56 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos54_56))
-                               xx56_57 <- dvCharsM
-                               pos58_58 <- gets dvPos
-                               case xx56_57 of
+                               if True then return () else throwErrorPackratM "not match"
+                               xx12_12 <- dvCharsM
+                               case xx12_12 of
                                    '-' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos58_58))
-                               let '-' = xx56_57
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let '-' = xx12_12
                                return ()
-                               pos57_59 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos57_59))
-                               xx59_60 <- dvCharsM
-                               pos61_61 <- gets dvPos
-                               case xx59_60 of
+                               if True then return () else throwErrorPackratM "not match"
+                               xx13_13 <- dvCharsM
+                               case xx13_13 of
                                    '}' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos61_61))
-                               let '}' = xx59_60
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let '}' = xx13_13
                                return ()
-                               pos60_62 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos60_62))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id nil)]
-p_moduleDec = foldl1 mplus [do xx62_63 <- dvCharsM
-                               pos64_64 <- gets dvPos
-                               case xx62_63 of
+p_moduleDec = foldl1 mplus [do xx14_14 <- dvCharsM
+                               case xx14_14 of
                                    'm' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos64_64))
-                               let 'm' = xx62_63
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let 'm' = xx14_14
                                return ()
-                               pos63_65 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos63_65))
-                               xx65_66 <- dvCharsM
-                               pos67_67 <- gets dvPos
-                               case xx65_66 of
+                               if True then return () else throwErrorPackratM "not match"
+                               xx15_15 <- dvCharsM
+                               case xx15_15 of
                                    'o' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos67_67))
-                               let 'o' = xx65_66
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let 'o' = xx15_15
                                return ()
-                               pos66_68 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos66_68))
-                               xx68_69 <- dvCharsM
-                               pos70_70 <- gets dvPos
-                               case xx68_69 of
+                               if True then return () else throwErrorPackratM "not match"
+                               xx16_16 <- dvCharsM
+                               case xx16_16 of
                                    'd' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos70_70))
-                               let 'd' = xx68_69
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let 'd' = xx16_16
                                return ()
-                               pos69_71 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos69_71))
-                               xx71_72 <- dvCharsM
-                               pos73_73 <- gets dvPos
-                               case xx71_72 of
+                               if True then return () else throwErrorPackratM "not match"
+                               xx17_17 <- dvCharsM
+                               case xx17_17 of
                                    'u' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos73_73))
-                               let 'u' = xx71_72
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let 'u' = xx17_17
                                return ()
-                               pos72_74 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos72_74))
-                               xx74_75 <- dvCharsM
-                               pos76_76 <- gets dvPos
-                               case xx74_75 of
+                               if True then return () else throwErrorPackratM "not match"
+                               xx18_18 <- dvCharsM
+                               case xx18_18 of
                                    'l' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos76_76))
-                               let 'l' = xx74_75
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let 'l' = xx18_18
                                return ()
-                               pos75_77 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos75_77))
-                               xx77_78 <- dvCharsM
-                               pos79_79 <- gets dvPos
-                               case xx77_78 of
+                               if True then return () else throwErrorPackratM "not match"
+                               xx19_19 <- dvCharsM
+                               case xx19_19 of
                                    'e' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos79_79))
-                               let 'e' = xx77_78
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let 'e' = xx19_19
                                return ()
-                               pos78_80 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos78_80))
-                               pos80_81 <- gets dvPos
+                               if True then return () else throwErrorPackratM "not match"
                                s <- dv_moduleDecStrM
                                return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos80_81))
-                               pos81_82 <- gets dvPos
+                               if True then return () else throwErrorPackratM "not match"
                                dv_whrM >> return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos81_82))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id just s),
                             do return (id nothing)]
-p_moduleDecStr = foldl1 mplus [do ddd82_83 <- get
-                                  flipMaybe (do pos83_84 <- gets dvPos
-                                                dv_whrM >> return ()
+p_moduleDecStr = foldl1 mplus [do ddd20_20 <- get
+                                  flipMaybe (do dv_whrM >> return ()
                                                 if True
                                                  then return ()
-                                                 else throwError (strMsg ("not match: pos: " ++ showPos pos83_84)))
-                                  put ddd82_83
-                                  xx84_85 <- dvCharsM
-                                  let c = xx84_85
-                                  pos85_86 <- gets dvPos
-                                  if True
-                                   then return ()
-                                   else throwError (strMsg ("not match: pos: " ++ showPos pos85_86))
-                                  pos86_87 <- gets dvPos
+                                                 else throwErrorPackratM "not match")
+                                  put ddd20_20
+                                  xx21_21 <- dvCharsM
+                                  let c = xx21_21
+                                  if True then return () else throwErrorPackratM "not match"
                                   s <- dv_moduleDecStrM
                                   return ()
-                                  if True
-                                   then return ()
-                                   else throwError (strMsg ("not match: pos: " ++ showPos pos86_87))
+                                  if True then return () else throwErrorPackratM "not match"
                                   return (id cons c s),
                                do return (id emp)]
-p_whr = foldl1 mplus [do xx87_88 <- dvCharsM
-                         pos89_89 <- gets dvPos
-                         case xx87_88 of
+p_whr = foldl1 mplus [do xx22_22 <- dvCharsM
+                         case xx22_22 of
                              'w' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos89_89))
-                         let 'w' = xx87_88
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'w' = xx22_22
                          return ()
-                         pos88_90 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos88_90))
-                         xx90_91 <- dvCharsM
-                         pos92_92 <- gets dvPos
-                         case xx90_91 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx23_23 <- dvCharsM
+                         case xx23_23 of
                              'h' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos92_92))
-                         let 'h' = xx90_91
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'h' = xx23_23
                          return ()
-                         pos91_93 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos91_93))
-                         xx93_94 <- dvCharsM
-                         pos95_95 <- gets dvPos
-                         case xx93_94 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx24_24 <- dvCharsM
+                         case xx24_24 of
                              'e' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos95_95))
-                         let 'e' = xx93_94
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'e' = xx24_24
                          return ()
-                         pos94_96 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos94_96))
-                         xx96_97 <- dvCharsM
-                         pos98_98 <- gets dvPos
-                         case xx96_97 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx25_25 <- dvCharsM
+                         case xx25_25 of
                              'r' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos98_98))
-                         let 'r' = xx96_97
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'r' = xx25_25
                          return ()
-                         pos97_99 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos97_99))
-                         xx99_100 <- dvCharsM
-                         pos101_101 <- gets dvPos
-                         case xx99_100 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx26_26 <- dvCharsM
+                         case xx26_26 of
                              'e' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos101_101))
-                         let 'e' = xx99_100
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'e' = xx26_26
                          return ()
-                         pos100_102 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos100_102))
+                         if True then return () else throwErrorPackratM "not match"
                          return (id nil)]
-p_preImpPap = foldl1 mplus [do ddd102_103 <- get
-                               flipMaybe (do pos103_104 <- gets dvPos
-                                             dv_importPapillonM >> return ()
+p_preImpPap = foldl1 mplus [do ddd27_27 <- get
+                               flipMaybe (do dv_importPapillonM >> return ()
                                              if True
                                               then return ()
-                                              else throwError (strMsg ("not match: pos: " ++ showPos pos103_104)))
-                               put ddd102_103
-                               ddd104_105 <- get
-                               flipMaybe (do pos105_106 <- gets dvPos
-                                             dv_papM >> return ()
+                                              else throwErrorPackratM "not match")
+                               put ddd27_27
+                               ddd28_28 <- get
+                               flipMaybe (do dv_papM >> return ()
                                              if True
                                               then return ()
-                                              else throwError (strMsg ("not match: pos: " ++ showPos pos105_106)))
-                               put ddd104_105
-                               xx106_107 <- dvCharsM
-                               let c = xx106_107
-                               pos107_108 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos107_108))
-                               pos108_109 <- gets dvPos
+                                              else throwErrorPackratM "not match")
+                               put ddd28_28
+                               xx29_29 <- dvCharsM
+                               let c = xx29_29
+                               if True then return () else throwErrorPackratM "not match"
                                pip <- dv_preImpPapM
                                return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos108_109))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id cons c pip),
                             do return (id emp)]
-p_prePeg = foldl1 mplus [do ddd109_110 <- get
-                            flipMaybe (do pos110_111 <- gets dvPos
-                                          dv_papM >> return ()
+p_prePeg = foldl1 mplus [do ddd30_30 <- get
+                            flipMaybe (do dv_papM >> return ()
                                           if True
                                            then return ()
-                                           else throwError (strMsg ("not match: pos: " ++ showPos pos110_111)))
-                            put ddd109_110
-                            xx111_112 <- dvCharsM
-                            let c = xx111_112
-                            pos112_113 <- gets dvPos
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos112_113))
-                            pos113_114 <- gets dvPos
+                                           else throwErrorPackratM "not match")
+                            put ddd30_30
+                            xx31_31 <- dvCharsM
+                            let c = xx31_31
+                            if True then return () else throwErrorPackratM "not match"
                             pp <- dv_prePegM
                             return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos113_114))
+                            if True then return () else throwErrorPackratM "not match"
                             return (id cons c pp),
                          do return (id emp)]
-p_afterPeg = foldl1 mplus [do xx114_115 <- dvCharsM
-                              let c = xx114_115
-                              pos115_116 <- gets dvPos
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos115_116))
-                              pos116_117 <- gets dvPos
+p_afterPeg = foldl1 mplus [do xx32_32 <- dvCharsM
+                              let c = xx32_32
+                              if True then return () else throwErrorPackratM "not match"
                               atp <- dv_afterPegM
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos116_117))
+                              if True then return () else throwErrorPackratM "not match"
                               return (id cons c atp),
                            do return (id emp)]
-p_importPapillon = foldl1 mplus [do pos117_118 <- gets dvPos
-                                    xx118_119 <- dv_varTokenM
-                                    pos119_120 <- gets dvPos
-                                    case xx118_119 of
+p_importPapillon = foldl1 mplus [do xx33_33 <- dv_varTokenM
+                                    case xx33_33 of
                                         "import" -> return ()
-                                        _ -> throwError (strMsg ("not match: pos: " ++ showPos pos119_120))
-                                    let "import" = xx118_119
+                                        _ -> throwErrorPackratM "not match pattern"
+                                    let "import" = xx33_33
                                     return ()
-                                    if True
-                                     then return ()
-                                     else throwError (strMsg ("not match: pos: " ++ showPos pos117_118))
-                                    pos120_121 <- gets dvPos
-                                    xx121_122 <- dv_typTokenM
-                                    pos122_123 <- gets dvPos
-                                    case xx121_122 of
+                                    if True then return () else throwErrorPackratM "not match"
+                                    xx34_34 <- dv_typTokenM
+                                    case xx34_34 of
                                         "Text" -> return ()
-                                        _ -> throwError (strMsg ("not match: pos: " ++ showPos pos122_123))
-                                    let "Text" = xx121_122
+                                        _ -> throwErrorPackratM "not match pattern"
+                                    let "Text" = xx34_34
                                     return ()
-                                    if True
-                                     then return ()
-                                     else throwError (strMsg ("not match: pos: " ++ showPos pos120_121))
-                                    xx123_124 <- dvCharsM
-                                    pos125_125 <- gets dvPos
-                                    case xx123_124 of
+                                    if True then return () else throwErrorPackratM "not match"
+                                    xx35_35 <- dvCharsM
+                                    case xx35_35 of
                                         '.' -> return ()
-                                        _ -> throwError (strMsg ("not match: pos: " ++ showPos pos125_125))
-                                    let '.' = xx123_124
+                                        _ -> throwErrorPackratM "not match pattern"
+                                    let '.' = xx35_35
                                     return ()
-                                    pos124_126 <- gets dvPos
-                                    if True
-                                     then return ()
-                                     else throwError (strMsg ("not match: pos: " ++ showPos pos124_126))
-                                    pos126_127 <- gets dvPos
+                                    if True then return () else throwErrorPackratM "not match"
                                     dv_spacesM >> return ()
-                                    if True
-                                     then return ()
-                                     else throwError (strMsg ("not match: pos: " ++ showPos pos126_127))
-                                    pos127_128 <- gets dvPos
-                                    xx128_129 <- dv_typTokenM
-                                    pos129_130 <- gets dvPos
-                                    case xx128_129 of
+                                    if True then return () else throwErrorPackratM "not match"
+                                    xx36_36 <- dv_typTokenM
+                                    case xx36_36 of
                                         "Papillon" -> return ()
-                                        _ -> throwError (strMsg ("not match: pos: " ++ showPos pos129_130))
-                                    let "Papillon" = xx128_129
+                                        _ -> throwErrorPackratM "not match pattern"
+                                    let "Papillon" = xx36_36
                                     return ()
-                                    if True
-                                     then return ()
-                                     else throwError (strMsg ("not match: pos: " ++ showPos pos127_128))
+                                    if True then return () else throwErrorPackratM "not match"
                                     return (id nil)]
-p_varToken = foldl1 mplus [do pos130_131 <- gets dvPos
-                              v <- dv_variableM
+p_varToken = foldl1 mplus [do v <- dv_variableM
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos130_131))
-                              pos131_132 <- gets dvPos
+                              if True then return () else throwErrorPackratM "not match"
                               dv_spacesM >> return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos131_132))
+                              if True then return () else throwErrorPackratM "not match"
                               return (id v)]
-p_typToken = foldl1 mplus [do pos132_133 <- gets dvPos
-                              t <- dv_typM
+p_typToken = foldl1 mplus [do t <- dv_typM
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos132_133))
-                              pos133_134 <- gets dvPos
+                              if True then return () else throwErrorPackratM "not match"
                               dv_spacesM >> return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos133_134))
+                              if True then return () else throwErrorPackratM "not match"
                               return (id t)]
-p_pap = foldl1 mplus [do xx134_135 <- dvCharsM
-                         pos136_136 <- gets dvPos
-                         case xx134_135 of
+p_pap = foldl1 mplus [do xx37_37 <- dvCharsM
+                         case xx37_37 of
                              '\n' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos136_136))
-                         let '\n' = xx134_135
+                             _ -> throwErrorPackratM "not match pattern"
+                         let '\n' = xx37_37
                          return ()
-                         pos135_137 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos135_137))
-                         xx137_138 <- dvCharsM
-                         pos139_139 <- gets dvPos
-                         case xx137_138 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx38_38 <- dvCharsM
+                         case xx38_38 of
                              '[' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos139_139))
-                         let '[' = xx137_138
+                             _ -> throwErrorPackratM "not match pattern"
+                         let '[' = xx38_38
                          return ()
-                         pos138_140 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos138_140))
-                         xx140_141 <- dvCharsM
-                         pos142_142 <- gets dvPos
-                         case xx140_141 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx39_39 <- dvCharsM
+                         case xx39_39 of
                              'p' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos142_142))
-                         let 'p' = xx140_141
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'p' = xx39_39
                          return ()
-                         pos141_143 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos141_143))
-                         xx143_144 <- dvCharsM
-                         pos145_145 <- gets dvPos
-                         case xx143_144 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx40_40 <- dvCharsM
+                         case xx40_40 of
                              'a' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos145_145))
-                         let 'a' = xx143_144
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'a' = xx40_40
                          return ()
-                         pos144_146 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos144_146))
-                         xx146_147 <- dvCharsM
-                         pos148_148 <- gets dvPos
-                         case xx146_147 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx41_41 <- dvCharsM
+                         case xx41_41 of
                              'p' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos148_148))
-                         let 'p' = xx146_147
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'p' = xx41_41
                          return ()
-                         pos147_149 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos147_149))
-                         xx149_150 <- dvCharsM
-                         pos151_151 <- gets dvPos
-                         case xx149_150 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx42_42 <- dvCharsM
+                         case xx42_42 of
                              'i' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos151_151))
-                         let 'i' = xx149_150
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'i' = xx42_42
                          return ()
-                         pos150_152 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos150_152))
-                         xx152_153 <- dvCharsM
-                         pos154_154 <- gets dvPos
-                         case xx152_153 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx43_43 <- dvCharsM
+                         case xx43_43 of
                              'l' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos154_154))
-                         let 'l' = xx152_153
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'l' = xx43_43
                          return ()
-                         pos153_155 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos153_155))
-                         xx155_156 <- dvCharsM
-                         pos157_157 <- gets dvPos
-                         case xx155_156 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx44_44 <- dvCharsM
+                         case xx44_44 of
                              'l' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos157_157))
-                         let 'l' = xx155_156
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'l' = xx44_44
                          return ()
-                         pos156_158 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos156_158))
-                         xx158_159 <- dvCharsM
-                         pos160_160 <- gets dvPos
-                         case xx158_159 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx45_45 <- dvCharsM
+                         case xx45_45 of
                              'o' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos160_160))
-                         let 'o' = xx158_159
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'o' = xx45_45
                          return ()
-                         pos159_161 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos159_161))
-                         xx161_162 <- dvCharsM
-                         pos163_163 <- gets dvPos
-                         case xx161_162 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx46_46 <- dvCharsM
+                         case xx46_46 of
                              'n' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos163_163))
-                         let 'n' = xx161_162
+                             _ -> throwErrorPackratM "not match pattern"
+                         let 'n' = xx46_46
                          return ()
-                         pos162_164 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos162_164))
-                         xx164_165 <- dvCharsM
-                         pos166_166 <- gets dvPos
-                         case xx164_165 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx47_47 <- dvCharsM
+                         case xx47_47 of
                              '|' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos166_166))
-                         let '|' = xx164_165
+                             _ -> throwErrorPackratM "not match pattern"
+                         let '|' = xx47_47
                          return ()
-                         pos165_167 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos165_167))
-                         xx167_168 <- dvCharsM
-                         pos169_169 <- gets dvPos
-                         case xx167_168 of
+                         if True then return () else throwErrorPackratM "not match"
+                         xx48_48 <- dvCharsM
+                         case xx48_48 of
                              '\n' -> return ()
-                             _ -> throwError (strMsg ("not match: pos: " ++ showPos pos169_169))
-                         let '\n' = xx167_168
+                             _ -> throwErrorPackratM "not match pattern"
+                         let '\n' = xx48_48
                          return ()
-                         pos168_170 <- gets dvPos
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos168_170))
+                         if True then return () else throwErrorPackratM "not match"
                          return (id nil)]
-p_peg = foldl1 mplus [do pos170_171 <- gets dvPos
-                         dv_spacesM >> return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos170_171))
-                         pos171_172 <- gets dvPos
+p_peg = foldl1 mplus [do dv_spacesM >> return ()
+                         if True then return () else throwErrorPackratM "not match"
                          s <- dv_sourceTypeM
                          return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos171_172))
-                         pos172_173 <- gets dvPos
+                         if True then return () else throwErrorPackratM "not match"
                          p <- dv_peg_M
                          return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos172_173))
+                         if True then return () else throwErrorPackratM "not match"
                          return (id mkTTPeg s p),
-                      do pos173_174 <- gets dvPos
-                         p <- dv_peg_M
+                      do p <- dv_peg_M
                          return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos173_174))
+                         if True then return () else throwErrorPackratM "not match"
                          return (id mkTTPeg tString p)]
-p_sourceType = foldl1 mplus [do pos174_175 <- gets dvPos
-                                xx175_176 <- dv_varTokenM
-                                pos176_177 <- gets dvPos
-                                case xx175_176 of
+p_sourceType = foldl1 mplus [do xx49_49 <- dv_varTokenM
+                                case xx49_49 of
                                     "source" -> return ()
-                                    _ -> throwError (strMsg ("not match: pos: " ++ showPos pos176_177))
-                                let "source" = xx175_176
+                                    _ -> throwErrorPackratM "not match pattern"
+                                let "source" = xx49_49
                                 return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos174_175))
-                                xx177_178 <- dvCharsM
-                                pos179_179 <- gets dvPos
-                                case xx177_178 of
+                                if True then return () else throwErrorPackratM "not match"
+                                xx50_50 <- dvCharsM
+                                case xx50_50 of
                                     ':' -> return ()
-                                    _ -> throwError (strMsg ("not match: pos: " ++ showPos pos179_179))
-                                let ':' = xx177_178
+                                    _ -> throwErrorPackratM "not match pattern"
+                                let ':' = xx50_50
                                 return ()
-                                pos178_180 <- gets dvPos
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos178_180))
-                                pos180_181 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 dv_spacesM >> return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos180_181))
-                                pos181_182 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 v <- dv_typTokenM
                                 return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos181_182))
+                                if True then return () else throwErrorPackratM "not match"
                                 return (id v)]
-p_peg_ = foldl1 mplus [do pos182_183 <- gets dvPos
-                          dv_spacesM >> return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos182_183))
-                          pos183_184 <- gets dvPos
+p_peg_ = foldl1 mplus [do dv_spacesM >> return ()
+                          if True then return () else throwErrorPackratM "not match"
                           d <- dv_definitionM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos183_184))
-                          pos184_185 <- gets dvPos
+                          if True then return () else throwErrorPackratM "not match"
                           p <- dv_peg_M
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos184_185))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id cons d p),
                        do return (id emp)]
-p_definition = foldl1 mplus [do pos185_186 <- gets dvPos
-                                v <- dv_variableM
+p_definition = foldl1 mplus [do v <- dv_variableM
                                 return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos185_186))
-                                pos186_187 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 dv_spacesM >> return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos186_187))
-                                xx187_188 <- dvCharsM
-                                pos189_189 <- gets dvPos
-                                case xx187_188 of
+                                if True then return () else throwErrorPackratM "not match"
+                                xx51_51 <- dvCharsM
+                                case xx51_51 of
                                     ':' -> return ()
-                                    _ -> throwError (strMsg ("not match: pos: " ++ showPos pos189_189))
-                                let ':' = xx187_188
+                                    _ -> throwErrorPackratM "not match pattern"
+                                let ':' = xx51_51
                                 return ()
-                                pos188_190 <- gets dvPos
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos188_190))
-                                xx190_191 <- dvCharsM
-                                pos192_192 <- gets dvPos
-                                case xx190_191 of
+                                if True then return () else throwErrorPackratM "not match"
+                                xx52_52 <- dvCharsM
+                                case xx52_52 of
                                     ':' -> return ()
-                                    _ -> throwError (strMsg ("not match: pos: " ++ showPos pos192_192))
-                                let ':' = xx190_191
+                                    _ -> throwErrorPackratM "not match pattern"
+                                let ':' = xx52_52
                                 return ()
-                                pos191_193 <- gets dvPos
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos191_193))
-                                pos193_194 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 dv_spacesM >> return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos193_194))
-                                pos194_195 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 t <- dv_typM
                                 return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos194_195))
-                                pos195_196 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 dv_spacesM >> return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos195_196))
-                                xx196_197 <- dvCharsM
-                                pos198_198 <- gets dvPos
-                                case xx196_197 of
+                                if True then return () else throwErrorPackratM "not match"
+                                xx53_53 <- dvCharsM
+                                case xx53_53 of
                                     '=' -> return ()
-                                    _ -> throwError (strMsg ("not match: pos: " ++ showPos pos198_198))
-                                let '=' = xx196_197
+                                    _ -> throwErrorPackratM "not match pattern"
+                                let '=' = xx53_53
                                 return ()
-                                pos197_199 <- gets dvPos
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos197_199))
-                                pos199_200 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 dv_spacesM >> return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos199_200))
-                                pos200_201 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 sel <- dv_selectionM
                                 return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos200_201))
-                                pos201_202 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 dv_spacesM >> return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos201_202))
-                                xx202_203 <- dvCharsM
-                                pos204_204 <- gets dvPos
-                                case xx202_203 of
+                                if True then return () else throwErrorPackratM "not match"
+                                xx54_54 <- dvCharsM
+                                case xx54_54 of
                                     ';' -> return ()
-                                    _ -> throwError (strMsg ("not match: pos: " ++ showPos pos204_204))
-                                let ';' = xx202_203
+                                    _ -> throwErrorPackratM "not match pattern"
+                                let ';' = xx54_54
                                 return ()
-                                pos203_205 <- gets dvPos
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos203_205))
+                                if True then return () else throwErrorPackratM "not match"
                                 return (id mkDef v t sel)]
-p_selection = foldl1 mplus [do pos205_206 <- gets dvPos
-                               ex <- dv_expressionHsM
+p_selection = foldl1 mplus [do ex <- dv_expressionHsM
                                return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos205_206))
-                               pos206_207 <- gets dvPos
+                               if True then return () else throwErrorPackratM "not match"
                                dv_spacesM >> return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos206_207))
-                               xx207_208 <- dvCharsM
-                               pos209_209 <- gets dvPos
-                               case xx207_208 of
+                               if True then return () else throwErrorPackratM "not match"
+                               xx55_55 <- dvCharsM
+                               case xx55_55 of
                                    '/' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos209_209))
-                               let '/' = xx207_208
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let '/' = xx55_55
                                return ()
-                               pos208_210 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos208_210))
-                               pos210_211 <- gets dvPos
+                               if True then return () else throwErrorPackratM "not match"
                                dv_spacesM >> return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos210_211))
-                               pos211_212 <- gets dvPos
+                               if True then return () else throwErrorPackratM "not match"
                                sel <- dv_selectionM
                                return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos211_212))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id cons ex sel),
-                            do pos212_213 <- gets dvPos
-                               ex <- dv_expressionHsM
+                            do ex <- dv_expressionHsM
                                return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos212_213))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id cons ex emp)]
-p_expressionHs = foldl1 mplus [do pos213_214 <- gets dvPos
-                                  e <- dv_expressionM
+p_expressionHs = foldl1 mplus [do e <- dv_expressionM
                                   return ()
-                                  if True
-                                   then return ()
-                                   else throwError (strMsg ("not match: pos: " ++ showPos pos213_214))
-                                  pos214_215 <- gets dvPos
+                                  if True then return () else throwErrorPackratM "not match"
                                   dv_spacesM >> return ()
-                                  if True
-                                   then return ()
-                                   else throwError (strMsg ("not match: pos: " ++ showPos pos214_215))
-                                  xx215_216 <- dvCharsM
-                                  pos217_217 <- gets dvPos
-                                  case xx215_216 of
+                                  if True then return () else throwErrorPackratM "not match"
+                                  xx56_56 <- dvCharsM
+                                  case xx56_56 of
                                       '{' -> return ()
-                                      _ -> throwError (strMsg ("not match: pos: " ++ showPos pos217_217))
-                                  let '{' = xx215_216
+                                      _ -> throwErrorPackratM "not match pattern"
+                                  let '{' = xx56_56
                                   return ()
-                                  pos216_218 <- gets dvPos
-                                  if True
-                                   then return ()
-                                   else throwError (strMsg ("not match: pos: " ++ showPos pos216_218))
-                                  pos218_219 <- gets dvPos
+                                  if True then return () else throwErrorPackratM "not match"
                                   dv_spacesM >> return ()
-                                  if True
-                                   then return ()
-                                   else throwError (strMsg ("not match: pos: " ++ showPos pos218_219))
-                                  pos219_220 <- gets dvPos
+                                  if True then return () else throwErrorPackratM "not match"
                                   h <- dv_hsExpM
                                   return ()
-                                  if True
-                                   then return ()
-                                   else throwError (strMsg ("not match: pos: " ++ showPos pos219_220))
-                                  pos220_221 <- gets dvPos
+                                  if True then return () else throwErrorPackratM "not match"
                                   dv_spacesM >> return ()
-                                  if True
-                                   then return ()
-                                   else throwError (strMsg ("not match: pos: " ++ showPos pos220_221))
-                                  xx221_222 <- dvCharsM
-                                  pos223_223 <- gets dvPos
-                                  case xx221_222 of
+                                  if True then return () else throwErrorPackratM "not match"
+                                  xx57_57 <- dvCharsM
+                                  case xx57_57 of
                                       '}' -> return ()
-                                      _ -> throwError (strMsg ("not match: pos: " ++ showPos pos223_223))
-                                  let '}' = xx221_222
+                                      _ -> throwErrorPackratM "not match pattern"
+                                  let '}' = xx57_57
                                   return ()
-                                  pos222_224 <- gets dvPos
-                                  if True
-                                   then return ()
-                                   else throwError (strMsg ("not match: pos: " ++ showPos pos222_224))
+                                  if True then return () else throwErrorPackratM "not match"
                                   return (id mkExpressionHs e h)]
-p_expression = foldl1 mplus [do pos224_225 <- gets dvPos
-                                l <- dv_nameLeaf_M
+p_expression = foldl1 mplus [do l <- dv_nameLeaf_M
                                 return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos224_225))
-                                pos225_226 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 dv_spacesM >> return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos225_226))
-                                pos226_227 <- gets dvPos
+                                if True then return () else throwErrorPackratM "not match"
                                 e <- dv_expressionM
                                 return ()
-                                if True
-                                 then return ()
-                                 else throwError (strMsg ("not match: pos: " ++ showPos pos226_227))
+                                if True then return () else throwErrorPackratM "not match"
                                 return (id cons l e),
                              do return (id emp)]
-p_nameLeaf_ = foldl1 mplus [do xx227_228 <- dvCharsM
-                               pos229_229 <- gets dvPos
-                               case xx227_228 of
+p_nameLeaf_ = foldl1 mplus [do xx58_58 <- dvCharsM
+                               case xx58_58 of
                                    '!' -> return ()
-                                   _ -> throwError (strMsg ("not match: pos: " ++ showPos pos229_229))
-                               let '!' = xx227_228
+                                   _ -> throwErrorPackratM "not match pattern"
+                               let '!' = xx58_58
                                return ()
-                               pos228_230 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos228_230))
-                               pos230_231 <- gets dvPos
+                               if True then return () else throwErrorPackratM "not match"
                                nl <- dv_nameLeafM
                                return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos230_231))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id notAfter nl),
-                            do pos231_232 <- gets dvPos
-                               nl <- dv_nameLeafM
+                            do nl <- dv_nameLeafM
                                return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos231_232))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id here nl)]
-p_nameLeaf = foldl1 mplus [do pos232_233 <- gets dvPos
-                              n <- dv_pat1M
+p_nameLeaf = foldl1 mplus [do n <- dv_pat1M
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos232_233))
-                              xx233_234 <- dvCharsM
-                              pos235_235 <- gets dvPos
-                              case xx233_234 of
+                              if True then return () else throwErrorPackratM "not match"
+                              xx59_59 <- dvCharsM
+                              case xx59_59 of
                                   ':' -> return ()
-                                  _ -> throwError (strMsg ("not match: pos: " ++ showPos pos235_235))
-                              let ':' = xx233_234
+                                  _ -> throwErrorPackratM "not match pattern"
+                              let ':' = xx59_59
                               return ()
-                              pos234_236 <- gets dvPos
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos234_236))
-                              xx236_237 <- dvCharsM
-                              let o = xx236_237
-                              pos237_238 <- gets dvPos
-                              if id isOpen o
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos237_238))
-                              pos238_239 <- gets dvPos
+                              if True then return () else throwErrorPackratM "not match"
+                              xx60_60 <- dvCharsM
+                              let o = xx60_60
+                              if id isOpen o then return () else throwErrorPackratM "not match"
                               ex <- dv_selectionM
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos238_239))
-                              xx239_240 <- dvCharsM
-                              let c = xx239_240
-                              pos240_241 <- gets dvPos
-                              if id isClose c
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos240_241))
-                              xx241_242 <- dvCharsM
-                              let k = xx241_242
-                              pos242_243 <- gets dvPos
-                              if id isKome k
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos242_243))
-                              pos243_244 <- gets dvPos
+                              if True then return () else throwErrorPackratM "not match"
+                              xx61_61 <- dvCharsM
+                              let c = xx61_61
+                              if id isClose c then return () else throwErrorPackratM "not match"
+                              xx62_62 <- dvCharsM
+                              let k = xx62_62
+                              if id isKome k then return () else throwErrorPackratM "not match"
                               dv_spacesM >> return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos243_244))
+                              if True then return () else throwErrorPackratM "not match"
                               return (id mkNameLeafList n ex),
-                           do xx244_245 <- dvCharsM
-                              let o = xx244_245
-                              pos245_246 <- gets dvPos
-                              if id isOpen o
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos245_246))
-                              pos246_247 <- gets dvPos
+                           do xx63_63 <- dvCharsM
+                              let o = xx63_63
+                              if id isOpen o then return () else throwErrorPackratM "not match"
                               nl <- dv_nameLeafM
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos246_247))
-                              xx247_248 <- dvCharsM
-                              let c = xx247_248
-                              pos248_249 <- gets dvPos
-                              if id isClose c
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos248_249))
+                              if True then return () else throwErrorPackratM "not match"
+                              xx64_64 <- dvCharsM
+                              let c = xx64_64
+                              if id isClose c then return () else throwErrorPackratM "not match"
                               return (id nl),
-                           do pos249_250 <- gets dvPos
-                              n <- dv_pat1M
+                           do n <- dv_pat1M
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos249_250))
-                              xx250_251 <- dvCharsM
-                              pos252_252 <- gets dvPos
-                              case xx250_251 of
+                              if True then return () else throwErrorPackratM "not match"
+                              xx65_65 <- dvCharsM
+                              case xx65_65 of
                                   ':' -> return ()
-                                  _ -> throwError (strMsg ("not match: pos: " ++ showPos pos252_252))
-                              let ':' = xx250_251
+                                  _ -> throwErrorPackratM "not match pattern"
+                              let ':' = xx65_65
                               return ()
-                              pos251_253 <- gets dvPos
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos251_253))
-                              pos253_254 <- gets dvPos
+                              if True then return () else throwErrorPackratM "not match"
                               l <- dv_leafM
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos253_254))
+                              if True then return () else throwErrorPackratM "not match"
                               return (id mkNameLeaf n l),
-                           do pos254_255 <- gets dvPos
-                              n <- dv_pat1M
+                           do n <- dv_pat1M
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos254_255))
+                              if True then return () else throwErrorPackratM "not match"
                               return (id mkNameLeaf n ctLeaf)]
-p_pat = foldl1 mplus [do pos255_256 <- gets dvPos
-                         t <- dv_typM
+p_pat = foldl1 mplus [do t <- dv_typM
                          return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos255_256))
-                         pos256_257 <- gets dvPos
+                         if True then return () else throwErrorPackratM "not match"
                          dv_spacesM >> return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos256_257))
-                         pos257_258 <- gets dvPos
+                         if True then return () else throwErrorPackratM "not match"
                          ps <- dv_patsM
                          return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos257_258))
+                         if True then return () else throwErrorPackratM "not match"
                          return (id conToPatQ t ps),
-                      do pos258_259 <- gets dvPos
-                         p <- dv_pat1M
+                      do p <- dv_pat1M
                          return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos258_259))
+                         if True then return () else throwErrorPackratM "not match"
                          return (id p)]
-p_pat1 = foldl1 mplus [do pos259_260 <- gets dvPos
-                          xx260_261 <- dv_variableM
-                          pos261_262 <- gets dvPos
-                          case xx260_261 of
+p_pat1 = foldl1 mplus [do xx66_66 <- dv_variableM
+                          case xx66_66 of
                               "_" -> return ()
-                              _ -> throwError (strMsg ("not match: pos: " ++ showPos pos261_262))
-                          let "_" = xx260_261
+                              _ -> throwErrorPackratM "not match pattern"
+                          let "_" = xx66_66
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos259_260))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id wildP),
-                       do pos262_263 <- gets dvPos
-                          n <- dv_variableM
+                       do n <- dv_variableM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos262_263))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id strToPatQ n),
-                       do xx263_264 <- dvCharsM
-                          pos265_265 <- gets dvPos
-                          case xx263_264 of
+                       do xx67_67 <- dvCharsM
+                          case xx67_67 of
                               '\'' -> return ()
-                              _ -> throwError (strMsg ("not match: pos: " ++ showPos pos265_265))
-                          let '\'' = xx263_264
+                              _ -> throwErrorPackratM "not match pattern"
+                          let '\'' = xx67_67
                           return ()
-                          pos264_266 <- gets dvPos
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos264_266))
-                          pos266_267 <- gets dvPos
+                          if True then return () else throwErrorPackratM "not match"
                           c <- dv_charLitM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos266_267))
-                          xx267_268 <- dvCharsM
-                          pos269_269 <- gets dvPos
-                          case xx267_268 of
+                          if True then return () else throwErrorPackratM "not match"
+                          xx68_68 <- dvCharsM
+                          case xx68_68 of
                               '\'' -> return ()
-                              _ -> throwError (strMsg ("not match: pos: " ++ showPos pos269_269))
-                          let '\'' = xx267_268
+                              _ -> throwErrorPackratM "not match pattern"
+                          let '\'' = xx68_68
                           return ()
-                          pos268_270 <- gets dvPos
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos268_270))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id charP c),
-                       do xx270_271 <- dvCharsM
-                          pos272_272 <- gets dvPos
-                          case xx270_271 of
+                       do xx69_69 <- dvCharsM
+                          case xx69_69 of
                               '"' -> return ()
-                              _ -> throwError (strMsg ("not match: pos: " ++ showPos pos272_272))
-                          let '"' = xx270_271
+                              _ -> throwErrorPackratM "not match pattern"
+                          let '"' = xx69_69
                           return ()
-                          pos271_273 <- gets dvPos
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos271_273))
-                          pos273_274 <- gets dvPos
+                          if True then return () else throwErrorPackratM "not match"
                           s <- dv_stringLitM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos273_274))
-                          xx274_275 <- dvCharsM
-                          pos276_276 <- gets dvPos
-                          case xx274_275 of
+                          if True then return () else throwErrorPackratM "not match"
+                          xx70_70 <- dvCharsM
+                          case xx70_70 of
                               '"' -> return ()
-                              _ -> throwError (strMsg ("not match: pos: " ++ showPos pos276_276))
-                          let '"' = xx274_275
+                              _ -> throwErrorPackratM "not match pattern"
+                          let '"' = xx70_70
                           return ()
-                          pos275_277 <- gets dvPos
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos275_277))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id stringP s),
-                       do pos277_278 <- gets dvPos
-                          t <- dv_typM
+                       do t <- dv_typM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos277_278))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id conToPatQ t emp),
-                       do xx278_279 <- dvCharsM
-                          pos280_280 <- gets dvPos
-                          case xx278_279 of
+                       do xx71_71 <- dvCharsM
+                          case xx71_71 of
                               '(' -> return ()
-                              _ -> throwError (strMsg ("not match: pos: " ++ showPos pos280_280))
-                          let '(' = xx278_279
+                              _ -> throwErrorPackratM "not match pattern"
+                          let '(' = xx71_71
                           return ()
-                          pos279_281 <- gets dvPos
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos279_281))
-                          pos281_282 <- gets dvPos
+                          if True then return () else throwErrorPackratM "not match"
                           p <- dv_patM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos281_282))
-                          xx282_283 <- dvCharsM
-                          pos284_284 <- gets dvPos
-                          case xx282_283 of
+                          if True then return () else throwErrorPackratM "not match"
+                          xx72_72 <- dvCharsM
+                          case xx72_72 of
                               ')' -> return ()
-                              _ -> throwError (strMsg ("not match: pos: " ++ showPos pos284_284))
-                          let ')' = xx282_283
+                              _ -> throwErrorPackratM "not match pattern"
+                          let ')' = xx72_72
                           return ()
-                          pos283_285 <- gets dvPos
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos283_285))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id p)]
-p_charLit = foldl1 mplus [do xx285_286 <- dvCharsM
-                             let c = xx285_286
-                             pos286_287 <- gets dvPos
+p_charLit = foldl1 mplus [do xx73_73 <- dvCharsM
+                             let c = xx73_73
                              if id isAlphaNumOt c
                               then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos286_287))
+                              else throwErrorPackratM "not match"
                              return (id c),
-                          do xx287_288 <- dvCharsM
-                             pos289_289 <- gets dvPos
-                             case xx287_288 of
+                          do xx74_74 <- dvCharsM
+                             case xx74_74 of
                                  '\\' -> return ()
-                                 _ -> throwError (strMsg ("not match: pos: " ++ showPos pos289_289))
-                             let '\\' = xx287_288
+                                 _ -> throwErrorPackratM "not match pattern"
+                             let '\\' = xx74_74
                              return ()
-                             pos288_290 <- gets dvPos
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos288_290))
-                             xx290_291 <- dvCharsM
-                             let c = xx290_291
-                             pos291_292 <- gets dvPos
-                             if id elemNTs c
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos291_292))
+                             if True then return () else throwErrorPackratM "not match"
+                             xx75_75 <- dvCharsM
+                             let c = xx75_75
+                             if id elemNTs c then return () else throwErrorPackratM "not match"
                              return (id getNTs c)]
-p_stringLit = foldl1 mplus [do ddd292_293 <- get
-                               flipMaybe (do pos293_294 <- gets dvPos
-                                             dv_dqM >> return ()
+p_stringLit = foldl1 mplus [do ddd76_76 <- get
+                               flipMaybe (do dv_dqM >> return ()
                                              if True
                                               then return ()
-                                              else throwError (strMsg ("not match: pos: " ++ showPos pos293_294)))
-                               put ddd292_293
-                               xx294_295 <- dvCharsM
-                               let c = xx294_295
-                               pos295_296 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos295_296))
-                               pos296_297 <- gets dvPos
+                                              else throwErrorPackratM "not match")
+                               put ddd76_76
+                               xx77_77 <- dvCharsM
+                               let c = xx77_77
+                               if True then return () else throwErrorPackratM "not match"
                                s <- dv_stringLitM
                                return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos296_297))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id cons c s),
                             do return (id emp)]
-p_dq = foldl1 mplus [do xx297_298 <- dvCharsM
-                        pos299_299 <- gets dvPos
-                        case xx297_298 of
+p_dq = foldl1 mplus [do xx78_78 <- dvCharsM
+                        case xx78_78 of
                             '"' -> return ()
-                            _ -> throwError (strMsg ("not match: pos: " ++ showPos pos299_299))
-                        let '"' = xx297_298
+                            _ -> throwErrorPackratM "not match pattern"
+                        let '"' = xx78_78
                         return ()
-                        pos298_300 <- gets dvPos
-                        if True
-                         then return ()
-                         else throwError (strMsg ("not match: pos: " ++ showPos pos298_300))
+                        if True then return () else throwErrorPackratM "not match"
                         return (id nil)]
-p_pats = foldl1 mplus [do pos300_301 <- gets dvPos
-                          p <- dv_patM
+p_pats = foldl1 mplus [do p <- dv_patM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos300_301))
-                          pos301_302 <- gets dvPos
+                          if True then return () else throwErrorPackratM "not match"
                           ps <- dv_patsM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos301_302))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id cons p ps),
                        do return (id emp)]
-p_leaf = foldl1 mplus [do pos302_303 <- gets dvPos
-                          t <- dv_testM
+p_leaf = foldl1 mplus [do t <- dv_testM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos302_303))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id boolLeaf t),
-                       do pos303_304 <- gets dvPos
-                          v <- dv_variableM
+                       do v <- dv_variableM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos303_304))
-                          pos304_305 <- gets dvPos
+                          if True then return () else throwErrorPackratM "not match"
                           t <- dv_testM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos304_305))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id ruleLeaf v t),
-                       do pos305_306 <- gets dvPos
-                          v <- dv_variableM
+                       do v <- dv_variableM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos305_306))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id ruleLeaf v true)]
-p_test = foldl1 mplus [do xx306_307 <- dvCharsM
-                          pos308_308 <- gets dvPos
-                          case xx306_307 of
+p_test = foldl1 mplus [do xx79_79 <- dvCharsM
+                          case xx79_79 of
                               '[' -> return ()
-                              _ -> throwError (strMsg ("not match: pos: " ++ showPos pos308_308))
-                          let '[' = xx306_307
+                              _ -> throwErrorPackratM "not match pattern"
+                          let '[' = xx79_79
                           return ()
-                          pos307_309 <- gets dvPos
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos307_309))
-                          pos309_310 <- gets dvPos
+                          if True then return () else throwErrorPackratM "not match"
                           h <- dv_hsExpM
                           return ()
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos309_310))
-                          xx310_311 <- dvCharsM
-                          pos312_312 <- gets dvPos
-                          case xx310_311 of
+                          if True then return () else throwErrorPackratM "not match"
+                          xx80_80 <- dvCharsM
+                          case xx80_80 of
                               ']' -> return ()
-                              _ -> throwError (strMsg ("not match: pos: " ++ showPos pos312_312))
-                          let ']' = xx310_311
+                              _ -> throwErrorPackratM "not match pattern"
+                          let ']' = xx80_80
                           return ()
-                          pos311_313 <- gets dvPos
-                          if True
-                           then return ()
-                           else throwError (strMsg ("not match: pos: " ++ showPos pos311_313))
+                          if True then return () else throwErrorPackratM "not match"
                           return (id getEx h)]
-p_hsExp = foldl1 mplus [do pos313_314 <- gets dvPos
-                           v <- dv_variableM
+p_hsExp = foldl1 mplus [do v <- dv_variableM
                            return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos313_314))
-                           pos314_315 <- gets dvPos
+                           if True then return () else throwErrorPackratM "not match"
                            dv_spacesM >> return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos314_315))
-                           pos315_316 <- gets dvPos
+                           if True then return () else throwErrorPackratM "not match"
                            h <- dv_hsExpM
                            return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos315_316))
+                           if True then return () else throwErrorPackratM "not match"
                            return (id apply v h),
-                        do pos316_317 <- gets dvPos
-                           v <- dv_variableM
+                        do v <- dv_variableM
                            return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos316_317))
+                           if True then return () else throwErrorPackratM "not match"
                            return (id toExp v)]
-p_typ = foldl1 mplus [do pos317_318 <- gets dvPos
-                         u <- dv_upperM
+p_typ = foldl1 mplus [do u <- dv_upperM
                          return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos317_318))
-                         pos318_319 <- gets dvPos
+                         if True then return () else throwErrorPackratM "not match"
                          t <- dv_tvtailM
                          return ()
-                         if True
-                          then return ()
-                          else throwError (strMsg ("not match: pos: " ++ showPos pos318_319))
+                         if True then return () else throwErrorPackratM "not match"
                          return (id cons u t)]
-p_variable = foldl1 mplus [do pos319_320 <- gets dvPos
-                              l <- dv_lowerM
+p_variable = foldl1 mplus [do l <- dv_lowerM
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos319_320))
-                              pos320_321 <- gets dvPos
+                              if True then return () else throwErrorPackratM "not match"
                               t <- dv_tvtailM
                               return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos320_321))
+                              if True then return () else throwErrorPackratM "not match"
                               return (id cons l t)]
-p_tvtail = foldl1 mplus [do pos321_322 <- gets dvPos
-                            a <- dv_alphaM
+p_tvtail = foldl1 mplus [do a <- dv_alphaM
                             return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos321_322))
-                            pos322_323 <- gets dvPos
+                            if True then return () else throwErrorPackratM "not match"
                             t <- dv_tvtailM
                             return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos322_323))
+                            if True then return () else throwErrorPackratM "not match"
                             return (id cons a t),
                          do return (id emp)]
-p_alpha = foldl1 mplus [do pos323_324 <- gets dvPos
-                           u <- dv_upperM
+p_alpha = foldl1 mplus [do u <- dv_upperM
                            return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos323_324))
+                           if True then return () else throwErrorPackratM "not match"
                            return (id u),
-                        do pos324_325 <- gets dvPos
-                           l <- dv_lowerM
+                        do l <- dv_lowerM
                            return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos324_325))
+                           if True then return () else throwErrorPackratM "not match"
                            return (id l),
-                        do pos325_326 <- gets dvPos
-                           d <- dv_digitM
+                        do d <- dv_digitM
                            return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos325_326))
+                           if True then return () else throwErrorPackratM "not match"
                            return (id d)]
-p_upper = foldl1 mplus [do xx326_327 <- dvCharsM
-                           let u = xx326_327
-                           pos327_328 <- gets dvPos
-                           if id isUpper u
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos327_328))
+p_upper = foldl1 mplus [do xx81_81 <- dvCharsM
+                           let u = xx81_81
+                           if id isUpper u then return () else throwErrorPackratM "not match"
                            return (id u)]
-p_lower = foldl1 mplus [do xx328_329 <- dvCharsM
-                           let l = xx328_329
-                           pos329_330 <- gets dvPos
-                           if id isLowerU l
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos329_330))
+p_lower = foldl1 mplus [do xx82_82 <- dvCharsM
+                           let l = xx82_82
+                           if id isLowerU l then return () else throwErrorPackratM "not match"
                            return (id l)]
-p_digit = foldl1 mplus [do xx330_331 <- dvCharsM
-                           let d = xx330_331
-                           pos331_332 <- gets dvPos
-                           if id isDigit d
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos331_332))
+p_digit = foldl1 mplus [do xx83_83 <- dvCharsM
+                           let d = xx83_83
+                           if id isDigit d then return () else throwErrorPackratM "not match"
                            return (id d)]
-p_spaces = foldl1 mplus [do pos332_333 <- gets dvPos
-                            dv_spaceM >> return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos332_333))
-                            pos333_334 <- gets dvPos
+p_spaces = foldl1 mplus [do dv_spaceM >> return ()
+                            if True then return () else throwErrorPackratM "not match"
                             dv_spacesM >> return ()
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos333_334))
+                            if True then return () else throwErrorPackratM "not match"
                             return (id nil),
                          do return (id nil)]
-p_space = foldl1 mplus [do xx334_335 <- dvCharsM
-                           let s = xx334_335
-                           pos335_336 <- gets dvPos
-                           if id isSpace s
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos335_336))
+p_space = foldl1 mplus [do xx84_84 <- dvCharsM
+                           let s = xx84_84
+                           if id isSpace s then return () else throwErrorPackratM "not match"
                            return (id nil),
-                        do xx336_337 <- dvCharsM
-                           pos338_338 <- gets dvPos
-                           case xx336_337 of
+                        do xx85_85 <- dvCharsM
+                           case xx85_85 of
                                '-' -> return ()
-                               _ -> throwError (strMsg ("not match: pos: " ++ showPos pos338_338))
-                           let '-' = xx336_337
+                               _ -> throwErrorPackratM "not match pattern"
+                           let '-' = xx85_85
                            return ()
-                           pos337_339 <- gets dvPos
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos337_339))
-                           xx339_340 <- dvCharsM
-                           pos341_341 <- gets dvPos
-                           case xx339_340 of
+                           if True then return () else throwErrorPackratM "not match"
+                           xx86_86 <- dvCharsM
+                           case xx86_86 of
                                '-' -> return ()
-                               _ -> throwError (strMsg ("not match: pos: " ++ showPos pos341_341))
-                           let '-' = xx339_340
+                               _ -> throwErrorPackratM "not match pattern"
+                           let '-' = xx86_86
                            return ()
-                           pos340_342 <- gets dvPos
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos340_342))
-                           pos342_343 <- gets dvPos
+                           if True then return () else throwErrorPackratM "not match"
                            dv_notNLStringM >> return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos342_343))
-                           pos343_344 <- gets dvPos
+                           if True then return () else throwErrorPackratM "not match"
                            dv_nlM >> return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos343_344))
+                           if True then return () else throwErrorPackratM "not match"
                            return (id nil),
-                        do pos344_345 <- gets dvPos
-                           dv_commentM >> return ()
-                           if True
-                            then return ()
-                            else throwError (strMsg ("not match: pos: " ++ showPos pos344_345))
+                        do dv_commentM >> return ()
+                           if True then return () else throwErrorPackratM "not match"
                            return (id nil)]
-p_notNLString = foldl1 mplus [do ddd345_346 <- get
-                                 flipMaybe (do pos346_347 <- gets dvPos
-                                               dv_nlM >> return ()
+p_notNLString = foldl1 mplus [do ddd87_87 <- get
+                                 flipMaybe (do dv_nlM >> return ()
                                                if True
                                                 then return ()
-                                                else throwError (strMsg ("not match: pos: " ++ showPos pos346_347)))
-                                 put ddd345_346
-                                 xx347_348 <- dvCharsM
-                                 let c = xx347_348
-                                 pos348_349 <- gets dvPos
-                                 if True
-                                  then return ()
-                                  else throwError (strMsg ("not match: pos: " ++ showPos pos348_349))
-                                 pos349_350 <- gets dvPos
+                                                else throwErrorPackratM "not match")
+                                 put ddd87_87
+                                 xx88_88 <- dvCharsM
+                                 let c = xx88_88
+                                 if True then return () else throwErrorPackratM "not match"
                                  s <- dv_notNLStringM
                                  return ()
-                                 if True
-                                  then return ()
-                                  else throwError (strMsg ("not match: pos: " ++ showPos pos349_350))
+                                 if True then return () else throwErrorPackratM "not match"
                                  return (id cons c s),
                               do return (id emp)]
-p_nl = foldl1 mplus [do xx350_351 <- dvCharsM
-                        pos352_352 <- gets dvPos
-                        case xx350_351 of
+p_nl = foldl1 mplus [do xx89_89 <- dvCharsM
+                        case xx89_89 of
                             '\n' -> return ()
-                            _ -> throwError (strMsg ("not match: pos: " ++ showPos pos352_352))
-                        let '\n' = xx350_351
+                            _ -> throwErrorPackratM "not match pattern"
+                        let '\n' = xx89_89
                         return ()
-                        pos351_353 <- gets dvPos
-                        if True
-                         then return ()
-                         else throwError (strMsg ("not match: pos: " ++ showPos pos351_353))
+                        if True then return () else throwErrorPackratM "not match"
                         return (id nil)]
-p_comment = foldl1 mplus [do xx353_354 <- dvCharsM
-                             pos355_355 <- gets dvPos
-                             case xx353_354 of
+p_comment = foldl1 mplus [do xx90_90 <- dvCharsM
+                             case xx90_90 of
                                  '{' -> return ()
-                                 _ -> throwError (strMsg ("not match: pos: " ++ showPos pos355_355))
-                             let '{' = xx353_354
+                                 _ -> throwErrorPackratM "not match pattern"
+                             let '{' = xx90_90
                              return ()
-                             pos354_356 <- gets dvPos
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos354_356))
-                             xx356_357 <- dvCharsM
-                             pos358_358 <- gets dvPos
-                             case xx356_357 of
+                             if True then return () else throwErrorPackratM "not match"
+                             xx91_91 <- dvCharsM
+                             case xx91_91 of
                                  '-' -> return ()
-                                 _ -> throwError (strMsg ("not match: pos: " ++ showPos pos358_358))
-                             let '-' = xx356_357
+                                 _ -> throwErrorPackratM "not match pattern"
+                             let '-' = xx91_91
                              return ()
-                             pos357_359 <- gets dvPos
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos357_359))
-                             ddd359_360 <- get
-                             flipMaybe (do xx360_361 <- dvCharsM
-                                           pos362_362 <- gets dvPos
-                                           case xx360_361 of
+                             if True then return () else throwErrorPackratM "not match"
+                             ddd92_92 <- get
+                             flipMaybe (do xx93_93 <- dvCharsM
+                                           case xx93_93 of
                                                '#' -> return ()
-                                               _ -> throwError (strMsg ("not match: pos: " ++ showPos pos362_362))
-                                           let '#' = xx360_361
+                                               _ -> throwErrorPackratM "not match pattern"
+                                           let '#' = xx93_93
                                            return ()
-                                           pos361_363 <- gets dvPos
                                            if True
                                             then return ()
-                                            else throwError (strMsg ("not match: pos: " ++ showPos pos361_363)))
-                             put ddd359_360
-                             pos363_364 <- gets dvPos
+                                            else throwErrorPackratM "not match")
+                             put ddd92_92
                              dv_commentsM >> return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos363_364))
-                             pos364_365 <- gets dvPos
+                             if True then return () else throwErrorPackratM "not match"
                              dv_comEndM >> return ()
-                             if True
-                              then return ()
-                              else throwError (strMsg ("not match: pos: " ++ showPos pos364_365))
+                             if True then return () else throwErrorPackratM "not match"
                              return (id nil)]
-p_comments = foldl1 mplus [do pos365_366 <- gets dvPos
-                              dv_notComStrM >> return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos365_366))
-                              pos366_367 <- gets dvPos
+p_comments = foldl1 mplus [do dv_notComStrM >> return ()
+                              if True then return () else throwErrorPackratM "not match"
                               dv_commentM >> return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos366_367))
-                              pos367_368 <- gets dvPos
+                              if True then return () else throwErrorPackratM "not match"
                               dv_commentsM >> return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos367_368))
+                              if True then return () else throwErrorPackratM "not match"
                               return (id nil),
-                           do pos368_369 <- gets dvPos
-                              dv_notComStrM >> return ()
-                              if True
-                               then return ()
-                               else throwError (strMsg ("not match: pos: " ++ showPos pos368_369))
+                           do dv_notComStrM >> return ()
+                              if True then return () else throwErrorPackratM "not match"
                               return (id nil)]
-p_notComStr = foldl1 mplus [do ddd369_370 <- get
-                               flipMaybe (do pos370_371 <- gets dvPos
-                                             dv_commentM >> return ()
+p_notComStr = foldl1 mplus [do ddd94_94 <- get
+                               flipMaybe (do dv_commentM >> return ()
                                              if True
                                               then return ()
-                                              else throwError (strMsg ("not match: pos: " ++ showPos pos370_371)))
-                               put ddd369_370
-                               ddd371_372 <- get
-                               flipMaybe (do pos372_373 <- gets dvPos
-                                             dv_comEndM >> return ()
+                                              else throwErrorPackratM "not match")
+                               put ddd94_94
+                               ddd95_95 <- get
+                               flipMaybe (do dv_comEndM >> return ()
                                              if True
                                               then return ()
-                                              else throwError (strMsg ("not match: pos: " ++ showPos pos372_373)))
-                               put ddd371_372
+                                              else throwErrorPackratM "not match")
+                               put ddd95_95
                                _ <- dvCharsM
-                               pos374_374 <- gets dvPos
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos374_374))
-                               pos375_375 <- gets dvPos
+                               if True then return () else throwErrorPackratM "not match"
                                dv_notComStrM >> return ()
-                               if True
-                                then return ()
-                                else throwError (strMsg ("not match: pos: " ++ showPos pos375_375))
+                               if True then return () else throwErrorPackratM "not match"
                                return (id nil),
                             do return (id nil)]
-p_comEnd = foldl1 mplus [do xx376_376 <- dvCharsM
-                            pos378_377 <- gets dvPos
-                            case xx376_376 of
+p_comEnd = foldl1 mplus [do xx97_96 <- dvCharsM
+                            case xx97_96 of
                                 '-' -> return ()
-                                _ -> throwError (strMsg ("not match: pos: " ++ showPos pos378_377))
-                            let '-' = xx376_376
+                                _ -> throwErrorPackratM "not match pattern"
+                            let '-' = xx97_96
                             return ()
-                            pos377_378 <- gets dvPos
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos377_378))
-                            xx379_379 <- dvCharsM
-                            pos381_380 <- gets dvPos
-                            case xx379_379 of
+                            if True then return () else throwErrorPackratM "not match"
+                            xx98_97 <- dvCharsM
+                            case xx98_97 of
                                 '}' -> return ()
-                                _ -> throwError (strMsg ("not match: pos: " ++ showPos pos381_380))
-                            let '}' = xx379_379
+                                _ -> throwErrorPackratM "not match pattern"
+                            let '}' = xx98_97
                             return ()
-                            pos380_381 <- gets dvPos
-                            if True
-                             then return ()
-                             else throwError (strMsg ("not match: pos: " ++ showPos pos380_381))
+                            if True then return () else throwErrorPackratM "not match"
                             return (id nil)]
 
 class Source sl
@@ -2100,13 +1419,15 @@ class SourceList c
           listUpdatePos :: c -> ListPos c -> ListPos c
           listShowPos :: ListPos c -> String
 instance SourceList Char
-    where newtype ListPos Char = CharPos ((Int, Int))
+    where newtype ListPos Char = CharPos ((Int, Int)) deriving (Show)
           listToken (c : s) = Just (c, s)
           listToken _ = Nothing
           listInitialPos = CharPos (1, 1)
           listUpdatePos '\n' (CharPos (y, _)) = CharPos (y + 1, 0)
           listUpdatePos _ (CharPos (y, x)) = CharPos (y, x + 1)
           listShowPos (CharPos pos) = show pos
+instance Show (ListPos a) => Show (Pos ([a]))
+    where show (ListPos x) = "(" ++ (("ListPos (" ++ (show x ++ ")")) ++ ")")
 instance SourceList c => Source ([c])
     where type Token ([c]) = c
           newtype Pos ([c]) = ListPos (ListPos c)

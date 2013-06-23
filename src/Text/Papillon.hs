@@ -1,4 +1,5 @@
-{-# LANGUAGE TemplateHaskell, PackageImports, TypeFamilies, FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell, PackageImports, TypeFamilies, FlexibleContexts,
+	FlexibleInstances #-}
 
 module Text.Papillon (
 	papillon,
@@ -81,24 +82,26 @@ flipMaybe action = do
 -}
 
 flipMaybeQ :: IORef Int -> Bool -> DecsQ
-flipMaybeQ g th = do
+flipMaybeQ _ th = do
+{-
 	gn <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	pos <- newName $ "pos" ++ show gn
+-}
 	sequence [
 		sigD (mkName "flipMaybe") $ forallT [PlainTV $ mkName "a"] (cxt []) $ arrowT
 			`appT` (conT (mkName "PackratM") `appT` varT (mkName "a"))
 			`appT` (conT (mkName "PackratM") `appT` tupleT 0), -- (mkName "()")),
 		funD (mkName "flipMaybe") $ (: []) $
 			flip (clause [varP $ mkName "act"]) [] $ normalB $ doE [
-				bindS (varP pos) $ varE (getsN th) `appE` varE (mkName "dvPos"),
+--				bindS (varP pos) $ varE (getsN th) `appE` varE (mkName "dvPos"),
 				bindS (varP $ mkName "err") $ infixApp
 					actionReturnFalse
 					(varE $ catchErrorN th)
 					constReturnTrue,
-				noBindS $ varE (unlessN th) `appE` varE (mkName "err") `appE`
-					(varE (throwErrorN th) `appE`
-						strMsgNotNotMatch pos)
+				noBindS $ varE (unlessN th)
+					`appE` varE (mkName "err")
+					`appE` newThrowQ "not not match"
 			 ]
 	 ]
 	where
@@ -108,11 +111,9 @@ flipMaybeQ g th = do
 		(varE (mkName "return") `appE` conE (mkName "False"))
 	constReturnTrue = varE (mkName "const") `appE` 
 		(varE (mkName "return") `appE` conE (mkName "True"))
-	strMsgNotNotMatch p =
-		varE (strMsgN th) `appE` infixApp
-			(litE $ stringL "not not match: pos: ")
-			(varE $ mkName "++")
-			(varE (mkName "showPos") `appE` varE p)
+
+newThrowQ :: String -> ExpQ
+newThrowQ msg = varE (mkName "throwErrorPackratM") `appE` litE (stringL msg)
 
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
@@ -183,12 +184,13 @@ declaration' :: String -> (String, String, DecsQ, String, Peg)
 declaration' src = case dv_pegFile $ parse P.initialPos src of
 	Right ((ppp, pp, (s, t, p), atp), _) ->
 		(ppp, pp, decParsed False s t p, atp, p)
-	Left err -> error $ "parse error: " ++ err
+	Left err -> error $ "parse error: " ++ show err
 
 decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
 decParsed th src tkn parsed = do
 	glb <- runIO $ newIORef 0
 	pet <- parseErrorT
+	tepm <- throwErrorPackratMQ th
 	iepe <- instanceErrorParseError th
 	r <- result src
 	pm <- pmonad th src
@@ -202,7 +204,7 @@ decParsed th src tkn parsed = do
 	pts <- typeP parsed
 	ps <- pSomes glb th parsed
 	fm <- flipMaybeQ glb th
-	return $ pet : iepe : fm ++ [pm, r, d, pt, p] ++ tdvm ++ dvsm ++
+	return $ pet : tepm ++ [iepe] ++ fm ++ [pm, r, d, pt, p] ++ tdvm ++ dvsm ++
 		[tdvcm, dvcm] ++ pts ++ ps
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
@@ -221,25 +223,63 @@ derivs1 (name, typ, _) =
 		conT (mkName "Result") `appT` conT typ
 
 parseErrorT :: DecQ
-parseErrorT = dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"]
-	[normalC (mkName "Hoge") [strictType isStrict $ conT $ mkName "String"]]
-	[mkName "Show"]
+parseErrorT = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"])
+	[mkName "Show"] $ (:[]) $
+	normalC (mkName "ParseError") [
+		strictType notStrict $ conT $ mkName "String",
+		strictType notStrict $ conT $ mkName "String",
+		strictType notStrict $ varT $ mkName "pos"
+	 ]
+
 {- tySynD (mkName "ParseError") [PlainTV $ mkName "pos"] $
 	conT (mkName "String") -}
 
 {-
 
-instance Error (ParseError pos) where
-	noMsg = Hoge ""
+instance Pos s pos => Error (ParseError pos) where
+	strMsg msg = ParseError "" msg initialPos
 
 -}
 
 instanceErrorParseError :: Bool -> DecQ
-instanceErrorParseError th = instanceD (cxt [])
+instanceErrorParseError th = instanceD
+--	(cxt [classP (mkName "Pos") [varT $ mkName "s", varT $ mkName "pos"]])
+	(cxt [	classP (mkName "Source") [varT $ mkName "s"],
+		equalP (conT (mkName "Pos") `appT` varT (mkName "s"))
+			(varT $ mkName "pos")])
 	(conT (errorN th) `appT`
 		(conT (mkName "ParseError") `appT` varT (mkName "pos")))
-	[flip (valD $ varP $ strMsgN th) [] $ normalB $
-		conE (mkName "Hoge")]
+	[funD (strMsgN th) $ (: []) $ flip (clause [varP msg]) [] $ normalB $ ret]
+	where
+	msg = mkName "msg"
+	ret = conE (mkName "ParseError") `appE` litE (stringL "") `appE`
+		varE msg `appE` varE (mkName "initialPos")
+
+{-
+
+throwErrorPackratM :: String -> PackratM a
+throwErrorPackratM msg = do
+	pos <- gets dvPos
+	throwError (ParseError "" msg pos)
+
+-}
+
+throwErrorPackratMQ :: Bool -> DecsQ
+throwErrorPackratMQ th = sequence [
+	sigD (mkName "throwErrorPackratM") $ forallT [PlainTV $ mkName "a"] (cxt []) $ arrowT
+		`appT` conT (mkName "String")
+		`appT` (conT (mkName "PackratM") `appT` varT (mkName "a")),
+	funD (mkName "throwErrorPackratM") $ (: []) $
+		flip (clause [varP $ mkName "msg"]) [] $ normalB $ doE [
+			bindS (varP $ mkName "pos") $
+				varE (getsN th) `appE` varE (mkName "dvPos"),
+			noBindS $ varE (throwErrorN th) `appE`
+				(conE (mkName "ParseError")
+					`appE` (litE $ stringL "")
+					`appE` (varE $ mkName "msg")
+					`appE` (varE $ mkName "pos"))
+		 ]
+ ]
 
 result :: TypeQ -> DecQ
 result src = tySynD (mkName "Result") [PlainTV $ mkName "v"] $
@@ -289,9 +329,7 @@ parseE' th names = clause [varP pos, varP $ mkName "s"]
 					 ])
 					[],
 				match	wildP
-					(normalB $ varE (throwErrorN th) `appE`
-						(varE (strMsgN th) `appE`
-						litE (stringL "eof")))
+					(normalB $ newThrowQ "eof")
 					[]
 			 ]
  ]
@@ -357,30 +395,18 @@ pSome_ g th nls ret = fmap DoE $ do
 	r <- noBindS $ varE (returnN th) `appE` ret
 	return $ concat x ++ [r]
 
-afterCheck :: Bool -> Name -> ExpQ -> StmtQ
-afterCheck th pos p = noBindS $ condE p
+afterCheck :: Bool -> ExpQ -> StmtQ
+afterCheck th p = noBindS $ condE p
 	(varE (returnN th) `appE` conE (mkName "()"))
-	(varE (throwErrorN th) `appE` (varE (strMsgN th) `appE` infixApp
-						(litE $ stringL "not match: pos: ")
-						(varE $ mkName "++")
-					(varE (mkName "showPos") `appE` varE pos)
- ))
+	(newThrowQ "not match")
 
-beforeMatch :: IORef Int -> Bool -> Name -> PatQ -> Q [Stmt]
-beforeMatch g th t n = do
-	gn <- runIO $ readIORef g
-	runIO $ modifyIORef g succ
-	pos <- newName $ "pos" ++ show gn
+beforeMatch :: Bool -> Name -> PatQ -> Q [Stmt]
+beforeMatch th t n = do
 	sequence [
-		bindS (varP pos) $ varE (getsN th) `appE` varE (mkName "dvPos"),
 		noBindS $ caseE (varE t) [
 			flip (match $ varPToWild n) [] $ normalB $
 				varE (returnN th) `appE` tupE [],
-			flip (match wildP) [] $ normalB $ varE (throwErrorN th) `appE`
-				(varE (strMsgN th) `appE` infixApp
-					(litE $ stringL "not match: pos: ")
-					(varE $ mkName "++")
-				(varE (mkName "showPos") `appE` varE pos))
+			flip (match wildP) [] $ normalB $ newThrowQ "not match pattern"
 		 ],
 		letS [flip (valD n) [] $ normalB $ varE t],
 		noBindS $ varE (returnN th) `appE` tupE []
@@ -406,50 +432,39 @@ transLeaf' g th (NameLeaf n (Nothing, p)) = do
 	gn <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	t <- newName $ "xx" ++ show gn
-	gn' <- runIO $ readIORef g
-	runIO $ modifyIORef g succ
-	pos <- newName $ "pos" ++ show gn'
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
 			bindS (varP t) $ varE $ mkName "dvCharsM",
 			letS [flip (valD n) [] $ normalB $ varE t],
-			bindS (varP pos) $ varE (getsN th) `appE` varE (mkName "dvPos"),
-			afterCheck th pos p]
+			afterCheck th p]
 		WildP -> sequence [
 			bindS wildP $ varE $ mkName "dvCharsM",
-			bindS (varP pos) $ varE (getsN th) `appE` varE (mkName "dvPos"),
-			afterCheck th pos p]
+			afterCheck th p]
 		_ -> do	ret1 <- bindS (varP t) $ varE $ mkName "dvCharsM"
-			ret2 <- beforeMatch g th t n
-			ret4 <- bindS (varP pos) $ varE (getsN th) `appE`
-				varE (mkName "dvPos")
-			ret3 <- afterCheck th pos p
-			return $ ret1 : ret2 ++ [ret4] ++ [ret3]
+			ret2 <- beforeMatch th t n
+			ret3 <- afterCheck th p
+			return $ ret1 : ret2 ++ [ret3]
 transLeaf' g th (NameLeaf n (Just v, p)) = do
 	nn <- n
-	gn <- runIO $ readIORef g
-	runIO $ modifyIORef g succ
-	pos <- newName $ "pos" ++ show gn
-	getP <- bindS (varP pos) $ varE (getsN th) `appE` varE (mkName "dvPos")
-	(getP :) <$> case nn of
+	case nn of
 		VarP _ -> sequence [
 			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M",
 			noBindS $ varE (returnN th) `appE` conE (mkName "()"),
-			afterCheck th pos p]
+			afterCheck th p]
 		WildP -> (:)
 			<$> noBindS (infixApp
 				(varE $ mkName $ "dv_" ++ v ++ "M")
 				(varE $ mkName ">>")
 				(varE (returnN th) `appE` tupE []))
-			<*> ((:[]) <$> afterCheck th pos p)
+			<*> ((:[]) <$> afterCheck th p)
 		_ -> do	gn' <- runIO $ readIORef g
 			runIO $ modifyIORef g succ
 			t <- newName $ "xx" ++ show gn'
 			(:)	<$> bindS (varP t)
 					(varE $ mkName $ "dv_" ++ v ++ "M")
-				<*> ((++) <$> beforeMatch g th t n <*>
-					((: []) <$> afterCheck th pos p))
+				<*> ((++) <$> beforeMatch th t n <*>
+					((: []) <$> afterCheck th p))
 
 transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
 transLeaf g th (Here nl) = transLeaf' g th nl

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell, UndecidableInstances #-}
 
 module Text.Papillon.Parser (
 	Peg,
@@ -114,7 +114,8 @@ mkPegFile Nothing Nothing x y z w = (addModules, x ++ "\n" ++ y, z, w)
 
 addPragmas, addModules :: String
 addPragmas =
-	", FlexibleContexts, PackageImports, TypeFamilies, RankNTypes #-}\n"
+	", FlexibleContexts, PackageImports, TypeFamilies, RankNTypes, " ++
+	"FlexibleInstances #-}\n"
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n" ++

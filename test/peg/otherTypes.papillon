@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+{-# LANGUAGE QuasiQuotes, TypeFamilies, UndecidableInstances #-}
 
 import Text.Papillon
 
@@ -17,7 +17,7 @@ data YourSource = Empty | TwoD | OneD | DEF | EF | OneF deriving Show
 
 instance Source YourSource where
 	type Token YourSource = YourToken
-	newtype Pos YourSource = YourPos Int
+	newtype Pos YourSource = YourPos Int deriving Show
 	getToken Empty = Nothing
 	getToken TwoD = Just (D, OneD)
 	getToken OneD = Just (D, Empty)
