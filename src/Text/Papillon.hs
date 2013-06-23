@@ -83,25 +83,19 @@ flipMaybe action = do
 
 flipMaybeQ :: IORef Int -> Bool -> DecsQ
 flipMaybeQ _ th = do
-{-
-	gn <- runIO $ readIORef g
-	runIO $ modifyIORef g succ
-	pos <- newName $ "pos" ++ show gn
--}
 	sequence [
 		sigD (mkName "flipMaybe") $ forallT [PlainTV $ mkName "a"] (cxt []) $ arrowT
 			`appT` (conT (mkName "PackratM") `appT` varT (mkName "a"))
 			`appT` (conT (mkName "PackratM") `appT` tupleT 0), -- (mkName "()")),
 		funD (mkName "flipMaybe") $ (: []) $
 			flip (clause [varP $ mkName "act"]) [] $ normalB $ doE [
---				bindS (varP pos) $ varE (getsN th) `appE` varE (mkName "dvPos"),
 				bindS (varP $ mkName "err") $ infixApp
 					actionReturnFalse
 					(varE $ catchErrorN th)
 					constReturnTrue,
 				noBindS $ varE (unlessN th)
 					`appE` varE (mkName "err")
-					`appE` newThrowQ "not not match"
+					`appE` newThrowQ "" "not not match"
 			 ]
 	 ]
 	where
@@ -112,8 +106,10 @@ flipMaybeQ _ th = do
 	constReturnTrue = varE (mkName "const") `appE` 
 		(varE (mkName "return") `appE` conE (mkName "True"))
 
-newThrowQ :: String -> ExpQ
-newThrowQ msg = varE (mkName "throwErrorPackratM") `appE` litE (stringL msg)
+newThrowQ :: String -> String -> ExpQ
+newThrowQ code msg = varE (mkName "throwErrorPackratM")
+	`appE` litE (stringL code)
+	`appE` litE (stringL msg)
 
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
@@ -137,10 +133,6 @@ papillonStr' src = do
 		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++
 		"\n" ++ show (ppr cls) ++ "\n" ++
 		if isListUsed peg then show (ppr lst) else ""
-
-flipMaybeN :: Bool -> Name
-flipMaybeN True = mkName "flipMaybe" -- 'flipMaybe
-flipMaybeN False = mkName "flipMaybe"
 
 returnN, stateTN, putN, stateTN', getN,
 	strMsgN, throwErrorN, runStateTN, justN, mplusN,
@@ -266,16 +258,21 @@ throwErrorPackratM msg = do
 
 throwErrorPackratMQ :: Bool -> DecsQ
 throwErrorPackratMQ th = sequence [
-	sigD (mkName "throwErrorPackratM") $ forallT [PlainTV $ mkName "a"] (cxt []) $ arrowT
-		`appT` conT (mkName "String")
-		`appT` (conT (mkName "PackratM") `appT` varT (mkName "a")),
+	sigD (mkName "throwErrorPackratM") $
+		forallT [PlainTV $ mkName "a"] (cxt []) $ arrowT
+			`appT` conT (mkName "String")
+			`appT` (arrowT
+				`appT` conT (mkName "String")
+				`appT` (conT (mkName "PackratM")
+					`appT` varT (mkName "a"))),
 	funD (mkName "throwErrorPackratM") $ (: []) $
-		flip (clause [varP $ mkName "msg"]) [] $ normalB $ doE [
+		flip (clause [varP $ mkName "code",
+				varP $ mkName "msg"]) [] $ normalB $ doE [
 			bindS (varP $ mkName "pos") $
 				varE (getsN th) `appE` varE (mkName "dvPos"),
 			noBindS $ varE (throwErrorN th) `appE`
 				(conE (mkName "ParseError")
-					`appE` (litE $ stringL "")
+					`appE` (varE $ mkName "code")
 					`appE` (varE $ mkName "msg")
 					`appE` (varE $ mkName "pos"))
 		 ]
@@ -329,7 +326,7 @@ parseE' th names = clause [varP pos, varP $ mkName "s"]
 					 ])
 					[],
 				match	wildP
-					(normalB $ newThrowQ "eof")
+					(normalB $ newThrowQ "" "eof")
 					[]
 			 ]
  ]
@@ -396,17 +393,21 @@ pSome_ g th nls ret = fmap DoE $ do
 	return $ concat x ++ [r]
 
 afterCheck :: Bool -> ExpQ -> StmtQ
-afterCheck th p = noBindS $ condE p
-	(varE (returnN th) `appE` conE (mkName "()"))
-	(newThrowQ "not match")
+afterCheck th p = do
+	pp <- p
+	noBindS $ condE p
+		(varE (returnN th) `appE` conE (mkName "()"))
+		(newThrowQ (show $ ppr pp) "not match")
 
 beforeMatch :: Bool -> Name -> PatQ -> Q [Stmt]
 beforeMatch th t n = do
+	nn <- n
 	sequence [
 		noBindS $ caseE (varE t) [
 			flip (match $ varPToWild n) [] $ normalB $
 				varE (returnN th) `appE` tupE [],
-			flip (match wildP) [] $ normalB $ newThrowQ "not match pattern"
+			flip (match wildP) [] $ normalB $
+				newThrowQ (show $ ppr nn) "not match pattern"
 		 ],
 		letS [flip (valD n) [] $ normalB $ varE t],
 		noBindS $ varE (returnN th) `appE` tupE []
@@ -474,7 +475,7 @@ transLeaf g th (NotAfter nl) = do
 	runIO $ modifyIORef g succ
 	sequence [
 		bindS (varP d) $ varE (getN th),
-		noBindS $ varE (flipMaybeN th) `appE`
+		noBindS $ varE (mkName "flipMaybe") `appE`
 			(DoE <$> transLeaf' g th nl),
 		noBindS $ varE (putN th) `appE` varE d]
 
