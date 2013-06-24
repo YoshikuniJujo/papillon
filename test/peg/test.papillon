@@ -18,6 +18,9 @@ main = do
 	case dv_mulDigits $ parse initialPos "559" of
 		Right ((m, n), _) -> print (m 3, n ["hello", "friend"])
 		Left err -> putStrLn $ "error: " ++ show err
+	case dv_addDigits2 $ parse initialPos "33 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
 
 [papillon|
 
@@ -28,6 +31,12 @@ onlyDigits :: Int -> ([String], Int, Maybe String, Maybe Char)
 ;
 mulDigits :: (Int -> Int, [String] -> [String])
 	= ds:something			{ ((* (read ds)), (ds :)) }
+;
+addDigits :: Int
+	= x:something ' ' y:something	{ (+) (read x) (read y) }
+;
+addDigits2 :: Int
+	= x:something ' ' y:something	{ (read x + read y) }
 ;
 digits :: (Maybe String, Int)
 	= s:something			{ (Just s, - 8) }
