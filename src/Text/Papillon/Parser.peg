@@ -123,6 +123,7 @@ patOp :: PatQ
 ;
 pat :: PatQ
 	= t:typ _:spaces ps:pats		{ conToPatQ t ps }
+	/ '(' o:opConName ')'_:spaces ps:pats	{ conP o ps }
 	/ p:pat1				{ p }
 ;
 pat1 :: PatQ
@@ -157,7 +158,7 @@ dq :: ()
 	= '"'					{ () }
 ;
 pats :: PatQs
-	= p:pat ps:pats				{ cons p ps }
+	= p:pat _:spaces ps:pats		{ cons p ps }
 	/					{ emp }
 ;
 leaf :: Leaf

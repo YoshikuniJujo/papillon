@@ -36,7 +36,7 @@ addDigits :: Int
 	= x:something ' ' y:something	{ (+) (read x) (read y) }
 ;
 addDigits2 :: Int
-	= x:something ' ' y:something	{ (read x + read y) }
+	= ((:) _ x):something ' ' y:something	{ (read x + read y) }
 ;
 digits :: (Maybe String, Int)
 	= s:something			{ (Just s, - 8) }
