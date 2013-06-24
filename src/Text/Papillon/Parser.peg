@@ -119,6 +119,8 @@ nameLeaf :: NameLeaf
 ;
 patOp :: PatQ
 	= p:pat o:opConName po:patOp		{ uInfixP p o po }
+	/ p:pat _:spaces q:[isBQ q] t:typ q_:[isBQ q_] _:spaces po:patOp
+						{ uInfixP p (mkName t) po }
 	/ p:pat					{ p }
 ;
 pat :: PatQ
@@ -189,6 +191,8 @@ hsOp :: ExR
 	/ ':' !':' o:opTail		{ conE (mkName (':' : o)) }
 	/ c:[isBQ c] v:variable c_:[isBQ c_]
 					{ varE (mkName v) }
+	/ c:[isBQ c] t:typ c_:[isBQ c_]
+					{ conE (mkName t) }
 ;
 opTail :: String
 	= c:[isOpTailChar c] s:opTail	{ cons c s }

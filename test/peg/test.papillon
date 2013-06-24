@@ -4,6 +4,8 @@ import Text.Papillon
 
 import Data.Char
 
+data SomeData = SomeData Int String deriving Show
+
 main :: IO ()
 main = do
 	case dv_onlyDigits $ parse initialPos "123 abc" of
@@ -22,6 +24,12 @@ main = do
 		Right (r, _) -> print r
 		Left err -> putStrLn $ "error: " ++ show err
 	case dv_divDigits $ parse initialPos "63 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
+	case dv_someData $ parse initialPos "63 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
+	case dv_getSomeData $ parse initialPos "63 25" of
 		Right (r, _) -> print r
 		Left err -> putStrLn $ "error: " ++ show err
 
@@ -43,6 +51,12 @@ addDigits2 :: Int
 ;
 divDigits :: Int
 	= x:something ' ' y:something	{ read x `div` read y }
+;
+getSomeData :: (Int, String)
+	= (x `SomeData` y):someData	{ (x, y) }
+;
+someData :: SomeData
+	= x:something ' ' y:something	{ read x `SomeData` y}
 ;
 digits :: (Maybe String, Int)
 	= s:something			{ (Just s, - 8) }
