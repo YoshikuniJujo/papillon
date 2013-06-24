@@ -88,8 +88,8 @@ peg_ :: Peg
 ;
 definition :: Definition
 	= v:variable _:spaces ':' ':'
-		_:spaces t:hsType _:spaces '='
-		_:spaces sel:selection _:spaces ';'	{ mkDef v (getTyp t) sel }
+		_:spaces t:hsTypeArr _:spaces '='
+		_:spaces sel:selection _:spaces ';'	{ mkDef v t sel }
 ;
 selection :: Selection
 	= ex:expressionHs _:spaces '/' _:spaces sel:selection	{ cons ex sel }
@@ -202,21 +202,26 @@ hsExpTpl :: ExRL
 	/ e:hsExpLam			{ cons e emp }
 	/				{ emp }
 ;
+hsTypeArr :: TypeQ
+	= l:hsType '-' c:[isGt c] _:spaces r:hsTypeArr
+					{ appT (appT arrowT (getTyp l)) r }
+	/ t:hsType			{ getTyp t }
+;
 hsType :: Typ
 	= t:hsType1 ts:hsType		{ applyTyp (toTyp t) ts }
 	/ t:hsType1			{ toTyp t }
 ;
 hsType1 :: TypeQ
 	= '[' ']' _:spaces		{ listT }
-	/ '[' t:hsType ']'		{ appT listT (getTyp t) }
+	/ '[' t:hsTypeArr ']'		{ appT listT t }
 	/ '(' _:spaces tt:hsTypeTpl ')'	{ tupT tt }
 	/ t:typToken			{ conT (mkName t) }
 	/ '(' '-' c:[isGt c] ')' _:spaces	{ arrowT }
 ;
 hsTypeTpl :: TypeQL
-	= t:hsType c:[isComma c] _:spaces tt:hsTypeTpl
-					{ cons (getTyp t) tt }
-	/ t:hsType			{ cons (getTyp t) emp }
+	= t:hsTypeArr c:[isComma c] _:spaces tt:hsTypeTpl
+					{ cons t tt }
+	/ t:hsTypeArr			{ cons t emp }
 	/				{ emp }
 ;
 typ :: String
