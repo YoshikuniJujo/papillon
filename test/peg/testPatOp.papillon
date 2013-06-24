@@ -1,0 +1,24 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies, UndecidableInstances #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = do
+	case dv_heads $ parse initialPos "hello, my friend" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
+
+[papillon|
+
+heads :: String
+	= hs:((h:_):token { h })*	{ hs }
+;
+token :: String
+	= w:word _:(' ' { () })*	{ w }
+;
+word :: String
+	= !' ' c s:word	{ c : s }
+	/		{ [] }
+;
+
+|]
