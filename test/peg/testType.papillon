@@ -26,8 +26,8 @@ isThree = (== 3)
 [papillon|
 
 testType :: Maybe Int
-	= d:digit[isThree d]	{ nothing }
-	/ d:digit		{ just d }
+	= 3:digit		{ Nothing }
+	/ d:digit		{ Just d }
 ;
 digit :: Int
 	= d:[isDigit d]		{ read (single d) }

@@ -120,11 +120,12 @@ pat :: PatQ
 	/ p:pat1				{ p }
 ;
 pat1 :: PatQ
-	= "_":variable				{ wildP }
+	= t:typ					{ conToPatQ t emp }
+	/ "_":variable				{ wildP }
 	/ n:variable				{ strToPatQ n }
+	/ i:integer				{ litP (integerL i) }
 	/ '\'' c:charLit '\''			{ charP c }
 	/ '"' s:stringLit '"'			{ stringP s }
-	/ t:typ					{ conToPatQ t emp }
 	/ '(' p:pat ')'				{ p }
 ;
 charLit :: Char
@@ -204,6 +205,9 @@ variable :: String
 tvtail :: String
 	= a:alpha t:tvtail	{ cons a t }
 	/ 	{ emp }
+;
+integer :: Integer
+	= dh:digit ds:(d:digit { d })*	{ read (cons dh ds) }
 ;
 alpha :: Char
 	= u:upper	{ u }
