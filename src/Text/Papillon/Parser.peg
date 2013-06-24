@@ -196,7 +196,9 @@ hsExp :: Ex
 	/ e:hsExp1			{ toEx e }
 ;
 hsExp1 :: ExR
-	= '(' et:hsExpTpl ')'		{ tupE et }
+	= '(' l:(e:hsExpTyp {e})? _:spaces o:hsOp _:spaces r:(e:hsExpTyp {e})? ')'
+					{ infixE l o r }
+	/ '(' et:hsExpTpl ')'		{ tupE et }
 	/ '[' et:hsExpTpl ']'		{ listE et }
 	/ v:variable			{ varE (mkName v) }
 	/ t:typ				{ conE (mkName t) }
@@ -222,7 +224,7 @@ hsType :: Typ
 ;
 hsType1 :: TypeQ
 	= '[' ']' _:spaces		{ listT }
-	/ '[' t:hsTypeArr ']'		{ appT listT t }
+	/ '[' t:hsTypeArr ']' _:spaces	{ appT listT t }
 	/ '(' _:spaces tt:hsTypeTpl ')'	{ tupT tt }
 	/ t:typToken			{ conT (mkName t) }
 	/ '(' '-' c:[isGt c] ')' _:spaces	{ arrowT }

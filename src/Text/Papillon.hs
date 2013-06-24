@@ -150,7 +150,7 @@ papillonStr' src = do
 		(if isListUsed peg || isOptionalUsed peg then "\nimport Control.Applicative\n" else "") ++
 		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++
 		"\n" ++ show (ppr cls) ++ "\n" ++
-		if isListUsed peg then show (ppr lst) else "" ++ "\n" ++
+		(if isListUsed peg then show (ppr lst) else "") ++ "\n" ++
 		if isOptionalUsed peg then show (ppr opt) else ""
 
 returnN, stateTN, putN, stateTN', getN,

@@ -15,6 +15,9 @@ main = do
 	case dv_onlyDigits $ parse initialPos "123abc" of
 		Right (str, _) -> print $ str 4
 		Left err -> putStrLn $ "OK! fail: " ++ show err
+	case dv_mulDigits $ parse initialPos "559" of
+		Right ((m, n), _) -> print (m 3, n ["hello", "friend"])
+		Left err -> putStrLn $ "error: " ++ show err
 
 [papillon|
 
@@ -22,6 +25,9 @@ onlyDigits :: Int -> ([String], Int, Maybe String, Maybe Char)
 	= (Just s, - 8):digits []:other ' ' mo:(o:other { o })?
 		mc:(c:[not $ isLower c] { c })?
 		{ \x -> (replicate x $ 'c' : s ++ show (-5 :: Int), - 9, mo, mc) }
+;
+mulDigits :: (Int -> Int, [String] -> [String])
+	= ds:something			{ ((* (read ds)), (ds :)) }
 ;
 digits :: (Maybe String, Int)
 	= s:something			{ (Just s, - 8) }
