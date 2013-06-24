@@ -188,6 +188,7 @@ hsExp1 :: ExR
 	/ v:variable			{ varE (mkName v) }
 	/ t:typ				{ conE (mkName t) }
 	/ i:integer			{ litE (integerL i) }
+	/ '\'' c:charLit '\''		{ litE (charL c) }
 ;
 hsExpTpl :: ExRL
 	= e:hsExpOp _:spaces c:[isComma c] _:spaces et:hsExpTpl
