@@ -1,0 +1,23 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies, UndecidableInstances #-}
+
+import Text.Papillon
+import Data.Char
+
+main :: IO ()
+main = case dv_add $ parse initialPos "3 + 5" of
+	Right (r, _) -> print r
+	Left err -> putStrLn $ "error: " ++ show err
+
+emp :: [a]
+emp = []
+
+[papillon|
+
+add :: Int
+	= l:digit ' ' '+' ' ' r:digit	{ l + r }
+;
+digit :: Int
+	= d:[isDigit d]			{ read $ d : emp }
+;
+
+|]

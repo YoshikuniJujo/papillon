@@ -96,7 +96,7 @@ selection :: Selection
 	/ ex:expressionHs	{ cons ex emp }
 ;
 expressionHs :: ExpressionHs
-	= e:expression _:spaces '{' _:spaces h:hsExp _:spaces '}'
+	= e:expression _:spaces '{' _:spaces h:hsExpOp _:spaces '}'
 		{ mkExpressionHs e h }
 ;
 expression :: Expression
@@ -148,7 +148,20 @@ leaf :: Leaf
 	/ v:variable				{ ruleLeaf v true }
 ;
 test :: ExR
-	= '[' h:hsExp ']'		{ getEx h }
+	= '[' h:hsExpOp ']'		{ h }
+;
+hsExpOp :: ExR
+	= l:hsExp _:spaces o:hsOp _:spaces r:hsExpOp
+					{ uInfixE (getEx l) o r }
+	/ e:hsExp			{ getEx e }
+;
+hsOp :: ExR
+	= c:[isOpHeadChar c] o:opTail 	{ varE (mkName (cons c o)) }
+	/ ':' o:opTail			{ conE (mkName (cons colon o)) }
+;
+opTail :: String
+	= c:[isOpTailChar c] s:opTail	{ cons c s }
+	/				{ emp }
 ;
 hsExp :: Ex
 	= e:hsExp1 _:spaces h:hsExp	{ applyExR e h }
@@ -156,12 +169,14 @@ hsExp :: Ex
 ;
 hsExp1 :: ExR
 	= '(' et:hsExpTpl ')'		{ tupE et }
+	/ '[' et:hsExpTpl ']'		{ listE et }
 	/ v:variable			{ varE (mkName v) }
+	/ t:typ				{ conE (mkName t) }
 ;
 hsExpTpl :: ExRL
-	= e:hsExp _:spaces c:[isComma c] _:spaces et:hsExpTpl
-					{ cons (getEx e) et }
-	/ e:hsExp			{ cons (getEx e) emp }
+	= e:hsExpOp _:spaces c:[isComma c] _:spaces et:hsExpTpl
+					{ cons e et }
+	/ e:hsExpOp			{ cons e emp }
 	/				{ emp }
 ;
 hsType :: Typ
@@ -169,7 +184,9 @@ hsType :: Typ
 	/ t:hsType1			{ toTyp t }
 ;
 hsType1 :: TypeQ
-	= '(' _:spaces tt:hsTypeTpl ')'	{ tupT tt }
+	= '[' ']' _:spaces		{ listT }
+	/ '[' t:hsType ']'		{ appT listT (getTyp t) }
+	/ '(' _:spaces tt:hsTypeTpl ')'	{ tupT tt }
 	/ t:typToken			{ conT (mkName t) }
 ;
 hsTypeTpl :: TypeQL

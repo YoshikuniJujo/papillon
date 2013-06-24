@@ -11,33 +11,22 @@ main = do
 		Left err -> putStrLn $ "error: " ++ show err
 	putStrLn "here"
 
-cons :: a -> [a] -> [a]
-cons = (:)
-emp :: [a]
-emp = []
-
-type MString = Maybe String
-just :: a -> Maybe a
-just = Just
-nothing :: Maybe a
-nothing = Nothing
-
 [papillon|
 
 onlyDigits :: String
 	= (Just s):digits		{ s }
 ;
-digits :: MString
-	= s:something		{ just s }
-	/ _:other		{ nothing }
+digits :: Maybe String
+	= s:something			{ Just s }
+	/ _:other			{ Nothing }
 ;
 something :: String
-	= c:[isDigit c] s:something	{ cons c s }
-	/ c:[isDigit c]		{ cons c emp }
+	= c:[isDigit c] s:something	{ c : s }
+	/ c:[isDigit c]			{ c : [] }
 ;
 other :: String
-	= c:[isLower c] s:other	{ cons c s }
-	/ c:[isLower c]		{ cons c emp }
+	= c:[isLower c] s:other		{ c : s }
+	/ c:[isLower c]			{ c : [] }
 ;
 
 |]

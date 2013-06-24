@@ -67,11 +67,20 @@ strToPatQ = varP . mkName
 conToPatQ :: String -> [PatQ] -> PatQ
 conToPatQ t ps = conP (mkName t) ps
 
-mkExpressionHs :: a -> Ex -> (a, ExR)
-mkExpressionHs x y = (x, getEx y)
+mkExpressionHs :: a -> ExR -> (a, ExR)
+mkExpressionHs x y = (x, y)
 
 mkDef :: a -> TypeQ -> c -> (a, TypeQ, c)
 mkDef x y z = (x, y, z)
+
+isOpTailChar :: Char -> Bool
+isOpTailChar = (`elem` ":+*/-!|&.^=<>$")
+
+colon :: Char
+colon = ':'
+
+isOpHeadChar :: Char -> Bool
+isOpHeadChar = (`elem` "+*/-!|&.^=<>$")
 
 toExp :: String -> Ex
 toExp v = \f -> f $ varE (mkName v)
@@ -130,7 +139,7 @@ stringP :: String -> PatQ
 stringP = litP . stringL
 
 isAlphaNumOt, elemNTs :: Char -> Bool
-isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),"
+isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),+"
 elemNTs = (`elem` "nt\\'")
 
 isComma, isKome, isOpen, isClose :: Char -> Bool

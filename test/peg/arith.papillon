@@ -42,10 +42,6 @@ toLeftInteger :: Int -> Integer -> Integer
 toLeftInteger x = \i -> i * 10 + toInteger x
 nil ::Nil
 nil = ()
-cons :: a -> [a] -> [a]
-cons = (:)
-empty :: [a]
-empty = []
 zero :: Integer
 zero = 0
 isSymA, isSymM, isOpenParen, isCloseParen :: Char -> Bool
@@ -108,7 +104,7 @@ digits :: LeftInteger
 	/ d:digit			{ toLeftInteger d }
 ;
 digit :: Int
-	= d:[isDigit d]			{ readC d }
+	= d:[isDigit d]			{ read $ d : [] }
 ;
 symbolA :: Char
 	= s:symCharsA _:spacing		{ s }

@@ -8,24 +8,14 @@ main = case dv_something $ parse initialPos "335,287" of
 	Right (n, _) -> print n
 	Left err -> putStrLn $ "not match: " ++ show err
 
-single :: a -> [a]
-single = (: [])
-
-type IntL = [Int]
-
-empty :: [a]
-empty = []
-cons :: a -> [a] -> [a]
-cons = (:)
-
 [papillon|
 
-something :: (IntL, IntL)
+something :: ([Int], [] Int)
 	= n1:numbers ',' n2:numbers	{ (n1, n2) }
 ;
-numbers :: IntL
-	= d:[isDigit d] ns:numbers	{ cons (read (single d)) ns }
-	/				{ empty }
+numbers :: [Int]
+	= d:[isDigit d] ns:numbers	{ read [d] : ns }
+	/				{ [] }
 ;
 
 |]
