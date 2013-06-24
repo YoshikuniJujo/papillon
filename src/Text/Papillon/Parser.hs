@@ -1344,7 +1344,11 @@ p_hsExp1 = foldl1 mplus [do xx88_88 <- dvCharsM
                          do t <- dv_typM
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
-                            return (conE (mkName t))]
+                            return (conE (mkName t)),
+                         do i <- dv_integerM
+                            return ()
+                            if True then return () else throwErrorPackratM "True" "not match"
+                            return (litE (integerL i))]
 p_hsExpTpl = foldl1 mplus [do e <- dv_hsExpOpM
                               return ()
                               if True then return () else throwErrorPackratM "True" "not match"

@@ -15,8 +15,8 @@ main = do
 
 [papillon|
 
-onlyDigits :: String
-	= (Just s):digits []:other	{ s }
+onlyDigits :: [String]
+	= (Just s):digits []:other	{ replicate 3 s }
 ;
 digits :: Maybe String
 	= s:something			{ Just s }
