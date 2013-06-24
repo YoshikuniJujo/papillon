@@ -11,7 +11,6 @@ main = case dv_something $ parse initialPos "335,287" of
 single :: a -> [a]
 single = (: [])
 
-type MyTup = (IntL, IntL)
 type IntL = [Int]
 
 empty :: [a]
@@ -21,7 +20,7 @@ cons = (:)
 
 [papillon|
 
-something :: MyTup
+something :: (IntL, IntL)
 	= n1:numbers ',' n2:numbers	{ (n1, n2) }
 ;
 numbers :: IntL

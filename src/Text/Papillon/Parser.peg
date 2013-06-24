@@ -27,7 +27,7 @@ pegFile :: PegFile
 		'|' ']' '\n' atp:afterPeg
 			{ mkPegFile pr md emp pp p atp }
 ;
-pragma :: MaybeString
+pragma :: Maybe String
 	= _:spaces '{' '-' '#' s:pragmaStr _:pragmaEnd _:spaces { just s }
 	/ _:spaces						{ nothing }
 ;
@@ -36,9 +36,9 @@ pragmaStr :: String
 	/					{ emp }
 ;
 pragmaEnd :: ()
-	= '#' '-' '}'				{ nil }
+	= '#' '-' '}'				{ () }
 ;
-moduleDec :: MaybeString
+moduleDec :: Maybe String
 	= 'm' 'o' 'd' 'u' 'l' 'e' s:moduleDecStr _:whr	{ just s }
 	/						{ nothing }
 ;
@@ -46,8 +46,8 @@ moduleDecStr :: String
 	= !_:whr c s:moduleDecStr			{ cons c s }
 	/						{ emp }
 ;
-whr :: Nil
-	= 'w' 'h' 'e' 'r' 'e'				{ nil }
+whr :: ()
+	= 'w' 'h' 'e' 'r' 'e'				{ () }
 ;
 preImpPap :: String
 	= !_:importPapillon !_:pap c pip:preImpPap	{ cons c pip }
@@ -61,10 +61,10 @@ afterPeg :: String
 	= c atp:afterPeg		{ cons c atp }
 	/					{ emp }
 ;
-importPapillon :: Nil
+importPapillon :: ()
 	= "import":varToken "Text":typToken '.' _:spaces "Papillon":typToken
 		!'.'
-		{ nil }
+		{ () }
 ;
 varToken :: String
 	= v:variable _:spaces			{ v }
@@ -72,8 +72,8 @@ varToken :: String
 typToken :: String
 	= t:typ _:spaces			{ t }
 ;
-pap :: Nil
-	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ nil }
+pap :: ()
+	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ () }
 ;
 peg :: TTPeg
 	= _:spaces s:sourceType p:peg_		{ mkTTPeg s p }
@@ -135,8 +135,8 @@ stringLit :: String
 	= !_:dq c s:stringLit			{ cons c s }
 	/					{ emp }
 ;
-dq :: Nil
-	= '"'					{ nil }
+dq :: ()
+	= '"'					{ () }
 ;
 pats :: PatQs
 	= p:pat ps:pats				{ cons p ps }
@@ -202,35 +202,35 @@ lower :: Char
 digit :: Char
 	= d:[isDigit d]		{ d }
 ;
-spaces :: Nil
-	= _:space _:spaces	{ nil }
-	/ 	{ nil }
+spaces :: ()
+	= _:space _:spaces	{ () }
+	/ 			{ () }
 ;
-space :: Nil
-	= s:[isSpace s]			{ nil }
-	/ '-' '-' _:notNLString _:nl	{ nil }
-	/ _:comment			{ nil }
+space :: ()
+	= s:[isSpace s]			{ () }
+	/ '-' '-' _:notNLString _:nl	{ () }
+	/ _:comment			{ () }
 ;
 notNLString :: String
 	= !_:nl c s:notNLString	{ cons c s }
 	/			{ emp }
 ;
-nl :: Nil
-	= '\n'			{ nil }
+nl :: ()
+	= '\n'			{ () }
 ;
-comment :: Nil
-	= '{' '-' !'#' _:comments _:comEnd	{ nil }
+comment :: ()
+	= '{' '-' !'#' _:comments _:comEnd	{ () }
 ;
-comments :: Nil
-	= _:notComStr _:comment _:comments	{ nil }
-	/ _:notComStr				{ nil }
+comments :: ()
+	= _:notComStr _:comment _:comments	{ () }
+	/ _:notComStr				{ () }
 ;
-notComStr :: Nil
-	= !_:comment !_:comEnd _ _:notComStr	{ nil }
-	/				{ nil }
+notComStr :: ()
+	= !_:comment !_:comEnd _ _:notComStr	{ () }
+	/					{ () }
 ;
-comEnd :: Nil
-	= '-' '}'			{ nil }
+comEnd :: ()
+	= '-' '}'				{ () }
 ;
 
 |]

@@ -3,11 +3,6 @@ module Text.Papillon.SyntaxTree where
 import Language.Haskell.TH
 import Data.Char
 
-type MaybeString = Maybe String
-
-type Nil = ()
--- type Leaf = Either String ExR
-
 type Leaf = (Maybe String, ExR)
 data NameLeaf
 	= NameLeaf PatQ Leaf
@@ -40,13 +35,12 @@ toTyp :: TypeQ -> Typ
 toTyp tp = \f -> f tp
 
 ctLeaf :: Leaf
--- ctLeaf = Right $ conE (mkName "True") -- varE (mkName "const") `appE` conE (mkName "True")
 ctLeaf = (Nothing, conE $ mkName "True")
 
 ruleLeaf :: String -> ExpQ -> Leaf
 boolLeaf :: ExpQ -> Leaf
-ruleLeaf r t = (Just r, t) -- Left
-boolLeaf p = (Nothing, p) -- Right
+ruleLeaf r t = (Just r, t)
+boolLeaf p = (Nothing, p)
 
 true :: ExpQ
 true = conE $ mkName "True"
@@ -55,9 +49,6 @@ just :: a -> Maybe a
 just = Just
 nothing :: Maybe a
 nothing = Nothing
-
-nil :: Nil
-nil = ()
 
 cons :: a -> [a] -> [a]
 cons = (:)
@@ -83,7 +74,6 @@ mkDef :: a -> TypeQ -> c -> (a, TypeQ, c)
 mkDef x y z = (x, y, z)
 
 toExp :: String -> Ex
--- toExp v = \f -> f `appE` varE (mkName v)
 toExp v = \f -> f $ varE (mkName v)
 
 toEx :: ExR -> Ex

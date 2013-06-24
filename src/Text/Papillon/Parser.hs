@@ -34,19 +34,19 @@ type PackratM = StateT Derivs (Either (ParseError (Pos String)))
 type Result v = Either (ParseError (Pos String)) ((v, Derivs))
 data Derivs
     = Derivs {dv_pegFile :: (Result PegFile),
-              dv_pragma :: (Result MaybeString),
+              dv_pragma :: (Result (Maybe String)),
               dv_pragmaStr :: (Result String),
               dv_pragmaEnd :: (Result ()),
-              dv_moduleDec :: (Result MaybeString),
+              dv_moduleDec :: (Result (Maybe String)),
               dv_moduleDecStr :: (Result String),
-              dv_whr :: (Result Nil),
+              dv_whr :: (Result ()),
               dv_preImpPap :: (Result String),
               dv_prePeg :: (Result String),
               dv_afterPeg :: (Result String),
-              dv_importPapillon :: (Result Nil),
+              dv_importPapillon :: (Result ()),
               dv_varToken :: (Result String),
               dv_typToken :: (Result String),
-              dv_pap :: (Result Nil),
+              dv_pap :: (Result ()),
               dv_peg :: (Result TTPeg),
               dv_sourceType :: (Result String),
               dv_peg_ :: (Result Peg),
@@ -60,7 +60,7 @@ data Derivs
               dv_pat1 :: (Result PatQ),
               dv_charLit :: (Result Char),
               dv_stringLit :: (Result String),
-              dv_dq :: (Result Nil),
+              dv_dq :: (Result ()),
               dv_pats :: (Result PatQs),
               dv_leaf :: (Result Leaf),
               dv_test :: (Result ExR),
@@ -77,14 +77,14 @@ data Derivs
               dv_upper :: (Result Char),
               dv_lower :: (Result Char),
               dv_digit :: (Result Char),
-              dv_spaces :: (Result Nil),
-              dv_space :: (Result Nil),
+              dv_spaces :: (Result ()),
+              dv_space :: (Result ()),
               dv_notNLString :: (Result String),
-              dv_nl :: (Result Nil),
-              dv_comment :: (Result Nil),
-              dv_comments :: (Result Nil),
-              dv_notComStr :: (Result Nil),
-              dv_comEnd :: (Result Nil),
+              dv_nl :: (Result ()),
+              dv_comment :: (Result ()),
+              dv_comments :: (Result ()),
+              dv_notComStr :: (Result ()),
+              dv_comEnd :: (Result ()),
               dvChars :: (Result (Token String)),
               dvPos :: (Pos String)}
 parse :: Pos String -> String -> Derivs
@@ -147,19 +147,19 @@ parse pos___hoge s = d
                                                    s') -> do put (parse (updatePos c pos___hoge) s')
                                                              return c
                                              _ -> throwErrorPackratM "" "eof")
-dv_pragmaM :: PackratM MaybeString
+dv_pragmaM :: PackratM (Maybe String)
 dv_pragmaStrM :: PackratM String
 dv_pragmaEndM :: PackratM ()
-dv_moduleDecM :: PackratM MaybeString
+dv_moduleDecM :: PackratM (Maybe String)
 dv_moduleDecStrM :: PackratM String
-dv_whrM :: PackratM Nil
+dv_whrM :: PackratM ()
 dv_preImpPapM :: PackratM String
 dv_prePegM :: PackratM String
 dv_afterPegM :: PackratM String
-dv_importPapillonM :: PackratM Nil
+dv_importPapillonM :: PackratM ()
 dv_varTokenM :: PackratM String
 dv_typTokenM :: PackratM String
-dv_papM :: PackratM Nil
+dv_papM :: PackratM ()
 dv_pegM :: PackratM TTPeg
 dv_sourceTypeM :: PackratM String
 dv_peg_M :: PackratM Peg
@@ -173,7 +173,7 @@ dv_patM :: PackratM PatQ
 dv_pat1M :: PackratM PatQ
 dv_charLitM :: PackratM Char
 dv_stringLitM :: PackratM String
-dv_dqM :: PackratM Nil
+dv_dqM :: PackratM ()
 dv_patsM :: PackratM PatQs
 dv_leafM :: PackratM Leaf
 dv_testM :: PackratM ExR
@@ -190,14 +190,14 @@ dv_alphaM :: PackratM Char
 dv_upperM :: PackratM Char
 dv_lowerM :: PackratM Char
 dv_digitM :: PackratM Char
-dv_spacesM :: PackratM Nil
-dv_spaceM :: PackratM Nil
+dv_spacesM :: PackratM ()
+dv_spaceM :: PackratM ()
 dv_notNLStringM :: PackratM String
-dv_nlM :: PackratM Nil
-dv_commentM :: PackratM Nil
-dv_commentsM :: PackratM Nil
-dv_notComStrM :: PackratM Nil
-dv_comEndM :: PackratM Nil
+dv_nlM :: PackratM ()
+dv_commentM :: PackratM ()
+dv_commentsM :: PackratM ()
+dv_notComStrM :: PackratM ()
+dv_comEndM :: PackratM ()
 dv_pragmaM = StateT dv_pragma
 dv_pragmaStrM = StateT dv_pragmaStr
 dv_pragmaEndM = StateT dv_pragmaEnd
@@ -252,19 +252,19 @@ dv_comEndM = StateT dv_comEnd
 dvCharsM :: PackratM (Token String)
 dvCharsM = StateT dvChars
 p_pegFile :: PackratM PegFile
-p_pragma :: PackratM MaybeString
+p_pragma :: PackratM (Maybe String)
 p_pragmaStr :: PackratM String
 p_pragmaEnd :: PackratM ()
-p_moduleDec :: PackratM MaybeString
+p_moduleDec :: PackratM (Maybe String)
 p_moduleDecStr :: PackratM String
-p_whr :: PackratM Nil
+p_whr :: PackratM ()
 p_preImpPap :: PackratM String
 p_prePeg :: PackratM String
 p_afterPeg :: PackratM String
-p_importPapillon :: PackratM Nil
+p_importPapillon :: PackratM ()
 p_varToken :: PackratM String
 p_typToken :: PackratM String
-p_pap :: PackratM Nil
+p_pap :: PackratM ()
 p_peg :: PackratM TTPeg
 p_sourceType :: PackratM String
 p_peg_ :: PackratM Peg
@@ -278,7 +278,7 @@ p_pat :: PackratM PatQ
 p_pat1 :: PackratM PatQ
 p_charLit :: PackratM Char
 p_stringLit :: PackratM String
-p_dq :: PackratM Nil
+p_dq :: PackratM ()
 p_pats :: PackratM PatQs
 p_leaf :: PackratM Leaf
 p_test :: PackratM ExR
@@ -295,14 +295,14 @@ p_alpha :: PackratM Char
 p_upper :: PackratM Char
 p_lower :: PackratM Char
 p_digit :: PackratM Char
-p_spaces :: PackratM Nil
-p_space :: PackratM Nil
+p_spaces :: PackratM ()
+p_space :: PackratM ()
 p_notNLString :: PackratM String
-p_nl :: PackratM Nil
-p_comment :: PackratM Nil
-p_comments :: PackratM Nil
-p_notComStr :: PackratM Nil
-p_comEnd :: PackratM Nil
+p_nl :: PackratM ()
+p_comment :: PackratM ()
+p_comments :: PackratM ()
+p_notComStr :: PackratM ()
+p_comEnd :: PackratM ()
 p_pegFile = foldl1 mplus [do pr <- dv_pragmaM
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
@@ -459,7 +459,7 @@ p_pragmaEnd = foldl1 mplus [do xx11_11 <- dvCharsM
                                let '}' = xx13_13
                                return ()
                                if True then return () else throwErrorPackratM "True" "not match"
-                               return nil]
+                               return ()]
 p_moduleDec = foldl1 mplus [do xx14_14 <- dvCharsM
                                case xx14_14 of
                                    'm' -> return ()
@@ -558,7 +558,7 @@ p_whr = foldl1 mplus [do xx22_22 <- dvCharsM
                          let 'e' = xx26_26
                          return ()
                          if True then return () else throwErrorPackratM "True" "not match"
-                         return nil]
+                         return ()]
 p_preImpPap = foldl1 mplus [do ddd27_27 <- get
                                flipMaybe (do dv_importPapillonM >> return ()
                                              if True
@@ -652,7 +652,7 @@ p_importPapillon = foldl1 mplus [do xx33_33 <- dv_varTokenM
                                                    then return ()
                                                    else throwErrorPackratM "True" "not match")
                                     put ddd37_37
-                                    return nil]
+                                    return ()]
 p_varToken = foldl1 mplus [do v <- dv_variableM
                               return ()
                               if True then return () else throwErrorPackratM "True" "not match"
@@ -749,7 +749,7 @@ p_pap = foldl1 mplus [do xx39_39 <- dvCharsM
                          let '\n' = xx50_50
                          return ()
                          if True then return () else throwErrorPackratM "True" "not match"
-                         return nil]
+                         return ()]
 p_peg = foldl1 mplus [do dv_spacesM >> return ()
                          if True then return () else throwErrorPackratM "True" "not match"
                          s <- dv_sourceTypeM
@@ -1101,7 +1101,7 @@ p_dq = foldl1 mplus [do xx80_80 <- dvCharsM
                         let '"' = xx80_80
                         return ()
                         if True then return () else throwErrorPackratM "True" "not match"
-                        return nil]
+                        return ()]
 p_pats = foldl1 mplus [do p <- dv_patM
                           return ()
                           if True then return () else throwErrorPackratM "True" "not match"
@@ -1309,14 +1309,14 @@ p_spaces = foldl1 mplus [do dv_spaceM >> return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             dv_spacesM >> return ()
                             if True then return () else throwErrorPackratM "True" "not match"
-                            return nil,
-                         do return nil]
+                            return (),
+                         do return ()]
 p_space = foldl1 mplus [do xx92_92 <- dvCharsM
                            let s = xx92_92
                            if isSpace s
                             then return ()
                             else throwErrorPackratM "isSpace s" "not match"
-                           return nil,
+                           return (),
                         do xx93_93 <- dvCharsM
                            case xx93_93 of
                                '-' -> return ()
@@ -1335,10 +1335,10 @@ p_space = foldl1 mplus [do xx92_92 <- dvCharsM
                            if True then return () else throwErrorPackratM "True" "not match"
                            dv_nlM >> return ()
                            if True then return () else throwErrorPackratM "True" "not match"
-                           return nil,
+                           return (),
                         do dv_commentM >> return ()
                            if True then return () else throwErrorPackratM "True" "not match"
-                           return nil]
+                           return ()]
 p_notNLString = foldl1 mplus [do ddd95_95 <- get
                                  flipMaybe (do dv_nlM >> return ()
                                                if True
@@ -1360,7 +1360,7 @@ p_nl = foldl1 mplus [do xx97_97 <- dvCharsM
                         let '\n' = xx97_97
                         return ()
                         if True then return () else throwErrorPackratM "True" "not match"
-                        return nil]
+                        return ()]
 p_comment = foldl1 mplus [do xx98_98 <- dvCharsM
                              case xx98_98 of
                                  '{' -> return ()
@@ -1390,17 +1390,17 @@ p_comment = foldl1 mplus [do xx98_98 <- dvCharsM
                              if True then return () else throwErrorPackratM "True" "not match"
                              dv_comEndM >> return ()
                              if True then return () else throwErrorPackratM "True" "not match"
-                             return nil]
+                             return ()]
 p_comments = foldl1 mplus [do dv_notComStrM >> return ()
                               if True then return () else throwErrorPackratM "True" "not match"
                               dv_commentM >> return ()
                               if True then return () else throwErrorPackratM "True" "not match"
                               dv_commentsM >> return ()
                               if True then return () else throwErrorPackratM "True" "not match"
-                              return nil,
+                              return (),
                            do dv_notComStrM >> return ()
                               if True then return () else throwErrorPackratM "True" "not match"
-                              return nil]
+                              return ()]
 p_notComStr = foldl1 mplus [do ddd102_102 <- get
                                flipMaybe (do dv_commentM >> return ()
                                              if True
@@ -1417,8 +1417,8 @@ p_notComStr = foldl1 mplus [do ddd102_102 <- get
                                if True then return () else throwErrorPackratM "True" "not match"
                                dv_notComStrM >> return ()
                                if True then return () else throwErrorPackratM "True" "not match"
-                               return nil,
-                            do return nil]
+                               return (),
+                            do return ()]
 p_comEnd = foldl1 mplus [do xx105_104 <- dvCharsM
                             case xx105_104 of
                                 '-' -> return ()
@@ -1433,7 +1433,7 @@ p_comEnd = foldl1 mplus [do xx105_104 <- dvCharsM
                             let '}' = xx106_105
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
-                            return nil]
+                            return ()]
 
 class Source sl
     where type Token sl
