@@ -4,12 +4,24 @@ import Text.Papillon
 
 main :: IO ()
 main = do
-	case dv_heads $ parse initialPos "hello, my friend" of
+	case dv_checkTriple $ parse initialPos "ab cd a d ef hello, my friend" of
 		Right (r, _) -> print r
 		Left err -> putStrLn $ "error: " ++ show err
 
 [papillon|
 
+checkTriple :: (String, String)
+	= (t, "ad", h):triple		{ (t, h) }
+;
+triple :: (String, String, String)
+	= t:twos o:ones h:heads		{ (t, o, h) }
+;
+twos :: String
+	= hs:([o, _]:token { o })*	{ hs }
+;
+ones :: String
+	= hs:([h]:token { h })*		{ hs }
+;
 heads :: String
 	= hs:((h:_):token { h })*	{ hs }
 ;

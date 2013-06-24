@@ -108,7 +108,7 @@ nameLeaf_ :: NameLeaf_
 	/ nl:nameLeaf				{ here nl }
 ;
 nameLeaf :: NameLeaf
-	= n:pat1 ':' o:[isOpen o] ex:selection c:[isClose c] k:[isKome k] _:spaces
+	= n:pat1 ':' '(' ex:selection ')' k:[isKome k] _:spaces
 		{ mkNameLeafList n ex }
 --	/ o:[isOpen o] nl:nameLeaf c:[isClose c]	{ nl }
 	/ n:pat1 ':' l:leaf		{ mkNameLeaf n l }
@@ -130,7 +130,14 @@ pat1 :: PatQ
 	/ i:integer				{ litP (integerL i) }
 	/ '\'' c:charLit '\''			{ charP c }
 	/ '"' s:stringLit '"'			{ stringP s }
-	/ '(' p:patOp ')'			{ p }
+	/ '(' p:patList ')'			{ tupP p }
+	/ '[' p:patList ']'			{ listP p }
+;
+patList :: [PatQ]
+	= p:patOp _:spaces ',' _:spaces ps:patList
+						{ p : ps }
+	/ p:patOp				{ [p] }
+	/					{ [] }
 ;
 opConName :: Name
 	= ':' ot:opTail				{ mkName $ colon : ot }

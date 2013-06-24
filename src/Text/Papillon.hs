@@ -490,4 +490,6 @@ varPToWild p = do
 	vpw (ConP n ps) = ConP n $ map vpw ps
 	vpw (InfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
 	vpw (UInfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
+	vpw (ListP ps) = ListP $ vpw `map` ps
+	vpw (TupP ps) = TupP $ vpw `map` ps
 	vpw o = o

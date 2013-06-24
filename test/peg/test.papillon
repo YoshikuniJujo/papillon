@@ -6,15 +6,17 @@ import Data.Char
 
 main :: IO ()
 main = do
-	case dv_onlyDigits $ parse initialPos "123" of
+	case dv_onlyDigits $ parse initialPos "123 abc" of
 		Right (str, _) -> print str
 		Left err -> putStrLn $ "error: " ++ show err
-	putStrLn "here"
+	case dv_onlyDigits $ parse initialPos "123abc" of
+		Right (str, _) -> print str
+		Left err -> putStrLn $ "OK! fail: " ++ show err
 
 [papillon|
 
 onlyDigits :: String
-	= (Just s):digits		{ s }
+	= (Just s):digits []:other	{ s }
 ;
 digits :: Maybe String
 	= s:something			{ Just s }
@@ -26,7 +28,7 @@ something :: String
 ;
 other :: String
 	= c:[isLower c] s:other		{ c : s }
-	/ c:[isLower c]			{ c : [] }
+	/				{ [] }
 ;
 
 |]
