@@ -28,6 +28,10 @@ type ExR = ExpQ
 type ExRL = [ExpQ]
 
 type Typ = (TypeQ -> TypeQ) -> TypeQ
+type TypeQL = [TypeQ]
+
+tupT :: [TypeQ] -> TypeQ
+tupT ts = foldl appT (tupleT $ length ts) ts
 
 getTyp :: Typ -> TypeQ
 getTyp t = t id

@@ -35,7 +35,7 @@ pragmaStr :: String
 	= !_:pragmaEnd c s:pragmaStr		{ cons c s }
 	/					{ emp }
 ;
-pragmaEnd :: Nil
+pragmaEnd :: ()
 	= '#' '-' '}'				{ nil }
 ;
 moduleDec :: MaybeString
@@ -88,7 +88,7 @@ peg_ :: Peg
 ;
 definition :: Definition
 	= v:variable _:spaces ':' ':'
-		_:spaces t:hsType '='
+		_:spaces t:hsType _:spaces '='
 		_:spaces sel:selection _:spaces ';'	{ mkDef v (getTyp t) sel }
 ;
 selection :: Selection
@@ -169,7 +169,14 @@ hsType :: Typ
 	/ t:hsType1			{ toTyp t }
 ;
 hsType1 :: TypeQ
-	= t:typToken			{ conT (mkName t) }
+	= '(' _:spaces tt:hsTypeTpl ')'	{ tupT tt }
+	/ t:typToken			{ conT (mkName t) }
+;
+hsTypeTpl :: TypeQL
+	= t:hsType c:[isComma c] _:spaces tt:hsTypeTpl
+					{ cons (getTyp t) tt }
+	/ t:hsType			{ cons (getTyp t) emp }
+	/				{ emp }
 ;
 typ :: String
 	= u:upper t:tvtail	{ cons u t }
