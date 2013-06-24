@@ -15,8 +15,9 @@ main = do
 
 [papillon|
 
-onlyDigits :: Int -> [String]
-	= (Just s):digits []:other	{ \x -> replicate x $ 'c' : s ++ "hoge" }
+onlyDigits :: Int -> ([String], Int)
+	= (Just s):digits []:other
+		{ \x -> (replicate x $ 'c' : s ++ show (-5), - 9) }
 ;
 digits :: Maybe String
 	= s:something			{ Just s }

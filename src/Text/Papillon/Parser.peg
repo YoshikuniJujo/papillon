@@ -195,6 +195,7 @@ hsExp1 :: ExR
 	/ i:integer			{ litE (integerL i) }
 	/ '\'' c:charLit '\''		{ litE (charL c) }
 	/ '"' s:stringLit '"'		{ litE (stringL s) }
+	/ '-' _:spaces e:hsExp1		{ appE (varE $ mkName "negate") e }
 ;
 hsExpTpl :: ExRL
 	= e:hsExpLam _:spaces c:[isComma c] _:spaces et:hsExpTpl
