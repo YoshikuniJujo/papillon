@@ -16,12 +16,12 @@ main = do
 [papillon|
 
 onlyDigits :: Int -> ([String], Int)
-	= (Just s):digits []:other
+	= (Just s, - 8):digits []:other
 		{ \x -> (replicate x $ 'c' : s ++ show (-5 :: Int), - 9) }
 ;
-digits :: Maybe String
-	= s:something			{ Just s }
-	/ _:other			{ Nothing }
+digits :: (Maybe String, Int)
+	= s:something			{ (Just s, - 8) }
+	/ _:other			{ (Nothing, -11) }
 ;
 something :: String
 	= c:[isDigit c] s:something	{ c : s }

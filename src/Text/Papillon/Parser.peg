@@ -128,6 +128,7 @@ pat1 :: PatQ
 	/ "_":variable				{ wildP }
 	/ n:variable				{ strToPatQ n }
 	/ i:integer				{ litP (integerL i) }
+	/ '-' _:spaces i:integer		{ litP (integerL $ - i) }
 	/ '\'' c:charLit '\''			{ charP c }
 	/ '"' s:stringLit '"'			{ stringP s }
 	/ '(' p:patList ')'			{ tupP p }
