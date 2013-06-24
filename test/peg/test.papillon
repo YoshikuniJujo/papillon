@@ -13,11 +13,9 @@ main = do
 		Right (str, _) -> print $ str 4
 		Left err -> putStrLn $ "OK! fail: " ++ show err
 
-type Ret = Int -> [String]
-
 [papillon|
 
-onlyDigits :: Ret
+onlyDigits :: (->) Int [String]
 	= (Just s):digits []:other	{ \x -> replicate x $ 'c' : s ++ "hoge" }
 ;
 digits :: Maybe String

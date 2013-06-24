@@ -211,6 +211,7 @@ hsType1 :: TypeQ
 	/ '[' t:hsType ']'		{ appT listT (getTyp t) }
 	/ '(' _:spaces tt:hsTypeTpl ')'	{ tupT tt }
 	/ t:typToken			{ conT (mkName t) }
+	/ '(' '-' c:[isGt c] ')' _:spaces	{ arrowT }
 ;
 hsTypeTpl :: TypeQL
 	= t:hsType c:[isComma c] _:spaces tt:hsTypeTpl
