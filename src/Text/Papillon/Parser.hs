@@ -70,6 +70,7 @@ data Derivs
               dv_leaf :: (Result Leaf),
               dv_test :: (Result ExR),
               dv_hsExpLam :: (Result ExR),
+              dv_hsExpTyp :: (Result ExR),
               dv_hsExpOp :: (Result ExR),
               dv_hsOp :: (Result ExR),
               dv_opTail :: (Result String),
@@ -100,7 +101,7 @@ data Derivs
               dvPos :: (Pos String)}
 parse :: Pos String -> String -> Derivs
 parse pos___hoge s = d
-          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf patOp pat pat1 patList opConName charLit stringLit dq pats leaf test hsExpLam hsExpOp hsOp opTail hsExp hsExp1 hsExpTpl hsTypeArr hsType hsType1 hsTypeTpl typ variable tvtail integer alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char pos___hoge
+          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf patOp pat pat1 patList opConName charLit stringLit dq pats leaf test hsExpLam hsExpTyp hsExpOp hsOp opTail hsExp hsExp1 hsExpTpl hsTypeArr hsType hsType1 hsTypeTpl typ variable tvtail integer alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char pos___hoge
                 pegFile = runStateT p_pegFile d
                 pragma = runStateT p_pragma d
                 pragmaStr = runStateT p_pragmaStr d
@@ -136,6 +137,7 @@ parse pos___hoge s = d
                 leaf = runStateT p_leaf d
                 test = runStateT p_test d
                 hsExpLam = runStateT p_hsExpLam d
+                hsExpTyp = runStateT p_hsExpTyp d
                 hsExpOp = runStateT p_hsExpOp d
                 hsOp = runStateT p_hsOp d
                 opTail = runStateT p_opTail d
@@ -201,6 +203,7 @@ dv_patsM :: PackratM PatQs
 dv_leafM :: PackratM Leaf
 dv_testM :: PackratM ExR
 dv_hsExpLamM :: PackratM ExR
+dv_hsExpTypM :: PackratM ExR
 dv_hsExpOpM :: PackratM ExR
 dv_hsOpM :: PackratM ExR
 dv_opTailM :: PackratM String
@@ -261,6 +264,7 @@ dv_patsM = StateT dv_pats
 dv_leafM = StateT dv_leaf
 dv_testM = StateT dv_test
 dv_hsExpLamM = StateT dv_hsExpLam
+dv_hsExpTypM = StateT dv_hsExpTyp
 dv_hsExpOpM = StateT dv_hsExpOp
 dv_hsOpM = StateT dv_hsOp
 dv_opTailM = StateT dv_opTail
@@ -324,6 +328,7 @@ p_pats :: PackratM PatQs
 p_leaf :: PackratM Leaf
 p_test :: PackratM ExR
 p_hsExpLam :: PackratM ExR
+p_hsExpTyp :: PackratM ExR
 p_hsExpOp :: PackratM ExR
 p_hsOp :: PackratM ExR
 p_opTail :: PackratM String
@@ -1278,14 +1283,41 @@ p_hsExpLam = foldl1 mplus [do xx85_85 <- dvCharsM
                                else throwErrorPackratM "isGt c" "not match"
                               dv_spacesM >> return ()
                               if True then return () else throwErrorPackratM "True" "not match"
-                              e <- dv_hsExpOpM
+                              e <- dv_hsExpTypM
                               return ()
                               if True then return () else throwErrorPackratM "True" "not match"
                               return (lamE ps e),
-                           do e <- dv_hsExpOpM
+                           do e <- dv_hsExpTypM
                               return ()
                               if True then return () else throwErrorPackratM "True" "not match"
                               return e]
+p_hsExpTyp = foldl1 mplus [do eo <- dv_hsExpOpM
+                              return ()
+                              if True then return () else throwErrorPackratM "True" "not match"
+                              xx88_88 <- dvCharsM
+                              case xx88_88 of
+                                  ':' -> return ()
+                                  _ -> throwErrorPackratM "':'" "not match pattern"
+                              let ':' = xx88_88
+                              return ()
+                              if True then return () else throwErrorPackratM "True" "not match"
+                              xx89_89 <- dvCharsM
+                              case xx89_89 of
+                                  ':' -> return ()
+                                  _ -> throwErrorPackratM "':'" "not match pattern"
+                              let ':' = xx89_89
+                              return ()
+                              if True then return () else throwErrorPackratM "True" "not match"
+                              dv_spacesM >> return ()
+                              if True then return () else throwErrorPackratM "True" "not match"
+                              t <- dv_hsTypeArrM
+                              return ()
+                              if True then return () else throwErrorPackratM "True" "not match"
+                              return (sigE eo t),
+                           do eo <- dv_hsExpOpM
+                              return ()
+                              if True then return () else throwErrorPackratM "True" "not match"
+                              return eo]
 p_hsExpOp = foldl1 mplus [do l <- dv_hsExpM
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
@@ -1304,8 +1336,8 @@ p_hsExpOp = foldl1 mplus [do l <- dv_hsExpM
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              return (getEx e)]
-p_hsOp = foldl1 mplus [do xx88_88 <- dvCharsM
-                          let c = xx88_88
+p_hsOp = foldl1 mplus [do xx90_90 <- dvCharsM
+                          let c = xx90_90
                           if isOpHeadChar c
                            then return ()
                            else throwErrorPackratM "isOpHeadChar c" "not match"
@@ -1313,19 +1345,30 @@ p_hsOp = foldl1 mplus [do xx88_88 <- dvCharsM
                           return ()
                           if True then return () else throwErrorPackratM "True" "not match"
                           return (varE (mkName (cons c o))),
-                       do xx89_89 <- dvCharsM
-                          case xx89_89 of
+                       do xx91_91 <- dvCharsM
+                          case xx91_91 of
                               ':' -> return ()
                               _ -> throwErrorPackratM "':'" "not match pattern"
-                          let ':' = xx89_89
+                          let ':' = xx91_91
                           return ()
                           if True then return () else throwErrorPackratM "True" "not match"
+                          ddd92_92 <- get
+                          flipMaybe (do xx93_93 <- dvCharsM
+                                        case xx93_93 of
+                                            ':' -> return ()
+                                            _ -> throwErrorPackratM "':'" "not match pattern"
+                                        let ':' = xx93_93
+                                        return ()
+                                        if True
+                                         then return ()
+                                         else throwErrorPackratM "True" "not match")
+                          put ddd92_92
                           o <- dv_opTailM
                           return ()
                           if True then return () else throwErrorPackratM "True" "not match"
-                          return (conE (mkName (cons colon o)))]
-p_opTail = foldl1 mplus [do xx90_90 <- dvCharsM
-                            let c = xx90_90
+                          return (conE (mkName (':' : o)))]
+p_opTail = foldl1 mplus [do xx94_94 <- dvCharsM
+                            let c = xx94_94
                             if isOpTailChar c
                              then return ()
                              else throwErrorPackratM "isOpTailChar c" "not match"
@@ -1347,39 +1390,39 @@ p_hsExp = foldl1 mplus [do e <- dv_hsExp1M
                            return ()
                            if True then return () else throwErrorPackratM "True" "not match"
                            return (toEx e)]
-p_hsExp1 = foldl1 mplus [do xx91_91 <- dvCharsM
-                            case xx91_91 of
+p_hsExp1 = foldl1 mplus [do xx95_95 <- dvCharsM
+                            case xx95_95 of
                                 '(' -> return ()
                                 _ -> throwErrorPackratM "'('" "not match pattern"
-                            let '(' = xx91_91
+                            let '(' = xx95_95
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             et <- dv_hsExpTplM
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
-                            xx92_92 <- dvCharsM
-                            case xx92_92 of
+                            xx96_96 <- dvCharsM
+                            case xx96_96 of
                                 ')' -> return ()
                                 _ -> throwErrorPackratM "')'" "not match pattern"
-                            let ')' = xx92_92
+                            let ')' = xx96_96
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             return (tupE et),
-                         do xx93_93 <- dvCharsM
-                            case xx93_93 of
+                         do xx97_97 <- dvCharsM
+                            case xx97_97 of
                                 '[' -> return ()
                                 _ -> throwErrorPackratM "'['" "not match pattern"
-                            let '[' = xx93_93
+                            let '[' = xx97_97
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             et <- dv_hsExpTplM
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
-                            xx94_94 <- dvCharsM
-                            case xx94_94 of
+                            xx98_98 <- dvCharsM
+                            case xx98_98 of
                                 ']' -> return ()
                                 _ -> throwErrorPackratM "']'" "not match pattern"
-                            let ']' = xx94_94
+                            let ']' = xx98_98
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             return (listE et),
@@ -1394,48 +1437,50 @@ p_hsExp1 = foldl1 mplus [do xx91_91 <- dvCharsM
                          do i <- dv_integerM
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
+                            dv_spacesM >> return ()
+                            if True then return () else throwErrorPackratM "True" "not match"
                             return (litE (integerL i)),
-                         do xx95_95 <- dvCharsM
-                            case xx95_95 of
+                         do xx99_99 <- dvCharsM
+                            case xx99_99 of
                                 '\'' -> return ()
                                 _ -> throwErrorPackratM "'\\''" "not match pattern"
-                            let '\'' = xx95_95
+                            let '\'' = xx99_99
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             c <- dv_charLitM
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
-                            xx96_96 <- dvCharsM
-                            case xx96_96 of
+                            xx100_100 <- dvCharsM
+                            case xx100_100 of
                                 '\'' -> return ()
                                 _ -> throwErrorPackratM "'\\''" "not match pattern"
-                            let '\'' = xx96_96
+                            let '\'' = xx100_100
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             return (litE (charL c)),
-                         do xx97_97 <- dvCharsM
-                            case xx97_97 of
+                         do xx101_101 <- dvCharsM
+                            case xx101_101 of
                                 '"' -> return ()
                                 _ -> throwErrorPackratM "'\"'" "not match pattern"
-                            let '"' = xx97_97
+                            let '"' = xx101_101
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             s <- dv_stringLitM
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
-                            xx98_98 <- dvCharsM
-                            case xx98_98 of
+                            xx102_102 <- dvCharsM
+                            case xx102_102 of
                                 '"' -> return ()
                                 _ -> throwErrorPackratM "'\"'" "not match pattern"
-                            let '"' = xx98_98
+                            let '"' = xx102_102
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             return (litE (stringL s)),
-                         do xx99_99 <- dvCharsM
-                            case xx99_99 of
+                         do xx103_103 <- dvCharsM
+                            case xx103_103 of
                                 '-' -> return ()
                                 _ -> throwErrorPackratM "'-'" "not match pattern"
-                            let '-' = xx99_99
+                            let '-' = xx103_103
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             dv_spacesM >> return ()
@@ -1449,8 +1494,8 @@ p_hsExpTpl = foldl1 mplus [do e <- dv_hsExpLamM
                               if True then return () else throwErrorPackratM "True" "not match"
                               dv_spacesM >> return ()
                               if True then return () else throwErrorPackratM "True" "not match"
-                              xx100_100 <- dvCharsM
-                              let c = xx100_100
+                              xx104_104 <- dvCharsM
+                              let c = xx104_104
                               if isComma c
                                then return ()
                                else throwErrorPackratM "isComma c" "not match"
@@ -1468,15 +1513,15 @@ p_hsExpTpl = foldl1 mplus [do e <- dv_hsExpLamM
 p_hsTypeArr = foldl1 mplus [do l <- dv_hsTypeM
                                return ()
                                if True then return () else throwErrorPackratM "True" "not match"
-                               xx101_101 <- dvCharsM
-                               case xx101_101 of
+                               xx105_105 <- dvCharsM
+                               case xx105_105 of
                                    '-' -> return ()
                                    _ -> throwErrorPackratM "'-'" "not match pattern"
-                               let '-' = xx101_101
+                               let '-' = xx105_105
                                return ()
                                if True then return () else throwErrorPackratM "True" "not match"
-                               xx102_102 <- dvCharsM
-                               let c = xx102_102
+                               xx106_106 <- dvCharsM
+                               let c = xx106_106
                                if isGt c
                                 then return ()
                                 else throwErrorPackratM "isGt c" "not match"
@@ -1501,46 +1546,46 @@ p_hsType = foldl1 mplus [do t <- dv_hsType1M
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             return (toTyp t)]
-p_hsType1 = foldl1 mplus [do xx103_103 <- dvCharsM
-                             case xx103_103 of
+p_hsType1 = foldl1 mplus [do xx107_107 <- dvCharsM
+                             case xx107_107 of
                                  '[' -> return ()
                                  _ -> throwErrorPackratM "'['" "not match pattern"
-                             let '[' = xx103_103
+                             let '[' = xx107_107
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
-                             xx104_104 <- dvCharsM
-                             case xx104_104 of
+                             xx108_108 <- dvCharsM
+                             case xx108_108 of
                                  ']' -> return ()
                                  _ -> throwErrorPackratM "']'" "not match pattern"
-                             let ']' = xx104_104
+                             let ']' = xx108_108
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              dv_spacesM >> return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              return listT,
-                          do xx105_105 <- dvCharsM
-                             case xx105_105 of
+                          do xx109_109 <- dvCharsM
+                             case xx109_109 of
                                  '[' -> return ()
                                  _ -> throwErrorPackratM "'['" "not match pattern"
-                             let '[' = xx105_105
+                             let '[' = xx109_109
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              t <- dv_hsTypeArrM
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
-                             xx106_106 <- dvCharsM
-                             case xx106_106 of
+                             xx110_110 <- dvCharsM
+                             case xx110_110 of
                                  ']' -> return ()
                                  _ -> throwErrorPackratM "']'" "not match pattern"
-                             let ']' = xx106_106
+                             let ']' = xx110_110
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              return (appT listT t),
-                          do xx107_107 <- dvCharsM
-                             case xx107_107 of
+                          do xx111_111 <- dvCharsM
+                             case xx111_111 of
                                  '(' -> return ()
                                  _ -> throwErrorPackratM "'('" "not match pattern"
-                             let '(' = xx107_107
+                             let '(' = xx111_111
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              dv_spacesM >> return ()
@@ -1548,11 +1593,11 @@ p_hsType1 = foldl1 mplus [do xx103_103 <- dvCharsM
                              tt <- dv_hsTypeTplM
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
-                             xx108_108 <- dvCharsM
-                             case xx108_108 of
+                             xx112_112 <- dvCharsM
+                             case xx112_112 of
                                  ')' -> return ()
                                  _ -> throwErrorPackratM "')'" "not match pattern"
-                             let ')' = xx108_108
+                             let ')' = xx112_112
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              return (tupT tt),
@@ -1560,30 +1605,30 @@ p_hsType1 = foldl1 mplus [do xx103_103 <- dvCharsM
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              return (conT (mkName t)),
-                          do xx109_109 <- dvCharsM
-                             case xx109_109 of
+                          do xx113_113 <- dvCharsM
+                             case xx113_113 of
                                  '(' -> return ()
                                  _ -> throwErrorPackratM "'('" "not match pattern"
-                             let '(' = xx109_109
+                             let '(' = xx113_113
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
-                             xx110_110 <- dvCharsM
-                             case xx110_110 of
+                             xx114_114 <- dvCharsM
+                             case xx114_114 of
                                  '-' -> return ()
                                  _ -> throwErrorPackratM "'-'" "not match pattern"
-                             let '-' = xx110_110
+                             let '-' = xx114_114
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
-                             xx111_111 <- dvCharsM
-                             let c = xx111_111
+                             xx115_115 <- dvCharsM
+                             let c = xx115_115
                              if isGt c
                               then return ()
                               else throwErrorPackratM "isGt c" "not match"
-                             xx112_112 <- dvCharsM
-                             case xx112_112 of
+                             xx116_116 <- dvCharsM
+                             case xx116_116 of
                                  ')' -> return ()
                                  _ -> throwErrorPackratM "')'" "not match pattern"
-                             let ')' = xx112_112
+                             let ')' = xx116_116
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              dv_spacesM >> return ()
@@ -1592,8 +1637,8 @@ p_hsType1 = foldl1 mplus [do xx103_103 <- dvCharsM
 p_hsTypeTpl = foldl1 mplus [do t <- dv_hsTypeArrM
                                return ()
                                if True then return () else throwErrorPackratM "True" "not match"
-                               xx113_113 <- dvCharsM
-                               let c = xx113_113
+                               xx117_117 <- dvCharsM
+                               let c = xx117_117
                                if isComma c
                                 then return ()
                                 else throwErrorPackratM "isComma c" "not match"
@@ -1633,13 +1678,13 @@ p_tvtail = foldl1 mplus [do a <- dv_alphaM
 p_integer = foldl1 mplus [do dh <- dv_digitM
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
-                             xx114_114 <- list (foldl1 mplus [do d <- dv_digitM
+                             xx118_118 <- list (foldl1 mplus [do d <- dv_digitM
                                                                  return ()
                                                                  if True
                                                                   then return ()
                                                                   else throwErrorPackratM "True" "not match"
                                                                  return d])
-                             let ds = xx114_114
+                             let ds = xx118_118
                              return ()
                              return (read (cons dh ds))]
 p_alpha = foldl1 mplus [do u <- dv_upperM
@@ -1654,20 +1699,20 @@ p_alpha = foldl1 mplus [do u <- dv_upperM
                            return ()
                            if True then return () else throwErrorPackratM "True" "not match"
                            return d]
-p_upper = foldl1 mplus [do xx115_115 <- dvCharsM
-                           let u = xx115_115
+p_upper = foldl1 mplus [do xx119_119 <- dvCharsM
+                           let u = xx119_119
                            if isUpper u
                             then return ()
                             else throwErrorPackratM "isUpper u" "not match"
                            return u]
-p_lower = foldl1 mplus [do xx116_116 <- dvCharsM
-                           let l = xx116_116
+p_lower = foldl1 mplus [do xx120_120 <- dvCharsM
+                           let l = xx120_120
                            if isLowerU l
                             then return ()
                             else throwErrorPackratM "isLowerU l" "not match"
                            return l]
-p_digit = foldl1 mplus [do xx117_117 <- dvCharsM
-                           let d = xx117_117
+p_digit = foldl1 mplus [do xx121_121 <- dvCharsM
+                           let d = xx121_121
                            if isDigit d
                             then return ()
                             else throwErrorPackratM "isDigit d" "not match"
@@ -1678,24 +1723,24 @@ p_spaces = foldl1 mplus [do dv_spaceM >> return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             return (),
                          do return ()]
-p_space = foldl1 mplus [do xx118_118 <- dvCharsM
-                           let s = xx118_118
+p_space = foldl1 mplus [do xx122_122 <- dvCharsM
+                           let s = xx122_122
                            if isSpace s
                             then return ()
                             else throwErrorPackratM "isSpace s" "not match"
                            return (),
-                        do xx119_119 <- dvCharsM
-                           case xx119_119 of
+                        do xx123_123 <- dvCharsM
+                           case xx123_123 of
                                '-' -> return ()
                                _ -> throwErrorPackratM "'-'" "not match pattern"
-                           let '-' = xx119_119
+                           let '-' = xx123_123
                            return ()
                            if True then return () else throwErrorPackratM "True" "not match"
-                           xx120_120 <- dvCharsM
-                           case xx120_120 of
+                           xx124_124 <- dvCharsM
+                           case xx124_124 of
                                '-' -> return ()
                                _ -> throwErrorPackratM "'-'" "not match pattern"
-                           let '-' = xx120_120
+                           let '-' = xx124_124
                            return ()
                            if True then return () else throwErrorPackratM "True" "not match"
                            dv_notNLStringM >> return ()
@@ -1706,53 +1751,53 @@ p_space = foldl1 mplus [do xx118_118 <- dvCharsM
                         do dv_commentM >> return ()
                            if True then return () else throwErrorPackratM "True" "not match"
                            return ()]
-p_notNLString = foldl1 mplus [do ddd121_121 <- get
+p_notNLString = foldl1 mplus [do ddd125_125 <- get
                                  flipMaybe (do dv_nlM >> return ()
                                                if True
                                                 then return ()
                                                 else throwErrorPackratM "True" "not match")
-                                 put ddd121_121
-                                 xx122_122 <- dvCharsM
-                                 let c = xx122_122
+                                 put ddd125_125
+                                 xx126_126 <- dvCharsM
+                                 let c = xx126_126
                                  if True then return () else throwErrorPackratM "True" "not match"
                                  s <- dv_notNLStringM
                                  return ()
                                  if True then return () else throwErrorPackratM "True" "not match"
                                  return (cons c s),
                               do return emp]
-p_nl = foldl1 mplus [do xx123_123 <- dvCharsM
-                        case xx123_123 of
+p_nl = foldl1 mplus [do xx127_127 <- dvCharsM
+                        case xx127_127 of
                             '\n' -> return ()
                             _ -> throwErrorPackratM "'\\n'" "not match pattern"
-                        let '\n' = xx123_123
+                        let '\n' = xx127_127
                         return ()
                         if True then return () else throwErrorPackratM "True" "not match"
                         return ()]
-p_comment = foldl1 mplus [do xx124_124 <- dvCharsM
-                             case xx124_124 of
+p_comment = foldl1 mplus [do xx128_128 <- dvCharsM
+                             case xx128_128 of
                                  '{' -> return ()
                                  _ -> throwErrorPackratM "'{'" "not match pattern"
-                             let '{' = xx124_124
+                             let '{' = xx128_128
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
-                             xx125_125 <- dvCharsM
-                             case xx125_125 of
+                             xx129_129 <- dvCharsM
+                             case xx129_129 of
                                  '-' -> return ()
                                  _ -> throwErrorPackratM "'-'" "not match pattern"
-                             let '-' = xx125_125
+                             let '-' = xx129_129
                              return ()
                              if True then return () else throwErrorPackratM "True" "not match"
-                             ddd126_126 <- get
-                             flipMaybe (do xx127_127 <- dvCharsM
-                                           case xx127_127 of
+                             ddd130_130 <- get
+                             flipMaybe (do xx131_131 <- dvCharsM
+                                           case xx131_131 of
                                                '#' -> return ()
                                                _ -> throwErrorPackratM "'#'" "not match pattern"
-                                           let '#' = xx127_127
+                                           let '#' = xx131_131
                                            return ()
                                            if True
                                             then return ()
                                             else throwErrorPackratM "True" "not match")
-                             put ddd126_126
+                             put ddd130_130
                              dv_commentsM >> return ()
                              if True then return () else throwErrorPackratM "True" "not match"
                              dv_comEndM >> return ()
@@ -1768,36 +1813,36 @@ p_comments = foldl1 mplus [do dv_notComStrM >> return ()
                            do dv_notComStrM >> return ()
                               if True then return () else throwErrorPackratM "True" "not match"
                               return ()]
-p_notComStr = foldl1 mplus [do ddd128_128 <- get
+p_notComStr = foldl1 mplus [do ddd132_132 <- get
                                flipMaybe (do dv_commentM >> return ()
                                              if True
                                               then return ()
                                               else throwErrorPackratM "True" "not match")
-                               put ddd128_128
-                               ddd129_129 <- get
+                               put ddd132_132
+                               ddd133_133 <- get
                                flipMaybe (do dv_comEndM >> return ()
                                              if True
                                               then return ()
                                               else throwErrorPackratM "True" "not match")
-                               put ddd129_129
+                               put ddd133_133
                                _ <- dvCharsM
                                if True then return () else throwErrorPackratM "True" "not match"
                                dv_notComStrM >> return ()
                                if True then return () else throwErrorPackratM "True" "not match"
                                return (),
                             do return ()]
-p_comEnd = foldl1 mplus [do xx131_130 <- dvCharsM
-                            case xx131_130 of
+p_comEnd = foldl1 mplus [do xx135_134 <- dvCharsM
+                            case xx135_134 of
                                 '-' -> return ()
                                 _ -> throwErrorPackratM "'-'" "not match pattern"
-                            let '-' = xx131_130
+                            let '-' = xx135_134
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
-                            xx132_131 <- dvCharsM
-                            case xx132_131 of
+                            xx136_135 <- dvCharsM
+                            case xx136_135 of
                                 '}' -> return ()
                                 _ -> throwErrorPackratM "'}'" "not match pattern"
-                            let '}' = xx132_131
+                            let '}' = xx136_135
                             return ()
                             if True then return () else throwErrorPackratM "True" "not match"
                             return ()]

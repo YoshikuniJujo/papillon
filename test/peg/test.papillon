@@ -17,7 +17,7 @@ main = do
 
 onlyDigits :: Int -> ([String], Int)
 	= (Just s):digits []:other
-		{ \x -> (replicate x $ 'c' : s ++ show (-5), - 9) }
+		{ \x -> (replicate x $ 'c' : s ++ show (-5 :: Int), - 9) }
 ;
 digits :: Maybe String
 	= s:something			{ Just s }
