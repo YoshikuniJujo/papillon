@@ -9,6 +9,7 @@ module Text.Papillon (
 	SourceList(..),
 	ListPos(..),
 	list, list1,
+	papOptional
 ) where
 
 import Language.Haskell.TH.Quote
@@ -28,6 +29,24 @@ import Text.Papillon.List
 
 classSourceQ True
 listDec True
+optionalDec True
+
+isOptionalUsed :: Peg -> Bool
+isOptionalUsed = any isOptionalUsedDefinition
+
+isOptionalUsedDefinition :: Definition -> Bool
+isOptionalUsedDefinition (_, _, sel) = any isOptionalUsedSelection sel
+
+isOptionalUsedSelection :: ExpressionHs -> Bool
+isOptionalUsedSelection = any isOptionalUsedLeafName . fst
+
+isOptionalUsedLeafName :: NameLeaf_ -> Bool
+isOptionalUsedLeafName (Here nl) = isOptionalUsedLeafName' nl
+isOptionalUsedLeafName (NotAfter nl) = isOptionalUsedLeafName' nl
+
+isOptionalUsedLeafName' :: NameLeaf -> Bool
+isOptionalUsedLeafName' (NameLeafOptional _ _) = True
+isOptionalUsedLeafName' _ = False
 
 isListUsed :: Peg -> Bool
 isListUsed = any isListUsedDefinition
@@ -126,11 +145,13 @@ papillonStr' src = do
 	decs <- runQ decsQ
 	cls <- runQ $ classSourceQ False
 	lst <- runQ $ listDec False
+	opt <- runQ $ optionalDec False
 	return $ ppp ++
-		(if isListUsed peg then "\nimport Control.Applicative\n" else "") ++
+		(if isListUsed peg || isOptionalUsed peg then "\nimport Control.Applicative\n" else "") ++
 		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++
 		"\n" ++ show (ppr cls) ++ "\n" ++
-		if isListUsed peg then show (ppr lst) else ""
+		if isListUsed peg then show (ppr lst) else "" ++ "\n" ++
+		if isOptionalUsed peg then show (ppr opt) else ""
 
 returnN, stateTN, putN, stateTN', getN,
 	strMsgN, throwErrorN, runStateTN, justN, mplusN,
@@ -432,6 +453,19 @@ transLeaf' g th (NameLeafList n nl) = do
 			varE (mkName "list") `appE` pSomes1Sel g th nl)
 		VarP _ -> sequence [
 			bindS (varP t) $ varE (mkName "list") `appE`
+				pSomes1Sel g th nl,
+			letS [flip (valD n) [] $ normalB $ varE t],
+			noBindS $ varE (mkName "return") `appE` tupE []
+		 ]
+		_ -> undefined
+transLeaf' g th (NameLeafOptional n nl) = do
+	t <- getNewName g "xx"
+	nn <- n
+	case nn of
+		WildP -> (: []) <$> bindS wildP (
+			varE (mkName "papOptional") `appE` pSomes1Sel g th nl)
+		VarP _ -> sequence [
+			bindS (varP t) $ varE (mkName "papOptional") `appE`
 				pSomes1Sel g th nl,
 			letS [flip (valD n) [] $ normalB $ varE t],
 			noBindS $ varE (mkName "return") `appE` tupE []

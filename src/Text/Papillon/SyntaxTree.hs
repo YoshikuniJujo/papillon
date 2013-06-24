@@ -7,6 +7,7 @@ type Leaf = (Maybe String, ExR)
 data NameLeaf
 	= NameLeaf PatQ Leaf
 	| NameLeafList PatQ Selection
+	| NameLeafOptional PatQ Selection
 data NameLeaf_ = NotAfter NameLeaf | Here NameLeaf
 notAfter, here :: NameLeaf -> NameLeaf_
 notAfter = NotAfter
@@ -131,7 +132,8 @@ addPragmas =
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n" ++
-	"import Control.Monad.Trans.Error (Error (..))\n"
+	"import Control.Monad.Trans.Error (Error (..))\n" -- ++
+--	"import Control.Applicative\n"
 
 charP :: Char -> PatQ
 charP = litP . charL
@@ -139,15 +141,16 @@ stringP :: String -> PatQ
 stringP = litP . stringL
 
 isAlphaNumOt, elemNTs :: Char -> Bool
-isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),+<>"
+isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),+<>?"
 elemNTs = (`elem` "nt\\'")
 
-isComma, isKome, isOpen, isClose, isGt :: Char -> Bool
+isComma, isKome, isOpen, isClose, isGt, isQuestion :: Char -> Bool
 isComma = (== ',')
 isKome = (== '*')
 isOpen = (== '(')
 isClose = (== ')')
 isGt = (== '>')
+isQuestion = (== '?')
 
 getNTs :: Char -> Char
 getNTs 'n' = '\n'

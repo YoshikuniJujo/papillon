@@ -9,15 +9,19 @@ main = do
 	case dv_onlyDigits $ parse initialPos "123 abc" of
 		Right (str, _) -> print $ str 4
 		Left err -> putStrLn $ "error: " ++ show err
+	case dv_onlyDigits $ parse initialPos "123 \n\t" of
+		Right (str, _) -> print $ str 4
+		Left err -> putStrLn $ "error: " ++ show err
 	case dv_onlyDigits $ parse initialPos "123abc" of
 		Right (str, _) -> print $ str 4
 		Left err -> putStrLn $ "OK! fail: " ++ show err
 
 [papillon|
 
-onlyDigits :: Int -> ([String], Int)
-	= (Just s, - 8):digits []:other
-		{ \x -> (replicate x $ 'c' : s ++ show (-5 :: Int), - 9) }
+onlyDigits :: Int -> ([String], Int, Maybe String, Maybe Char)
+	= (Just s, - 8):digits []:other ' ' mo:(o:other { o })?
+		mc:(c:[not $ isLower c] { c })?
+		{ \x -> (replicate x $ 'c' : s ++ show (-5 :: Int), - 9, mo, mc) }
 ;
 digits :: (Maybe String, Int)
 	= s:something			{ (Just s, - 8) }

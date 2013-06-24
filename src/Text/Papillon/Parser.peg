@@ -108,8 +108,10 @@ nameLeaf_ :: NameLeaf_
 	/ nl:nameLeaf				{ here nl }
 ;
 nameLeaf :: NameLeaf
-	= n:pat1 ':' '(' ex:selection ')' k:[isKome k] _:spaces
-		{ mkNameLeafList n ex }
+	= n:pat1 ':' '(' ex:selection ')' '*' _:spaces
+		{ NameLeafList n ex }
+	/ n:pat1 ':' '(' ex:selection ')' c:[isQuestion c] _:spaces
+		{ NameLeafOptional n ex }
 --	/ o:[isOpen o] nl:nameLeaf c:[isClose c]	{ nl }
 	/ n:pat1 ':' l:leaf		{ mkNameLeaf n l }
 	/ n:pat1					{ mkNameLeaf n ctLeaf }
