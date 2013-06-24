@@ -139,14 +139,15 @@ stringP :: String -> PatQ
 stringP = litP . stringL
 
 isAlphaNumOt, elemNTs :: Char -> Bool
-isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),+"
+isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),+<>"
 elemNTs = (`elem` "nt\\'")
 
-isComma, isKome, isOpen, isClose :: Char -> Bool
+isComma, isKome, isOpen, isClose, isGt :: Char -> Bool
 isComma = (== ',')
 isKome = (== '*')
 isOpen = (== '(')
 isClose = (== ')')
+isGt = (== '>')
 
 getNTs :: Char -> Char
 getNTs 'n' = '\n'

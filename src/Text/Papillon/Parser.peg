@@ -96,7 +96,7 @@ selection :: Selection
 	/ ex:expressionHs	{ cons ex emp }
 ;
 expressionHs :: ExpressionHs
-	= e:expression _:spaces '{' _:spaces h:hsExpOp _:spaces '}'
+	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
 		{ mkExpressionHs e h }
 ;
 expression :: Expression
@@ -163,7 +163,12 @@ leaf :: Leaf
 	/ v:variable				{ ruleLeaf v true }
 ;
 test :: ExR
-	= '[' h:hsExpOp ']'		{ h }
+	= '[' h:hsExpLam ']'		{ h }
+;
+hsExpLam :: ExR
+	= '\\' _:spaces ps:pats _:spaces '-' c:[isGt c] _:spaces e:hsExpOp
+					{ lamE ps e }
+	/ e:hsExpOp			{ e }
 ;
 hsExpOp :: ExR
 	= l:hsExp _:spaces o:hsOp _:spaces r:hsExpOp
@@ -192,9 +197,9 @@ hsExp1 :: ExR
 	/ '"' s:stringLit '"'		{ litE (stringL s) }
 ;
 hsExpTpl :: ExRL
-	= e:hsExpOp _:spaces c:[isComma c] _:spaces et:hsExpTpl
+	= e:hsExpLam _:spaces c:[isComma c] _:spaces et:hsExpTpl
 					{ cons e et }
-	/ e:hsExpOp			{ cons e emp }
+	/ e:hsExpLam			{ cons e emp }
 	/				{ emp }
 ;
 hsType :: Typ

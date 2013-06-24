@@ -7,16 +7,18 @@ import Data.Char
 main :: IO ()
 main = do
 	case dv_onlyDigits $ parse initialPos "123 abc" of
-		Right (str, _) -> print str
+		Right (str, _) -> print $ str 4
 		Left err -> putStrLn $ "error: " ++ show err
 	case dv_onlyDigits $ parse initialPos "123abc" of
-		Right (str, _) -> print str
+		Right (str, _) -> print $ str 4
 		Left err -> putStrLn $ "OK! fail: " ++ show err
+
+type Ret = Int -> [String]
 
 [papillon|
 
-onlyDigits :: [String]
-	= (Just s):digits []:other	{ replicate 3 $ 'c' : s ++ "hoge" }
+onlyDigits :: Ret
+	= (Just s):digits []:other	{ \x -> replicate x $ 'c' : s ++ "hoge" }
 ;
 digits :: Maybe String
 	= s:something			{ Just s }
