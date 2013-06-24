@@ -21,6 +21,9 @@ main = do
 	case dv_addDigits2 $ parse initialPos "33 25" of
 		Right (r, _) -> print r
 		Left err -> putStrLn $ "error: " ++ show err
+	case dv_divDigits $ parse initialPos "63 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
 
 [papillon|
 
@@ -37,6 +40,9 @@ addDigits :: Int
 ;
 addDigits2 :: Int
 	= ((:) _ x):something ' ' y:something	{ (read x + read y) }
+;
+divDigits :: Int
+	= x:something ' ' y:something	{ read x `div` read y }
 ;
 digits :: (Maybe String, Int)
 	= s:something			{ (Just s, - 8) }
