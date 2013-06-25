@@ -6,7 +6,7 @@ main :: IO ()
 main = do
 	case dv_checkTriple $ parse initialPos "ab cd a d ef hello, my friend" of
 		Right (r, _) -> print r
-		Left err -> putStrLn $ "error: " ++ show err
+		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
 
 [papillon|
 

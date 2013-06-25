@@ -182,7 +182,8 @@ addPragmas =
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n" ++
-	"import Control.Monad.Trans.Error (Error (..))\n" -- ++
+	"import Control.Monad.Trans.Error (Error (..))\n" ++
+	"import Language.Haskell.TH\n"
 --	"import Control.Applicative\n"
 
 charP :: Char -> PatQ

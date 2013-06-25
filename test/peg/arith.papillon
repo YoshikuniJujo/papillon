@@ -19,16 +19,19 @@ main :: IO ()
 main = do
 	case dv_expression $ parse initialPos testExp of
 		Right (d, _) -> print d
-		Left s -> putStrLn $ "error: " ++ show s
+		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
 	case dv_expression $ parse initialPos testErr of
 		Right (d, _) -> print d
-		Left s -> putStrLn $ "OK! it's fail: " ++ show s
+		Left (ParseError c m p _ _) -> putStrLn $
+			"OK! it's fail: " ++ show (c, m, p)
 	case dv_expression $ parse initialPos testErr' of
 		Right (d, _) -> print d
-		Left s -> putStrLn $ "OK! it's fail: " ++ show s
+		Left (ParseError c m p _ _) -> putStrLn $
+			"OK! it's fail: " ++ show (c, m, p)
 	case dv_expression $ parse initialPos testErr'' of
 		Right (d, _) -> print d
-		Left s -> putStrLn $ "OK! it's fail: " ++ show s
+		Left (ParseError c m p _ _) -> putStrLn $
+			"OK! it's fail: " ++ show (c, m, p)
 
 type LeftInteger = Integer -> Integer
 type Nil = ()

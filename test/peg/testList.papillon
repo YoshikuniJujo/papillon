@@ -5,7 +5,7 @@ import Text.Papillon
 main :: IO ()
 main = case dv_other $ parse initialPos "something" of
 	Right (r, _) -> print r
-	Left err -> putStrLn $ "not match " ++ show err
+	Left (ParseError c m p _ _) -> putStrLn $ "not match " ++ show (c, m, p)
 
 [papillon|
 

@@ -6,7 +6,7 @@ import Data.Char
 main :: IO ()
 main = case dv_something $ parse initialPos "335,287" of
 	Right (n, _) -> print n
-	Left err -> putStrLn $ "not match: " ++ show err
+	Left (ParseError c m p _ _) -> putStrLn $ "not match: " ++ show (c, m, p)
 
 [papillon|
 
