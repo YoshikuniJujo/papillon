@@ -2,6 +2,8 @@ module Text.Papillon.SyntaxTree where
 
 import Language.Haskell.TH
 import Data.Char
+import Control.Applicative
+import Data.List
 
 type Leaf = (ReadFrom, ExR)
 data ReadFrom
@@ -11,14 +13,61 @@ data ReadFrom
 	| FromList ReadFrom
 	| FromList1 ReadFrom
 	| FromOptional ReadFrom
+
+showLeaf :: Leaf -> Q String
+showLeaf (rf, ex) = do
+	rff <- showReadFrom rf
+	exx <- ex
+	return $ rff ++ "[" ++ show (ppr exx) ++ "]"
+
+showReadFrom :: ReadFrom -> Q String
+showReadFrom FromToken = return ""
+showReadFrom (FromVariable v) = return v
+showReadFrom (FromList rf) = (++ "*") <$> showReadFrom rf
+showReadFrom (FromList1 rf) = (++ "+") <$> showReadFrom rf
+showReadFrom (FromOptional rf) = (++ "?") <$> showReadFrom rf
+showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
+
 data NameLeaf = NameLeaf PatQ ReadFrom ExR
-data NameLeaf_ = NotAfter NameLeaf | Here NameLeaf
+
+showNameLeaf :: NameLeaf -> Q String
+showNameLeaf (NameLeaf pat rf p) = do
+	patt <- pat
+	rff <- showReadFrom rf
+	pp <- p
+	return $ show (ppr patt) ++ ":" ++ rff ++ "[" ++ show (ppr pp) ++ "]"
+
+data NameLeaf_
+	= Here NameLeaf
+	| After NameLeaf
+	| NotAfter NameLeaf
+
+showNameLeaf_ :: NameLeaf_ -> Q String
+showNameLeaf_ (Here nl) = showNameLeaf nl
+showNameLeaf_ (After nl) = ('&' :) <$> showNameLeaf nl
+showNameLeaf_ (NotAfter nl) = ('!' :) <$> showNameLeaf nl
+
 notAfter, here :: NameLeaf -> NameLeaf_
 notAfter = NotAfter
 here = Here
 type Expression = [NameLeaf_]
+
+showExpression :: Expression -> Q String
+showExpression ex = unwords <$> mapM showNameLeaf_ ex
+
 type ExpressionHs = (Expression, ExR)
+
+showExpressionHs :: ExpressionHs -> Q String
+showExpressionHs (ex, hs) = do
+	expp <- showExpression ex
+	hss <- hs
+	return $ expp ++ " { " ++ show (ppr hss) ++ " }"
+
 type Selection = [ExpressionHs]
+
+showSelection :: Selection -> Q String
+showSelection ehss = (intercalate " / ") <$> mapM showExpressionHs ehss
+
 type Definition = (String, TypeQ, Selection)
 type Peg = [Definition]
 type TTPeg = (TypeQ, TypeQ, Peg)
@@ -142,10 +191,10 @@ stringP :: String -> PatQ
 stringP = litP . stringL
 
 isAlphaNumOt, elemNTs :: Char -> Bool
-isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),+<>?`"
+isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),+<>?`&"
 elemNTs = (`elem` "nt\\'")
 
-isComma, isKome, isOpen, isClose, isGt, isQuestion, isBQ :: Char -> Bool
+isComma, isKome, isOpen, isClose, isGt, isQuestion, isBQ, isAmp :: Char -> Bool
 isComma = (== ',')
 isKome = (== '*')
 isOpen = (== '(')
@@ -153,6 +202,7 @@ isClose = (== ')')
 isGt = (== '>')
 isQuestion = (== '?')
 isBQ = (== '`')
+isAmp = (== '&')
 
 getNTs :: Char -> Char
 getNTs 'n' = '\n'

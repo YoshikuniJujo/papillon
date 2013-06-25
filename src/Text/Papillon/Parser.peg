@@ -13,6 +13,7 @@ module Text.Papillon.Parser (
 	dv_peg,
 	dv_pegFile,
 	initialPos,
+	showNameLeaf
 ) where
 
 import Data.Char
@@ -107,6 +108,7 @@ expression :: Expression
 ;
 nameLeaf_ :: NameLeaf_
 	= '!' nl:nameLeaf			{ notAfter nl }
+	/ c:[isAmp c] nl:nameLeaf		{ After nl }
 	/ nl:nameLeaf				{ here nl }
 ;
 nameLeaf :: NameLeaf

@@ -41,6 +41,18 @@ main = do
 	case dv_digits_ $ parse initialPos "12345abc 25" of
 		Right (r, _) -> print r
 		Left err -> putStrLn $ "error: " ++ show err
+	case dv_testAnd $ parse initialPos "12345abc 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
+	case dv_testAnd $ parse initialPos "12345bc 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "OK! fail: " ++ show err
+	case dv_testNot $ parse initialPos "12345abc 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "OK! fail: " ++ show err
+	case dv_testNot $ parse initialPos "12345bc 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
 
 [papillon|
 
@@ -84,6 +96,12 @@ other :: String
 ;
 digits_ :: Int
 	= d:(c:[isDigit c] { c })+	{ read d }
+;
+testAnd :: Int
+	= d:digits_ &'a'		{ d }
+;
+testNot :: Int
+	= d:digits_ !'a'		{ d }
 ;
 
 |]
