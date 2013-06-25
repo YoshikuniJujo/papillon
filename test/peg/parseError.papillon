@@ -12,7 +12,14 @@ main = do
 		Left (ParseError c m p _ _) -> putStrLn $ "OK! it's fail: " ++ show (c, m, p)
 	case dv_other $ parse initialPos "parse hoge" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
-		Left (ParseError c m p _ _) -> putStrLn $ "OK! it's fail: " ++ show (c, m, p)
+		Left (ParseError c m p d n) -> do
+			putStrLn $ "OK! it's fail: " ++ show (c, m, p, n)
+			case dv_string d of
+				Right (s, _) -> print s
+				Left _ -> print "hoge"
+			case dvChars d of
+				Right (s, _) -> print s
+				Left _ -> print "hoge"
 
 type Nil = ()
 nil :: Nil

@@ -22,8 +22,8 @@ main = do
 		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
 	case dv_expression $ parse initialPos testErr of
 		Right (d, _) -> print d
-		Left (ParseError c m p _ _) -> putStrLn $
-			"OK! it's fail: " ++ show (c, m, p)
+		Left (ParseError c m p _ n) -> putStrLn $
+			"OK! it's fail: " ++ show (c, m, p, n)
 	case dv_expression $ parse initialPos testErr' of
 		Right (d, _) -> print d
 		Left (ParseError c m p _ _) -> putStrLn $
