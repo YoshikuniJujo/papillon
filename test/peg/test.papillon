@@ -38,6 +38,9 @@ main = do
 	case dv_testSelLeaf $ parse initialPos "abcde 25" of
 		Right (r, _) -> print r
 		Left err -> putStrLn $ "error: " ++ show err
+	case dv_digits_ $ parse initialPos "12345abc 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
 
 [papillon|
 
@@ -78,6 +81,9 @@ something :: String
 other :: String
 	= c:[isLower c] s:other		{ c : s }
 	/				{ [] }
+;
+digits_ :: Int
+	= d:(c:[isDigit c] { c })+	{ read d }
 ;
 
 |]

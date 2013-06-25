@@ -67,6 +67,7 @@ isListUsedLeafName (NotAfter nl) = isListUsedLeafName' nl
 
 isListUsedLeafName' :: NameLeaf -> Bool
 isListUsedLeafName' (NameLeaf _ (FromList _) _) = True
+isListUsedLeafName' (NameLeaf _ (FromList1 _) _) = True
 isListUsedLeafName' _ = False
 
 usingNames :: Peg -> [String]
@@ -89,6 +90,8 @@ getLeafName' (NameLeaf _ rf _) = getNamesFromReadFrom rf
 getNamesFromReadFrom :: ReadFrom -> [String]
 getNamesFromReadFrom (FromVariable n) = [n]
 getNamesFromReadFrom (FromList rf) = getNamesFromReadFrom rf
+getNamesFromReadFrom (FromList1 rf) = getNamesFromReadFrom rf
+getNamesFromReadFrom (FromOptional rf) = getNamesFromReadFrom rf
 getNamesFromReadFrom (FromSelection sel) = concatMap getNamesFromExpressionHs sel
 getNamesFromReadFrom _ = []
 
@@ -456,6 +459,7 @@ transReadFrom _ _ FromToken = varE $ mkName "dvCharsM"
 transReadFrom _ _ (FromVariable var) = varE $ mkName $ "dv_" ++ var ++ "M"
 transReadFrom g th (FromSelection sel) = pSomes1Sel g th sel
 transReadFrom g th (FromList rf) = varE (mkName "list") `appE` transReadFrom g th rf
+transReadFrom g th (FromList1 rf) = varE (mkName "list1") `appE` transReadFrom g th rf
 transReadFrom g th (FromOptional rf) = varE (mkName "papOptional") `appE` transReadFrom g th rf
 
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]

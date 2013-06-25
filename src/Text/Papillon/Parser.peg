@@ -183,6 +183,7 @@ leaf :: Leaf
 ;
 readFromLs :: ReadFrom
 	= rf:readFrom '*'			{ FromList rf }
+	/ rf:readFrom '+'			{ FromList1 rf }
 	/ rf:readFrom '?'			{ FromOptional rf }
 	/ rf:readFrom				{ rf }
 ;
