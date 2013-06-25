@@ -10,10 +10,7 @@ data ReadFrom
 	| FromToken
 	| FromList ReadFrom
 	| FromOptional ReadFrom
-data NameLeaf
-	= NameLeaf PatQ ReadFrom ExR
-	| NameLeafList PatQ Selection
-	| NameLeafOptional PatQ Selection
+data NameLeaf = NameLeaf PatQ ReadFrom ExR
 data NameLeaf_ = NotAfter NameLeaf | Here NameLeaf
 notAfter, here :: NameLeaf -> NameLeaf_
 notAfter = NotAfter
@@ -64,9 +61,6 @@ type PatQs = [PatQ]
 
 mkNameLeaf :: PatQ -> Leaf -> NameLeaf
 mkNameLeaf n (f, p) = NameLeaf n f p
-
-mkNameLeafList :: PatQ -> Selection -> NameLeaf
-mkNameLeafList = NameLeafList
 
 strToPatQ :: String -> PatQ
 strToPatQ = varP . mkName

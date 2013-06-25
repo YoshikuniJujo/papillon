@@ -32,9 +32,18 @@ main = do
 	case dv_getSomeData $ parse initialPos "63 25" of
 		Right (r, _) -> print r
 		Left err -> putStrLn $ "error: " ++ show err
+	case dv_testSelLeaf $ parse initialPos "63 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
+	case dv_testSelLeaf $ parse initialPos "abcde 25" of
+		Right (r, _) -> print r
+		Left err -> putStrLn $ "error: " ++ show err
 
 [papillon|
 
+testSelLeaf :: Int
+	= i:(d:something { read d } / o:other { length o }) { i }
+;
 onlyDigits :: Int -> ([String], Int, Maybe String, Maybe Char)
 	= (Just s, - 8):digits []:other ' ' mo:(o:other { o })?
 		mc:(c:[not $ isLower c] { c })?

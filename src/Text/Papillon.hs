@@ -46,8 +46,6 @@ isOptionalUsedLeafName (NotAfter nl) = isOptionalUsedLeafName' nl
 
 isOptionalUsedLeafName' :: NameLeaf -> Bool
 isOptionalUsedLeafName' (NameLeaf _ rf _) = isOptionalUsedReadFrom rf
-isOptionalUsedLeafName' (NameLeafOptional _ _) = True
-isOptionalUsedLeafName' _ = False
 
 isOptionalUsedReadFrom :: ReadFrom -> Bool
 isOptionalUsedReadFrom (FromOptional _) = True
@@ -69,7 +67,6 @@ isListUsedLeafName (NotAfter nl) = isListUsedLeafName' nl
 
 isListUsedLeafName' :: NameLeaf -> Bool
 isListUsedLeafName' (NameLeaf _ (FromList _) _) = True
-isListUsedLeafName' (NameLeafList _ _) = True
 isListUsedLeafName' _ = False
 
 usingNames :: Peg -> [String]
@@ -88,15 +85,6 @@ getLeafName (NotAfter nl) = getLeafName' nl
 
 getLeafName' :: NameLeaf -> [String]
 getLeafName' (NameLeaf _ rf _) = getNamesFromReadFrom rf
-getLeafName' (NameLeafList _ sel) =
-	concatMap getNamesFromExpressionHs sel
-getLeafName' _ = []
-{-
-getLeafName' (NameLeaf _ (FromVariable n) _) = [n]
-getLeafName' (NameLeafList _ sel) =
-	concatMap getNamesFromExpressionHs sel
-getLeafName' _ = []
--}
 
 getNamesFromReadFrom :: ReadFrom -> [String]
 getNamesFromReadFrom (FromVariable n) = [n]
@@ -488,32 +476,6 @@ transLeaf' g th (NameLeaf n rf p) = do
 			m <- beforeMatch th t n
 			c <- afterCheck th p
 			return $ s : m ++ [c]
-transLeaf' g th (NameLeafList n nl) = do
-	t <- getNewName g "xx"
-	nn <- n
-	case nn of
-		WildP -> (: []) <$> bindS wildP (
-			varE (mkName "list") `appE` pSomes1Sel g th nl)
-		VarP _ -> sequence [
-			bindS (varP t) $ varE (mkName "list") `appE`
-				pSomes1Sel g th nl,
-			letS [flip (valD n) [] $ normalB $ varE t],
-			noBindS $ varE (mkName "return") `appE` tupE []
-		 ]
-		_ -> undefined
-transLeaf' g th (NameLeafOptional n nl) = do
-	t <- getNewName g "xx"
-	nn <- n
-	case nn of
-		WildP -> (: []) <$> bindS wildP (
-			varE (mkName "papOptional") `appE` pSomes1Sel g th nl)
-		VarP _ -> sequence [
-			bindS (varP t) $ varE (mkName "papOptional") `appE`
-				pSomes1Sel g th nl,
-			letS [flip (valD n) [] $ normalB $ varE t],
-			noBindS $ varE (mkName "return") `appE` tupE []
-		 ]
-		_ -> undefined
 
 transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
 transLeaf g th (Here nl) = transLeaf' g th nl
