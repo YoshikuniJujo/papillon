@@ -45,8 +45,14 @@ isOptionalUsedLeafName (Here nl) = isOptionalUsedLeafName' nl
 isOptionalUsedLeafName (NotAfter nl) = isOptionalUsedLeafName' nl
 
 isOptionalUsedLeafName' :: NameLeaf -> Bool
+isOptionalUsedLeafName' (NameLeaf _ rf _) = isOptionalUsedReadFrom rf
 isOptionalUsedLeafName' (NameLeafOptional _ _) = True
 isOptionalUsedLeafName' _ = False
+
+isOptionalUsedReadFrom :: ReadFrom -> Bool
+isOptionalUsedReadFrom (FromOptional _) = True
+isOptionalUsedReadFrom (FromSelection sel) = any isOptionalUsedSelection sel
+isOptionalUsedReadFrom _ = False
 
 isListUsed :: Peg -> Bool
 isListUsed = any isListUsedDefinition
@@ -462,6 +468,7 @@ transReadFrom _ _ FromToken = varE $ mkName "dvCharsM"
 transReadFrom _ _ (FromVariable var) = varE $ mkName $ "dv_" ++ var ++ "M"
 transReadFrom g th (FromSelection sel) = pSomes1Sel g th sel
 transReadFrom g th (FromList rf) = varE (mkName "list") `appE` transReadFrom g th rf
+transReadFrom g th (FromOptional rf) = varE (mkName "papOptional") `appE` transReadFrom g th rf
 
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
 transLeaf' g th (NameLeaf n rf p) = do

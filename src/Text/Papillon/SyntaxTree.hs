@@ -9,6 +9,7 @@ data ReadFrom
 	| FromSelection Selection
 	| FromToken
 	| FromList ReadFrom
+	| FromOptional ReadFrom
 data NameLeaf
 	= NameLeaf PatQ ReadFrom ExR
 	| NameLeafList PatQ Selection
