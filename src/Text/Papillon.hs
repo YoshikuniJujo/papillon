@@ -328,10 +328,11 @@ instanceErrorParseError th = instanceD
 
 {-
 
-throwErrorPackratM :: String -> PackratM a
-throwErrorPackratM msg = do
+throwErrorPackratM :: String -> String -> String -> PackratM a
+throwErrorPackratM code msg name = do
 	pos <- gets dvPos
-	throwError (ParseError "" msg pos)
+	d <- get
+	throwError (ParseError code msg pos d (varE $ mkName $ "dv_" ++ name))
 
 -}
 
@@ -348,7 +349,7 @@ throwErrorPackratMQ th = sequence [
 			`arrT`
 			conT (mkName "String")
 			`arrT`
-			conT (mkName "ErrorTypes")
+			conT (mkName "String")
 			`arrT`
 			(conT (mkName "PackratM") `appT` varT (mkName "a")),
 	funD (mkName "throwErrorPackratM") $ (: []) $
