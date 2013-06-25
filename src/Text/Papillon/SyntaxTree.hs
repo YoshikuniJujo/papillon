@@ -3,7 +3,11 @@ module Text.Papillon.SyntaxTree where
 import Language.Haskell.TH
 import Data.Char
 
-type Leaf = (Maybe String, ExR)
+type Leaf = (ReadFrom, ExR)
+data ReadFrom
+	= FromVariable String
+	| FromSelection Selection
+	| FromToken
 data NameLeaf
 	= NameLeaf PatQ Leaf
 	| NameLeafList PatQ Selection
@@ -36,12 +40,12 @@ toTyp :: TypeQ -> Typ
 toTyp tp = \f -> f tp
 
 ctLeaf :: Leaf
-ctLeaf = (Nothing, conE $ mkName "True")
+ctLeaf = (FromToken, conE $ mkName "True")
 
 ruleLeaf :: String -> ExpQ -> Leaf
 boolLeaf :: ExpQ -> Leaf
-ruleLeaf r t = (Just r, t)
-boolLeaf p = (Nothing, p)
+ruleLeaf r t = (FromVariable r, t)
+boolLeaf p = (FromToken, p)
 
 true :: ExpQ
 true = conE $ mkName "True"

@@ -2,14 +2,19 @@
 * 次にやること           *
 **************************
 
+* 仕様を変えよう
+	leaf のところで、selection を取れるようにし、
+	* + ? は leaf を取れるようにする。
+	type Leaf = (Maybe String, ExR) を
+	type Leaf = (ReadFrom, ExR) とでもし、
+	data ReadFrom = FromVariable String | FromSelection Selection | FromToken
+	としようかな
+	まずは型の変更からだ。
+
 * 式のなかで selection を使えるようにする
 	_:head (_:some / _:other) :tail のような形
 	これはすでに出来る気がするのであとで test を書いてみて
 	それが通れば OK ということにする
-
-* 上記に関して仕様を変えよう
-	leaf のところで、selection を取れるようにし、
-	* + ? は leaf を取れるようにする。
 
 **************************
 * parser の表記/機能関係 *

@@ -6,6 +6,7 @@ module  Text.Papillon.Parser (
 	ExpressionHs,
 	NameLeaf(..),
 	NameLeaf_(..),
+	ReadFrom(..),
 	parse,
 	dv_peg,
 	dv_pegFile,

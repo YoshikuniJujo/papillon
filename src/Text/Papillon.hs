@@ -80,7 +80,7 @@ getLeafName (Here nl) = getLeafName' nl
 getLeafName (NotAfter nl) = getLeafName' nl
 
 getLeafName' :: NameLeaf -> [String]
-getLeafName' (NameLeaf _ (Just n, _)) = [n]
+getLeafName' (NameLeaf _ (FromVariable n, _)) = [n]
 getLeafName' (NameLeafList _ sel) =
 	concatMap getNamesFromExpressionHs sel
 getLeafName' _ = []
@@ -445,6 +445,23 @@ showNameLeaf (NameLeafList pat sel) =
 -}
 
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
+transLeaf' g th (NameLeaf n (FromSelection sel, p)) = do
+	t <- getNewName g "xx"
+	nn <- n
+	case nn of
+		WildP -> sequence [
+			bindS wildP (pSomes1Sel g th sel),
+			afterCheck th p
+		 ]
+		VarP _ -> do
+			s <- bindS (varP t) $ pSomes1Sel g th sel
+			m <- letS [flip (valD n) [] $ normalB $ varE t]
+			c <- afterCheck th p
+			return $ s : m : [c]
+		_ -> do	s <- bindS (varP t) $ pSomes1Sel g th sel
+			m <- beforeMatch th t n
+			c <- afterCheck th p
+			return $ s : m ++ [c]
 transLeaf' g th (NameLeafList n nl) = do
 	t <- getNewName g "xx"
 	nn <- n
@@ -471,7 +488,7 @@ transLeaf' g th (NameLeafOptional n nl) = do
 			noBindS $ varE (mkName "return") `appE` tupE []
 		 ]
 		_ -> undefined
-transLeaf' g th (NameLeaf n (Nothing, p)) = do
+transLeaf' g th (NameLeaf n (FromToken, p)) = do
 	t <- getNewName g "xx"
 	nn <- n
 	case nn of
@@ -486,7 +503,7 @@ transLeaf' g th (NameLeaf n (Nothing, p)) = do
 			ret2 <- beforeMatch th t n
 			ret3 <- afterCheck th p
 			return $ ret1 : ret2 ++ [ret3]
-transLeaf' g th (NameLeaf n (Just v, p)) = do
+transLeaf' g th (NameLeaf n (FromVariable v, p)) = do
 	nn <- n
 	case nn of
 		VarP _ -> sequence [
