@@ -62,6 +62,7 @@ isListUsedLeafName (Here nl) = isListUsedLeafName' nl
 isListUsedLeafName (NotAfter nl) = isListUsedLeafName' nl
 
 isListUsedLeafName' :: NameLeaf -> Bool
+isListUsedLeafName' (NameLeaf _ (FromList _) _) = True
 isListUsedLeafName' (NameLeafList _ _) = True
 isListUsedLeafName' _ = False
 
@@ -80,10 +81,22 @@ getLeafName (Here nl) = getLeafName' nl
 getLeafName (NotAfter nl) = getLeafName' nl
 
 getLeafName' :: NameLeaf -> [String]
-getLeafName' (NameLeaf _ (FromVariable n, _)) = [n]
+getLeafName' (NameLeaf _ rf _) = getNamesFromReadFrom rf
 getLeafName' (NameLeafList _ sel) =
 	concatMap getNamesFromExpressionHs sel
 getLeafName' _ = []
+{-
+getLeafName' (NameLeaf _ (FromVariable n) _) = [n]
+getLeafName' (NameLeafList _ sel) =
+	concatMap getNamesFromExpressionHs sel
+getLeafName' _ = []
+-}
+
+getNamesFromReadFrom :: ReadFrom -> [String]
+getNamesFromReadFrom (FromVariable n) = [n]
+getNamesFromReadFrom (FromList rf) = getNamesFromReadFrom rf
+getNamesFromReadFrom (FromSelection sel) = concatMap getNamesFromExpressionHs sel
+getNamesFromReadFrom _ = []
 
 catchErrorN, unlessN, errorN :: Bool -> Name
 catchErrorN True = 'catchError
@@ -444,21 +457,27 @@ showNameLeaf (NameLeafList pat sel) =
 
 -}
 
+transReadFrom :: IORef Int -> Bool -> ReadFrom -> ExpQ
+transReadFrom _ _ FromToken = varE $ mkName "dvCharsM"
+transReadFrom _ _ (FromVariable var) = varE $ mkName $ "dv_" ++ var ++ "M"
+transReadFrom g th (FromSelection sel) = pSomes1Sel g th sel
+transReadFrom g th (FromList rf) = varE (mkName "list") `appE` transReadFrom g th rf
+
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
-transLeaf' g th (NameLeaf n (FromSelection sel, p)) = do
+transLeaf' g th (NameLeaf n rf p) = do
 	t <- getNewName g "xx"
 	nn <- n
 	case nn of
 		WildP -> sequence [
-			bindS wildP (pSomes1Sel g th sel),
+			bindS wildP $ transReadFrom g th rf,
 			afterCheck th p
 		 ]
 		VarP _ -> do
-			s <- bindS (varP t) $ pSomes1Sel g th sel
+			s <- bindS (varP t) $ transReadFrom g th rf
 			m <- letS [flip (valD n) [] $ normalB $ varE t]
 			c <- afterCheck th p
 			return $ s : m : [c]
-		_ -> do	s <- bindS (varP t) $ pSomes1Sel g th sel
+		_ -> do	s <- bindS (varP t) $ transReadFrom g th rf
 			m <- beforeMatch th t n
 			c <- afterCheck th p
 			return $ s : m ++ [c]
@@ -488,39 +507,6 @@ transLeaf' g th (NameLeafOptional n nl) = do
 			noBindS $ varE (mkName "return") `appE` tupE []
 		 ]
 		_ -> undefined
-transLeaf' g th (NameLeaf n (FromToken, p)) = do
-	t <- getNewName g "xx"
-	nn <- n
-	case nn of
-		VarP _ -> sequence [
-			bindS (varP t) $ varE $ mkName "dvCharsM",
-			letS [flip (valD n) [] $ normalB $ varE t],
-			afterCheck th p]
-		WildP -> sequence [
-			bindS wildP $ varE $ mkName "dvCharsM",
-			afterCheck th p]
-		_ -> do	ret1 <- bindS (varP t) $ varE $ mkName "dvCharsM"
-			ret2 <- beforeMatch th t n
-			ret3 <- afterCheck th p
-			return $ ret1 : ret2 ++ [ret3]
-transLeaf' g th (NameLeaf n (FromVariable v, p)) = do
-	nn <- n
-	case nn of
-		VarP _ -> sequence [
-			bindS n $ varE $ mkName $ "dv_" ++ v ++ "M",
-			noBindS $ varE (returnN th) `appE` conE (mkName "()"),
-			afterCheck th p]
-		WildP -> (:)
-			<$> noBindS (infixApp
-				(varE $ mkName $ "dv_" ++ v ++ "M")
-				(varE $ mkName ">>")
-				(varE (returnN th) `appE` tupE []))
-			<*> ((:[]) <$> afterCheck th p)
-		_ -> do	t <- getNewName g "xx"
-			(:)	<$> bindS (varP t)
-					(varE $ mkName $ "dv_" ++ v ++ "M")
-				<*> ((++) <$> beforeMatch th t n <*>
-					((: []) <$> afterCheck th p))
 
 transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
 transLeaf g th (Here nl) = transLeaf' g th nl

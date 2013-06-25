@@ -8,8 +8,9 @@ data ReadFrom
 	= FromVariable String
 	| FromSelection Selection
 	| FromToken
+	| FromList ReadFrom
 data NameLeaf
-	= NameLeaf PatQ Leaf
+	= NameLeaf PatQ ReadFrom ExR
 	| NameLeafList PatQ Selection
 	| NameLeafOptional PatQ Selection
 data NameLeaf_ = NotAfter NameLeaf | Here NameLeaf
@@ -61,7 +62,7 @@ cons = (:)
 type PatQs = [PatQ]
 
 mkNameLeaf :: PatQ -> Leaf -> NameLeaf
-mkNameLeaf = NameLeaf
+mkNameLeaf n (f, p) = NameLeaf n f p
 
 mkNameLeafList :: PatQ -> Selection -> NameLeaf
 mkNameLeafList = NameLeafList

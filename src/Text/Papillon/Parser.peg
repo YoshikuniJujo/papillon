@@ -7,6 +7,7 @@ module Text.Papillon.Parser (
 	ExpressionHs,
 	NameLeaf(..),
 	NameLeaf_(..),
+	Leaf,
 	ReadFrom(..),
 	parse,
 	dv_peg,
@@ -109,9 +110,11 @@ nameLeaf_ :: NameLeaf_
 	/ nl:nameLeaf				{ here nl }
 ;
 nameLeaf :: NameLeaf
+{-
 	= n:pat1 ':' '(' ex:selection ')' '*' _:spaces
 		{ NameLeafList n ex }
-	/ n:pat1 ':' '(' ex:selection ')' c:[isQuestion c] _:spaces
+-}
+	= n:pat1 ':' '(' ex:selection ')' c:[isQuestion c] _:spaces
 		{ NameLeafOptional n ex }
 --	/ o:[isOpen o] nl:nameLeaf c:[isClose c]	{ nl }
 	/ n:pat1 ':' l:leaf		{ mkNameLeaf n l }
@@ -166,8 +169,25 @@ pats :: PatQs
 ;
 leaf :: Leaf
 	= t:test				{ boolLeaf t }
+	/ rf:readFromLs t:test			{ (rf, t) }
+	/ rf:readFromLs				{ (rf, true) }
+{-
+	= t:test				{ boolLeaf t }
 	/ v:variable t:test			{ ruleLeaf v t }
 	/ v:variable				{ ruleLeaf v true }
+-}
+{-
+	/ '(' s:selection ')' _:spaces t:test	{ (FromSelection s, t) }
+	/ '(' s:selection ')'			{ (FromSelection s, true) }
+-}
+;
+readFromLs :: ReadFrom
+	= rf:readFrom '*'			{ FromList rf }
+	/ rf:readFrom				{ rf }
+;
+readFrom :: ReadFrom
+	= v:variable				{ FromVariable v }
+	/ '(' s:selection ')'			{ FromSelection s }
 ;
 test :: ExR
 	= '[' h:hsExpLam ']'		{ h }
