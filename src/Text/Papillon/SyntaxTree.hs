@@ -29,9 +29,11 @@ showReadFrom (FromList1 rf) = (++ "+") <$> showReadFrom rf
 showReadFrom (FromOptional rf) = (++ "?") <$> showReadFrom rf
 showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
 
+-- data NameLeaf = NameLeaf (PatQ, String) ReadFrom (ExR, String)
 data NameLeaf = NameLeaf PatQ ReadFrom ExR
 
 showNameLeaf :: NameLeaf -> Q String
+-- showNameLeaf (NameLeaf (pat, _) rf (p, _)) = do
 showNameLeaf (NameLeaf pat rf p) = do
 	patt <- pat
 	rff <- showReadFrom rf
@@ -107,7 +109,8 @@ toTyp :: TypeQ -> Typ
 toTyp tp = \f -> f tp
 
 ctLeaf_ :: PatQ -> NameLeaf
-ctLeaf_ n = NameLeaf n FromToken $ conE $ mkName "True"
+-- ctLeaf_ n = NameLeaf (n, "") FromToken (conE $ mkName "True", "")
+ctLeaf_ n = NameLeaf n FromToken (conE $ mkName "True")
 
 true :: ExpQ
 true = conE $ mkName "True"
