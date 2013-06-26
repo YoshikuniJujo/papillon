@@ -2,9 +2,7 @@
 * 次にやること           *
 **************************
 
-* コマンド papillon のエラーメッセージの改良
-	test/arith.papillon 等と同じ形係でエラーメッセージを出すようにする
-	それができたら version を上げて install だ
+* それができたら version を上げて install だ
 
 * data ParseError の型構築子を公開しないようにする
 	data ParseError = ParseError ... を TH で書き、

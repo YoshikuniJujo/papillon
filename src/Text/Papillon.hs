@@ -21,7 +21,7 @@ import Control.Monad.Trans.Error (Error(..))
 
 import Control.Applicative
 
-import Text.Papillon.Parser hiding (initialPos)
+import Text.Papillon.Parser hiding (initialPos, ParseError(..), Pos(..), ListPos(..))
 import qualified Text.Papillon.Parser as P
 import Data.IORef
 
@@ -231,14 +231,25 @@ declaration :: Bool -> String -> DecsQ
 declaration th str = do
 	let (src, tkn, parsed) = case dv_peg $ parse P.initialPos str of
 		Right ((s, t, p), _) -> (s, t, p)
-		_ -> error "bad"
+		Left err -> error $ "parse error: " ++ showParseError err
 	decParsed th src tkn parsed
 
 declaration' :: String -> (String, String, DecsQ, String, Peg)
 declaration' src = case dv_pegFile $ parse P.initialPos src of
 	Right ((ppp, pp, (s, t, p), atp), _) ->
 		(ppp, pp, decParsed False s t p, atp, p)
-	Left _ -> error $ "parse error: "
+	Left err -> error $ "parse error: " ++ showParseError err
+
+showParseError :: P.ParseError (P.Pos String) -> String
+showParseError (P.ParseError c m (P.ListPos (P.CharPos p)) d ns) =
+	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
+	m ++ c ++ " at position: " ++ show p
+
+showReading :: P.Derivs -> String -> String
+showReading d "dvChars" = case P.dvChars d of
+	Right (c, _) -> show c
+	Left _ -> error "bad"
+showReading _ n = "yet: " ++ n
 
 decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
 decParsed th src tkn parsed = do
