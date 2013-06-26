@@ -38,7 +38,7 @@ main = do
 	case dv_testSelLeaf $ parse initialPos "abcde 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case dv_digits_ $ parse initialPos "12345abc 25" of
+	case dv_digits' $ parse initialPos "12345abc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_testAnd $ parse initialPos "12345abc 25" of
@@ -110,14 +110,14 @@ other :: String
 	= c:[isLower c] s:other		{ c : s }
 	/				{ [] }
 ;
-digits_ :: Int
+digits' :: Int
 	= d:(c:[isDigit c] { c })+	{ read d }
 ;
 testAnd :: Int
-	= d:digits_ &'a' {-# "followed by 'a'" #-}	{ d }
+	= d:digits' &'a' {-# "\"followed by 'a'" #-}	{ d }
 ;
 testNot :: Int
-	= d:digits_ !'a' {-# "not followd by 'a'" #-}	{ d }
+	= d:digits' !'a' {-# "\n\tnot followd by 'a'" #-}	{ d }
 ;
 
 |]

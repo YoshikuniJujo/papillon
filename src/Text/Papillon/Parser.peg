@@ -168,11 +168,21 @@ opConName :: Name
 ;
 charLit :: Char
 	= c:[isAlphaNumOt c]			{ c }
-	/ '\\' c:[elemNTs c]			{ getNTs c }
+--	/ '\\' c:[elemNTs c]			{ getNTs c }
+	/ '\\' c:escapeC			{ c }
 ;
 stringLit :: String
-	= !_:dq c s:stringLit			{ cons c s }
-	/					{ emp }
+	= c:[isStrLitC c] s:stringLit			{ cons c s }
+--	/ '\\' c:[not $ isStrLitC c] s:stringLit	{ c : s }
+	/ '\\' c:escapeC s:stringLit			{ c : s }
+	/						{ emp }
+;
+escapeC :: Char
+	= '"'					{ '"' }
+	/ '\''					{ '\'' }
+	/ '\\'					{ '\\' }
+	/ 'n'					{ newLine }
+	/ 't'					{ tab }
 ;
 dq :: ()
 	= '"'					{ () }
@@ -282,6 +292,7 @@ alpha :: Char
 	= u:upper	{ u }
 	/ l:lower	{ l }
 	/ d:digit	{ d }
+	/ '\''		{ '\'' }
 ;
 upper :: Char
 	= u:[isUpper u]		{ u }

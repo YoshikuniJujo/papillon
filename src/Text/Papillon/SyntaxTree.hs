@@ -196,9 +196,14 @@ charP = litP . charL
 stringP :: String -> PatQ
 stringP = litP . stringL
 
-isAlphaNumOt, elemNTs :: Char -> Bool
-isAlphaNumOt c = isAlphaNum c || c `elem` "{-#.\":}|[]!;=/ *(),+<>?`&"
+isStrLitC, isAlphaNumOt, elemNTs :: Char -> Bool
+isAlphaNumOt = (`notElem` "\\'")
 elemNTs = (`elem` "nt\\'")
+isStrLitC = (`notElem` "\"\\")
+
+newLine, tab :: Char
+newLine = '\n'
+tab = '\t'
 
 isComma, isKome, isOpen, isClose, isGt, isQuestion, isBQ, isAmp :: Char -> Bool
 isComma = (== ',')
