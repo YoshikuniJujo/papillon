@@ -24,7 +24,7 @@ consN False = mkName ":"
 charN True = ''Char
 charN False = mkName "Char"
 
-source, sourceList, listTokenN, tokenN, getTokenN, posN, updatePosN, showPosN,
+source, sourceList, listTokenN, tokenN, getTokenN, posN, updatePosN,
 	listPosN, listUpdatePosN, listShowPosN, initialPosN, listInitialPosN
 	:: Name
 sourceList = mkName "SourceList"
@@ -34,7 +34,6 @@ tokenN = mkName "Token"
 getTokenN = mkName "getToken"
 posN = mkName "Pos"
 updatePosN = mkName "updatePos"
-showPosN = mkName "showPos"
 listPosN = mkName "ListPos"
 listUpdatePosN = mkName "listUpdatePos"
 listShowPosN = mkName "listShowPos"
@@ -50,7 +49,6 @@ class Source sl where
 	getToken :: sl -> Maybe (Token sl, sl)
 	initialPos :: Pos sl
 	updatePos :: Token sl -> Pos sl -> Pos sl
-	showPos :: Pos sl -> String
 -}
 
 classS th = classD (cxt []) source [PlainTV sl] [] [
@@ -63,10 +61,7 @@ classS th = classD (cxt []) source [PlainTV sl] [] [
 		`appT` (conT tokenN `appT` varT sl)
 		`appT` (arrowT
 			`appT` (conT posN `appT` varT sl)
-			`appT` (conT posN `appT` varT sl)),
-	sigD showPosN $ arrowT
-		`appT` (conT posN `appT` varT sl)
-		`appT` conT (mkName "String")
+			`appT` (conT posN `appT` varT sl))
  ] where
 	sl = mkName "sl"
 	tupleBody = tupleT 2
@@ -106,7 +101,6 @@ instance (SourceList c) => Source [c] where
 	getToken = listToken
 	initialPos = ListPos listInitialPos
 	updatePos c (ListPos p) = ListPos (listUpdatePos c p)
-	showPos (ListPos p) = listShowPos p
 -}
 
 instanceSrcStr _ =
@@ -118,13 +112,9 @@ instanceSrcStr _ =
 		valD (varP getTokenN) (normalB $ varE listTokenN) [],
 		flip (valD $ varP initialPosN) [] $ normalB $
 			conE listPosN `appE` varE listInitialPosN,
---		valD (varP updatePosN) (normalB $ varE listUpdatePosN) [],
 		funD updatePosN $ (: []) $ flip (clause [pc, lp]) [] $ normalB $
 			conE listPosN `appE`
-				(varE listUpdatePosN `appE` varE c `appE` varE p),
-		funD showPosN $ (: []) $ flip (clause [lp]) [] $ normalB $
-			varE listShowPosN `appE` varE p
---		valD (varP showPosN) (normalB $ varE listShowPosN) []
+				(varE listUpdatePosN `appE` varE c `appE` varE p)
 	 ]
 	where
 	c = mkName "c"

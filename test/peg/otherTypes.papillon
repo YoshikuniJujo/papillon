@@ -26,7 +26,6 @@ instance Source YourSource where
 	getToken OneF = Just (F, Empty)
 	initialPos = YourPos 0
 	updatePos _ (YourPos p) = YourPos $ succ p
-	showPos (YourPos p) = show p
 
 main :: IO ()
 main = case dv_str $ parse initialPos DEF of
