@@ -163,13 +163,15 @@ varThrowQ code msg d ns = varE (mkName "throwErrorPackratM")
 	`appE` litE (stringL msg)
 	`appE` ns
 	`appE` varE d
+	`appE` stringE ""
 
-newThrowQ :: String -> String -> Name -> [String] -> ExpQ
-newThrowQ code msg d ns = varE (mkName "throwErrorPackratM")
+newThrowQ :: String -> String -> Name -> [String] -> String -> ExpQ
+newThrowQ code msg d ns com = varE (mkName "throwErrorPackratM")
 	`appE` litE (stringL code)
 	`appE` litE (stringL msg)
 	`appE` listE (map stringE ns) -- (mkName "undefined")
 	`appE` varE d
+	`appE` stringE com
 
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
@@ -342,8 +344,8 @@ instanceErrorParseError th = instanceD
 
 {-
 
-throwErrorPackratM :: String -> String -> Derivs -> [String] -> PackratM a
-throwErrorPackratM code msg d names = do
+throwErrorPackratM :: String -> String -> [String] -> Derivs -> String -> PackratM a
+throwErrorPackratM code msg names d com = do
 	pos <- gets dvPos
 	throwError (ParseError code msg umsg pos d names) -- (varE $ mkName $ "dv_" ++ name))
 
@@ -366,6 +368,8 @@ throwErrorPackratMQ th = sequence [
 			`arrT`
 			conT (mkName "Derivs")
 			`arrT`
+			conT (mkName "String")
+			`arrT`
 			(conT (mkName "PackratM") `appT` varT (mkName "a")),
 	funD (mkName "throwErrorPackratM") $ (: []) $
 		flip (clause args) [] $ normalB $ doE [
@@ -376,8 +380,7 @@ throwErrorPackratMQ th = sequence [
 				(conE (mkName "ParseError")
 					`appE` varE (mkName "code")
 					`appE` varE (mkName "msg")
-					`appE` varE -- (mkName "umsg")
-						(mkName "undefined")
+					`appE` varE (mkName "com")
 					`appE` varE (mkName "pos")
 					`appE` varE (mkName "d")
 					`appE` varE (mkName "ns"))
@@ -389,7 +392,8 @@ throwErrorPackratMQ th = sequence [
 		varP $ mkName "msg",
 --		varP $ mkName "umsg",
 		varP $ mkName "ns",
-		varP $ mkName "d"]
+		varP $ mkName "d",
+		varP $ mkName "com"]
 
 result :: TypeQ -> DecQ
 result src = tySynD (mkName "Result") [PlainTV $ mkName "v"] $
@@ -441,7 +445,7 @@ parseE' th names = clause [varP pos, varP $ mkName "s"]
 				match	wildP
 					(normalB $ newThrowQ "" "end of input"
 						(mkName "undefined")
-						[])
+						[] "")
 					[]
 			 ]
  ]
@@ -504,16 +508,16 @@ pSome_ g th nls ret = fmap DoE $ do
 	r <- noBindS $ varE (returnN th) `appE` ret
 	return $ concat x ++ [r]
 
-afterCheck :: Bool -> ExpQ -> Name -> [String] -> StmtQ
-afterCheck th p d ns = do
+afterCheck :: Bool -> ExpQ -> Name -> [String] -> String -> StmtQ
+afterCheck th p d ns pc = do
 	pp <- p
 	noBindS $ condE p
 		(varE (returnN th) `appE` conE (mkName "()"))
 		(newThrowQ (show $ ppr pp) "not match: "
-			d ns)
+			d ns pc)
 
-beforeMatch :: Bool -> Name -> PatQ -> Name -> [String] -> Q [Stmt]
-beforeMatch th t n d ns = do
+beforeMatch :: Bool -> Name -> PatQ -> Name -> [String] -> String -> Q [Stmt]
+beforeMatch th t n d ns nc = do
 	nn <- n
 	sequence [
 		noBindS $ caseE (varE t) [
@@ -521,7 +525,7 @@ beforeMatch th t n d ns = do
 				varE (returnN th) `appE` tupE [],
 			flip (match wildP) [] $ normalB $
 				newThrowQ (show $ ppr nn) "not match pattern: "
-					d ns
+					d ns nc
 		 ],
 		letS [flip (valD n) [] $ normalB $ varE t],
 		noBindS $ varE (returnN th) `appE` tupE []
@@ -558,7 +562,7 @@ getErrTypeName
 -}
 
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
-transLeaf' g th (NameLeaf n rf p) = do
+transLeaf' g th (NameLeaf (n, nc) rf (p, pc)) = do
 	t <- getNewName g "xx"
 	d <- getNewName g "d"
 	nn <- n
@@ -566,19 +570,19 @@ transLeaf' g th (NameLeaf n rf p) = do
 		WildP -> sequence [
 			bindS (varP d) $ varE $ getN th,
 			bindS wildP $ transReadFrom g th rf,
-			afterCheck th p d $ nameFromRF rf
+			afterCheck th p d (nameFromRF rf) pc
 		 ]
 		_	| notHaveOthers nn -> do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $ transReadFrom g th rf
 				m <- letS [flip (valD n) [] $ normalB $ varE t]
-				c <- afterCheck th p d $ nameFromRF rf
+				c <- afterCheck th p d (nameFromRF rf) pc
 				return $ bd : s : m : [c]
 			| otherwise -> do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $ transReadFrom g th rf
-				m <- beforeMatch th t n d (nameFromRF rf)
-				c <- afterCheck th p d $ nameFromRF rf
+				m <- beforeMatch th t n d (nameFromRF rf) nc
+				c <- afterCheck th p d (nameFromRF rf) pc
 				return $ bd : s : m ++ [c]
 	where
 	notHaveOthers (VarP _) = True

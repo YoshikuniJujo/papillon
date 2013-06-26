@@ -8,6 +8,7 @@
 		これはすこし手間がかかるかもしれないので、
 		その前にいろいろとしてしまおう
 		まずは ./mkParser の変更からだ
+		flipMaybe でも {-# "..." #-} を出すようにしよう
 
 * data ParseError の型構築子を公開しないようにする
 	data ParseError = ParseError ... を TH で書き、

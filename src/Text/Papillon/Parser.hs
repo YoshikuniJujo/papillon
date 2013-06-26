@@ -66,7 +66,8 @@ data Derivs
               dv_expression :: (Result Expression),
               dv_nameLeaf_ :: (Result NameLeaf_),
               dv_nameLeaf :: (Result NameLeaf),
-              dv_leaf :: (Result ((ReadFrom, ExpQ))),
+              dv_comForErr :: (Result String),
+              dv_leaf :: (Result ((ReadFrom, (ExpQ, String)))),
               dv_patOp :: (Result PatQ),
               dv_pat :: (Result PatQ),
               dv_pat1 :: (Result PatQ),
@@ -78,7 +79,7 @@ data Derivs
               dv_pats :: (Result PatQs),
               dv_readFromLs :: (Result ReadFrom),
               dv_readFrom :: (Result ReadFrom),
-              dv_test :: (Result ExR),
+              dv_test :: (Result ((ExR, String))),
               dv_hsExpLam :: (Result ExR),
               dv_hsExpTyp :: (Result ExR),
               dv_hsExpOp :: (Result ExR),
@@ -111,7 +112,7 @@ data Derivs
               dvPos :: (Pos String)}
 parse :: Pos String -> String -> Derivs
 parse pos___hoge s = d
-          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf leaf patOp pat pat1 patList opConName charLit stringLit dq pats readFromLs readFrom test hsExpLam hsExpTyp hsExpOp hsOp opTail hsExp hsExp1 hsExpTpl hsTypeArr hsType hsType1 hsTypeTpl typ variable tvtail integer alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char pos___hoge
+          where d = Derivs pegFile pragma pragmaStr pragmaEnd moduleDec moduleDecStr whr preImpPap prePeg afterPeg importPapillon varToken typToken pap peg sourceType peg_ definition selection expressionHs expression nameLeaf_ nameLeaf comForErr leaf patOp pat pat1 patList opConName charLit stringLit dq pats readFromLs readFrom test hsExpLam hsExpTyp hsExpOp hsOp opTail hsExp hsExp1 hsExpTpl hsTypeArr hsType hsType1 hsTypeTpl typ variable tvtail integer alpha upper lower digit spaces space notNLString nl comment comments notComStr comEnd char pos___hoge
                 pegFile = runStateT p_pegFile d
                 pragma = runStateT p_pragma d
                 pragmaStr = runStateT p_pragmaStr d
@@ -135,6 +136,7 @@ parse pos___hoge s = d
                 expression = runStateT p_expression d
                 nameLeaf_ = runStateT p_nameLeaf_ d
                 nameLeaf = runStateT p_nameLeaf d
+                comForErr = runStateT p_comForErr d
                 leaf = runStateT p_leaf d
                 patOp = runStateT p_patOp d
                 pat = runStateT p_pat d
@@ -203,7 +205,8 @@ dv_expressionHsM :: PackratM ExpressionHs
 dv_expressionM :: PackratM Expression
 dv_nameLeaf_M :: PackratM NameLeaf_
 dv_nameLeafM :: PackratM NameLeaf
-dv_leafM :: PackratM ((ReadFrom, ExpQ))
+dv_comForErrM :: PackratM String
+dv_leafM :: PackratM ((ReadFrom, (ExpQ, String)))
 dv_patOpM :: PackratM PatQ
 dv_patM :: PackratM PatQ
 dv_pat1M :: PackratM PatQ
@@ -215,7 +218,7 @@ dv_dqM :: PackratM ()
 dv_patsM :: PackratM PatQs
 dv_readFromLsM :: PackratM ReadFrom
 dv_readFromM :: PackratM ReadFrom
-dv_testM :: PackratM ExR
+dv_testM :: PackratM ((ExR, String))
 dv_hsExpLamM :: PackratM ExR
 dv_hsExpTypM :: PackratM ExR
 dv_hsExpOpM :: PackratM ExR
@@ -266,6 +269,7 @@ dv_expressionHsM = StateT dv_expressionHs
 dv_expressionM = StateT dv_expression
 dv_nameLeaf_M = StateT dv_nameLeaf_
 dv_nameLeafM = StateT dv_nameLeaf
+dv_comForErrM = StateT dv_comForErr
 dv_leafM = StateT dv_leaf
 dv_patOpM = StateT dv_patOp
 dv_patM = StateT dv_pat
@@ -332,7 +336,8 @@ p_expressionHs :: PackratM ExpressionHs
 p_expression :: PackratM Expression
 p_nameLeaf_ :: PackratM NameLeaf_
 p_nameLeaf :: PackratM NameLeaf
-p_leaf :: PackratM ((ReadFrom, ExpQ))
+p_comForErr :: PackratM String
+p_leaf :: PackratM ((ReadFrom, (ExpQ, String)))
 p_patOp :: PackratM PatQ
 p_pat :: PackratM PatQ
 p_pat1 :: PackratM PatQ
@@ -344,7 +349,7 @@ p_dq :: PackratM ()
 p_pats :: PackratM PatQs
 p_readFromLs :: PackratM ReadFrom
 p_readFrom :: PackratM ReadFrom
-p_test :: PackratM ExR
+p_test :: PackratM ((ExR, String))
 p_hsExpLam :: PackratM ExR
 p_hsExpTyp :: PackratM ExR
 p_hsExpOp :: PackratM ExR
@@ -1358,1647 +1363,1784 @@ p_nameLeaf = foldl1 mplus [do d261_228 <- get
                                then return ()
                                else throwErrorPackratM "True" "not match: " ["dv_pat1"] d261_228
                               d263_230 <- get
-                              xx262_231 <- dvCharsM
-                              case xx262_231 of
+                              _ <- dv_spacesM
+                              if True
+                               then return ()
+                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d263_230
+                              d265_231 <- get
+                              xx264_232 <- papOptional dv_comForErrM
+                              let com = xx264_232
+                              if True
+                               then return ()
+                               else throwErrorPackratM "True" "not match: " ["dv_comForErr"] d265_231
+                              d267_233 <- get
+                              xx266_234 <- dvCharsM
+                              case xx266_234 of
                                   ':' -> return ()
-                                  _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d263_230
-                              let ':' = xx262_231
+                                  _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d267_233
+                              let ':' = xx266_234
                               return ()
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dvChars"] d263_230
-                              d265_232 <- get
-                              xx264_233 <- dv_leafM
-                              let (rf, p) = xx264_233
+                               else throwErrorPackratM "True" "not match: " ["dvChars"] d267_233
+                              d269_235 <- get
+                              xx268_236 <- dv_leafM
+                              let (rf, p) = xx268_236
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_leaf"] d265_232
-                              return (NameLeaf n rf p),
-                           do d267_234 <- get
-                              xx266_235 <- dv_pat1M
-                              let n = xx266_235
+                               else throwErrorPackratM "True" "not match: " ["dv_leaf"] d269_235
+                              return (NameLeaf (n, maybe "" id com) rf p),
+                           do d271_237 <- get
+                              xx270_238 <- dv_pat1M
+                              let n = xx270_238
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_pat1"] d267_234
-                              return (ctLeaf_ n)]
-p_leaf = foldl1 mplus [do d269_236 <- get
-                          xx268_237 <- dv_readFromLsM
-                          let rf = xx268_237
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_readFromLs"] d269_236
-                          d271_238 <- get
-                          xx270_239 <- dv_testM
-                          let t = xx270_239
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_test"] d271_238
-                          return (rf, t),
-                       do d273_240 <- get
-                          xx272_241 <- dv_readFromLsM
-                          let rf = xx272_241
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_readFromLs"] d273_240
-                          return (rf, true),
-                       do d275_242 <- get
-                          xx274_243 <- dv_testM
-                          let t = xx274_243
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_test"] d275_242
-                          return (FromToken, t)]
-p_patOp = foldl1 mplus [do d277_244 <- get
-                           xx276_245 <- dv_patM
-                           let p = xx276_245
-                           if True
-                            then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_pat"] d277_244
-                           d279_246 <- get
-                           xx278_247 <- dv_opConNameM
-                           let o = xx278_247
-                           if True
-                            then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_opConName"] d279_246
-                           d281_248 <- get
-                           xx280_249 <- dv_patOpM
-                           let po = xx280_249
-                           if True
-                            then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_patOp"] d281_248
-                           return (uInfixP p o po),
-                        do d283_250 <- get
-                           xx282_251 <- dv_patM
-                           let p = xx282_251
-                           if True
-                            then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_pat"] d283_250
-                           d285_252 <- get
-                           _ <- dv_spacesM
-                           if True
-                            then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_spaces"] d285_252
-                           d287_253 <- get
-                           xx286_254 <- dvCharsM
-                           let q = xx286_254
-                           if isBQ q
-                            then return ()
-                            else throwErrorPackratM "isBQ q" "not match: " ["dvChars"] d287_253
-                           d289_255 <- get
-                           xx288_256 <- dv_typM
-                           let t = xx288_256
-                           if True
-                            then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_typ"] d289_255
-                           d291_257 <- get
-                           xx290_258 <- dvCharsM
-                           let q_ = xx290_258
-                           if isBQ q_
-                            then return ()
-                            else throwErrorPackratM "isBQ q_" "not match: " ["dvChars"] d291_257
-                           d293_259 <- get
-                           _ <- dv_spacesM
-                           if True
-                            then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_spaces"] d293_259
-                           d295_260 <- get
-                           xx294_261 <- dv_patOpM
-                           let po = xx294_261
-                           if True
-                            then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_patOp"] d295_260
-                           return (uInfixP p (mkName t) po),
-                        do d297_262 <- get
-                           xx296_263 <- dv_patM
-                           let p = xx296_263
-                           if True
-                            then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_pat"] d297_262
-                           return p]
-p_pat = foldl1 mplus [do d299_264 <- get
-                         xx298_265 <- dv_typM
-                         let t = xx298_265
-                         if True
-                          then return ()
-                          else throwErrorPackratM "True" "not match: " ["dv_typ"] d299_264
-                         d301_266 <- get
-                         _ <- dv_spacesM
-                         if True
-                          then return ()
-                          else throwErrorPackratM "True" "not match: " ["dv_spaces"] d301_266
-                         d303_267 <- get
-                         xx302_268 <- dv_patsM
-                         let ps = xx302_268
-                         if True
-                          then return ()
-                          else throwErrorPackratM "True" "not match: " ["dv_pats"] d303_267
-                         return (conToPatQ t ps),
-                      do d305_269 <- get
-                         xx304_270 <- dvCharsM
-                         case xx304_270 of
-                             '(' -> return ()
-                             _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d305_269
-                         let '(' = xx304_270
-                         return ()
-                         if True
-                          then return ()
-                          else throwErrorPackratM "True" "not match: " ["dvChars"] d305_269
-                         d307_271 <- get
-                         xx306_272 <- dv_opConNameM
-                         let o = xx306_272
-                         if True
-                          then return ()
-                          else throwErrorPackratM "True" "not match: " ["dv_opConName"] d307_271
-                         d309_273 <- get
-                         xx308_274 <- dvCharsM
-                         case xx308_274 of
-                             ')' -> return ()
-                             _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d309_273
-                         let ')' = xx308_274
-                         return ()
-                         if True
-                          then return ()
-                          else throwErrorPackratM "True" "not match: " ["dvChars"] d309_273
-                         d311_275 <- get
-                         _ <- dv_spacesM
-                         if True
-                          then return ()
-                          else throwErrorPackratM "True" "not match: " ["dv_spaces"] d311_275
-                         d313_276 <- get
-                         xx312_277 <- dv_patsM
-                         let ps = xx312_277
-                         if True
-                          then return ()
-                          else throwErrorPackratM "True" "not match: " ["dv_pats"] d313_276
-                         return (conP o ps),
-                      do d315_278 <- get
-                         xx314_279 <- dv_pat1M
-                         let p = xx314_279
-                         if True
-                          then return ()
-                          else throwErrorPackratM "True" "not match: " ["dv_pat1"] d315_278
-                         return p]
-p_pat1 = foldl1 mplus [do d317_280 <- get
-                          xx316_281 <- dv_typM
-                          let t = xx316_281
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_typ"] d317_280
-                          return (conToPatQ t emp),
-                       do d319_282 <- get
-                          xx318_283 <- dv_variableM
-                          case xx318_283 of
-                              "_" -> return ()
-                              _ -> throwErrorPackratM "\"_\"" "not match pattern: " ["dv_variable"] d319_282
-                          let "_" = xx318_283
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_variable"] d319_282
-                          return wildP,
-                       do d321_284 <- get
-                          xx320_285 <- dv_variableM
-                          let n = xx320_285
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_variable"] d321_284
-                          return (strToPatQ n),
-                       do d323_286 <- get
-                          xx322_287 <- dv_integerM
-                          let i = xx322_287
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_integer"] d323_286
-                          return (litP (integerL i)),
-                       do d325_288 <- get
-                          xx324_289 <- dvCharsM
-                          case xx324_289 of
-                              '-' -> return ()
-                              _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d325_288
-                          let '-' = xx324_289
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d325_288
-                          d327_290 <- get
-                          _ <- dv_spacesM
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_spaces"] d327_290
-                          d329_291 <- get
-                          xx328_292 <- dv_integerM
-                          let i = xx328_292
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_integer"] d329_291
-                          return (litP (integerL $ negate i)),
-                       do d331_293 <- get
-                          xx330_294 <- dvCharsM
-                          case xx330_294 of
-                              '\'' -> return ()
-                              _ -> throwErrorPackratM "'\\''" "not match pattern: " ["dvChars"] d331_293
-                          let '\'' = xx330_294
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d331_293
-                          d333_295 <- get
-                          xx332_296 <- dv_charLitM
-                          let c = xx332_296
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_charLit"] d333_295
-                          d335_297 <- get
-                          xx334_298 <- dvCharsM
-                          case xx334_298 of
-                              '\'' -> return ()
-                              _ -> throwErrorPackratM "'\\''" "not match pattern: " ["dvChars"] d335_297
-                          let '\'' = xx334_298
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d335_297
-                          return (charP c),
-                       do d337_299 <- get
-                          xx336_300 <- dvCharsM
-                          case xx336_300 of
-                              '"' -> return ()
-                              _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d337_299
-                          let '"' = xx336_300
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d337_299
-                          d339_301 <- get
-                          xx338_302 <- dv_stringLitM
-                          let s = xx338_302
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_stringLit"] d339_301
-                          d341_303 <- get
-                          xx340_304 <- dvCharsM
-                          case xx340_304 of
-                              '"' -> return ()
-                              _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d341_303
-                          let '"' = xx340_304
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d341_303
-                          return (stringP s),
-                       do d343_305 <- get
-                          xx342_306 <- dvCharsM
-                          case xx342_306 of
-                              '(' -> return ()
-                              _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d343_305
-                          let '(' = xx342_306
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d343_305
-                          d345_307 <- get
-                          xx344_308 <- dv_patListM
-                          let p = xx344_308
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_patList"] d345_307
-                          d347_309 <- get
-                          xx346_310 <- dvCharsM
-                          case xx346_310 of
-                              ')' -> return ()
-                              _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d347_309
-                          let ')' = xx346_310
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d347_309
-                          return (tupP p),
-                       do d349_311 <- get
-                          xx348_312 <- dvCharsM
-                          case xx348_312 of
-                              '[' -> return ()
-                              _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d349_311
-                          let '[' = xx348_312
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d349_311
-                          d351_313 <- get
-                          xx350_314 <- dv_patListM
-                          let p = xx350_314
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_patList"] d351_313
-                          d353_315 <- get
-                          xx352_316 <- dvCharsM
-                          case xx352_316 of
-                              ']' -> return ()
-                              _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d353_315
-                          let ']' = xx352_316
-                          return ()
-                          if True
-                           then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d353_315
-                          return (listP p)]
-p_patList = foldl1 mplus [do d355_317 <- get
-                             xx354_318 <- dv_patOpM
-                             let p = xx354_318
-                             if True
-                              then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_patOp"] d355_317
-                             d357_319 <- get
-                             _ <- dv_spacesM
-                             if True
-                              then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d357_319
-                             d359_320 <- get
-                             xx358_321 <- dvCharsM
-                             case xx358_321 of
-                                 ',' -> return ()
-                                 _ -> throwErrorPackratM "','" "not match pattern: " ["dvChars"] d359_320
-                             let ',' = xx358_321
-                             return ()
-                             if True
-                              then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d359_320
-                             d361_322 <- get
-                             _ <- dv_spacesM
-                             if True
-                              then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d361_322
-                             d363_323 <- get
-                             xx362_324 <- dv_patListM
-                             let ps = xx362_324
-                             if True
-                              then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_patList"] d363_323
-                             return (p : ps),
-                          do d365_325 <- get
-                             xx364_326 <- dv_patOpM
-                             let p = xx364_326
-                             if True
-                              then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_patOp"] d365_325
-                             return [p],
-                          do return []]
-p_opConName = foldl1 mplus [do d367_327 <- get
-                               xx366_328 <- dvCharsM
-                               case xx366_328 of
-                                   ':' -> return ()
-                                   _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d367_327
-                               let ':' = xx366_328
+                               else throwErrorPackratM "True" "not match: " ["dv_pat1"] d271_237
+                              d273_239 <- get
+                              _ <- dv_spacesM
+                              if True
+                               then return ()
+                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d273_239
+                              d275_240 <- get
+                              xx274_241 <- papOptional dv_comForErrM
+                              let com = xx274_241
+                              if True
+                               then return ()
+                               else throwErrorPackratM "True" "not match: " ["dv_comForErr"] d275_240
+                              return (NameLeaf (n,
+                                                maybe "" id com) FromToken (conE $ mkName "True",
+                                                                            ""))]
+p_comForErr = foldl1 mplus [do d277_242 <- get
+                               xx276_243 <- dvCharsM
+                               case xx276_243 of
+                                   '{' -> return ()
+                                   _ -> throwErrorPackratM "'{'" "not match pattern: " ["dvChars"] d277_242
+                               let '{' = xx276_243
                                return ()
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dvChars"] d367_327
-                               d369_329 <- get
-                               xx368_330 <- dv_opTailM
-                               let ot = xx368_330
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d277_242
+                               d279_244 <- get
+                               xx278_245 <- dvCharsM
+                               case xx278_245 of
+                                   '-' -> return ()
+                                   _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d279_244
+                               let '-' = xx278_245
+                               return ()
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_opTail"] d369_329
-                               return (mkName $ colon : ot)]
-p_charLit = foldl1 mplus [do d371_331 <- get
-                             xx370_332 <- dvCharsM
-                             let c = xx370_332
-                             if isAlphaNumOt c
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d279_244
+                               d281_246 <- get
+                               xx280_247 <- dvCharsM
+                               case xx280_247 of
+                                   '#' -> return ()
+                                   _ -> throwErrorPackratM "'#'" "not match pattern: " ["dvChars"] d281_246
+                               let '#' = xx280_247
+                               return ()
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d281_246
+                               d283_248 <- get
+                               _ <- dv_spacesM
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dv_spaces"] d283_248
+                               d285_249 <- get
+                               xx284_250 <- dvCharsM
+                               case xx284_250 of
+                                   '"' -> return ()
+                                   _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d285_249
+                               let '"' = xx284_250
+                               return ()
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d285_249
+                               d287_251 <- get
+                               xx286_252 <- dv_stringLitM
+                               let s = xx286_252
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dv_stringLit"] d287_251
+                               d289_253 <- get
+                               xx288_254 <- dvCharsM
+                               case xx288_254 of
+                                   '"' -> return ()
+                                   _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d289_253
+                               let '"' = xx288_254
+                               return ()
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d289_253
+                               d291_255 <- get
+                               _ <- dv_spacesM
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dv_spaces"] d291_255
+                               d293_256 <- get
+                               xx292_257 <- dvCharsM
+                               case xx292_257 of
+                                   '#' -> return ()
+                                   _ -> throwErrorPackratM "'#'" "not match pattern: " ["dvChars"] d293_256
+                               let '#' = xx292_257
+                               return ()
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d293_256
+                               d295_258 <- get
+                               xx294_259 <- dvCharsM
+                               case xx294_259 of
+                                   '-' -> return ()
+                                   _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d295_258
+                               let '-' = xx294_259
+                               return ()
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d295_258
+                               d297_260 <- get
+                               xx296_261 <- dvCharsM
+                               case xx296_261 of
+                                   '}' -> return ()
+                                   _ -> throwErrorPackratM "'}'" "not match pattern: " ["dvChars"] d297_260
+                               let '}' = xx296_261
+                               return ()
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d297_260
+                               d299_262 <- get
+                               _ <- dv_spacesM
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dv_spaces"] d299_262
+                               return s]
+p_leaf = foldl1 mplus [do d301_263 <- get
+                          xx300_264 <- dv_readFromLsM
+                          let rf = xx300_264
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_readFromLs"] d301_263
+                          d303_265 <- get
+                          xx302_266 <- dv_testM
+                          let t = xx302_266
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_test"] d303_265
+                          return (rf, t),
+                       do d305_267 <- get
+                          xx304_268 <- dv_readFromLsM
+                          let rf = xx304_268
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_readFromLs"] d305_267
+                          return (rf, (true, "")),
+                       do d307_269 <- get
+                          xx306_270 <- dv_testM
+                          let t = xx306_270
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_test"] d307_269
+                          return (FromToken, t)]
+p_patOp = foldl1 mplus [do d309_271 <- get
+                           xx308_272 <- dv_patM
+                           let p = xx308_272
+                           if True
+                            then return ()
+                            else throwErrorPackratM "True" "not match: " ["dv_pat"] d309_271
+                           d311_273 <- get
+                           xx310_274 <- dv_opConNameM
+                           let o = xx310_274
+                           if True
+                            then return ()
+                            else throwErrorPackratM "True" "not match: " ["dv_opConName"] d311_273
+                           d313_275 <- get
+                           xx312_276 <- dv_patOpM
+                           let po = xx312_276
+                           if True
+                            then return ()
+                            else throwErrorPackratM "True" "not match: " ["dv_patOp"] d313_275
+                           return (uInfixP p o po),
+                        do d315_277 <- get
+                           xx314_278 <- dv_patM
+                           let p = xx314_278
+                           if True
+                            then return ()
+                            else throwErrorPackratM "True" "not match: " ["dv_pat"] d315_277
+                           d317_279 <- get
+                           _ <- dv_spacesM
+                           if True
+                            then return ()
+                            else throwErrorPackratM "True" "not match: " ["dv_spaces"] d317_279
+                           d319_280 <- get
+                           xx318_281 <- dvCharsM
+                           let q = xx318_281
+                           if isBQ q
+                            then return ()
+                            else throwErrorPackratM "isBQ q" "not match: " ["dvChars"] d319_280
+                           d321_282 <- get
+                           xx320_283 <- dv_typM
+                           let t = xx320_283
+                           if True
+                            then return ()
+                            else throwErrorPackratM "True" "not match: " ["dv_typ"] d321_282
+                           d323_284 <- get
+                           xx322_285 <- dvCharsM
+                           let q_ = xx322_285
+                           if isBQ q_
+                            then return ()
+                            else throwErrorPackratM "isBQ q_" "not match: " ["dvChars"] d323_284
+                           d325_286 <- get
+                           _ <- dv_spacesM
+                           if True
+                            then return ()
+                            else throwErrorPackratM "True" "not match: " ["dv_spaces"] d325_286
+                           d327_287 <- get
+                           xx326_288 <- dv_patOpM
+                           let po = xx326_288
+                           if True
+                            then return ()
+                            else throwErrorPackratM "True" "not match: " ["dv_patOp"] d327_287
+                           return (uInfixP p (mkName t) po),
+                        do d329_289 <- get
+                           xx328_290 <- dv_patM
+                           let p = xx328_290
+                           if True
+                            then return ()
+                            else throwErrorPackratM "True" "not match: " ["dv_pat"] d329_289
+                           return p]
+p_pat = foldl1 mplus [do d331_291 <- get
+                         xx330_292 <- dv_typM
+                         let t = xx330_292
+                         if True
+                          then return ()
+                          else throwErrorPackratM "True" "not match: " ["dv_typ"] d331_291
+                         d333_293 <- get
+                         _ <- dv_spacesM
+                         if True
+                          then return ()
+                          else throwErrorPackratM "True" "not match: " ["dv_spaces"] d333_293
+                         d335_294 <- get
+                         xx334_295 <- dv_patsM
+                         let ps = xx334_295
+                         if True
+                          then return ()
+                          else throwErrorPackratM "True" "not match: " ["dv_pats"] d335_294
+                         return (conToPatQ t ps),
+                      do d337_296 <- get
+                         xx336_297 <- dvCharsM
+                         case xx336_297 of
+                             '(' -> return ()
+                             _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d337_296
+                         let '(' = xx336_297
+                         return ()
+                         if True
+                          then return ()
+                          else throwErrorPackratM "True" "not match: " ["dvChars"] d337_296
+                         d339_298 <- get
+                         xx338_299 <- dv_opConNameM
+                         let o = xx338_299
+                         if True
+                          then return ()
+                          else throwErrorPackratM "True" "not match: " ["dv_opConName"] d339_298
+                         d341_300 <- get
+                         xx340_301 <- dvCharsM
+                         case xx340_301 of
+                             ')' -> return ()
+                             _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d341_300
+                         let ')' = xx340_301
+                         return ()
+                         if True
+                          then return ()
+                          else throwErrorPackratM "True" "not match: " ["dvChars"] d341_300
+                         d343_302 <- get
+                         _ <- dv_spacesM
+                         if True
+                          then return ()
+                          else throwErrorPackratM "True" "not match: " ["dv_spaces"] d343_302
+                         d345_303 <- get
+                         xx344_304 <- dv_patsM
+                         let ps = xx344_304
+                         if True
+                          then return ()
+                          else throwErrorPackratM "True" "not match: " ["dv_pats"] d345_303
+                         return (conP o ps),
+                      do d347_305 <- get
+                         xx346_306 <- dv_pat1M
+                         let p = xx346_306
+                         if True
+                          then return ()
+                          else throwErrorPackratM "True" "not match: " ["dv_pat1"] d347_305
+                         return p]
+p_pat1 = foldl1 mplus [do d349_307 <- get
+                          xx348_308 <- dv_typM
+                          let t = xx348_308
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_typ"] d349_307
+                          return (conToPatQ t emp),
+                       do d351_309 <- get
+                          xx350_310 <- dv_variableM
+                          case xx350_310 of
+                              "_" -> return ()
+                              _ -> throwErrorPackratM "\"_\"" "not match pattern: " ["dv_variable"] d351_309
+                          let "_" = xx350_310
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_variable"] d351_309
+                          return wildP,
+                       do d353_311 <- get
+                          xx352_312 <- dv_variableM
+                          let n = xx352_312
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_variable"] d353_311
+                          return (strToPatQ n),
+                       do d355_313 <- get
+                          xx354_314 <- dv_integerM
+                          let i = xx354_314
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_integer"] d355_313
+                          return (litP (integerL i)),
+                       do d357_315 <- get
+                          xx356_316 <- dvCharsM
+                          case xx356_316 of
+                              '-' -> return ()
+                              _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d357_315
+                          let '-' = xx356_316
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d357_315
+                          d359_317 <- get
+                          _ <- dv_spacesM
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_spaces"] d359_317
+                          d361_318 <- get
+                          xx360_319 <- dv_integerM
+                          let i = xx360_319
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_integer"] d361_318
+                          return (litP (integerL $ negate i)),
+                       do d363_320 <- get
+                          xx362_321 <- dvCharsM
+                          case xx362_321 of
+                              '\'' -> return ()
+                              _ -> throwErrorPackratM "'\\''" "not match pattern: " ["dvChars"] d363_320
+                          let '\'' = xx362_321
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d363_320
+                          d365_322 <- get
+                          xx364_323 <- dv_charLitM
+                          let c = xx364_323
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_charLit"] d365_322
+                          d367_324 <- get
+                          xx366_325 <- dvCharsM
+                          case xx366_325 of
+                              '\'' -> return ()
+                              _ -> throwErrorPackratM "'\\''" "not match pattern: " ["dvChars"] d367_324
+                          let '\'' = xx366_325
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d367_324
+                          return (charP c),
+                       do d369_326 <- get
+                          xx368_327 <- dvCharsM
+                          case xx368_327 of
+                              '"' -> return ()
+                              _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d369_326
+                          let '"' = xx368_327
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d369_326
+                          d371_328 <- get
+                          xx370_329 <- dv_stringLitM
+                          let s = xx370_329
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_stringLit"] d371_328
+                          d373_330 <- get
+                          xx372_331 <- dvCharsM
+                          case xx372_331 of
+                              '"' -> return ()
+                              _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d373_330
+                          let '"' = xx372_331
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d373_330
+                          return (stringP s),
+                       do d375_332 <- get
+                          xx374_333 <- dvCharsM
+                          case xx374_333 of
+                              '(' -> return ()
+                              _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d375_332
+                          let '(' = xx374_333
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d375_332
+                          d377_334 <- get
+                          xx376_335 <- dv_patListM
+                          let p = xx376_335
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_patList"] d377_334
+                          d379_336 <- get
+                          xx378_337 <- dvCharsM
+                          case xx378_337 of
+                              ')' -> return ()
+                              _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d379_336
+                          let ')' = xx378_337
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d379_336
+                          return (tupP p),
+                       do d381_338 <- get
+                          xx380_339 <- dvCharsM
+                          case xx380_339 of
+                              '[' -> return ()
+                              _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d381_338
+                          let '[' = xx380_339
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d381_338
+                          d383_340 <- get
+                          xx382_341 <- dv_patListM
+                          let p = xx382_341
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_patList"] d383_340
+                          d385_342 <- get
+                          xx384_343 <- dvCharsM
+                          case xx384_343 of
+                              ']' -> return ()
+                              _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d385_342
+                          let ']' = xx384_343
+                          return ()
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d385_342
+                          return (listP p)]
+p_patList = foldl1 mplus [do d387_344 <- get
+                             xx386_345 <- dv_patOpM
+                             let p = xx386_345
+                             if True
                               then return ()
-                              else throwErrorPackratM "isAlphaNumOt c" "not match: " ["dvChars"] d371_331
-                             return c,
-                          do d373_333 <- get
-                             xx372_334 <- dvCharsM
-                             case xx372_334 of
-                                 '\\' -> return ()
-                                 _ -> throwErrorPackratM "'\\\\'" "not match pattern: " ["dvChars"] d373_333
-                             let '\\' = xx372_334
+                              else throwErrorPackratM "True" "not match: " ["dv_patOp"] d387_344
+                             d389_346 <- get
+                             _ <- dv_spacesM
+                             if True
+                              then return ()
+                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d389_346
+                             d391_347 <- get
+                             xx390_348 <- dvCharsM
+                             case xx390_348 of
+                                 ',' -> return ()
+                                 _ -> throwErrorPackratM "','" "not match pattern: " ["dvChars"] d391_347
+                             let ',' = xx390_348
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d373_333
-                             d375_335 <- get
-                             xx374_336 <- dvCharsM
-                             let c = xx374_336
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d391_347
+                             d393_349 <- get
+                             _ <- dv_spacesM
+                             if True
+                              then return ()
+                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d393_349
+                             d395_350 <- get
+                             xx394_351 <- dv_patListM
+                             let ps = xx394_351
+                             if True
+                              then return ()
+                              else throwErrorPackratM "True" "not match: " ["dv_patList"] d395_350
+                             return (p : ps),
+                          do d397_352 <- get
+                             xx396_353 <- dv_patOpM
+                             let p = xx396_353
+                             if True
+                              then return ()
+                              else throwErrorPackratM "True" "not match: " ["dv_patOp"] d397_352
+                             return [p],
+                          do return []]
+p_opConName = foldl1 mplus [do d399_354 <- get
+                               xx398_355 <- dvCharsM
+                               case xx398_355 of
+                                   ':' -> return ()
+                                   _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d399_354
+                               let ':' = xx398_355
+                               return ()
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d399_354
+                               d401_356 <- get
+                               xx400_357 <- dv_opTailM
+                               let ot = xx400_357
+                               if True
+                                then return ()
+                                else throwErrorPackratM "True" "not match: " ["dv_opTail"] d401_356
+                               return (mkName $ colon : ot)]
+p_charLit = foldl1 mplus [do d403_358 <- get
+                             xx402_359 <- dvCharsM
+                             let c = xx402_359
+                             if isAlphaNumOt c
+                              then return ()
+                              else throwErrorPackratM "isAlphaNumOt c" "not match: " ["dvChars"] d403_358
+                             return c,
+                          do d405_360 <- get
+                             xx404_361 <- dvCharsM
+                             case xx404_361 of
+                                 '\\' -> return ()
+                                 _ -> throwErrorPackratM "'\\\\'" "not match pattern: " ["dvChars"] d405_360
+                             let '\\' = xx404_361
+                             return ()
+                             if True
+                              then return ()
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d405_360
+                             d407_362 <- get
+                             xx406_363 <- dvCharsM
+                             let c = xx406_363
                              if elemNTs c
                               then return ()
-                              else throwErrorPackratM "elemNTs c" "not match: " ["dvChars"] d375_335
+                              else throwErrorPackratM "elemNTs c" "not match: " ["dvChars"] d407_362
                              return (getNTs c)]
-p_stringLit = foldl1 mplus [do ddd376_337 <- get
-                               flipMaybe "_:dq[True]" ddd376_337 ["dv_dq"] (do d378_338 <- get
+p_stringLit = foldl1 mplus [do ddd408_364 <- get
+                               flipMaybe "_:dq[True]" ddd408_364 ["dv_dq"] (do d410_365 <- get
                                                                                _ <- dv_dqM
                                                                                if True
                                                                                 then return ()
-                                                                                else throwErrorPackratM "True" "not match: " ["dv_dq"] d378_338)
-                               put ddd376_337
-                               d380_339 <- get
-                               xx379_340 <- dvCharsM
-                               let c = xx379_340
+                                                                                else throwErrorPackratM "True" "not match: " ["dv_dq"] d410_365)
+                               put ddd408_364
+                               d412_366 <- get
+                               xx411_367 <- dvCharsM
+                               let c = xx411_367
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dvChars"] d380_339
-                               d382_341 <- get
-                               xx381_342 <- dv_stringLitM
-                               let s = xx381_342
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d412_366
+                               d414_368 <- get
+                               xx413_369 <- dv_stringLitM
+                               let s = xx413_369
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_stringLit"] d382_341
+                                else throwErrorPackratM "True" "not match: " ["dv_stringLit"] d414_368
                                return (cons c s),
                             do return emp]
-p_dq = foldl1 mplus [do d384_343 <- get
-                        xx383_344 <- dvCharsM
-                        case xx383_344 of
+p_dq = foldl1 mplus [do d416_370 <- get
+                        xx415_371 <- dvCharsM
+                        case xx415_371 of
                             '"' -> return ()
-                            _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d384_343
-                        let '"' = xx383_344
+                            _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d416_370
+                        let '"' = xx415_371
                         return ()
                         if True
                          then return ()
-                         else throwErrorPackratM "True" "not match: " ["dvChars"] d384_343
+                         else throwErrorPackratM "True" "not match: " ["dvChars"] d416_370
                         return ()]
-p_pats = foldl1 mplus [do d386_345 <- get
-                          xx385_346 <- dv_patM
-                          let p = xx385_346
+p_pats = foldl1 mplus [do d418_372 <- get
+                          xx417_373 <- dv_patM
+                          let p = xx417_373
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_pat"] d386_345
-                          d388_347 <- get
+                           else throwErrorPackratM "True" "not match: " ["dv_pat"] d418_372
+                          d420_374 <- get
                           _ <- dv_spacesM
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_spaces"] d388_347
-                          d390_348 <- get
-                          xx389_349 <- dv_patsM
-                          let ps = xx389_349
+                           else throwErrorPackratM "True" "not match: " ["dv_spaces"] d420_374
+                          d422_375 <- get
+                          xx421_376 <- dv_patsM
+                          let ps = xx421_376
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_pats"] d390_348
+                           else throwErrorPackratM "True" "not match: " ["dv_pats"] d422_375
                           return (cons p ps),
                        do return emp]
-p_readFromLs = foldl1 mplus [do d392_350 <- get
-                                xx391_351 <- dv_readFromM
-                                let rf = xx391_351
+p_readFromLs = foldl1 mplus [do d424_377 <- get
+                                xx423_378 <- dv_readFromM
+                                let rf = xx423_378
                                 if True
                                  then return ()
-                                 else throwErrorPackratM "True" "not match: " ["dv_readFrom"] d392_350
-                                d394_352 <- get
-                                xx393_353 <- dvCharsM
-                                case xx393_353 of
+                                 else throwErrorPackratM "True" "not match: " ["dv_readFrom"] d424_377
+                                d426_379 <- get
+                                xx425_380 <- dvCharsM
+                                case xx425_380 of
                                     '*' -> return ()
-                                    _ -> throwErrorPackratM "'*'" "not match pattern: " ["dvChars"] d394_352
-                                let '*' = xx393_353
+                                    _ -> throwErrorPackratM "'*'" "not match pattern: " ["dvChars"] d426_379
+                                let '*' = xx425_380
                                 return ()
                                 if True
                                  then return ()
-                                 else throwErrorPackratM "True" "not match: " ["dvChars"] d394_352
+                                 else throwErrorPackratM "True" "not match: " ["dvChars"] d426_379
                                 return (FromList rf),
-                             do d396_354 <- get
-                                xx395_355 <- dv_readFromM
-                                let rf = xx395_355
+                             do d428_381 <- get
+                                xx427_382 <- dv_readFromM
+                                let rf = xx427_382
                                 if True
                                  then return ()
-                                 else throwErrorPackratM "True" "not match: " ["dv_readFrom"] d396_354
-                                d398_356 <- get
-                                xx397_357 <- dvCharsM
-                                case xx397_357 of
+                                 else throwErrorPackratM "True" "not match: " ["dv_readFrom"] d428_381
+                                d430_383 <- get
+                                xx429_384 <- dvCharsM
+                                case xx429_384 of
                                     '+' -> return ()
-                                    _ -> throwErrorPackratM "'+'" "not match pattern: " ["dvChars"] d398_356
-                                let '+' = xx397_357
+                                    _ -> throwErrorPackratM "'+'" "not match pattern: " ["dvChars"] d430_383
+                                let '+' = xx429_384
                                 return ()
                                 if True
                                  then return ()
-                                 else throwErrorPackratM "True" "not match: " ["dvChars"] d398_356
+                                 else throwErrorPackratM "True" "not match: " ["dvChars"] d430_383
                                 return (FromList1 rf),
-                             do d400_358 <- get
-                                xx399_359 <- dv_readFromM
-                                let rf = xx399_359
+                             do d432_385 <- get
+                                xx431_386 <- dv_readFromM
+                                let rf = xx431_386
                                 if True
                                  then return ()
-                                 else throwErrorPackratM "True" "not match: " ["dv_readFrom"] d400_358
-                                d402_360 <- get
-                                xx401_361 <- dvCharsM
-                                case xx401_361 of
+                                 else throwErrorPackratM "True" "not match: " ["dv_readFrom"] d432_385
+                                d434_387 <- get
+                                xx433_388 <- dvCharsM
+                                case xx433_388 of
                                     '?' -> return ()
-                                    _ -> throwErrorPackratM "'?'" "not match pattern: " ["dvChars"] d402_360
-                                let '?' = xx401_361
+                                    _ -> throwErrorPackratM "'?'" "not match pattern: " ["dvChars"] d434_387
+                                let '?' = xx433_388
                                 return ()
                                 if True
                                  then return ()
-                                 else throwErrorPackratM "True" "not match: " ["dvChars"] d402_360
+                                 else throwErrorPackratM "True" "not match: " ["dvChars"] d434_387
                                 return (FromOptional rf),
-                             do d404_362 <- get
-                                xx403_363 <- dv_readFromM
-                                let rf = xx403_363
+                             do d436_389 <- get
+                                xx435_390 <- dv_readFromM
+                                let rf = xx435_390
                                 if True
                                  then return ()
-                                 else throwErrorPackratM "True" "not match: " ["dv_readFrom"] d404_362
+                                 else throwErrorPackratM "True" "not match: " ["dv_readFrom"] d436_389
                                 return rf]
-p_readFrom = foldl1 mplus [do d406_364 <- get
-                              xx405_365 <- dv_variableM
-                              let v = xx405_365
+p_readFrom = foldl1 mplus [do d438_391 <- get
+                              xx437_392 <- dv_variableM
+                              let v = xx437_392
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_variable"] d406_364
+                               else throwErrorPackratM "True" "not match: " ["dv_variable"] d438_391
                               return (FromVariable v),
-                           do d408_366 <- get
-                              xx407_367 <- dvCharsM
-                              case xx407_367 of
+                           do d440_393 <- get
+                              xx439_394 <- dvCharsM
+                              case xx439_394 of
                                   '(' -> return ()
-                                  _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d408_366
-                              let '(' = xx407_367
+                                  _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d440_393
+                              let '(' = xx439_394
                               return ()
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dvChars"] d408_366
-                              d410_368 <- get
-                              xx409_369 <- dv_selectionM
-                              let s = xx409_369
+                               else throwErrorPackratM "True" "not match: " ["dvChars"] d440_393
+                              d442_395 <- get
+                              xx441_396 <- dv_selectionM
+                              let s = xx441_396
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_selection"] d410_368
-                              d412_370 <- get
-                              xx411_371 <- dvCharsM
-                              case xx411_371 of
+                               else throwErrorPackratM "True" "not match: " ["dv_selection"] d442_395
+                              d444_397 <- get
+                              xx443_398 <- dvCharsM
+                              case xx443_398 of
                                   ')' -> return ()
-                                  _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d412_370
-                              let ')' = xx411_371
+                                  _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d444_397
+                              let ')' = xx443_398
                               return ()
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dvChars"] d412_370
+                               else throwErrorPackratM "True" "not match: " ["dvChars"] d444_397
                               return (FromSelection s)]
-p_test = foldl1 mplus [do d414_372 <- get
-                          xx413_373 <- dvCharsM
-                          case xx413_373 of
+p_test = foldl1 mplus [do d446_399 <- get
+                          xx445_400 <- dvCharsM
+                          case xx445_400 of
                               '[' -> return ()
-                              _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d414_372
-                          let '[' = xx413_373
+                              _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d446_399
+                          let '[' = xx445_400
                           return ()
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d414_372
-                          d416_374 <- get
-                          xx415_375 <- dv_hsExpLamM
-                          let h = xx415_375
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d446_399
+                          d448_401 <- get
+                          xx447_402 <- dv_hsExpLamM
+                          let h = xx447_402
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_hsExpLam"] d416_374
-                          d418_376 <- get
-                          xx417_377 <- dvCharsM
-                          case xx417_377 of
+                           else throwErrorPackratM "True" "not match: " ["dv_hsExpLam"] d448_401
+                          d450_403 <- get
+                          _ <- dv_spacesM
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_spaces"] d450_403
+                          d452_404 <- get
+                          xx451_405 <- papOptional dv_comForErrM
+                          let com = xx451_405
+                          if True
+                           then return ()
+                           else throwErrorPackratM "True" "not match: " ["dv_comForErr"] d452_404
+                          d454_406 <- get
+                          xx453_407 <- dvCharsM
+                          case xx453_407 of
                               ']' -> return ()
-                              _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d418_376
-                          let ']' = xx417_377
+                              _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d454_406
+                          let ']' = xx453_407
                           return ()
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d418_376
-                          return h]
-p_hsExpLam = foldl1 mplus [do d420_378 <- get
-                              xx419_379 <- dvCharsM
-                              case xx419_379 of
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d454_406
+                          return (h, maybe "" id com)]
+p_hsExpLam = foldl1 mplus [do d456_408 <- get
+                              xx455_409 <- dvCharsM
+                              case xx455_409 of
                                   '\\' -> return ()
-                                  _ -> throwErrorPackratM "'\\\\'" "not match pattern: " ["dvChars"] d420_378
-                              let '\\' = xx419_379
+                                  _ -> throwErrorPackratM "'\\\\'" "not match pattern: " ["dvChars"] d456_408
+                              let '\\' = xx455_409
                               return ()
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dvChars"] d420_378
-                              d422_380 <- get
+                               else throwErrorPackratM "True" "not match: " ["dvChars"] d456_408
+                              d458_410 <- get
                               _ <- dv_spacesM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d422_380
-                              d424_381 <- get
-                              xx423_382 <- dv_patsM
-                              let ps = xx423_382
+                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d458_410
+                              d460_411 <- get
+                              xx459_412 <- dv_patsM
+                              let ps = xx459_412
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_pats"] d424_381
-                              d426_383 <- get
+                               else throwErrorPackratM "True" "not match: " ["dv_pats"] d460_411
+                              d462_413 <- get
                               _ <- dv_spacesM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d426_383
-                              d428_384 <- get
-                              xx427_385 <- dvCharsM
-                              case xx427_385 of
+                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d462_413
+                              d464_414 <- get
+                              xx463_415 <- dvCharsM
+                              case xx463_415 of
                                   '-' -> return ()
-                                  _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d428_384
-                              let '-' = xx427_385
+                                  _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d464_414
+                              let '-' = xx463_415
                               return ()
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dvChars"] d428_384
-                              d430_386 <- get
-                              xx429_387 <- dvCharsM
-                              let c = xx429_387
+                               else throwErrorPackratM "True" "not match: " ["dvChars"] d464_414
+                              d466_416 <- get
+                              xx465_417 <- dvCharsM
+                              let c = xx465_417
                               if isGt c
                                then return ()
-                               else throwErrorPackratM "isGt c" "not match: " ["dvChars"] d430_386
-                              d432_388 <- get
+                               else throwErrorPackratM "isGt c" "not match: " ["dvChars"] d466_416
+                              d468_418 <- get
                               _ <- dv_spacesM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d432_388
-                              d434_389 <- get
-                              xx433_390 <- dv_hsExpTypM
-                              let e = xx433_390
+                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d468_418
+                              d470_419 <- get
+                              xx469_420 <- dv_hsExpTypM
+                              let e = xx469_420
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d434_389
+                               else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d470_419
                               return (lamE ps e),
-                           do d436_391 <- get
-                              xx435_392 <- dv_hsExpTypM
-                              let e = xx435_392
+                           do d472_421 <- get
+                              xx471_422 <- dv_hsExpTypM
+                              let e = xx471_422
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d436_391
+                               else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d472_421
                               return e]
-p_hsExpTyp = foldl1 mplus [do d438_393 <- get
-                              xx437_394 <- dv_hsExpOpM
-                              let eo = xx437_394
+p_hsExpTyp = foldl1 mplus [do d474_423 <- get
+                              xx473_424 <- dv_hsExpOpM
+                              let eo = xx473_424
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_hsExpOp"] d438_393
-                              d440_395 <- get
-                              xx439_396 <- dvCharsM
-                              case xx439_396 of
+                               else throwErrorPackratM "True" "not match: " ["dv_hsExpOp"] d474_423
+                              d476_425 <- get
+                              xx475_426 <- dvCharsM
+                              case xx475_426 of
                                   ':' -> return ()
-                                  _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d440_395
-                              let ':' = xx439_396
+                                  _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d476_425
+                              let ':' = xx475_426
                               return ()
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dvChars"] d440_395
-                              d442_397 <- get
-                              xx441_398 <- dvCharsM
-                              case xx441_398 of
+                               else throwErrorPackratM "True" "not match: " ["dvChars"] d476_425
+                              d478_427 <- get
+                              xx477_428 <- dvCharsM
+                              case xx477_428 of
                                   ':' -> return ()
-                                  _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d442_397
-                              let ':' = xx441_398
+                                  _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d478_427
+                              let ':' = xx477_428
                               return ()
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dvChars"] d442_397
-                              d444_399 <- get
+                               else throwErrorPackratM "True" "not match: " ["dvChars"] d478_427
+                              d480_429 <- get
                               _ <- dv_spacesM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d444_399
-                              d446_400 <- get
-                              xx445_401 <- dv_hsTypeArrM
-                              let t = xx445_401
+                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d480_429
+                              d482_430 <- get
+                              xx481_431 <- dv_hsTypeArrM
+                              let t = xx481_431
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d446_400
+                               else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d482_430
                               return (sigE eo t),
-                           do d448_402 <- get
-                              xx447_403 <- dv_hsExpOpM
-                              let eo = xx447_403
+                           do d484_432 <- get
+                              xx483_433 <- dv_hsExpOpM
+                              let eo = xx483_433
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_hsExpOp"] d448_402
+                               else throwErrorPackratM "True" "not match: " ["dv_hsExpOp"] d484_432
                               return eo]
-p_hsExpOp = foldl1 mplus [do d450_404 <- get
-                             xx449_405 <- dv_hsExpM
-                             let l = xx449_405
+p_hsExpOp = foldl1 mplus [do d486_434 <- get
+                             xx485_435 <- dv_hsExpM
+                             let l = xx485_435
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_hsExp"] d450_404
-                             d452_406 <- get
+                              else throwErrorPackratM "True" "not match: " ["dv_hsExp"] d486_434
+                             d488_436 <- get
                              _ <- dv_spacesM
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d452_406
-                             d454_407 <- get
-                             xx453_408 <- dv_hsOpM
-                             let o = xx453_408
+                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d488_436
+                             d490_437 <- get
+                             xx489_438 <- dv_hsOpM
+                             let o = xx489_438
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_hsOp"] d454_407
-                             d456_409 <- get
+                              else throwErrorPackratM "True" "not match: " ["dv_hsOp"] d490_437
+                             d492_439 <- get
                              _ <- dv_spacesM
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d456_409
-                             d458_410 <- get
-                             xx457_411 <- dv_hsExpOpM
-                             let r = xx457_411
+                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d492_439
+                             d494_440 <- get
+                             xx493_441 <- dv_hsExpOpM
+                             let r = xx493_441
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_hsExpOp"] d458_410
+                              else throwErrorPackratM "True" "not match: " ["dv_hsExpOp"] d494_440
                              return (uInfixE (getEx l) o r),
-                          do d460_412 <- get
-                             xx459_413 <- dv_hsExpM
-                             let e = xx459_413
+                          do d496_442 <- get
+                             xx495_443 <- dv_hsExpM
+                             let e = xx495_443
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_hsExp"] d460_412
+                              else throwErrorPackratM "True" "not match: " ["dv_hsExp"] d496_442
                              return (getEx e)]
-p_hsOp = foldl1 mplus [do d462_414 <- get
-                          xx461_415 <- dvCharsM
-                          let c = xx461_415
+p_hsOp = foldl1 mplus [do d498_444 <- get
+                          xx497_445 <- dvCharsM
+                          let c = xx497_445
                           if isOpHeadChar c
                            then return ()
-                           else throwErrorPackratM "isOpHeadChar c" "not match: " ["dvChars"] d462_414
-                          d464_416 <- get
-                          xx463_417 <- dv_opTailM
-                          let o = xx463_417
+                           else throwErrorPackratM "isOpHeadChar c" "not match: " ["dvChars"] d498_444
+                          d500_446 <- get
+                          xx499_447 <- dv_opTailM
+                          let o = xx499_447
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_opTail"] d464_416
+                           else throwErrorPackratM "True" "not match: " ["dv_opTail"] d500_446
                           return (varE (mkName (cons c o))),
-                       do d466_418 <- get
-                          xx465_419 <- dvCharsM
-                          case xx465_419 of
+                       do d502_448 <- get
+                          xx501_449 <- dvCharsM
+                          case xx501_449 of
                               ':' -> return ()
-                              _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d466_418
-                          let ':' = xx465_419
+                              _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d502_448
+                          let ':' = xx501_449
                           return ()
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dvChars"] d466_418
-                          ddd467_420 <- get
-                          flipMaybe "':':[True]" ddd467_420 ["dvChars"] (do d469_421 <- get
-                                                                            xx468_422 <- dvCharsM
-                                                                            case xx468_422 of
+                           else throwErrorPackratM "True" "not match: " ["dvChars"] d502_448
+                          ddd503_450 <- get
+                          flipMaybe "':':[True]" ddd503_450 ["dvChars"] (do d505_451 <- get
+                                                                            xx504_452 <- dvCharsM
+                                                                            case xx504_452 of
                                                                                 ':' -> return ()
-                                                                                _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d469_421
-                                                                            let ':' = xx468_422
+                                                                                _ -> throwErrorPackratM "':'" "not match pattern: " ["dvChars"] d505_451
+                                                                            let ':' = xx504_452
                                                                             return ()
                                                                             if True
                                                                              then return ()
-                                                                             else throwErrorPackratM "True" "not match: " ["dvChars"] d469_421)
-                          put ddd467_420
-                          d471_423 <- get
-                          xx470_424 <- dv_opTailM
-                          let o = xx470_424
+                                                                             else throwErrorPackratM "True" "not match: " ["dvChars"] d505_451)
+                          put ddd503_450
+                          d507_453 <- get
+                          xx506_454 <- dv_opTailM
+                          let o = xx506_454
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_opTail"] d471_423
+                           else throwErrorPackratM "True" "not match: " ["dv_opTail"] d507_453
                           return (conE (mkName (':' : o))),
-                       do d473_425 <- get
-                          xx472_426 <- dvCharsM
-                          let c = xx472_426
+                       do d509_455 <- get
+                          xx508_456 <- dvCharsM
+                          let c = xx508_456
                           if isBQ c
                            then return ()
-                           else throwErrorPackratM "isBQ c" "not match: " ["dvChars"] d473_425
-                          d475_427 <- get
-                          xx474_428 <- dv_variableM
-                          let v = xx474_428
+                           else throwErrorPackratM "isBQ c" "not match: " ["dvChars"] d509_455
+                          d511_457 <- get
+                          xx510_458 <- dv_variableM
+                          let v = xx510_458
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_variable"] d475_427
-                          d477_429 <- get
-                          xx476_430 <- dvCharsM
-                          let c_ = xx476_430
+                           else throwErrorPackratM "True" "not match: " ["dv_variable"] d511_457
+                          d513_459 <- get
+                          xx512_460 <- dvCharsM
+                          let c_ = xx512_460
                           if isBQ c_
                            then return ()
-                           else throwErrorPackratM "isBQ c_" "not match: " ["dvChars"] d477_429
+                           else throwErrorPackratM "isBQ c_" "not match: " ["dvChars"] d513_459
                           return (varE (mkName v)),
-                       do d479_431 <- get
-                          xx478_432 <- dvCharsM
-                          let c = xx478_432
+                       do d515_461 <- get
+                          xx514_462 <- dvCharsM
+                          let c = xx514_462
                           if isBQ c
                            then return ()
-                           else throwErrorPackratM "isBQ c" "not match: " ["dvChars"] d479_431
-                          d481_433 <- get
-                          xx480_434 <- dv_typM
-                          let t = xx480_434
+                           else throwErrorPackratM "isBQ c" "not match: " ["dvChars"] d515_461
+                          d517_463 <- get
+                          xx516_464 <- dv_typM
+                          let t = xx516_464
                           if True
                            then return ()
-                           else throwErrorPackratM "True" "not match: " ["dv_typ"] d481_433
-                          d483_435 <- get
-                          xx482_436 <- dvCharsM
-                          let c_ = xx482_436
+                           else throwErrorPackratM "True" "not match: " ["dv_typ"] d517_463
+                          d519_465 <- get
+                          xx518_466 <- dvCharsM
+                          let c_ = xx518_466
                           if isBQ c_
                            then return ()
-                           else throwErrorPackratM "isBQ c_" "not match: " ["dvChars"] d483_435
+                           else throwErrorPackratM "isBQ c_" "not match: " ["dvChars"] d519_465
                           return (conE (mkName t))]
-p_opTail = foldl1 mplus [do d485_437 <- get
-                            xx484_438 <- dvCharsM
-                            let c = xx484_438
+p_opTail = foldl1 mplus [do d521_467 <- get
+                            xx520_468 <- dvCharsM
+                            let c = xx520_468
                             if isOpTailChar c
                              then return ()
-                             else throwErrorPackratM "isOpTailChar c" "not match: " ["dvChars"] d485_437
-                            d487_439 <- get
-                            xx486_440 <- dv_opTailM
-                            let s = xx486_440
+                             else throwErrorPackratM "isOpTailChar c" "not match: " ["dvChars"] d521_467
+                            d523_469 <- get
+                            xx522_470 <- dv_opTailM
+                            let s = xx522_470
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_opTail"] d487_439
+                             else throwErrorPackratM "True" "not match: " ["dv_opTail"] d523_469
                             return (cons c s),
                          do return emp]
-p_hsExp = foldl1 mplus [do d489_441 <- get
-                           xx488_442 <- dv_hsExp1M
-                           let e = xx488_442
+p_hsExp = foldl1 mplus [do d525_471 <- get
+                           xx524_472 <- dv_hsExp1M
+                           let e = xx524_472
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_hsExp1"] d489_441
-                           d491_443 <- get
+                            else throwErrorPackratM "True" "not match: " ["dv_hsExp1"] d525_471
+                           d527_473 <- get
                            _ <- dv_spacesM
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_spaces"] d491_443
-                           d493_444 <- get
-                           xx492_445 <- dv_hsExpM
-                           let h = xx492_445
+                            else throwErrorPackratM "True" "not match: " ["dv_spaces"] d527_473
+                           d529_474 <- get
+                           xx528_475 <- dv_hsExpM
+                           let h = xx528_475
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_hsExp"] d493_444
+                            else throwErrorPackratM "True" "not match: " ["dv_hsExp"] d529_474
                            return (applyExR e h),
-                        do d495_446 <- get
-                           xx494_447 <- dv_hsExp1M
-                           let e = xx494_447
+                        do d531_476 <- get
+                           xx530_477 <- dv_hsExp1M
+                           let e = xx530_477
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_hsExp1"] d495_446
+                            else throwErrorPackratM "True" "not match: " ["dv_hsExp1"] d531_476
                            return (toEx e)]
-p_hsExp1 = foldl1 mplus [do d497_448 <- get
-                            xx496_449 <- dvCharsM
-                            case xx496_449 of
+p_hsExp1 = foldl1 mplus [do d533_478 <- get
+                            xx532_479 <- dvCharsM
+                            case xx532_479 of
                                 '(' -> return ()
-                                _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d497_448
-                            let '(' = xx496_449
+                                _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d533_478
+                            let '(' = xx532_479
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d497_448
-                            d499_450 <- get
-                            xx498_451 <- papOptional (foldl1 mplus [do d501_452 <- get
-                                                                       xx500_453 <- dv_hsExpTypM
-                                                                       let e = xx500_453
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d533_478
+                            d535_480 <- get
+                            xx534_481 <- papOptional (foldl1 mplus [do d537_482 <- get
+                                                                       xx536_483 <- dv_hsExpTypM
+                                                                       let e = xx536_483
                                                                        if True
                                                                         then return ()
-                                                                        else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d501_452
+                                                                        else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d537_482
                                                                        return e])
-                            let l = xx498_451
+                            let l = xx534_481
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d499_450
-                            d503_454 <- get
+                             else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d535_480
+                            d539_484 <- get
                             _ <- dv_spacesM
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d503_454
-                            d505_455 <- get
-                            xx504_456 <- dv_hsOpM
-                            let o = xx504_456
+                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d539_484
+                            d541_485 <- get
+                            xx540_486 <- dv_hsOpM
+                            let o = xx540_486
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_hsOp"] d505_455
-                            d507_457 <- get
+                             else throwErrorPackratM "True" "not match: " ["dv_hsOp"] d541_485
+                            d543_487 <- get
                             _ <- dv_spacesM
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d507_457
-                            d509_458 <- get
-                            xx508_459 <- papOptional (foldl1 mplus [do d511_460 <- get
-                                                                       xx510_461 <- dv_hsExpTypM
-                                                                       let e = xx510_461
+                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d543_487
+                            d545_488 <- get
+                            xx544_489 <- papOptional (foldl1 mplus [do d547_490 <- get
+                                                                       xx546_491 <- dv_hsExpTypM
+                                                                       let e = xx546_491
                                                                        if True
                                                                         then return ()
-                                                                        else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d511_460
+                                                                        else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d547_490
                                                                        return e])
-                            let r = xx508_459
+                            let r = xx544_489
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d509_458
-                            d513_462 <- get
-                            xx512_463 <- dvCharsM
-                            case xx512_463 of
+                             else throwErrorPackratM "True" "not match: " ["dv_hsExpTyp"] d545_488
+                            d549_492 <- get
+                            xx548_493 <- dvCharsM
+                            case xx548_493 of
                                 ')' -> return ()
-                                _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d513_462
-                            let ')' = xx512_463
+                                _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d549_492
+                            let ')' = xx548_493
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d513_462
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d549_492
                             return (infixE l o r),
-                         do d515_464 <- get
-                            xx514_465 <- dvCharsM
-                            case xx514_465 of
+                         do d551_494 <- get
+                            xx550_495 <- dvCharsM
+                            case xx550_495 of
                                 '(' -> return ()
-                                _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d515_464
-                            let '(' = xx514_465
+                                _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d551_494
+                            let '(' = xx550_495
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d515_464
-                            d517_466 <- get
-                            xx516_467 <- dv_hsExpTplM
-                            let et = xx516_467
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d551_494
+                            d553_496 <- get
+                            xx552_497 <- dv_hsExpTplM
+                            let et = xx552_497
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_hsExpTpl"] d517_466
-                            d519_468 <- get
-                            xx518_469 <- dvCharsM
-                            case xx518_469 of
+                             else throwErrorPackratM "True" "not match: " ["dv_hsExpTpl"] d553_496
+                            d555_498 <- get
+                            xx554_499 <- dvCharsM
+                            case xx554_499 of
                                 ')' -> return ()
-                                _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d519_468
-                            let ')' = xx518_469
+                                _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d555_498
+                            let ')' = xx554_499
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d519_468
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d555_498
                             return (tupE et),
-                         do d521_470 <- get
-                            xx520_471 <- dvCharsM
-                            case xx520_471 of
+                         do d557_500 <- get
+                            xx556_501 <- dvCharsM
+                            case xx556_501 of
                                 '[' -> return ()
-                                _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d521_470
-                            let '[' = xx520_471
+                                _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d557_500
+                            let '[' = xx556_501
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d521_470
-                            d523_472 <- get
-                            xx522_473 <- dv_hsExpTplM
-                            let et = xx522_473
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d557_500
+                            d559_502 <- get
+                            xx558_503 <- dv_hsExpTplM
+                            let et = xx558_503
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_hsExpTpl"] d523_472
-                            d525_474 <- get
-                            xx524_475 <- dvCharsM
-                            case xx524_475 of
+                             else throwErrorPackratM "True" "not match: " ["dv_hsExpTpl"] d559_502
+                            d561_504 <- get
+                            xx560_505 <- dvCharsM
+                            case xx560_505 of
                                 ']' -> return ()
-                                _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d525_474
-                            let ']' = xx524_475
+                                _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d561_504
+                            let ']' = xx560_505
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d525_474
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d561_504
                             return (listE et),
-                         do d527_476 <- get
-                            xx526_477 <- dv_variableM
-                            let v = xx526_477
+                         do d563_506 <- get
+                            xx562_507 <- dv_variableM
+                            let v = xx562_507
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_variable"] d527_476
+                             else throwErrorPackratM "True" "not match: " ["dv_variable"] d563_506
                             return (varE (mkName v)),
-                         do d529_478 <- get
-                            xx528_479 <- dv_typM
-                            let t = xx528_479
+                         do d565_508 <- get
+                            xx564_509 <- dv_typM
+                            let t = xx564_509
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_typ"] d529_478
+                             else throwErrorPackratM "True" "not match: " ["dv_typ"] d565_508
                             return (conE (mkName t)),
-                         do d531_480 <- get
-                            xx530_481 <- dv_integerM
-                            let i = xx530_481
+                         do d567_510 <- get
+                            xx566_511 <- dv_integerM
+                            let i = xx566_511
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_integer"] d531_480
-                            d533_482 <- get
+                             else throwErrorPackratM "True" "not match: " ["dv_integer"] d567_510
+                            d569_512 <- get
                             _ <- dv_spacesM
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d533_482
+                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d569_512
                             return (litE (integerL i)),
-                         do d535_483 <- get
-                            xx534_484 <- dvCharsM
-                            case xx534_484 of
+                         do d571_513 <- get
+                            xx570_514 <- dvCharsM
+                            case xx570_514 of
                                 '\'' -> return ()
-                                _ -> throwErrorPackratM "'\\''" "not match pattern: " ["dvChars"] d535_483
-                            let '\'' = xx534_484
+                                _ -> throwErrorPackratM "'\\''" "not match pattern: " ["dvChars"] d571_513
+                            let '\'' = xx570_514
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d535_483
-                            d537_485 <- get
-                            xx536_486 <- dv_charLitM
-                            let c = xx536_486
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d571_513
+                            d573_515 <- get
+                            xx572_516 <- dv_charLitM
+                            let c = xx572_516
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_charLit"] d537_485
-                            d539_487 <- get
-                            xx538_488 <- dvCharsM
-                            case xx538_488 of
+                             else throwErrorPackratM "True" "not match: " ["dv_charLit"] d573_515
+                            d575_517 <- get
+                            xx574_518 <- dvCharsM
+                            case xx574_518 of
                                 '\'' -> return ()
-                                _ -> throwErrorPackratM "'\\''" "not match pattern: " ["dvChars"] d539_487
-                            let '\'' = xx538_488
+                                _ -> throwErrorPackratM "'\\''" "not match pattern: " ["dvChars"] d575_517
+                            let '\'' = xx574_518
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d539_487
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d575_517
                             return (litE (charL c)),
-                         do d541_489 <- get
-                            xx540_490 <- dvCharsM
-                            case xx540_490 of
+                         do d577_519 <- get
+                            xx576_520 <- dvCharsM
+                            case xx576_520 of
                                 '"' -> return ()
-                                _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d541_489
-                            let '"' = xx540_490
+                                _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d577_519
+                            let '"' = xx576_520
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d541_489
-                            d543_491 <- get
-                            xx542_492 <- dv_stringLitM
-                            let s = xx542_492
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d577_519
+                            d579_521 <- get
+                            xx578_522 <- dv_stringLitM
+                            let s = xx578_522
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_stringLit"] d543_491
-                            d545_493 <- get
-                            xx544_494 <- dvCharsM
-                            case xx544_494 of
+                             else throwErrorPackratM "True" "not match: " ["dv_stringLit"] d579_521
+                            d581_523 <- get
+                            xx580_524 <- dvCharsM
+                            case xx580_524 of
                                 '"' -> return ()
-                                _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d545_493
-                            let '"' = xx544_494
+                                _ -> throwErrorPackratM "'\"'" "not match pattern: " ["dvChars"] d581_523
+                            let '"' = xx580_524
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d545_493
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d581_523
                             return (litE (stringL s)),
-                         do d547_495 <- get
-                            xx546_496 <- dvCharsM
-                            case xx546_496 of
+                         do d583_525 <- get
+                            xx582_526 <- dvCharsM
+                            case xx582_526 of
                                 '-' -> return ()
-                                _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d547_495
-                            let '-' = xx546_496
+                                _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d583_525
+                            let '-' = xx582_526
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d547_495
-                            d549_497 <- get
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d583_525
+                            d585_527 <- get
                             _ <- dv_spacesM
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d549_497
-                            d551_498 <- get
-                            xx550_499 <- dv_hsExp1M
-                            let e = xx550_499
+                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d585_527
+                            d587_528 <- get
+                            xx586_529 <- dv_hsExp1M
+                            let e = xx586_529
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_hsExp1"] d551_498
+                             else throwErrorPackratM "True" "not match: " ["dv_hsExp1"] d587_528
                             return (appE (varE $ mkName "negate") e)]
-p_hsExpTpl = foldl1 mplus [do d553_500 <- get
-                              xx552_501 <- dv_hsExpLamM
-                              let e = xx552_501
+p_hsExpTpl = foldl1 mplus [do d589_530 <- get
+                              xx588_531 <- dv_hsExpLamM
+                              let e = xx588_531
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_hsExpLam"] d553_500
-                              d555_502 <- get
+                               else throwErrorPackratM "True" "not match: " ["dv_hsExpLam"] d589_530
+                              d591_532 <- get
                               _ <- dv_spacesM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d555_502
-                              d557_503 <- get
-                              xx556_504 <- dvCharsM
-                              let c = xx556_504
+                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d591_532
+                              d593_533 <- get
+                              xx592_534 <- dvCharsM
+                              let c = xx592_534
                               if isComma c
                                then return ()
-                               else throwErrorPackratM "isComma c" "not match: " ["dvChars"] d557_503
-                              d559_505 <- get
+                               else throwErrorPackratM "isComma c" "not match: " ["dvChars"] d593_533
+                              d595_535 <- get
                               _ <- dv_spacesM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d559_505
-                              d561_506 <- get
-                              xx560_507 <- dv_hsExpTplM
-                              let et = xx560_507
+                               else throwErrorPackratM "True" "not match: " ["dv_spaces"] d595_535
+                              d597_536 <- get
+                              xx596_537 <- dv_hsExpTplM
+                              let et = xx596_537
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_hsExpTpl"] d561_506
+                               else throwErrorPackratM "True" "not match: " ["dv_hsExpTpl"] d597_536
                               return (cons e et),
-                           do d563_508 <- get
-                              xx562_509 <- dv_hsExpLamM
-                              let e = xx562_509
+                           do d599_538 <- get
+                              xx598_539 <- dv_hsExpLamM
+                              let e = xx598_539
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_hsExpLam"] d563_508
+                               else throwErrorPackratM "True" "not match: " ["dv_hsExpLam"] d599_538
                               return (cons e emp),
                            do return emp]
-p_hsTypeArr = foldl1 mplus [do d565_510 <- get
-                               xx564_511 <- dv_hsTypeM
-                               let l = xx564_511
+p_hsTypeArr = foldl1 mplus [do d601_540 <- get
+                               xx600_541 <- dv_hsTypeM
+                               let l = xx600_541
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_hsType"] d565_510
-                               d567_512 <- get
-                               xx566_513 <- dvCharsM
-                               case xx566_513 of
+                                else throwErrorPackratM "True" "not match: " ["dv_hsType"] d601_540
+                               d603_542 <- get
+                               xx602_543 <- dvCharsM
+                               case xx602_543 of
                                    '-' -> return ()
-                                   _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d567_512
-                               let '-' = xx566_513
+                                   _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d603_542
+                               let '-' = xx602_543
                                return ()
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dvChars"] d567_512
-                               d569_514 <- get
-                               xx568_515 <- dvCharsM
-                               let c = xx568_515
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d603_542
+                               d605_544 <- get
+                               xx604_545 <- dvCharsM
+                               let c = xx604_545
                                if isGt c
                                 then return ()
-                                else throwErrorPackratM "isGt c" "not match: " ["dvChars"] d569_514
-                               d571_516 <- get
+                                else throwErrorPackratM "isGt c" "not match: " ["dvChars"] d605_544
+                               d607_546 <- get
                                _ <- dv_spacesM
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_spaces"] d571_516
-                               d573_517 <- get
-                               xx572_518 <- dv_hsTypeArrM
-                               let r = xx572_518
+                                else throwErrorPackratM "True" "not match: " ["dv_spaces"] d607_546
+                               d609_547 <- get
+                               xx608_548 <- dv_hsTypeArrM
+                               let r = xx608_548
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d573_517
+                                else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d609_547
                                return (appT (appT arrowT (getTyp l)) r),
-                            do d575_519 <- get
-                               xx574_520 <- dv_hsTypeM
-                               let t = xx574_520
+                            do d611_549 <- get
+                               xx610_550 <- dv_hsTypeM
+                               let t = xx610_550
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_hsType"] d575_519
+                                else throwErrorPackratM "True" "not match: " ["dv_hsType"] d611_549
                                return (getTyp t)]
-p_hsType = foldl1 mplus [do d577_521 <- get
-                            xx576_522 <- dv_hsType1M
-                            let t = xx576_522
+p_hsType = foldl1 mplus [do d613_551 <- get
+                            xx612_552 <- dv_hsType1M
+                            let t = xx612_552
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_hsType1"] d577_521
-                            d579_523 <- get
-                            xx578_524 <- dv_hsTypeM
-                            let ts = xx578_524
+                             else throwErrorPackratM "True" "not match: " ["dv_hsType1"] d613_551
+                            d615_553 <- get
+                            xx614_554 <- dv_hsTypeM
+                            let ts = xx614_554
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_hsType"] d579_523
+                             else throwErrorPackratM "True" "not match: " ["dv_hsType"] d615_553
                             return (applyTyp (toTyp t) ts),
-                         do d581_525 <- get
-                            xx580_526 <- dv_hsType1M
-                            let t = xx580_526
+                         do d617_555 <- get
+                            xx616_556 <- dv_hsType1M
+                            let t = xx616_556
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_hsType1"] d581_525
+                             else throwErrorPackratM "True" "not match: " ["dv_hsType1"] d617_555
                             return (toTyp t)]
-p_hsType1 = foldl1 mplus [do d583_527 <- get
-                             xx582_528 <- dvCharsM
-                             case xx582_528 of
+p_hsType1 = foldl1 mplus [do d619_557 <- get
+                             xx618_558 <- dvCharsM
+                             case xx618_558 of
                                  '[' -> return ()
-                                 _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d583_527
-                             let '[' = xx582_528
+                                 _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d619_557
+                             let '[' = xx618_558
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d583_527
-                             d585_529 <- get
-                             xx584_530 <- dvCharsM
-                             case xx584_530 of
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d619_557
+                             d621_559 <- get
+                             xx620_560 <- dvCharsM
+                             case xx620_560 of
                                  ']' -> return ()
-                                 _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d585_529
-                             let ']' = xx584_530
+                                 _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d621_559
+                             let ']' = xx620_560
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d585_529
-                             d587_531 <- get
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d621_559
+                             d623_561 <- get
                              _ <- dv_spacesM
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d587_531
+                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d623_561
                              return listT,
-                          do d589_532 <- get
-                             xx588_533 <- dvCharsM
-                             case xx588_533 of
+                          do d625_562 <- get
+                             xx624_563 <- dvCharsM
+                             case xx624_563 of
                                  '[' -> return ()
-                                 _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d589_532
-                             let '[' = xx588_533
+                                 _ -> throwErrorPackratM "'['" "not match pattern: " ["dvChars"] d625_562
+                             let '[' = xx624_563
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d589_532
-                             d591_534 <- get
-                             xx590_535 <- dv_hsTypeArrM
-                             let t = xx590_535
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d625_562
+                             d627_564 <- get
+                             xx626_565 <- dv_hsTypeArrM
+                             let t = xx626_565
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d591_534
-                             d593_536 <- get
-                             xx592_537 <- dvCharsM
-                             case xx592_537 of
+                              else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d627_564
+                             d629_566 <- get
+                             xx628_567 <- dvCharsM
+                             case xx628_567 of
                                  ']' -> return ()
-                                 _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d593_536
-                             let ']' = xx592_537
+                                 _ -> throwErrorPackratM "']'" "not match pattern: " ["dvChars"] d629_566
+                             let ']' = xx628_567
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d593_536
-                             d595_538 <- get
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d629_566
+                             d631_568 <- get
                              _ <- dv_spacesM
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d595_538
+                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d631_568
                              return (appT listT t),
-                          do d597_539 <- get
-                             xx596_540 <- dvCharsM
-                             case xx596_540 of
+                          do d633_569 <- get
+                             xx632_570 <- dvCharsM
+                             case xx632_570 of
                                  '(' -> return ()
-                                 _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d597_539
-                             let '(' = xx596_540
+                                 _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d633_569
+                             let '(' = xx632_570
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d597_539
-                             d599_541 <- get
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d633_569
+                             d635_571 <- get
                              _ <- dv_spacesM
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d599_541
-                             d601_542 <- get
-                             xx600_543 <- dv_hsTypeTplM
-                             let tt = xx600_543
+                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d635_571
+                             d637_572 <- get
+                             xx636_573 <- dv_hsTypeTplM
+                             let tt = xx636_573
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_hsTypeTpl"] d601_542
-                             d603_544 <- get
-                             xx602_545 <- dvCharsM
-                             case xx602_545 of
+                              else throwErrorPackratM "True" "not match: " ["dv_hsTypeTpl"] d637_572
+                             d639_574 <- get
+                             xx638_575 <- dvCharsM
+                             case xx638_575 of
                                  ')' -> return ()
-                                 _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d603_544
-                             let ')' = xx602_545
+                                 _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d639_574
+                             let ')' = xx638_575
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d603_544
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d639_574
                              return (tupT tt),
-                          do d605_546 <- get
-                             xx604_547 <- dv_typTokenM
-                             let t = xx604_547
+                          do d641_576 <- get
+                             xx640_577 <- dv_typTokenM
+                             let t = xx640_577
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_typToken"] d605_546
+                              else throwErrorPackratM "True" "not match: " ["dv_typToken"] d641_576
                              return (conT (mkName t)),
-                          do d607_548 <- get
-                             xx606_549 <- dvCharsM
-                             case xx606_549 of
+                          do d643_578 <- get
+                             xx642_579 <- dvCharsM
+                             case xx642_579 of
                                  '(' -> return ()
-                                 _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d607_548
-                             let '(' = xx606_549
+                                 _ -> throwErrorPackratM "'('" "not match pattern: " ["dvChars"] d643_578
+                             let '(' = xx642_579
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d607_548
-                             d609_550 <- get
-                             xx608_551 <- dvCharsM
-                             case xx608_551 of
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d643_578
+                             d645_580 <- get
+                             xx644_581 <- dvCharsM
+                             case xx644_581 of
                                  '-' -> return ()
-                                 _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d609_550
-                             let '-' = xx608_551
+                                 _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d645_580
+                             let '-' = xx644_581
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d609_550
-                             d611_552 <- get
-                             xx610_553 <- dvCharsM
-                             let c = xx610_553
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d645_580
+                             d647_582 <- get
+                             xx646_583 <- dvCharsM
+                             let c = xx646_583
                              if isGt c
                               then return ()
-                              else throwErrorPackratM "isGt c" "not match: " ["dvChars"] d611_552
-                             d613_554 <- get
-                             xx612_555 <- dvCharsM
-                             case xx612_555 of
+                              else throwErrorPackratM "isGt c" "not match: " ["dvChars"] d647_582
+                             d649_584 <- get
+                             xx648_585 <- dvCharsM
+                             case xx648_585 of
                                  ')' -> return ()
-                                 _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d613_554
-                             let ')' = xx612_555
+                                 _ -> throwErrorPackratM "')'" "not match pattern: " ["dvChars"] d649_584
+                             let ')' = xx648_585
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d613_554
-                             d615_556 <- get
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d649_584
+                             d651_586 <- get
                              _ <- dv_spacesM
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d615_556
+                              else throwErrorPackratM "True" "not match: " ["dv_spaces"] d651_586
                              return arrowT]
-p_hsTypeTpl = foldl1 mplus [do d617_557 <- get
-                               xx616_558 <- dv_hsTypeArrM
-                               let t = xx616_558
+p_hsTypeTpl = foldl1 mplus [do d653_587 <- get
+                               xx652_588 <- dv_hsTypeArrM
+                               let t = xx652_588
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d617_557
-                               d619_559 <- get
-                               xx618_560 <- dvCharsM
-                               let c = xx618_560
+                                else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d653_587
+                               d655_589 <- get
+                               xx654_590 <- dvCharsM
+                               let c = xx654_590
                                if isComma c
                                 then return ()
-                                else throwErrorPackratM "isComma c" "not match: " ["dvChars"] d619_559
-                               d621_561 <- get
+                                else throwErrorPackratM "isComma c" "not match: " ["dvChars"] d655_589
+                               d657_591 <- get
                                _ <- dv_spacesM
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_spaces"] d621_561
-                               d623_562 <- get
-                               xx622_563 <- dv_hsTypeTplM
-                               let tt = xx622_563
+                                else throwErrorPackratM "True" "not match: " ["dv_spaces"] d657_591
+                               d659_592 <- get
+                               xx658_593 <- dv_hsTypeTplM
+                               let tt = xx658_593
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_hsTypeTpl"] d623_562
+                                else throwErrorPackratM "True" "not match: " ["dv_hsTypeTpl"] d659_592
                                return (cons t tt),
-                            do d625_564 <- get
-                               xx624_565 <- dv_hsTypeArrM
-                               let t = xx624_565
+                            do d661_594 <- get
+                               xx660_595 <- dv_hsTypeArrM
+                               let t = xx660_595
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d625_564
+                                else throwErrorPackratM "True" "not match: " ["dv_hsTypeArr"] d661_594
                                return (cons t emp),
                             do return emp]
-p_typ = foldl1 mplus [do d627_566 <- get
-                         xx626_567 <- dv_upperM
-                         let u = xx626_567
+p_typ = foldl1 mplus [do d663_596 <- get
+                         xx662_597 <- dv_upperM
+                         let u = xx662_597
                          if True
                           then return ()
-                          else throwErrorPackratM "True" "not match: " ["dv_upper"] d627_566
-                         d629_568 <- get
-                         xx628_569 <- dv_tvtailM
-                         let t = xx628_569
+                          else throwErrorPackratM "True" "not match: " ["dv_upper"] d663_596
+                         d665_598 <- get
+                         xx664_599 <- dv_tvtailM
+                         let t = xx664_599
                          if True
                           then return ()
-                          else throwErrorPackratM "True" "not match: " ["dv_tvtail"] d629_568
+                          else throwErrorPackratM "True" "not match: " ["dv_tvtail"] d665_598
                          return (cons u t)]
-p_variable = foldl1 mplus [do d631_570 <- get
-                              xx630_571 <- dv_lowerM
-                              let l = xx630_571
+p_variable = foldl1 mplus [do d667_600 <- get
+                              xx666_601 <- dv_lowerM
+                              let l = xx666_601
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_lower"] d631_570
-                              d633_572 <- get
-                              xx632_573 <- dv_tvtailM
-                              let t = xx632_573
+                               else throwErrorPackratM "True" "not match: " ["dv_lower"] d667_600
+                              d669_602 <- get
+                              xx668_603 <- dv_tvtailM
+                              let t = xx668_603
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_tvtail"] d633_572
+                               else throwErrorPackratM "True" "not match: " ["dv_tvtail"] d669_602
                               return (cons l t)]
-p_tvtail = foldl1 mplus [do d635_574 <- get
-                            xx634_575 <- dv_alphaM
-                            let a = xx634_575
+p_tvtail = foldl1 mplus [do d671_604 <- get
+                            xx670_605 <- dv_alphaM
+                            let a = xx670_605
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_alpha"] d635_574
-                            d637_576 <- get
-                            xx636_577 <- dv_tvtailM
-                            let t = xx636_577
+                             else throwErrorPackratM "True" "not match: " ["dv_alpha"] d671_604
+                            d673_606 <- get
+                            xx672_607 <- dv_tvtailM
+                            let t = xx672_607
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_tvtail"] d637_576
+                             else throwErrorPackratM "True" "not match: " ["dv_tvtail"] d673_606
                             return (cons a t),
                          do return emp]
-p_integer = foldl1 mplus [do d639_578 <- get
-                             xx638_579 <- dv_digitM
-                             let dh = xx638_579
+p_integer = foldl1 mplus [do d675_608 <- get
+                             xx674_609 <- dv_digitM
+                             let dh = xx674_609
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_digit"] d639_578
-                             d641_580 <- get
-                             xx640_581 <- list (foldl1 mplus [do d643_582 <- get
-                                                                 xx642_583 <- dv_digitM
-                                                                 let d = xx642_583
+                              else throwErrorPackratM "True" "not match: " ["dv_digit"] d675_608
+                             d677_610 <- get
+                             xx676_611 <- list (foldl1 mplus [do d679_612 <- get
+                                                                 xx678_613 <- dv_digitM
+                                                                 let d = xx678_613
                                                                  if True
                                                                   then return ()
-                                                                  else throwErrorPackratM "True" "not match: " ["dv_digit"] d643_582
+                                                                  else throwErrorPackratM "True" "not match: " ["dv_digit"] d679_612
                                                                  return d])
-                             let ds = xx640_581
+                             let ds = xx676_611
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_digit"] d641_580
+                              else throwErrorPackratM "True" "not match: " ["dv_digit"] d677_610
                              return (read (cons dh ds))]
-p_alpha = foldl1 mplus [do d645_584 <- get
-                           xx644_585 <- dv_upperM
-                           let u = xx644_585
+p_alpha = foldl1 mplus [do d681_614 <- get
+                           xx680_615 <- dv_upperM
+                           let u = xx680_615
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_upper"] d645_584
+                            else throwErrorPackratM "True" "not match: " ["dv_upper"] d681_614
                            return u,
-                        do d647_586 <- get
-                           xx646_587 <- dv_lowerM
-                           let l = xx646_587
+                        do d683_616 <- get
+                           xx682_617 <- dv_lowerM
+                           let l = xx682_617
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_lower"] d647_586
+                            else throwErrorPackratM "True" "not match: " ["dv_lower"] d683_616
                            return l,
-                        do d649_588 <- get
-                           xx648_589 <- dv_digitM
-                           let d = xx648_589
+                        do d685_618 <- get
+                           xx684_619 <- dv_digitM
+                           let d = xx684_619
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_digit"] d649_588
+                            else throwErrorPackratM "True" "not match: " ["dv_digit"] d685_618
                            return d]
-p_upper = foldl1 mplus [do d651_590 <- get
-                           xx650_591 <- dvCharsM
-                           let u = xx650_591
+p_upper = foldl1 mplus [do d687_620 <- get
+                           xx686_621 <- dvCharsM
+                           let u = xx686_621
                            if isUpper u
                             then return ()
-                            else throwErrorPackratM "isUpper u" "not match: " ["dvChars"] d651_590
+                            else throwErrorPackratM "isUpper u" "not match: " ["dvChars"] d687_620
                            return u]
-p_lower = foldl1 mplus [do d653_592 <- get
-                           xx652_593 <- dvCharsM
-                           let l = xx652_593
+p_lower = foldl1 mplus [do d689_622 <- get
+                           xx688_623 <- dvCharsM
+                           let l = xx688_623
                            if isLowerU l
                             then return ()
-                            else throwErrorPackratM "isLowerU l" "not match: " ["dvChars"] d653_592
+                            else throwErrorPackratM "isLowerU l" "not match: " ["dvChars"] d689_622
                            return l]
-p_digit = foldl1 mplus [do d655_594 <- get
-                           xx654_595 <- dvCharsM
-                           let d = xx654_595
+p_digit = foldl1 mplus [do d691_624 <- get
+                           xx690_625 <- dvCharsM
+                           let d = xx690_625
                            if isDigit d
                             then return ()
-                            else throwErrorPackratM "isDigit d" "not match: " ["dvChars"] d655_594
+                            else throwErrorPackratM "isDigit d" "not match: " ["dvChars"] d691_624
                            return d]
-p_spaces = foldl1 mplus [do d657_596 <- get
+p_spaces = foldl1 mplus [do d693_626 <- get
                             _ <- dv_spaceM
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_space"] d657_596
-                            d659_597 <- get
+                             else throwErrorPackratM "True" "not match: " ["dv_space"] d693_626
+                            d695_627 <- get
                             _ <- dv_spacesM
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d659_597
+                             else throwErrorPackratM "True" "not match: " ["dv_spaces"] d695_627
                             return (),
                          do return ()]
-p_space = foldl1 mplus [do d661_598 <- get
-                           xx660_599 <- dvCharsM
-                           let s = xx660_599
+p_space = foldl1 mplus [do d697_628 <- get
+                           xx696_629 <- dvCharsM
+                           let s = xx696_629
                            if isSpace s
                             then return ()
-                            else throwErrorPackratM "isSpace s" "not match: " ["dvChars"] d661_598
+                            else throwErrorPackratM "isSpace s" "not match: " ["dvChars"] d697_628
                            return (),
-                        do d663_600 <- get
-                           xx662_601 <- dvCharsM
-                           case xx662_601 of
+                        do d699_630 <- get
+                           xx698_631 <- dvCharsM
+                           case xx698_631 of
                                '-' -> return ()
-                               _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d663_600
-                           let '-' = xx662_601
+                               _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d699_630
+                           let '-' = xx698_631
                            return ()
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dvChars"] d663_600
-                           d665_602 <- get
-                           xx664_603 <- dvCharsM
-                           case xx664_603 of
+                            else throwErrorPackratM "True" "not match: " ["dvChars"] d699_630
+                           d701_632 <- get
+                           xx700_633 <- dvCharsM
+                           case xx700_633 of
                                '-' -> return ()
-                               _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d665_602
-                           let '-' = xx664_603
+                               _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d701_632
+                           let '-' = xx700_633
                            return ()
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dvChars"] d665_602
-                           d667_604 <- get
+                            else throwErrorPackratM "True" "not match: " ["dvChars"] d701_632
+                           d703_634 <- get
                            _ <- dv_notNLStringM
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_notNLString"] d667_604
-                           d669_605 <- get
+                            else throwErrorPackratM "True" "not match: " ["dv_notNLString"] d703_634
+                           d705_635 <- get
                            _ <- dv_nlM
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_nl"] d669_605
+                            else throwErrorPackratM "True" "not match: " ["dv_nl"] d705_635
                            return (),
-                        do d671_606 <- get
+                        do d707_636 <- get
                            _ <- dv_commentM
                            if True
                             then return ()
-                            else throwErrorPackratM "True" "not match: " ["dv_comment"] d671_606
+                            else throwErrorPackratM "True" "not match: " ["dv_comment"] d707_636
                            return ()]
-p_notNLString = foldl1 mplus [do ddd672_607 <- get
-                                 flipMaybe "_:nl[True]" ddd672_607 ["dv_nl"] (do d674_608 <- get
+p_notNLString = foldl1 mplus [do ddd708_637 <- get
+                                 flipMaybe "_:nl[True]" ddd708_637 ["dv_nl"] (do d710_638 <- get
                                                                                  _ <- dv_nlM
                                                                                  if True
                                                                                   then return ()
-                                                                                  else throwErrorPackratM "True" "not match: " ["dv_nl"] d674_608)
-                                 put ddd672_607
-                                 d676_609 <- get
-                                 xx675_610 <- dvCharsM
-                                 let c = xx675_610
+                                                                                  else throwErrorPackratM "True" "not match: " ["dv_nl"] d710_638)
+                                 put ddd708_637
+                                 d712_639 <- get
+                                 xx711_640 <- dvCharsM
+                                 let c = xx711_640
                                  if True
                                   then return ()
-                                  else throwErrorPackratM "True" "not match: " ["dvChars"] d676_609
-                                 d678_611 <- get
-                                 xx677_612 <- dv_notNLStringM
-                                 let s = xx677_612
+                                  else throwErrorPackratM "True" "not match: " ["dvChars"] d712_639
+                                 d714_641 <- get
+                                 xx713_642 <- dv_notNLStringM
+                                 let s = xx713_642
                                  if True
                                   then return ()
-                                  else throwErrorPackratM "True" "not match: " ["dv_notNLString"] d678_611
+                                  else throwErrorPackratM "True" "not match: " ["dv_notNLString"] d714_641
                                  return (cons c s),
                               do return emp]
-p_nl = foldl1 mplus [do d680_613 <- get
-                        xx679_614 <- dvCharsM
-                        case xx679_614 of
+p_nl = foldl1 mplus [do d716_643 <- get
+                        xx715_644 <- dvCharsM
+                        case xx715_644 of
                             '\n' -> return ()
-                            _ -> throwErrorPackratM "'\\n'" "not match pattern: " ["dvChars"] d680_613
-                        let '\n' = xx679_614
+                            _ -> throwErrorPackratM "'\\n'" "not match pattern: " ["dvChars"] d716_643
+                        let '\n' = xx715_644
                         return ()
                         if True
                          then return ()
-                         else throwErrorPackratM "True" "not match: " ["dvChars"] d680_613
+                         else throwErrorPackratM "True" "not match: " ["dvChars"] d716_643
                         return ()]
-p_comment = foldl1 mplus [do d682_615 <- get
-                             xx681_616 <- dvCharsM
-                             case xx681_616 of
+p_comment = foldl1 mplus [do d718_645 <- get
+                             xx717_646 <- dvCharsM
+                             case xx717_646 of
                                  '{' -> return ()
-                                 _ -> throwErrorPackratM "'{'" "not match pattern: " ["dvChars"] d682_615
-                             let '{' = xx681_616
+                                 _ -> throwErrorPackratM "'{'" "not match pattern: " ["dvChars"] d718_645
+                             let '{' = xx717_646
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d682_615
-                             d684_617 <- get
-                             xx683_618 <- dvCharsM
-                             case xx683_618 of
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d718_645
+                             d720_647 <- get
+                             xx719_648 <- dvCharsM
+                             case xx719_648 of
                                  '-' -> return ()
-                                 _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d684_617
-                             let '-' = xx683_618
+                                 _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d720_647
+                             let '-' = xx719_648
                              return ()
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dvChars"] d684_617
-                             ddd685_619 <- get
-                             flipMaybe "'#':[True]" ddd685_619 ["dvChars"] (do d687_620 <- get
-                                                                               xx686_621 <- dvCharsM
-                                                                               case xx686_621 of
+                              else throwErrorPackratM "True" "not match: " ["dvChars"] d720_647
+                             ddd721_649 <- get
+                             flipMaybe "'#':[True]" ddd721_649 ["dvChars"] (do d723_650 <- get
+                                                                               xx722_651 <- dvCharsM
+                                                                               case xx722_651 of
                                                                                    '#' -> return ()
-                                                                                   _ -> throwErrorPackratM "'#'" "not match pattern: " ["dvChars"] d687_620
-                                                                               let '#' = xx686_621
+                                                                                   _ -> throwErrorPackratM "'#'" "not match pattern: " ["dvChars"] d723_650
+                                                                               let '#' = xx722_651
                                                                                return ()
                                                                                if True
                                                                                 then return ()
-                                                                                else throwErrorPackratM "True" "not match: " ["dvChars"] d687_620)
-                             put ddd685_619
-                             d689_622 <- get
+                                                                                else throwErrorPackratM "True" "not match: " ["dvChars"] d723_650)
+                             put ddd721_649
+                             d725_652 <- get
                              _ <- dv_commentsM
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_comments"] d689_622
-                             d691_623 <- get
+                              else throwErrorPackratM "True" "not match: " ["dv_comments"] d725_652
+                             d727_653 <- get
                              _ <- dv_comEndM
                              if True
                               then return ()
-                              else throwErrorPackratM "True" "not match: " ["dv_comEnd"] d691_623
+                              else throwErrorPackratM "True" "not match: " ["dv_comEnd"] d727_653
                              return ()]
-p_comments = foldl1 mplus [do d693_624 <- get
+p_comments = foldl1 mplus [do d729_654 <- get
                               _ <- dv_notComStrM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_notComStr"] d693_624
-                              d695_625 <- get
+                               else throwErrorPackratM "True" "not match: " ["dv_notComStr"] d729_654
+                              d731_655 <- get
                               _ <- dv_commentM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_comment"] d695_625
-                              d697_626 <- get
+                               else throwErrorPackratM "True" "not match: " ["dv_comment"] d731_655
+                              d733_656 <- get
                               _ <- dv_commentsM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_comments"] d697_626
+                               else throwErrorPackratM "True" "not match: " ["dv_comments"] d733_656
                               return (),
-                           do d699_627 <- get
+                           do d735_657 <- get
                               _ <- dv_notComStrM
                               if True
                                then return ()
-                               else throwErrorPackratM "True" "not match: " ["dv_notComStr"] d699_627
+                               else throwErrorPackratM "True" "not match: " ["dv_notComStr"] d735_657
                               return ()]
-p_notComStr = foldl1 mplus [do ddd700_628 <- get
-                               flipMaybe "_:comment[True]" ddd700_628 ["dv_comment"] (do d702_629 <- get
+p_notComStr = foldl1 mplus [do ddd736_658 <- get
+                               flipMaybe "_:comment[True]" ddd736_658 ["dv_comment"] (do d738_659 <- get
                                                                                          _ <- dv_commentM
                                                                                          if True
                                                                                           then return ()
-                                                                                          else throwErrorPackratM "True" "not match: " ["dv_comment"] d702_629)
-                               put ddd700_628
-                               ddd703_630 <- get
-                               flipMaybe "_:comEnd[True]" ddd703_630 ["dv_comEnd"] (do d705_631 <- get
+                                                                                          else throwErrorPackratM "True" "not match: " ["dv_comment"] d738_659)
+                               put ddd736_658
+                               ddd739_660 <- get
+                               flipMaybe "_:comEnd[True]" ddd739_660 ["dv_comEnd"] (do d741_661 <- get
                                                                                        _ <- dv_comEndM
                                                                                        if True
                                                                                         then return ()
-                                                                                        else throwErrorPackratM "True" "not match: " ["dv_comEnd"] d705_631)
-                               put ddd703_630
-                               d707_632 <- get
+                                                                                        else throwErrorPackratM "True" "not match: " ["dv_comEnd"] d741_661)
+                               put ddd739_660
+                               d743_662 <- get
                                _ <- dvCharsM
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dvChars"] d707_632
-                               d709_633 <- get
+                                else throwErrorPackratM "True" "not match: " ["dvChars"] d743_662
+                               d745_663 <- get
                                _ <- dv_notComStrM
                                if True
                                 then return ()
-                                else throwErrorPackratM "True" "not match: " ["dv_notComStr"] d709_633
+                                else throwErrorPackratM "True" "not match: " ["dv_notComStr"] d745_663
                                return (),
                             do return ()]
-p_comEnd = foldl1 mplus [do d711_634 <- get
-                            xx710_635 <- dvCharsM
-                            case xx710_635 of
+p_comEnd = foldl1 mplus [do d747_664 <- get
+                            xx746_665 <- dvCharsM
+                            case xx746_665 of
                                 '-' -> return ()
-                                _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d711_634
-                            let '-' = xx710_635
+                                _ -> throwErrorPackratM "'-'" "not match pattern: " ["dvChars"] d747_664
+                            let '-' = xx746_665
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d711_634
-                            d713_636 <- get
-                            xx712_637 <- dvCharsM
-                            case xx712_637 of
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d747_664
+                            d749_666 <- get
+                            xx748_667 <- dvCharsM
+                            case xx748_667 of
                                 '}' -> return ()
-                                _ -> throwErrorPackratM "'}'" "not match pattern: " ["dvChars"] d713_636
-                            let '}' = xx712_637
+                                _ -> throwErrorPackratM "'}'" "not match pattern: " ["dvChars"] d749_666
+                            let '}' = xx748_667
                             return ()
                             if True
                              then return ()
-                             else throwErrorPackratM "True" "not match: " ["dvChars"] d713_636
+                             else throwErrorPackratM "True" "not match: " ["dvChars"] d749_666
                             return ()]
 
 class Source sl

@@ -114,12 +114,18 @@ nameLeaf_ :: NameLeaf_
 	/ nl:nameLeaf				{ here nl }
 ;
 nameLeaf :: NameLeaf
-	= n:pat1 ':' (rf, p):leaf		{ NameLeaf n rf p }
-	/ n:pat1				{ ctLeaf_ n }
+	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
+		{ NameLeaf (n, maybe "" id com) rf p }
+	/ n:pat1 _:spaces com:comForErr?
+		{ NameLeaf (n, maybe "" id com) FromToken (conE $ mkName "True", "") }
 ;
-leaf :: (ReadFrom, ExpQ)
+comForErr :: String
+	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
+						{ s }
+;
+leaf :: (ReadFrom, (ExpQ, String))
 	= rf:readFromLs t:test			{ (rf, t) }
-	/ rf:readFromLs				{ (rf, true) }
+	/ rf:readFromLs				{ (rf, (true, "")) }
 	/ t:test				{ (FromToken, t) }
 ;
 patOp :: PatQ
@@ -178,8 +184,8 @@ readFrom :: ReadFrom
 	= v:variable				{ FromVariable v }
 	/ '(' s:selection ')'			{ FromSelection s }
 ;
-test :: ExR
-	= '[' h:hsExpLam ']'		{ h }
+test :: (ExR, String)
+	= '[' h:hsExpLam _:spaces com:comForErr? ']'	{ (h, maybe "" id com) }
 ;
 hsExpLam :: ExR
 	= '\\' _:spaces ps:pats _:spaces '-' c:[isGt c] _:spaces e:hsExpTyp

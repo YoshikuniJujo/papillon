@@ -30,9 +30,11 @@ main = do
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 
 showParseError :: ParseError (Pos String) -> String
-showParseError (ParseError c m _ (ListPos (CharPos p)) d ns) =
+showParseError (ParseError c m com (ListPos (CharPos p)) d ns) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
-	m ++ c ++ " at position: " ++ show p
+	m ++ c ++
+	(if null com then "" else " {- " ++ com ++ " -}") ++
+	" at position: " ++ show p
 
 showReading :: Derivs -> String -> String
 showReading d "dvChars" = case dvChars d of
@@ -87,7 +89,7 @@ getMul v = v ((*), 1)
 -- {-comment-}
 -}
 expression :: Integer
-	= _:spacing v:additive !_:[True] { getMul v }
+	= _:spacing v:additive !_:[True {-# "eof" #-}] { getMul v }
 ;
 additive :: LeftMul
 	= l:multitive s:symbolA r:additive	{ comMul s l r }
@@ -100,7 +102,7 @@ multitive :: LeftMul
 ;
 primary :: Integer
 	= d:decimal				{ d }
-	/ c:[isOpenParen c] _:spacing v:additive cc:[isCloseParen cc] _:spacing
+	/ c:[isOpenParen c {-# "check '('" #-}] _:spacing v:additive cc:[isCloseParen cc] _:spacing
 						{ getMul v }
 ;
 decimal :: Integer

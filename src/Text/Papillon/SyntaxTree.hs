@@ -29,12 +29,10 @@ showReadFrom (FromList1 rf) = (++ "+") <$> showReadFrom rf
 showReadFrom (FromOptional rf) = (++ "?") <$> showReadFrom rf
 showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
 
--- data NameLeaf = NameLeaf (PatQ, String) ReadFrom (ExR, String)
-data NameLeaf = NameLeaf PatQ ReadFrom ExR
+data NameLeaf = NameLeaf (PatQ, String) ReadFrom (ExR, String)
 
 showNameLeaf :: NameLeaf -> Q String
--- showNameLeaf (NameLeaf (pat, _) rf (p, _)) = do
-showNameLeaf (NameLeaf pat rf p) = do
+showNameLeaf (NameLeaf (pat, _) rf (p, _)) = do
 	patt <- pat
 	rff <- showReadFrom rf
 	pp <- p
@@ -109,8 +107,7 @@ toTyp :: TypeQ -> Typ
 toTyp tp = \f -> f tp
 
 ctLeaf_ :: PatQ -> NameLeaf
--- ctLeaf_ n = NameLeaf (n, "") FromToken (conE $ mkName "True", "")
-ctLeaf_ n = NameLeaf n FromToken (conE $ mkName "True")
+ctLeaf_ n = NameLeaf (n, "") FromToken (conE $ mkName "True", "")
 
 true :: ExpQ
 true = conE $ mkName "True"
@@ -162,7 +159,7 @@ applyTyp :: Typ -> Typ -> Typ
 applyTyp f t = \g -> t (f g `appT`)
 
 getEx :: Ex -> ExR
-getEx ex = ex id -- (varE $ mkName "id")
+getEx ex = ex id
 
 toExGetEx :: Ex -> Ex
 toExGetEx = toEx . getEx
@@ -195,9 +192,7 @@ addPragmas =
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n" ++
-	"import Control.Monad.Trans.Error (Error (..))\n" -- ++
---	"import Language.Haskell.TH\n"
---	"import Control.Applicative\n"
+	"import Control.Monad.Trans.Error (Error (..))\n"
 
 charP :: Char -> PatQ
 charP = litP . charL
