@@ -78,7 +78,7 @@ nameFromExpressionHs = nameFromExpression . fst
 type Selection = [ExpressionHs]
 
 showSelection :: Selection -> Q String
-showSelection ehss = (intercalate " / ") <$> mapM showExpressionHs ehss
+showSelection ehss = intercalate " / " <$> mapM showExpressionHs ehss
 
 nameFromSelection :: Selection -> [String]
 nameFromSelection = concatMap nameFromExpressionHs
@@ -101,7 +101,7 @@ getTyp :: Typ -> TypeQ
 getTyp t = t id
 
 toTyp :: TypeQ -> Typ
-toTyp tp = \f -> f tp
+toTyp tp f = f tp
 
 ctLeaf_ :: PatQ -> NameLeaf
 ctLeaf_ n = NameLeaf (n, "") FromToken (conE $ mkName "True", "")
@@ -123,7 +123,7 @@ strToPatQ :: String -> PatQ
 strToPatQ = varP . mkName
 
 conToPatQ :: String -> [PatQ] -> PatQ
-conToPatQ t ps = conP (mkName t) ps
+conToPatQ t = conP (mkName t)
 
 mkExpressionHs :: a -> ExR -> (a, ExR)
 mkExpressionHs x y = (x, y)
@@ -141,19 +141,19 @@ isOpHeadChar :: Char -> Bool
 isOpHeadChar = (`elem` "+*/-!|&.^=<>$")
 
 toExp :: String -> Ex
-toExp v = \f -> f $ varE (mkName v)
+toExp v f = f $ varE (mkName v)
 
 toEx :: ExR -> Ex
-toEx v = \f -> f v
+toEx v f = f v
 
 apply :: String -> Ex -> Ex
-apply f x = \g -> x (toExp f g `appE`)
+apply f x g = x (toExp f g `appE`)
 
 applyExR :: ExR -> Ex -> Ex
-applyExR f x = \g -> x (toEx f g `appE`)
+applyExR f x g = x (toEx f g `appE`)
 
 applyTyp :: Typ -> Typ -> Typ
-applyTyp f t = \g -> t (f g `appT`)
+applyTyp f t g = t (f g `appT`)
 
 getEx :: Ex -> ExR
 getEx ex = ex id

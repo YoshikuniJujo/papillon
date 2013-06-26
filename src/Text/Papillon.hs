@@ -608,7 +608,7 @@ transLeaf g th (NotAfter nl@(NameLeaf _ rf _) com) = do
 		bindS (varP d) $ varE (getN th),
 		noBindS $ varE (mkName "flipMaybe")
 			`appE` litE (stringL nls)
-			`appE` (varE d)
+			`appE` varE d
 			`appE` listE (map stringE $ nameFromRF rf)
 			`appE` stringE com
 			`appE` (DoE <$> transLeaf' g th nl),
