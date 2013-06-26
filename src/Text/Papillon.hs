@@ -568,17 +568,22 @@ transLeaf' g th (NameLeaf n rf p) = do
 			bindS wildP $ transReadFrom g th rf,
 			afterCheck th p d $ nameFromRF rf
 		 ]
-		VarP _ -> do
-			bd <- bindS (varP d) $ varE $ getN th
-			s <- bindS (varP t) $ transReadFrom g th rf
-			m <- letS [flip (valD n) [] $ normalB $ varE t]
-			c <- afterCheck th p d $ nameFromRF rf
-			return $ bd : s : m : [c]
-		_ -> do	bd <- bindS (varP d) $ varE $ getN th
-			s <- bindS (varP t) $ transReadFrom g th rf
-			m <- beforeMatch th t n d (nameFromRF rf)
-			c <- afterCheck th p d $ nameFromRF rf
-			return $ bd : s : m ++ [c]
+		_	| notHaveOthers nn -> do
+				bd <- bindS (varP d) $ varE $ getN th
+				s <- bindS (varP t) $ transReadFrom g th rf
+				m <- letS [flip (valD n) [] $ normalB $ varE t]
+				c <- afterCheck th p d $ nameFromRF rf
+				return $ bd : s : m : [c]
+			| otherwise -> do
+				bd <- bindS (varP d) $ varE $ getN th
+				s <- bindS (varP t) $ transReadFrom g th rf
+				m <- beforeMatch th t n d (nameFromRF rf)
+				c <- afterCheck th p d $ nameFromRF rf
+				return $ bd : s : m ++ [c]
+	where
+	notHaveOthers (VarP _) = True
+	notHaveOthers (TupP pats) = all notHaveOthers pats
+	notHaveOthers _ = False
 
 transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
 transLeaf g th (Here nl) = transLeaf' g th nl

@@ -5,7 +5,6 @@ import Data.Char
 import Control.Applicative
 import Data.List
 
-type Leaf = (ReadFrom, ExR)
 data ReadFrom
 	= FromVariable String
 	| FromSelection Selection
@@ -22,12 +21,6 @@ nameFromRF (FromList1 rf) = nameFromRF rf
 nameFromRF (FromOptional rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 
-showLeaf :: Leaf -> Q String
-showLeaf (rf, ex) = do
-	rff <- showReadFrom rf
-	exx <- ex
-	return $ rff ++ "[" ++ show (ppr exx) ++ "]"
-
 showReadFrom :: ReadFrom -> Q String
 showReadFrom FromToken = return ""
 showReadFrom (FromVariable v) = return v
@@ -35,9 +28,6 @@ showReadFrom (FromList rf) = (++ "*") <$> showReadFrom rf
 showReadFrom (FromList1 rf) = (++ "+") <$> showReadFrom rf
 showReadFrom (FromOptional rf) = (++ "?") <$> showReadFrom rf
 showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
-
-nameFromLeaf :: Leaf -> [String]
-nameFromLeaf (rf, _) = nameFromRF rf
 
 data NameLeaf = NameLeaf PatQ ReadFrom ExR
 
@@ -116,13 +106,8 @@ getTyp t = t id
 toTyp :: TypeQ -> Typ
 toTyp tp = \f -> f tp
 
-ctLeaf :: Leaf
-ctLeaf = (FromToken, conE $ mkName "True")
-
-ruleLeaf :: String -> ExpQ -> Leaf
-boolLeaf :: ExpQ -> Leaf
-ruleLeaf r t = (FromVariable r, t)
-boolLeaf p = (FromToken, p)
+ctLeaf_ :: PatQ -> NameLeaf
+ctLeaf_ n = NameLeaf n FromToken $ conE $ mkName "True"
 
 true :: ExpQ
 true = conE $ mkName "True"
@@ -136,9 +121,6 @@ cons :: a -> [a] -> [a]
 cons = (:)
 
 type PatQs = [PatQ]
-
-mkNameLeaf :: PatQ -> Leaf -> NameLeaf
-mkNameLeaf n (f, p) = NameLeaf n f p
 
 strToPatQ :: String -> PatQ
 strToPatQ = varP . mkName

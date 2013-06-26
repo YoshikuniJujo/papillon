@@ -7,7 +7,6 @@ module Text.Papillon.Parser (
 	ExpressionHs,
 	NameLeaf(..),
 	NameLeaf_(..),
-	Leaf,
 	ReadFrom(..),
 	parse,
 	initialPos,
@@ -115,16 +114,13 @@ nameLeaf_ :: NameLeaf_
 	/ nl:nameLeaf				{ here nl }
 ;
 nameLeaf :: NameLeaf
-{-
-	= n:pat1 ':' '(' ex:selection ')' '*' _:spaces
-		{ NameLeafList n ex }
-	= n:pat1 ':' '(' ex:selection ')' c:[isQuestion c] _:spaces
-		{ NameLeafOptional n ex }
---	/ o:[isOpen o] nl:nameLeaf c:[isClose c]	{ nl }
--}
-	= n:pat1 ':' l:leaf		{ mkNameLeaf n l }
-	/ n:pat1					{ mkNameLeaf n ctLeaf }
---	/ ':' l:leaf_			{ mkNameLeaf wildP l }
+	= n:pat1 ':' (rf, p):leaf		{ NameLeaf n rf p }
+	/ n:pat1				{ ctLeaf_ n }
+;
+leaf :: (ReadFrom, ExpQ)
+	= rf:readFromLs t:test			{ (rf, t) }
+	/ rf:readFromLs				{ (rf, true) }
+	/ t:test				{ (FromToken, t) }
 ;
 patOp :: PatQ
 	= p:pat o:opConName po:patOp		{ uInfixP p o po }
@@ -171,20 +167,6 @@ dq :: ()
 pats :: PatQs
 	= p:pat _:spaces ps:pats		{ cons p ps }
 	/					{ emp }
-;
-leaf :: Leaf
-	= t:test				{ boolLeaf t }
-	/ rf:readFromLs t:test			{ (rf, t) }
-	/ rf:readFromLs				{ (rf, true) }
-{-
-	= t:test				{ boolLeaf t }
-	/ v:variable t:test			{ ruleLeaf v t }
-	/ v:variable				{ ruleLeaf v true }
--}
-{-
-	/ '(' s:selection ')' _:spaces t:test	{ (FromSelection s, t) }
-	/ '(' s:selection ')'			{ (FromSelection s, true) }
--}
 ;
 readFromLs :: ReadFrom
 	= rf:readFrom '*'			{ FromList rf }
