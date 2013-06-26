@@ -6,20 +6,27 @@ main :: IO ()
 main = do
 	case dv_something $ parse initialPos "parse fail" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
-		Left (ParseError c m p _ _) -> putStrLn $ "OK! it's fail: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
 	case dv_more $ parse initialPos "" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
-		Left (ParseError c m p _ _) -> putStrLn $ "OK! it's fail: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
 	case dv_other $ parse initialPos "parse hoge" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
-		Left (ParseError c m p d n) -> do
-			putStrLn $ "OK! it's fail: " ++ show (c, m, p, n)
-			case dv_string d of
-				Right (s, _) -> print s
-				Left _ -> print "hoge"
-			case dvChars d of
-				Right (s, _) -> print s
-				Left _ -> print "hoge"
+		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
+
+showParseError :: ParseError (Pos String) -> String
+showParseError (ParseError c m (ListPos (CharPos p)) d ns) =
+	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
+	m ++ c ++ " at position: " ++ show p
+
+showReading :: Derivs -> String -> String
+showReading d "dv_string" = case dv_string d of
+	Right (s, _) -> show s
+	Left _ -> error "bad"
+showReading d "dv_other" = case dv_other d of
+	Right (s, _) -> show s
+	Left _ -> error "bad"
+showReading _ n = "yet: " ++ n
 
 type Nil = ()
 nil :: Nil

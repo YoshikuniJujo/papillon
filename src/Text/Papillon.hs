@@ -8,6 +8,7 @@ module Text.Papillon (
 	Source(..),
 	SourceList(..),
 	ListPos(..),
+	Pos(..),
 	list, list1,
 	papOptional
 ) where
@@ -107,8 +108,8 @@ errorN True = ''Error
 errorN False = mkName "Error"
 
 {-
-flipMaybe :: String -> PackratM a -> PackratM ()
-flipMaybe errMsg action = do
+flipMaybe :: String -> Derivs -> [String] -> PackratM a -> PackratM ()
+flipMaybe errMsg d ns action = do
 	err <- (action >> return False) `catchError` const (return True)
 	unless err $ throwErrorPackratM errMsg "not error"
 -}
@@ -116,11 +117,17 @@ flipMaybe errMsg action = do
 flipMaybeQ :: IORef Int -> Bool -> DecsQ
 flipMaybeQ _ th = sequence [
 	sigD (mkName "flipMaybe") $ forallT [PlainTV $ mkName "a"] (cxt []) $
-		arrowT `appT` (conT $ mkName "String") `appT` (arrowT
-		`appT` (conT (mkName "PackratM") `appT` varT (mkName "a"))
-		`appT` (conT (mkName "PackratM") `appT` tupleT 0)), -- (mkName "()")),)
+		conT (mkName "String")
+		`arrT`
+		conT (mkName "Derivs")
+		`arrT`
+		listT `appT` conT (mkName "String")
+		`arrT`
+		conT (mkName "PackratM") `appT` varT (mkName "a")
+		`arrT`
+		conT (mkName "PackratM") `appT` tupleT 0,
 	funD (mkName "flipMaybe") $ (: []) $
-		flip (clause [varP $ mkName "errMsg", varP $ mkName "act"]) [] $ normalB $ doE [
+		flip (clause args) [] $ normalB $ doE [
 			bindS (varP $ mkName "err") $ infixApp
 				actionReturnFalse
 				(varE $ catchErrorN th)
@@ -132,10 +139,17 @@ flipMaybeQ _ th = sequence [
 						(litE $ charL '!')
 						(conE $ mkName ":")
 						(varE $ mkName "errMsg"))
-					"not match"
---					varE (mkName "undefined")
+					"not match: "
+					(mkName "d")
+					(varE $ mkName "ns")
+--					(listE [stringE "hogeru"])
 		 ]
  ]	where
+	args = [
+		varP $ mkName "errMsg",
+		varP $ mkName "d",
+		varP $ mkName "ns",
+		varP $ mkName "act"]
 	actionReturnFalse = infixApp
 		(varE $ mkName "act")
 		(varE $ mkName ">>")
@@ -143,24 +157,18 @@ flipMaybeQ _ th = sequence [
 	constReturnTrue = varE (mkName "const") `appE` 
 		(varE (mkName "return") `appE` conE (mkName "True"))
 
--- varThrowQ :: ExpQ -> String -> ExpQ -> ExpQ
-varThrowQ :: ExpQ -> String -> ExpQ
--- varThrowQ code msg tkn = varE (mkName "throwErrorPackratM")
-varThrowQ code msg = varE (mkName "throwErrorPackratM")
+varThrowQ :: ExpQ -> String -> Name -> ExpQ -> ExpQ
+varThrowQ code msg d ns = varE (mkName "throwErrorPackratM")
 	`appE` code
 	`appE` litE (stringL msg)
---	`appE` tkn
-	`appE` varE (mkName "undefined")
-	`appE` varE (mkName "undefined")
+	`appE` ns
+	`appE` varE d
 
--- newThrowQ :: String -> String -> ExpQ -> ExpQ
-newThrowQ :: String -> String -> Name -> ExpQ
--- newThrowQ code msg tkn d = varE (mkName "throwErrorPackratM")
-newThrowQ code msg d = varE (mkName "throwErrorPackratM")
+newThrowQ :: String -> String -> Name -> [String] -> ExpQ
+newThrowQ code msg d ns = varE (mkName "throwErrorPackratM")
 	`appE` litE (stringL code)
 	`appE` litE (stringL msg)
---	`appE` tkn
-	`appE` varE (mkName "undefined")
+	`appE` listE (map stringE ns) -- (mkName "undefined")
 	`appE` varE d
 
 papillon :: QuasiQuoter
@@ -300,8 +308,7 @@ parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "po
 		strictType notStrict $ conT $ mkName "String",
 		strictType notStrict $ varT $ mkName "pos",
 		strictType notStrict $ conT $ mkName "Derivs",
-		strictType notStrict $ conT $ mkName "String"
---		strictType notStrict $ conT $ mkName "ErrorTypes"
+		strictType notStrict $ listT `appT` conT (mkName "String")
 	 ]
 
 
@@ -332,15 +339,14 @@ instanceErrorParseError th = instanceD
 
 {-
 
-throwErrorPackratM :: String -> String -> Derivs -> String -> PackratM a
-throwErrorPackratM code msg d name = do
+throwErrorPackratM :: String -> String -> Derivs -> [String] -> PackratM a
+throwErrorPackratM code msg d names = do
 	pos <- gets dvPos
---	d <- get
-	throwError (ParseError code msg pos d name) -- (varE $ mkName $ "dv_" ++ name))
+	throwError (ParseError code msg pos d names) -- (varE $ mkName $ "dv_" ++ name))
 
 -}
 
-infixr `arrT`
+infixr 8 `arrT`
 
 arrT :: TypeQ -> TypeQ -> TypeQ
 arrT x y = arrowT `appT` x `appT` y
@@ -353,7 +359,7 @@ throwErrorPackratMQ th = sequence [
 			`arrT`
 			conT (mkName "String")
 			`arrT`
-			conT (mkName "String")
+			(listT `appT` conT (mkName "String"))
 			`arrT`
 			conT (mkName "Derivs")
 			`arrT`
@@ -369,14 +375,14 @@ throwErrorPackratMQ th = sequence [
 					`appE` varE (mkName "msg")
 					`appE` varE (mkName "pos")
 					`appE` varE (mkName "d")
-					`appE` -- varE (mkName "undefined"))
-						stringE "")
+					`appE` varE (mkName "ns"))
+--						listE [stringE ""])
 		 ]
  ]	where
 	args = [
 		varP $ mkName "code",
 		varP $ mkName "msg",
-		varP $ mkName "_",
+		varP $ mkName "ns",
 		varP $ mkName "d"]
 
 result :: TypeQ -> DecQ
@@ -427,10 +433,9 @@ parseE' th names = clause [varP pos, varP $ mkName "s"]
 					 ])
 					[],
 				match	wildP
-					(normalB $ newThrowQ "" "eof" $ mkName "undefined")
---					(normalB $ newThrowQ "" "eof" $
---						varE (mkName "ErrorTypeChar") `appE`
---						varE (mkName "c"))
+					(normalB $ newThrowQ "" "end of input"
+						(mkName "undefined")
+						[])
 					[]
 			 ]
  ]
@@ -493,25 +498,24 @@ pSome_ g th nls ret = fmap DoE $ do
 	r <- noBindS $ varE (returnN th) `appE` ret
 	return $ concat x ++ [r]
 
--- afterCheck :: Bool -> String -> Name -> ExpQ -> StmtQ
--- afterCheck th name n p = do
-afterCheck :: Bool -> ExpQ -> StmtQ
-afterCheck th p = do
+afterCheck :: Bool -> ExpQ -> Name -> [String] -> StmtQ
+afterCheck th p d ns = do
 	pp <- p
 	noBindS $ condE p
 		(varE (returnN th) `appE` conE (mkName "()"))
---		(newThrowQ (show $ ppr pp) "not match")
-		(newThrowQ (show $ ppr pp) "not match" $ mkName "undefined")
+		(newThrowQ (show $ ppr pp) "not match: "
+			d ns)
 
-beforeMatch :: Bool -> Name -> PatQ -> Name -> Q [Stmt]
-beforeMatch th t n d = do
+beforeMatch :: Bool -> Name -> PatQ -> Name -> [String] -> Q [Stmt]
+beforeMatch th t n d ns = do
 	nn <- n
 	sequence [
 		noBindS $ caseE (varE t) [
 			flip (match $ varPToWild n) [] $ normalB $
 				varE (returnN th) `appE` tupE [],
 			flip (match wildP) [] $ normalB $
-				newThrowQ (show $ ppr nn) "not match pattern" d
+				newThrowQ (show $ ppr nn) "not match pattern: "
+					d ns
 		 ],
 		letS [flip (valD n) [] $ normalB $ varE t],
 		noBindS $ varE (returnN th) `appE` tupE []
@@ -556,18 +560,18 @@ transLeaf' g th (NameLeaf n rf p) = do
 		WildP -> sequence [
 			bindS (varP d) $ varE $ getN th,
 			bindS wildP $ transReadFrom g th rf,
-			afterCheck th p
+			afterCheck th p d $ nameFromRF rf
 		 ]
 		VarP _ -> do
 			bd <- bindS (varP d) $ varE $ getN th
 			s <- bindS (varP t) $ transReadFrom g th rf
 			m <- letS [flip (valD n) [] $ normalB $ varE t]
-			c <- afterCheck th p
+			c <- afterCheck th p d $ nameFromRF rf
 			return $ bd : s : m : [c]
 		_ -> do	bd <- bindS (varP d) $ varE $ getN th
 			s <- bindS (varP t) $ transReadFrom g th rf
-			m <- beforeMatch th t n d
-			c <- afterCheck th p
+			m <- beforeMatch th t n d (nameFromRF rf)
+			c <- afterCheck th p d $ nameFromRF rf
 			return $ bd : s : m ++ [c]
 
 transLeaf :: IORef Int -> Bool -> NameLeaf_ -> Q [Stmt]
@@ -578,13 +582,15 @@ transLeaf g th (After nl) = do
 		bindS (varP d) $ varE (getN th),
 		noBindS $ DoE <$> transLeaf' g th nl,
 		noBindS $ varE (putN th) `appE` varE d]
-transLeaf g th (NotAfter nl) = do
+transLeaf g th (NotAfter nl@(NameLeaf _ rf _)) = do
 	d <- getNewName g "ddd"
 	nls <- showNameLeaf nl
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ varE (mkName "flipMaybe")
 			`appE` (litE $ stringL nls)
+			`appE` (varE d)
+			`appE` (listE $ map stringE $ nameFromRF rf)
 			`appE` (DoE <$> transLeaf' g th nl),
 		noBindS $ varE (putN th) `appE` varE d]
 

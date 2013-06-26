@@ -12,7 +12,10 @@ module  Text.Papillon.Parser (
 	dv_peg,
 	dv_pegFile,
 	initialPos,
-	showNameLeaf
+	showNameLeaf,
+	nameFromRF,
+--	Pos(..),
+--	ListPos(..)
 )  where
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error

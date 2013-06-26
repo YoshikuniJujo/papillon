@@ -13,7 +13,10 @@ module Text.Papillon.Parser (
 	dv_peg,
 	dv_pegFile,
 	initialPos,
-	showNameLeaf
+	showNameLeaf,
+	nameFromRF,
+--	Pos(..),
+--	ListPos(..)
 ) where
 
 import Data.Char

@@ -14,6 +14,14 @@ data ReadFrom
 	| FromList1 ReadFrom
 	| FromOptional ReadFrom
 
+nameFromRF :: ReadFrom -> [String]
+nameFromRF (FromVariable s) = ["dv_" ++ s]
+nameFromRF FromToken = ["dvChars"]
+nameFromRF (FromList rf) = nameFromRF rf
+nameFromRF (FromList1 rf) = nameFromRF rf
+nameFromRF (FromOptional rf) = nameFromRF rf
+nameFromRF (FromSelection sel) = nameFromSelection sel
+
 showLeaf :: Leaf -> Q String
 showLeaf (rf, ex) = do
 	rff <- showReadFrom rf
@@ -28,6 +36,9 @@ showReadFrom (FromList1 rf) = (++ "+") <$> showReadFrom rf
 showReadFrom (FromOptional rf) = (++ "?") <$> showReadFrom rf
 showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
 
+nameFromLeaf :: Leaf -> [String]
+nameFromLeaf (rf, _) = nameFromRF rf
+
 data NameLeaf = NameLeaf PatQ ReadFrom ExR
 
 showNameLeaf :: NameLeaf -> Q String
@@ -36,6 +47,9 @@ showNameLeaf (NameLeaf pat rf p) = do
 	rff <- showReadFrom rf
 	pp <- p
 	return $ show (ppr patt) ++ ":" ++ rff ++ "[" ++ show (ppr pp) ++ "]"
+
+nameFromNameLeaf :: NameLeaf -> [String]
+nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf
 
 data NameLeaf_
 	= Here NameLeaf
@@ -47,6 +61,11 @@ showNameLeaf_ (Here nl) = showNameLeaf nl
 showNameLeaf_ (After nl) = ('&' :) <$> showNameLeaf nl
 showNameLeaf_ (NotAfter nl) = ('!' :) <$> showNameLeaf nl
 
+nameFromNameLeaf_ :: NameLeaf_ -> [String]
+nameFromNameLeaf_ (Here nl) = nameFromNameLeaf nl
+nameFromNameLeaf_ (After nl) = nameFromNameLeaf nl
+nameFromNameLeaf_ (NotAfter nl) = nameFromNameLeaf nl
+
 notAfter, here :: NameLeaf -> NameLeaf_
 notAfter = NotAfter
 here = Here
@@ -54,6 +73,9 @@ type Expression = [NameLeaf_]
 
 showExpression :: Expression -> Q String
 showExpression ex = unwords <$> mapM showNameLeaf_ ex
+
+nameFromExpression :: Expression -> [String]
+nameFromExpression = nameFromNameLeaf_ . head
 
 type ExpressionHs = (Expression, ExR)
 
@@ -63,10 +85,16 @@ showExpressionHs (ex, hs) = do
 	hss <- hs
 	return $ expp ++ " { " ++ show (ppr hss) ++ " }"
 
+nameFromExpressionHs :: ExpressionHs -> [String]
+nameFromExpressionHs = nameFromExpression . fst
+
 type Selection = [ExpressionHs]
 
 showSelection :: Selection -> Q String
 showSelection ehss = (intercalate " / ") <$> mapM showExpressionHs ehss
+
+nameFromSelection :: Selection -> [String]
+nameFromSelection = concatMap nameFromExpressionHs
 
 type Definition = (String, TypeQ, Selection)
 type Peg = [Definition]
