@@ -30,13 +30,13 @@ import Language.Haskell.TH
 import Text.Papillon.SyntaxTree
 
 data ParseError pos
-    = ParseError String String pos Derivs ([String])
+    = ParseError String String String pos Derivs ([String])
 throwErrorPackratM :: forall a . String ->
                                  String -> [String] -> Derivs -> PackratM a
 throwErrorPackratM code msg ns d = do pos <- gets dvPos
-                                      throwError (ParseError code msg pos d ns)
+                                      throwError (ParseError code msg undefined pos d ns)
 instance (Source s, Pos s ~ pos) => Error (ParseError pos)
-    where strMsg msg = ParseError "" msg initialPos undefined undefined
+    where strMsg msg = ParseError "" msg "" initialPos undefined undefined
 flipMaybe :: forall a . String ->
                         Derivs -> [String] -> PackratM a -> PackratM ()
 flipMaybe errMsg d ns act = do err <- (act >> return False) `catchError` const (return True)

@@ -241,7 +241,7 @@ declaration' src = case dv_pegFile $ parse P.initialPos src of
 	Left err -> error $ "parse error: " ++ showParseError err
 
 showParseError :: P.ParseError (P.Pos String) -> String
-showParseError (P.ParseError c m (P.ListPos (P.CharPos p)) d ns) =
+showParseError (P.ParseError c m _ (P.ListPos (P.CharPos p)) d ns) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ " at position: " ++ show p
 
@@ -290,7 +290,7 @@ derivs1 (name, typ, _) =
 {-
 
 data ParseError pos
-	= ParseError String String pos Derivs ExpQ
+	= ParseError String String String pos Derivs ExpQ
 	deriving Show
 
 -}
@@ -307,6 +307,7 @@ parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "po
 	normalC (mkName "ParseError") [
 		strictType notStrict $ conT $ mkName "String",
 		strictType notStrict $ conT $ mkName "String",
+		strictType notStrict $ conT $ mkName "String",
 		strictType notStrict $ varT $ mkName "pos",
 		strictType notStrict $ conT $ mkName "Derivs",
 		strictType notStrict $ listT `appT` conT (mkName "String")
@@ -316,7 +317,7 @@ parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "po
 {-
 
 instance Pos s pos => Error (ParseError pos) where
-	strMsg msg = ParseError "" msg initialPos
+	strMsg msg = ParseError "" msg "" initialPos
 
 -}
 
@@ -334,6 +335,7 @@ instanceErrorParseError th = instanceD
 	ret = conE (mkName "ParseError")
 		`appE` litE (stringL "")
 		`appE` varE msg
+		`appE` litE (stringL "")
 		`appE` varE (mkName "initialPos")
 		`appE` varE (mkName "undefined")
 		`appE` varE (mkName "undefined")
@@ -343,7 +345,7 @@ instanceErrorParseError th = instanceD
 throwErrorPackratM :: String -> String -> Derivs -> [String] -> PackratM a
 throwErrorPackratM code msg d names = do
 	pos <- gets dvPos
-	throwError (ParseError code msg pos d names) -- (varE $ mkName $ "dv_" ++ name))
+	throwError (ParseError code msg umsg pos d names) -- (varE $ mkName $ "dv_" ++ name))
 
 -}
 
@@ -374,6 +376,8 @@ throwErrorPackratMQ th = sequence [
 				(conE (mkName "ParseError")
 					`appE` varE (mkName "code")
 					`appE` varE (mkName "msg")
+					`appE` varE -- (mkName "umsg")
+						(mkName "undefined")
 					`appE` varE (mkName "pos")
 					`appE` varE (mkName "d")
 					`appE` varE (mkName "ns"))
@@ -383,6 +387,7 @@ throwErrorPackratMQ th = sequence [
 	args = [
 		varP $ mkName "code",
 		varP $ mkName "msg",
+--		varP $ mkName "umsg",
 		varP $ mkName "ns",
 		varP $ mkName "d"]
 

@@ -7,10 +7,10 @@ main :: IO ()
 main = do
 	case dv_testType $ parse initialPos "3351559" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left (ParseError c m p _ _ _) -> putStrLn $ "error: " ++ show (c, m, p)
 	case dv_testType $ parse initialPos "8351559" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left (ParseError c m p _ _ _) -> putStrLn $ "error: " ++ show (c, m, p)
 
 single :: a -> [a]
 single = (: [])

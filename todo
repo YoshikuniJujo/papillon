@@ -4,7 +4,10 @@
 
 * ParseError の field に error になったコードとそれについていたコメントをいれる
 	コメントはとりあえず {-# "..." #-}  でいれることにしよう
-	まずは ParseError の型を変更し、これを入れる場所を確保する
+	次は、Leaf の型を変更する
+		これはすこし手間がかかるかもしれないので、
+		その前にいろいろとしてしまおう
+		まずは ./mkParser の変更からだ
 
 * data ParseError の型構築子を公開しないようにする
 	data ParseError = ParseError ... を TH で書き、

@@ -18,7 +18,7 @@ true = True
 main :: IO ()
 main = case dv_three $ parse initialPos "333" of
 	Right ((), _) -> putStrLn "OK!"
-	Left (ParseError c m p _ _) -> putStrLn $ "not matched: " ++ show (c, m, p)
+	Left (ParseError c m p _ _ _) -> putStrLn $ "not matched: " ++ show (c, m, p)
 
 [papillon|
 
