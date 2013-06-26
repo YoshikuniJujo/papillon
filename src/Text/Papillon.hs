@@ -43,7 +43,7 @@ isOptionalUsedSelection = any isOptionalUsedLeafName . fst
 
 isOptionalUsedLeafName :: NameLeaf_ -> Bool
 isOptionalUsedLeafName (Here nl) = isOptionalUsedLeafName' nl
-isOptionalUsedLeafName (NotAfter nl) = isOptionalUsedLeafName' nl
+isOptionalUsedLeafName (NotAfter nl _) = isOptionalUsedLeafName' nl
 isOptionalUsedLeafName (After nl) = isOptionalUsedLeafName' nl
 
 isOptionalUsedLeafName' :: NameLeaf -> Bool
@@ -65,7 +65,7 @@ isListUsedSelection = any isListUsedLeafName . fst
 
 isListUsedLeafName :: NameLeaf_ -> Bool
 isListUsedLeafName (Here nl) = isListUsedLeafName' nl
-isListUsedLeafName (NotAfter nl) = isListUsedLeafName' nl
+isListUsedLeafName (NotAfter nl _) = isListUsedLeafName' nl
 isListUsedLeafName (After nl) = isListUsedLeafName' nl
 
 isListUsedLeafName' :: NameLeaf -> Bool
@@ -85,7 +85,7 @@ getNamesFromExpressionHs = concatMap getLeafName . fst
 
 getLeafName :: NameLeaf_ -> [String]
 getLeafName (Here nl) = getLeafName' nl
-getLeafName (NotAfter nl) = getLeafName' nl
+getLeafName (NotAfter nl _) = getLeafName' nl
 getLeafName (After nl) = getLeafName' nl
 
 getLeafName' :: NameLeaf -> [String]
@@ -108,8 +108,8 @@ errorN True = ''Error
 errorN False = mkName "Error"
 
 {-
-flipMaybe :: String -> Derivs -> [String] -> PackratM a -> PackratM ()
-flipMaybe errMsg d ns action = do
+flipMaybe :: String -> Derivs -> [String] -> String -> PackratM a -> PackratM ()
+flipMaybe errMsg d ns com action = do
 	err <- (action >> return False) `catchError` const (return True)
 	unless err $ throwErrorPackratM errMsg "not error"
 -}
@@ -122,6 +122,8 @@ flipMaybeQ _ th = sequence [
 		conT (mkName "Derivs")
 		`arrT`
 		listT `appT` conT (mkName "String")
+		`arrT`
+		conT (mkName "String")
 		`arrT`
 		conT (mkName "PackratM") `appT` varT (mkName "a")
 		`arrT`
@@ -142,6 +144,7 @@ flipMaybeQ _ th = sequence [
 					"not match: "
 					(mkName "d")
 					(varE $ mkName "ns")
+					(varE $ mkName "com")
 --					(listE [stringE "hogeru"])
 		 ]
  ]	where
@@ -149,6 +152,7 @@ flipMaybeQ _ th = sequence [
 		varP $ mkName "errMsg",
 		varP $ mkName "d",
 		varP $ mkName "ns",
+		varP $ mkName "com",
 		varP $ mkName "act"]
 	actionReturnFalse = infixApp
 		(varE $ mkName "act")
@@ -157,13 +161,13 @@ flipMaybeQ _ th = sequence [
 	constReturnTrue = varE (mkName "const") `appE` 
 		(varE (mkName "return") `appE` conE (mkName "True"))
 
-varThrowQ :: ExpQ -> String -> Name -> ExpQ -> ExpQ
-varThrowQ code msg d ns = varE (mkName "throwErrorPackratM")
+varThrowQ :: ExpQ -> String -> Name -> ExpQ -> ExpQ -> ExpQ
+varThrowQ code msg d ns com = varE (mkName "throwErrorPackratM")
 	`appE` code
 	`appE` litE (stringL msg)
 	`appE` ns
 	`appE` varE d
-	`appE` stringE ""
+	`appE` com
 
 newThrowQ :: String -> String -> Name -> [String] -> String -> ExpQ
 newThrowQ code msg d ns com = varE (mkName "throwErrorPackratM")
@@ -597,15 +601,16 @@ transLeaf g th (After nl) = do
 		bindS (varP d) $ varE (getN th),
 		noBindS $ DoE <$> transLeaf' g th nl,
 		noBindS $ varE (putN th) `appE` varE d]
-transLeaf g th (NotAfter nl@(NameLeaf _ rf _)) = do
+transLeaf g th (NotAfter nl@(NameLeaf _ rf _) com) = do
 	d <- getNewName g "ddd"
 	nls <- showNameLeaf nl
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ varE (mkName "flipMaybe")
-			`appE` (litE $ stringL nls)
+			`appE` litE (stringL nls)
 			`appE` (varE d)
-			`appE` (listE $ map stringE $ nameFromRF rf)
+			`appE` listE (map stringE $ nameFromRF rf)
+			`appE` stringE com
 			`appE` (DoE <$> transLeaf' g th nl),
 		noBindS $ varE (putN th) `appE` varE d]
 

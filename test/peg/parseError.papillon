@@ -15,9 +15,11 @@ main = do
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
 
 showParseError :: ParseError (Pos String) -> String
-showParseError (ParseError c m _ (ListPos (CharPos p)) d ns) =
+showParseError (ParseError c m com (ListPos (CharPos p)) d ns) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
-	m ++ c ++ " at position: " ++ show p
+	m ++ c ++
+	(if null com then "" else " {- " ++ com ++ " -} ") ++
+	" at position: " ++ show p
 
 showReading :: Derivs -> String -> String
 showReading d "dv_string" = case dv_string d of
@@ -38,15 +40,15 @@ emp = []
 
 [papillon|
 
-more :: Char = c		{ c }
+more :: Char = c						{ c }
 ;
-something :: Nil = !_:other		{ nil }
+something :: Nil = !_:other {-# "not followed by other" #-}	{ nil }
 ;
-other :: Nil = "parse fail":string	{ nil }
+other :: Nil = "parse fail" {-# "it's parse fail" #-} :string	{ nil }
 ;
 string :: String
-	= c s:string		{ cons c s }
-	/			{ emp }
+	= c s:string						{ cons c s }
+	/							{ emp }
 ;
 
 |]

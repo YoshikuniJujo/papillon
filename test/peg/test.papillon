@@ -55,9 +55,11 @@ main = do
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
 
 showParseError :: ParseError (Pos String) -> String
-showParseError (ParseError c m _ (ListPos (CharPos p)) d ns) =
+showParseError (ParseError c m com (ListPos (CharPos p)) d ns) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
-	m ++ c ++ " at position: " ++ show p
+	m ++ c ++
+	(if null com then "" else " {- " ++ com ++ " -}") ++
+	" at position: " ++ show p
 
 showReading :: Derivs -> String -> String
 showReading d "dvChars" = case dvChars d of
@@ -74,7 +76,7 @@ testSelLeaf :: Int
 	= i:(d:something { read d } / o:other { length o }) { i }
 ;
 onlyDigits :: Int -> ([String], Int, Maybe String, Maybe Char)
-	= (Just s, - 8):digits []:other ' ' mo:(o:other { o })?
+	= (Just s, - 8):digits [] {-# "empty other" #-} :other ' ' mo:(o:other { o })?
 		mc:(c:[not $ isLower c] { c })?
 		{ \x -> (replicate x $ 'c' : s ++ show (-5 :: Int), - 9, mo, mc) }
 ;
@@ -112,10 +114,10 @@ digits_ :: Int
 	= d:(c:[isDigit c] { c })+	{ read d }
 ;
 testAnd :: Int
-	= d:digits_ &'a'		{ d }
+	= d:digits_ &'a' {-# "followed by 'a'" #-}	{ d }
 ;
 testNot :: Int
-	= d:digits_ !'a'		{ d }
+	= d:digits_ !'a' {-# "not followd by 'a'" #-}	{ d }
 ;
 
 |]

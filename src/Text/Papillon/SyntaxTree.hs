@@ -44,17 +44,17 @@ nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf
 data NameLeaf_
 	= Here NameLeaf
 	| After NameLeaf
-	| NotAfter NameLeaf
+	| NotAfter NameLeaf String
 
 showNameLeaf_ :: NameLeaf_ -> Q String
 showNameLeaf_ (Here nl) = showNameLeaf nl
 showNameLeaf_ (After nl) = ('&' :) <$> showNameLeaf nl
-showNameLeaf_ (NotAfter nl) = ('!' :) <$> showNameLeaf nl
+showNameLeaf_ (NotAfter nl _) = ('!' :) <$> showNameLeaf nl
 
 nameFromNameLeaf_ :: NameLeaf_ -> [String]
 nameFromNameLeaf_ (Here nl) = nameFromNameLeaf nl
 nameFromNameLeaf_ (After nl) = nameFromNameLeaf nl
-nameFromNameLeaf_ (NotAfter nl) = nameFromNameLeaf nl
+nameFromNameLeaf_ (NotAfter nl _) = nameFromNameLeaf nl
 
 type Expression = [NameLeaf_]
 

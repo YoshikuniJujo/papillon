@@ -89,7 +89,7 @@ getMul v = v ((*), 1)
 -- {-comment-}
 -}
 expression :: Integer
-	= _:spacing v:additive !_:[True {-# "eof" #-}] { getMul v }
+	= _:spacing v:additive !_:[True] {-# "end of file" #-} { getMul v }
 ;
 additive :: LeftMul
 	= l:multitive s:symbolA r:additive	{ comMul s l r }

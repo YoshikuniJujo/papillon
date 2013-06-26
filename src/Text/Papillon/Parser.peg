@@ -109,7 +109,8 @@ expression :: Expression
 	/ 	{ emp }
 ;
 nameLeaf_ :: NameLeaf_
-	= '!' nl:nameLeaf			{ NotAfter nl }
+	= '!' nl:nameLeafNoCom _:spaces com:comForErr?
+						{ NotAfter nl $ maybe "" id com }
 	/ c:[isAmp c] nl:nameLeaf		{ After nl }
 	/ nl:nameLeaf				{ Here nl }
 ;
@@ -118,6 +119,12 @@ nameLeaf :: NameLeaf
 		{ NameLeaf (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces com:comForErr?
 		{ NameLeaf (n, maybe "" id com) FromToken (conE $ mkName "True", "") }
+;
+nameLeafNoCom :: NameLeaf
+	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
+		{ NameLeaf (n, maybe "" id com) rf p }
+	/ n:pat1 _:spaces
+		{ NameLeaf (n, "") FromToken (conE $ mkName "True", "") }
 ;
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
