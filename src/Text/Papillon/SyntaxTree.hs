@@ -56,9 +56,6 @@ nameFromNameLeaf_ (Here nl) = nameFromNameLeaf nl
 nameFromNameLeaf_ (After nl) = nameFromNameLeaf nl
 nameFromNameLeaf_ (NotAfter nl) = nameFromNameLeaf nl
 
-notAfter, here :: NameLeaf -> NameLeaf_
-notAfter = NotAfter
-here = Here
 type Expression = [NameLeaf_]
 
 showExpression :: Expression -> Q String

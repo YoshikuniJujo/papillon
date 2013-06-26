@@ -109,9 +109,9 @@ expression :: Expression
 	/ 	{ emp }
 ;
 nameLeaf_ :: NameLeaf_
-	= '!' nl:nameLeaf			{ notAfter nl }
+	= '!' nl:nameLeaf			{ NotAfter nl }
 	/ c:[isAmp c] nl:nameLeaf		{ After nl }
-	/ nl:nameLeaf				{ here nl }
+	/ nl:nameLeaf				{ Here nl }
 ;
 nameLeaf :: NameLeaf
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf

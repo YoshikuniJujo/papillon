@@ -1335,7 +1335,7 @@ p_nameLeaf_ = foldl1 mplus [do d251_218 <- get
                                if True
                                 then return ()
                                 else throwErrorPackratM "True" "not match: " ["dv_nameLeaf"] d253_220
-                               return (notAfter nl),
+                               return (NotAfter nl),
                             do d255_222 <- get
                                xx254_223 <- dvCharsM
                                let c = xx254_223
@@ -1355,7 +1355,7 @@ p_nameLeaf_ = foldl1 mplus [do d251_218 <- get
                                if True
                                 then return ()
                                 else throwErrorPackratM "True" "not match: " ["dv_nameLeaf"] d259_226
-                               return (here nl)]
+                               return (Here nl)]
 p_nameLeaf = foldl1 mplus [do d261_228 <- get
                               xx260_229 <- dv_pat1M
                               let n = xx260_229
