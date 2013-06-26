@@ -238,7 +238,7 @@ declaration' :: String -> (String, String, DecsQ, String, Peg)
 declaration' src = case dv_pegFile $ parse P.initialPos src of
 	Right ((ppp, pp, (s, t, p), atp), _) ->
 		(ppp, pp, decParsed False s t p, atp, p)
-	Left err -> error $ "parse error: " ++ show err
+	Left _ -> error $ "parse error: "
 
 decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
 decParsed th src tkn parsed = do
@@ -248,7 +248,6 @@ decParsed th src tkn parsed = do
 	iepe <- instanceErrorParseError th
 	r <- result src
 	pm <- pmonad th src
-	et <- errTypes tkn parsed
 	d <- derivs th src tkn parsed
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseE th parsed]
@@ -259,7 +258,7 @@ decParsed th src tkn parsed = do
 	pts <- typeP parsed
 	ps <- pSomes glb th parsed
 	fm <- flipMaybeQ glb th
-	return $ et : pet : tepm ++ [iepe] ++ fm ++ [pm, r, d, pt, p] ++ tdvm ++ dvsm ++
+	return $ pet : tepm ++ [iepe] ++ fm ++ [pm, r, d, pt, p] ++ tdvm ++ dvsm ++
 		[tdvcm, dvcm] ++ pts ++ ps
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
@@ -271,15 +270,6 @@ derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
 			conT (mkName "Pos") `appT` src
 	 ]
  ] []
-
-errTypes :: TypeQ -> Peg -> DecQ
-errTypes tkn peg = flip (dataD (cxt []) (mkName "ErrorTypes") []) [] $
-	map (uncurry mkErrorType) $
-		map (\(n, t, _) -> (n, t)) peg ++ [("Char", tkn)]
-
-mkErrorType :: String -> TypeQ -> ConQ
-mkErrorType name typ =
-	normalC (mkName $ "ErrorType" ++ name) [strictType notStrict typ]
 
 derivs1 :: Definition -> VarStrictTypeQ
 derivs1 (name, typ, _) =
