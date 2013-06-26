@@ -10,49 +10,63 @@ main :: IO ()
 main = do
 	case dv_onlyDigits $ parse initialPos "123 abc" of
 		Right (str, _) -> print $ str 4
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_onlyDigits $ parse initialPos "123 \n\t" of
 		Right (str, _) -> print $ str 4
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_onlyDigits $ parse initialPos "123abc" of
 		Right (str, _) -> print $ str 4
-		Left (ParseError c m p _ _) -> putStrLn $ "OK! fail: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 	case dv_mulDigits $ parse initialPos "559" of
 		Right ((m, n), _) -> print (m 3, n ["hello", "friend"])
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_addDigits2 $ parse initialPos "33 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_divDigits $ parse initialPos "63 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_someData $ parse initialPos "63 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_getSomeData $ parse initialPos "63 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_testSelLeaf $ parse initialPos "63 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_testSelLeaf $ parse initialPos "abcde 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_digits_ $ parse initialPos "12345abc 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_testAnd $ parse initialPos "12345abc 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_testAnd $ parse initialPos "12345bc 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "OK! fail: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 	case dv_testNot $ parse initialPos "12345abc 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "OK! fail: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 	case dv_testNot $ parse initialPos "12345bc 25" of
 		Right (r, _) -> print r
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
+
+showParseError :: ParseError (Pos String) -> String
+showParseError (ParseError c m (ListPos (CharPos p)) d ns) =
+	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
+	m ++ c ++ " at position: " ++ show p
+
+showReading :: Derivs -> String -> String
+showReading d "dvChars" = case dvChars d of
+	Right (c, _) -> show c
+	Left _ -> error "bad"
+showReading d "dv_other" = case dv_other d of
+	Right (c, _) -> show c
+	Left _ -> error "bad"
+showReading _ n = "yet: " ++ n
 
 [papillon|
 

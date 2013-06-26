@@ -6,32 +6,39 @@ import Text.Papillon
 
 import Data.Char
 
-testExp, testExp', testExp'', testExp''', testErr, testErr', testErr'' :: String
+testExp, testExp', testExp'', testExp''', testErr, testErr' :: String
 testExp = "3 * (2 + 24) / 8 / 3"
 testExp' = "3 + 2 + 24 / 8 / 3"
 testExp'' = "50 + 3 * 6"
 testExp''' = "3 * (50 + 5) / 8"
 testErr = "8 * 2 + + 5 "
 testErr' = "***"
-testErr'' = "123<456"
 
 main :: IO ()
 main = do
 	case dv_expression $ parse initialPos testExp of
 		Right (d, _) -> print d
-		Left (ParseError c m p _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
 	case dv_expression $ parse initialPos testErr of
 		Right (d, _) -> print d
-		Left (ParseError c m p _ n) -> putStrLn $
-			"OK! it's fail: " ++ show (c, m, p, n)
+		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 	case dv_expression $ parse initialPos testErr' of
 		Right (d, _) -> print d
-		Left (ParseError c m p _ _) -> putStrLn $
-			"OK! it's fail: " ++ show (c, m, p)
-	case dv_expression $ parse initialPos testErr'' of
+		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
+	case dv_expression $ parse initialPos "123<456" of
 		Right (d, _) -> print d
-		Left (ParseError c m p _ _) -> putStrLn $
-			"OK! it's fail: " ++ show (c, m, p)
+		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
+
+showParseError :: ParseError (Pos String) -> String
+showParseError (ParseError c m (ListPos (CharPos p)) d ns) =
+	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
+	m ++ c ++ " at position: " ++ show p
+
+showReading :: Derivs -> String -> String
+showReading d "dvChars" = case dvChars d of
+	Right (c, _) -> show c
+	Left _ -> error "bad"
+showReading _ n = "yet: " ++ n
 
 type LeftInteger = Integer -> Integer
 type Nil = ()
@@ -71,9 +78,6 @@ toMul v = \(o, i) -> i `o` (v ((*), 1))
 getMul :: LeftMul -> Integer
 getMul v = v ((*), 1)
 
-true :: Bool
-true = True
-
 [papillon|
 
 {-
@@ -83,7 +87,7 @@ true = True
 -- {-comment-}
 -}
 expression :: Integer
-	= _:spacing v:additive !_:[true] { getMul v }
+	= _:spacing v:additive !_:[True] { getMul v }
 ;
 additive :: LeftMul
 	= l:multitive s:symbolA r:additive	{ comMul s l r }
