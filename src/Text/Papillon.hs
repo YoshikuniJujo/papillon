@@ -107,62 +107,22 @@ unlessN False = mkName "unless"
 errorN True = ''Error
 errorN False = mkName "Error"
 
-{-
-flipMaybe :: String -> Derivs -> [String] -> String -> PackratM a -> PackratM ()
-flipMaybe errMsg d ns com action = do
-	err <- (action >> return False) `catchError` const (return True)
-	unless err $ throwErrorPackratM errMsg "not error"
--}
-
-flipMaybeQ :: IORef Int -> Bool -> DecsQ
-flipMaybeQ _ th = sequence [
-	sigD (mkName "flipMaybe") $ forallT [PlainTV $ mkName "a"] (cxt []) $
-		conT (mkName "String")
-		`arrT`
-		conT (mkName "Derivs")
-		`arrT`
-		listT `appT` conT (mkName "String")
-		`arrT`
-		conT (mkName "String")
-		`arrT`
-		conT (mkName "PackratM") `appT` varT (mkName "a")
-		`arrT`
-		conT (mkName "PackratM") `appT` tupleT 0,
-	funD (mkName "flipMaybe") $ (: []) $
-		flip (clause args) [] $ normalB $ doE [
-			bindS (varP $ mkName "err") $ infixApp
-				actionReturnFalse
-				(varE $ catchErrorN th)
-				constReturnTrue,
-			noBindS $ varE (unlessN th)
-				`appE` varE (mkName "err")
-				`appE` varThrowQ th
-					(infixApp
-						(litE $ charL '!')
-						(conE $ mkName ":")
-						(varE $ mkName "errMsg"))
-					"not match: "
-					(mkName "d")
-					(varE $ mkName "ns")
-					(varE $ mkName "com")
-		 ]
+flipMaybeBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
+flipMaybeBody th code com d ns act = doE [
+	bindS (varP $ mkName "err") $ infixApp
+		actionReturnFalse
+		(varE $ catchErrorN th)
+		constReturnTrue,
+	noBindS $ varE (unlessN th)
+		`appE` varE (mkName "err")
+		`appE` throwErrorPackratMBody th
+			(infixApp (litE $ charL '!') (conE $ mkName ":") code)
+			(stringE "not match: ") com d ns
  ]	where
-	args = [
-		varP $ mkName "errMsg",
-		varP $ mkName "d",
-		varP $ mkName "ns",
-		varP $ mkName "com",
-		varP $ mkName "act"]
-	actionReturnFalse = infixApp
-		(varE $ mkName "act")
-		(varE $ mkName ">>")
+	actionReturnFalse = infixApp act (varE $ mkName ">>")
 		(varE (mkName "return") `appE` conE (mkName "False"))
 	constReturnTrue = varE (mkName "const") `appE` 
 		(varE (mkName "return") `appE` conE (mkName "True"))
-
-varThrowQ :: Bool -> ExpQ -> String -> Name -> ExpQ -> ExpQ -> ExpQ
-varThrowQ th code msg d ns com =
-	throwErrorPackratMBody th code (litE $ stringL msg) com (varE d) ns
 
 newThrowQ :: Bool -> String -> String -> Name -> [String] -> String -> ExpQ
 newThrowQ th code msg d ns com =
@@ -267,10 +227,8 @@ decParsed th src tkn parsed = do
 	pts <- typeP parsed
 	ps <- pSomes glb th parsed
 
-	fm <- flipMaybeQ glb th
-
 	return $ d : r :pm : pet : iepe : tdvm ++ dvsm ++ tdvcm : dvcm :
-		pt : p : pts ++ ps ++ fm
+		pt : p : pts ++ ps
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
@@ -295,12 +253,6 @@ data ParseError pos
 
 -}
 
-{-
-expQN :: Bool -> Name
-expQN True = ''ExpQ
-expQN False = mkName "ExpQ"
--}
-
 parseErrorT :: Bool -> DecQ
 parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"])
 	[] $ (:[]) $
@@ -323,12 +275,6 @@ instance Error (ParseError pos) where
 
 instanceErrorParseError :: Bool -> DecQ
 instanceErrorParseError th = instanceD
-{-
---	(cxt [classP (mkName "Pos") [varT $ mkName "s", varT $ mkName "pos"]])
-	(cxt [	classP (mkName "Source") [varT $ mkName "s"],
-		equalP (conT (mkName "Pos") `appT` varT (mkName "s"))
-			(varT $ mkName "pos")])
--}
 	(cxt [])
 	(conT (errorN th) `appT`
 		(conT (mkName "ParseError") `appT` varT (mkName "pos")))
@@ -342,11 +288,6 @@ instanceErrorParseError th = instanceD
 		`appE` varE (mkName "undefined")
 		`appE` varE (mkName "undefined")
 		`appE` varE (mkName "undefined")
-
-infixr 8 `arrT`
-
-arrT :: TypeQ -> TypeQ -> TypeQ
-arrT x y = arrowT `appT` x `appT` y
 
 throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
 throwErrorPackratMBody th code msg com d ns = infixApp
@@ -566,12 +507,12 @@ transLeaf g th (NotAfter nl@(NameLeaf _ rf _) com) = do
 	nls <- showNameLeaf nl
 	sequence [
 		bindS (varP d) $ varE (getN th),
-		noBindS $ varE (mkName "flipMaybe")
-			`appE` litE (stringL nls)
-			`appE` varE d
-			`appE` listE (map stringE $ nameFromRF rf)
-			`appE` stringE com
-			`appE` (DoE <$> transLeaf' g th nl),
+		noBindS $ flipMaybeBody th
+			(stringE nls)
+			(stringE com)
+			(varE d)
+			(listE $ map stringE $ nameFromRF rf)
+			(DoE <$> transLeaf' g th nl),
 		noBindS $ varE (putN th) `appE` varE d]
 
 varPToWild :: PatQ -> PatQ
