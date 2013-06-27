@@ -2,6 +2,8 @@
 * 次にやること           *
 **************************
 
+* version を上げて install
+
 * throwErrorPackratM と flipMaybe は inline に展開してしまおう
 
 * 出来上がるファイルの定義の順番
