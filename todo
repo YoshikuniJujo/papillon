@@ -2,10 +2,23 @@
 * 次にやること           *
 **************************
 
-* dv_... を ... にしてしまおうかと思うが ...
-	しかし、そうすると大文字の名前が使えない
-	たとえば前に get をつける、とか
-	あるいはつけるものを指定できるようにする、とか
+* 下をやるのだが、まずは手はじめに、dv_... を ... にしよう
+
+* 下のほうでいろいろと細かく書いているが、とりあえずまずは、名前は以下のようにしよう
+	Derivs(Derivs, some, other, dvchars, dvpos)
+	Result
+	PackratM
+	parse
+	someM, otherM
+	someP, otherP
+
+* parse の定義は以下のようにしたい
+	parse = parseXX_XX initialPos
+		where
+		parseXX_XX pos str = d
+			where
+			...
+	そうすると initialPos を明示的に指定せずにすむ
 
 * 関数の名前について
 	parser とかそういう名前は conflict するので、もっとちゃんとした名前にする
@@ -45,6 +58,34 @@
 **************************
 *  リファクタリング関係  *
 **************************
+
+* dv_... を ... にしてしまおうかと思うが ...
+	しかし、そうすると大文字の名前が使えない
+	たとえば前に get をつける、とか
+	あるいはつけるものを指定できるようにする、とか
+	指定できるようにするってのはいい考えかもしれないな
+	指定がなければ何もつけないという感じ
+	指定があればそれぞれの名前にそれがつくという感じ
+	また parse にもそれをつけてしまおう。
+	それと行く行くは camel case 用のオプションをつけて、
+	myParse とかそういうふうにできるようにしよう。
+	自動で一番先頭を大文字にする。
+	先頭の case だけ違うものについてはとりあえずは自己責任で。
+	camel, snake, none から選べるようにするってのはありだな。
+
+	dvChars, dvPos はどうしようかな
+	これも hogechars や hogepos あるいは hogeChars や hogePos にすればいい
+	あるいは hoge_chars とか hoge_pos とか
+
+	Derivs も同様にする。ただし prefix の一文字目を大文字化する
+	Result や PackratM や ParseError も同様。
+
+	p_... は hogePSome または hoge_p_some あるいは hogepsome のようにしようかな
+	hoge が指定されなければそれぞれ pSome, p_some, psome のようになる
+
+	someM は snake case だと some_m か
+
+	行く行くは local name も camel と snake と none に対応させよう
 
 * parser の呼び出しかたの改善
 * papillon command は何も取らなければ filter とする。
