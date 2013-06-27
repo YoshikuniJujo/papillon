@@ -244,9 +244,12 @@ derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
 	 ]
  ] []
 
+dvName :: String -> Name
+dvName = mkName . ("dv_" ++)
+
 derivs1 :: Definition -> VarStrictTypeQ
 derivs1 (name, typ, _) =
-	varStrictType (mkName $ "dv_" ++ name) $ strictType notStrict $
+	varStrictType (dvName name) $ strictType notStrict $
 		conT (mkName "Result") `appT` typ
 
 {-
@@ -396,7 +399,7 @@ dvSomeM th peg = mapM (dvSomeM1 th) $
 dvSomeM1 :: Bool -> Definition -> DecQ
 dvSomeM1 th (name, _, _) =
 	flip (valD $ varP $ mkName $ "dv_" ++ name ++ "M") [] $ normalB $
-		conE (stateTN' th) `appE` varE (mkName $ "dv_" ++ name)
+		conE (stateTN' th) `appE` varE (dvName name)
 
 typeDvCharsM :: Bool -> TypeQ -> DecQ
 typeDvCharsM _ tkn =
