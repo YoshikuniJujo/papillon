@@ -4,13 +4,13 @@ import Text.Papillon
 
 main :: IO ()
 main = do
-	case dv_something $ parse initialPos "parse fail" of
+	case something $ parse initialPos "parse fail" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
-	case dv_more $ parse initialPos "" of
+	case more $ parse initialPos "" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
-	case dv_other $ parse initialPos "parse hoge" of
+	case other $ parse initialPos "parse hoge" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
 
@@ -22,10 +22,10 @@ showParseError (ParseError c m com d ns (ListPos (CharPos p))) =
 	" at position: " ++ show p
 
 showReading :: Derivs -> String -> String
-showReading d "dv_string" = case dv_string d of
+showReading d "string" = case string d of
 	Right (s, _) -> show s
 	Left _ -> error "bad"
-showReading d "dv_other" = case dv_other d of
+showReading d "other" = case other d of
 	Right (s, _) -> show s
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n

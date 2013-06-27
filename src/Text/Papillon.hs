@@ -245,7 +245,7 @@ derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
  ] []
 
 dvName :: String -> Name
-dvName = mkName . ("dv_" ++)
+dvName = mkName -- . ("dv_" ++)
 
 derivs1 :: Definition -> VarStrictTypeQ
 derivs1 (name, typ, _) =

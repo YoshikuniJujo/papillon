@@ -2,11 +2,8 @@
 
 import Text.Papillon
 
-hello :: String
-hello = "hello"
-
 main :: IO ()
-main = case dv_hello $ parse initialPos "hello" of
+main = case hello $ parse initialPos "hello" of
 	Right (r, _) -> print r
 	Left err -> putStrLn $ showParseError err
 

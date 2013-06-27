@@ -14,7 +14,7 @@ data ReadFrom
 	| FromOptional ReadFrom
 
 nameFromRF :: ReadFrom -> [String]
-nameFromRF (FromVariable s) = ["dv_" ++ s]
+nameFromRF (FromVariable s) = [s]
 nameFromRF FromToken = ["dvChars"]
 nameFromRF (FromList rf) = nameFromRF rf
 nameFromRF (FromList1 rf) = nameFromRF rf

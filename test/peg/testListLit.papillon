@@ -4,7 +4,7 @@ import Text.Papillon
 import Data.Char
 
 main :: IO ()
-main = case dv_testLL $ parse initialPos "3, 8, 5" of
+main = case testLL $ parse initialPos "3, 8, 5" of
 	Right (r, _) -> print r
 	Left (ParseError c m p _ _ _) -> putStrLn $ "error: " ++ show (c, m, p)
 
