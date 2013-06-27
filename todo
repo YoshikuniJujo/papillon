@@ -2,8 +2,7 @@
 * 次にやること           *
 **************************
 
-* dv_...M を ...M に変える
-* p_... を ...P に変える
+* dvchars とか dvpos はどうするか
 
 * 下のほうでいろいろと細かく書いているが、とりあえずまずは、名前は以下のようにしよう
 	Derivs(Derivs, some, other, dvchars, dvpos)
@@ -87,6 +86,9 @@
 	someM は snake case だと some_m か
 
 	行く行くは local name も camel と snake と none に対応させよう
+
+	...M の M は suffixM とかで変えられるようにするというのもひとつの手だ
+	...P の P は suffixP とかで変えられるようにするというのもひとつの手だ
 
 * parser の呼び出しかたの改善
 * papillon command は何も取らなければ filter とする。

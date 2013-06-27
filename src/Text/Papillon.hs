@@ -245,7 +245,13 @@ derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
  ] []
 
 dvName :: String -> Name
-dvName = mkName -- . ("dv_" ++)
+dvName = mkName
+
+dvMName :: String -> Name
+dvMName = mkName . (++ "M") -- . ("dv_" ++)
+
+pName :: String -> Name
+pName = mkName . (++ "P") -- . ("p_" ++)
 
 derivs1 :: Definition -> VarStrictTypeQ
 derivs1 (name, typ, _) =
@@ -379,7 +385,7 @@ parseE' th tmps names = clause [varP pos, varP $ mkName "s"]
 	pos = mkName "pos"
 parseE1 :: Bool -> Name -> String -> DecQ
 parseE1 th tmps name = flip (valD $ varP tmps) [] $ normalB $
-	varE (runStateTN th) `appE` varE (mkName $ "p_" ++ name)
+	varE (runStateTN th) `appE` varE (pName name)
 		`appE` varE (mkName "d")
 
 typeDvM :: Peg -> DecsQ
@@ -389,7 +395,7 @@ typeDvM pegg = let
 		$ map (\(n, t, _) -> (n, t)) pegg
 
 typeDvM1 :: String -> TypeQ -> DecQ
-typeDvM1 f t = sigD (mkName $ "dv_" ++ f ++ "M") $
+typeDvM1 f t = sigD (dvMName f) $
 	conT (mkName "PackratM") `appT` t
 
 dvSomeM :: Bool -> Peg -> DecsQ
@@ -398,7 +404,7 @@ dvSomeM th pegg = mapM (dvSomeM1 th) $
 
 dvSomeM1 :: Bool -> Definition -> DecQ
 dvSomeM1 th (name, _, _) =
-	flip (valD $ varP $ mkName $ "dv_" ++ name ++ "M") [] $ normalB $
+	flip (valD $ varP $ dvMName name) [] $ normalB $
 		conE (stateTN' th) `appE` varE (dvName name)
 
 typeDvCharsM :: Bool -> TypeQ -> DecQ
@@ -412,13 +418,13 @@ typeP :: Peg -> DecsQ
 typeP = uncurry (zipWithM typeP1) . unzip . map (\(n, t, _) -> (n, t))
 
 typeP1 :: String -> TypeQ -> DecQ
-typeP1 f t = sigD (mkName $ "p_" ++ f) $ conT (mkName "PackratM") `appT` t
+typeP1 f t = sigD (pName f) $ conT (mkName "PackratM") `appT` t
 
 pSomes :: IORef Int -> Bool -> Peg -> DecsQ
 pSomes g th = mapM $ pSomes1 g th
 
 pSomes1 :: IORef Int -> Bool -> Definition -> DecQ
-pSomes1 g th (name, _, sel) = flip (valD $ varP $ mkName $ "p_" ++ name) [] $
+pSomes1 g th (name, _, sel) = flip (valD $ varP $ pName name) [] $
 	normalB $ pSomes1Sel g th sel
 
 pSomes1Sel :: IORef Int -> Bool -> Selection -> ExpQ
@@ -471,7 +477,7 @@ showNameLeaf (NameLeafList pat sel) =
 
 transReadFrom :: IORef Int -> Bool -> ReadFrom -> ExpQ
 transReadFrom _ _ FromToken = varE $ mkName "dvCharsM"
-transReadFrom _ _ (FromVariable var) = varE $ mkName $ "dv_" ++ var ++ "M"
+transReadFrom _ _ (FromVariable var) = varE $ dvMName var
 transReadFrom g th (FromSelection sel) = pSomes1Sel g th sel
 transReadFrom g th (FromList rf) = varE (mkName "list") `appE` transReadFrom g th rf
 transReadFrom g th (FromList1 rf) = varE (mkName "list1") `appE` transReadFrom g th rf
