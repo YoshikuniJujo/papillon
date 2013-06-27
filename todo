@@ -3,6 +3,11 @@
 **************************
 
 * 下をやるのだが、まずは手はじめに、dv_... を ... にしよう
+	test の書き直しが必要
+
+* mkParser 関連
+	上をやったら、まずは version up と install をする
+	その後、./mkParser をして、Papillon.hs を書き換える
 
 * 下のほうでいろいろと細かく書いているが、とりあえずまずは、名前は以下のようにしよう
 	Derivs(Derivs, some, other, dvchars, dvpos)
