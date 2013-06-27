@@ -227,7 +227,7 @@ decParsed th src tkn parsed = do
 	tdvcm <- typeDvCharsM th tkn
 	dvcm <- dvCharsM th
 	pt <- parseT src th
-	p <- funD (mkName "parse") [parseE th parsed]
+	p <- funD (mkName "parse") [parseE glb th parsed]
 	pts <- typeP parsed
 	ps <- pSomes glb th parsed
 
@@ -326,17 +326,26 @@ parseT src _ = sigD (mkName "parse") $ arrowT
 	`appT` (arrowT
 		`appT` src
 		`appT` conT (mkName "Derivs"))
-parseE :: Bool -> Peg -> ClauseQ
-parseE th = parseE' th . map (\(n, _, _) -> n)
-parseE' :: Bool -> [String] -> ClauseQ
-parseE' th names = clause [varP pos, varP $ mkName "s"]
+newNewName :: IORef Int -> String -> Q Name
+newNewName g base = do
+	n <- runIO $ readIORef g
+	runIO $ modifyIORef g succ
+	newName (base ++ show n)
+parseE :: IORef Int -> Bool -> Peg -> ClauseQ
+parseE g th peg = do
+	tmps <- mapM (newNewName g) names
+	parseE' th tmps names
+	where
+	names = map (\(n, _, _) -> n) peg
+parseE' :: Bool -> [Name] -> [String] -> ClauseQ
+parseE' th tmps names = clause [varP pos, varP $ mkName "s"]
 					(normalB $ varE $ mkName "d") $ [
 
 	flip (valD $ varP $ mkName "d") [] $ normalB $ appsE $
 		conE (mkName "Derivs") :
-			map (varE . mkName) names
+			map varE tmps
 			++ [varE (mkName "char"), varE pos]] ++
-	map (parseE1 th) names ++ [
+	zipWith (parseE1 th) tmps names ++ [
 	flip (valD $ varP $ mkName "char") [] $ normalB $
 		varE (runStateTN th) `appE`
 			caseE (varE (getTokenN th) `appE`
@@ -365,8 +374,8 @@ parseE' th names = clause [varP pos, varP $ mkName "s"]
 		`appE` varE (mkName "c")
 		`appE` varE pos
 	pos = mkName "pos"
-parseE1 :: Bool -> String -> DecQ
-parseE1 th name = flip (valD $ varP $ mkName name) [] $ normalB $
+parseE1 :: Bool -> Name -> String -> DecQ
+parseE1 th tmps name = flip (valD $ varP tmps) [] $ normalB $
 	varE (runStateTN th) `appE` varE (mkName $ "p_" ++ name)
 		`appE` varE (mkName "d")
 
