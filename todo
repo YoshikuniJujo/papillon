@@ -2,8 +2,6 @@
 * 次にやること           *
 **************************
 
-* throwErrorPackratM を inline に展開
-
 * flipMaybe を inline に展開
 
 * 出来上がるファイルの定義の順番

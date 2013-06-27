@@ -8,7 +8,7 @@ main = case dv_hello $ parse initialPos "hello" of
 	Left err -> putStrLn $ showParseError err
 
 showParseError :: ParseError (Pos String) -> String
-showParseError (ParseError c m com (ListPos (CharPos p)) d ns) =
+showParseError (ParseError c m com d ns (ListPos (CharPos p))) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ (if null com then "" else " {- " ++ com ++ " -}") ++
 	" at position: " ++ show p

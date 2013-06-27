@@ -30,7 +30,7 @@ main = do
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 
 showParseError :: ParseError (Pos String) -> String
-showParseError (ParseError c m com (ListPos (CharPos p)) d ns) =
+showParseError (ParseError c m com d ns (ListPos (CharPos p))) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ (if null com then "" else " {- " ++ com ++ " -}") ++
 	" at position: " ++ show p

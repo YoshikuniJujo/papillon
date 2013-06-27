@@ -136,7 +136,7 @@ flipMaybeQ _ th = sequence [
 				constReturnTrue,
 			noBindS $ varE (unlessN th)
 				`appE` varE (mkName "err")
-				`appE` varThrowQ
+				`appE` varThrowQ th
 					(infixApp
 						(litE $ charL '!')
 						(conE $ mkName ":")
@@ -145,7 +145,6 @@ flipMaybeQ _ th = sequence [
 					(mkName "d")
 					(varE $ mkName "ns")
 					(varE $ mkName "com")
---					(listE [stringE "hogeru"])
 		 ]
  ]	where
 	args = [
@@ -161,21 +160,14 @@ flipMaybeQ _ th = sequence [
 	constReturnTrue = varE (mkName "const") `appE` 
 		(varE (mkName "return") `appE` conE (mkName "True"))
 
-varThrowQ :: ExpQ -> String -> Name -> ExpQ -> ExpQ -> ExpQ
-varThrowQ code msg d ns com = varE (mkName "throwErrorPackratM")
-	`appE` code
-	`appE` litE (stringL msg)
-	`appE` ns
-	`appE` varE d
-	`appE` com
+varThrowQ :: Bool -> ExpQ -> String -> Name -> ExpQ -> ExpQ -> ExpQ
+varThrowQ th code msg d ns com =
+	throwErrorPackratMBody th code (litE $ stringL msg) com (varE d) ns
 
-newThrowQ :: String -> String -> Name -> [String] -> String -> ExpQ
-newThrowQ code msg d ns com = varE (mkName "throwErrorPackratM")
-	`appE` litE (stringL code)
-	`appE` litE (stringL msg)
-	`appE` listE (map stringE ns) -- (mkName "undefined")
-	`appE` varE d
-	`appE` stringE com
+newThrowQ :: Bool -> String -> String -> Name -> [String] -> String -> ExpQ
+newThrowQ th code msg d ns com =
+	throwErrorPackratMBody th (stringE code) (stringE msg) (stringE com)
+		(varE d) (listE $ map stringE ns)
 
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
@@ -275,11 +267,10 @@ decParsed th src tkn parsed = do
 	pts <- typeP parsed
 	ps <- pSomes glb th parsed
 
-	tepm <- throwErrorPackratMQ th
 	fm <- flipMaybeQ glb th
 
 	return $ d : r :pm : pet : iepe : tdvm ++ dvsm ++ tdvcm : dvcm :
-		pt : p : pts ++ ps ++ tepm ++ fm
+		pt : p : pts ++ ps ++ fm
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
@@ -299,7 +290,7 @@ derivs1 (name, typ, _) =
 {-
 
 data ParseError pos
-	= ParseError String String String pos Derivs ExpQ
+	= ParseError String String String Derivs ExpQ pos
 	deriving Show
 
 -}
@@ -317,9 +308,9 @@ parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "po
 		strictType notStrict $ conT $ mkName "String",
 		strictType notStrict $ conT $ mkName "String",
 		strictType notStrict $ conT $ mkName "String",
-		strictType notStrict $ varT $ mkName "pos",
 		strictType notStrict $ conT $ mkName "Derivs",
-		strictType notStrict $ listT `appT` conT (mkName "String")
+		strictType notStrict $ listT `appT` conT (mkName "String"),
+		strictType notStrict $ varT $ mkName "pos"
 	 ]
 
 
@@ -352,58 +343,23 @@ instanceErrorParseError th = instanceD
 		`appE` varE (mkName "undefined")
 		`appE` varE (mkName "undefined")
 
-{-
-
-throwErrorPackratM :: String -> String -> [String] -> Derivs -> String -> PackratM a
-throwErrorPackratM code msg names d com = do
-	pos <- gets dvPos
-	throwError (ParseError code msg umsg pos d names) -- (varE $ mkName $ "dv_" ++ name))
-
--}
-
 infixr 8 `arrT`
 
 arrT :: TypeQ -> TypeQ -> TypeQ
 arrT x y = arrowT `appT` x `appT` y
 
-throwErrorPackratMQ :: Bool -> DecsQ
-throwErrorPackratMQ th = sequence [
-	sigD (mkName "throwErrorPackratM") $
-		forallT [PlainTV $ mkName "a"] (cxt []) $
-			conT (mkName "String")
-			`arrT`
-			conT (mkName "String")
-			`arrT`
-			(listT `appT` conT (mkName "String"))
-			`arrT`
-			conT (mkName "Derivs")
-			`arrT`
-			conT (mkName "String")
-			`arrT`
-			(conT (mkName "PackratM") `appT` varT (mkName "a")),
-	funD (mkName "throwErrorPackratM") $ (: []) $
-		flip (clause args) [] $ normalB $ doE [
-			bindS (varP $ mkName "pos") $
-				varE (getsN th) `appE` varE (mkName "dvPos"),
---			bindS (varP $ mkName "d") $ varE (getN th),
-			noBindS $ varE (throwErrorN th) `appE`
-				(conE (mkName "ParseError")
-					`appE` varE (mkName "code")
-					`appE` varE (mkName "msg")
-					`appE` varE (mkName "com")
-					`appE` varE (mkName "pos")
-					`appE` varE (mkName "d")
-					`appE` varE (mkName "ns"))
---						listE [stringE ""])
-		 ]
- ]	where
-	args = [
-		varP $ mkName "code",
-		varP $ mkName "msg",
---		varP $ mkName "umsg",
-		varP $ mkName "ns",
-		varP $ mkName "d",
-		varP $ mkName "com"]
+throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
+throwErrorPackratMBody th code msg com d ns = infixApp
+	(varE (getsN th) `appE` varE (mkName "dvPos"))
+	(varE $ mkName ">>=") (infixApp
+		(varE $ throwErrorN th)
+		(varE $ mkName ".")
+		(conE (mkName "ParseError")
+			`appE` code
+			`appE` msg
+			`appE` com
+			`appE` d
+			`appE` ns))
 
 result :: TypeQ -> DecQ
 result src = tySynD (mkName "Result") [PlainTV $ mkName "v"] $
@@ -453,7 +409,7 @@ parseE' th names = clause [varP pos, varP $ mkName "s"]
 					 ])
 					[],
 				match	wildP
-					(normalB $ newThrowQ "" "end of input"
+					(normalB $ newThrowQ th "" "end of input"
 						(mkName "undefined")
 						[] "")
 					[]
@@ -522,7 +478,7 @@ afterCheck :: Bool -> ExpQ -> Name -> [String] -> String -> StmtQ
 afterCheck th p d ns pc = do
 	pp <- p
 	noBindS $ varE (unlessN th) `appE` p `appE`
-		newThrowQ (show $ ppr pp) "not match: " d ns pc
+		newThrowQ th (show $ ppr pp) "not match: " d ns pc
 
 beforeMatch :: Bool -> Name -> PatQ -> Name -> [String] -> String -> Q [Stmt]
 beforeMatch th t n d ns nc = do
@@ -532,7 +488,7 @@ beforeMatch th t n d ns nc = do
 			flip (match $ varPToWild n) [] $ normalB $
 				varE (returnN th) `appE` tupE [],
 			flip (match wildP) [] $ normalB $
-				newThrowQ (show $ ppr nn) "not match pattern: "
+				newThrowQ th (show $ ppr nn) "not match pattern: "
 					d ns nc
 		 ],
 		letS [flip (valD n) [] $ normalB $ varE t],
