@@ -201,8 +201,7 @@ isAlphaNumOt = (`notElem` "\\'")
 elemNTs = (`elem` "nt\\'")
 isStrLitC = (`notElem` "\"\\")
 
-newLine, tab :: Char
-newLine = '\n'
+tab :: Char
 tab = '\t'
 
 isComma, isKome, isOpen, isClose, isGt, isQuestion, isBQ, isAmp :: Char -> Bool

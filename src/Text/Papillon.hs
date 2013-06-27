@@ -146,17 +146,17 @@ papillonStr src = show . ppr <$> runQ (declaration False src)
 
 papillonStr' :: String -> IO String
 papillonStr' src = do
-	let (ppp, pp, decsQ, atp, peg) = declaration' src
+	let (ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
 	cls <- runQ $ classSourceQ False
 	lst <- runQ $ listDec False
 	opt <- runQ $ optionalDec False
 	return $ ppp ++
-		(if isListUsed peg || isOptionalUsed peg then "\nimport Control.Applicative\n" else "") ++
+		(if isListUsed pegg || isOptionalUsed pegg then "\nimport Control.Applicative\n" else "") ++
 		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++
 		"\n" ++ show (ppr cls) ++ "\n" ++
-		(if isListUsed peg then show (ppr lst) else "") ++ "\n" ++
-		if isOptionalUsed peg then show (ppr opt) else ""
+		(if isListUsed pegg then show (ppr lst) else "") ++ "\n" ++
+		if isOptionalUsed pegg then show (ppr opt) else ""
 
 returnN, stateTN, putN, stateTN', getN,
 	strMsgN, throwErrorN, runStateTN, justN, mplusN,
@@ -191,19 +191,19 @@ eitherN = mkName "Either"
 
 declaration :: Bool -> String -> DecsQ
 declaration th str = do
-	let (src, tkn, parsed) = case dv_peg $ parse P.initialPos str of
+	let (src, tkn, parsed) = case peg $ parse P.initialPos str of
 		Right ((s, t, p), _) -> (s, t, p)
 		Left err -> error $ "parse error: " ++ showParseError err
 	decParsed th src tkn parsed
 
 declaration' :: String -> (String, String, DecsQ, String, Peg)
-declaration' src = case dv_pegFile $ parse P.initialPos src of
+declaration' src = case pegFile $ parse P.initialPos src of
 	Right ((ppp, pp, (s, t, p), atp), _) ->
 		(ppp, pp, decParsed False s t p, atp, p)
 	Left err -> error $ "parse error: " ++ showParseError err
 
 showParseError :: P.ParseError (P.Pos String) -> String
-showParseError (P.ParseError c m _ (P.ListPos (P.CharPos p)) d ns) =
+showParseError (P.ParseError c m _ d ns (P.ListPos (P.CharPos p))) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ " at position: " ++ show p
 
@@ -235,8 +235,8 @@ decParsed th src tkn parsed = do
 		pt : p : pts ++ ps
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
-derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
-	recC (mkName "Derivs") $ map derivs1 peg ++ [
+derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
+	recC (mkName "Derivs") $ map derivs1 pegg ++ [
 		varStrictType (mkName "dvChars") $ strictType notStrict $
 			conT (mkName "Result") `appT` tkn,
 		varStrictType (mkName "dvPos") $ strictType notStrict $
@@ -335,11 +335,11 @@ newNewName g base = do
 	runIO $ modifyIORef g succ
 	newName (base ++ show n)
 parseE :: IORef Int -> Bool -> Peg -> ClauseQ
-parseE g th peg = do
+parseE g th pegg = do
 	tmps <- mapM (newNewName g . ("local" ++)) names
 	parseE' th tmps names
 	where
-	names = map (\(n, _, _) -> n) peg
+	names = map (\(n, _, _) -> n) pegg
 parseE' :: Bool -> [Name] -> [String] -> ClauseQ
 parseE' th tmps names = clause [varP pos, varP $ mkName "s"]
 					(normalB $ varE $ mkName "d") $ [
@@ -383,18 +383,18 @@ parseE1 th tmps name = flip (valD $ varP tmps) [] $ normalB $
 		`appE` varE (mkName "d")
 
 typeDvM :: Peg -> DecsQ
-typeDvM peg = let
-	used = usingNames peg in
+typeDvM pegg = let
+	used = usingNames pegg in
 	uncurry (zipWithM typeDvM1) $ unzip $ filter ((`elem` used) . fst)
-		$ map (\(n, t, _) -> (n, t)) peg
+		$ map (\(n, t, _) -> (n, t)) pegg
 
 typeDvM1 :: String -> TypeQ -> DecQ
 typeDvM1 f t = sigD (mkName $ "dv_" ++ f ++ "M") $
 	conT (mkName "PackratM") `appT` t
 
 dvSomeM :: Bool -> Peg -> DecsQ
-dvSomeM th peg = mapM (dvSomeM1 th) $
-	filter ((`elem` usingNames peg) . (\(n, _, _) -> n)) peg
+dvSomeM th pegg = mapM (dvSomeM1 th) $
+	filter ((`elem` usingNames pegg) . (\(n, _, _) -> n)) pegg
 
 dvSomeM1 :: Bool -> Definition -> DecQ
 dvSomeM1 th (name, _, _) =

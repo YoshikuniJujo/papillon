@@ -13,7 +13,7 @@ module Text.Papillon.Parser (
 	showNameLeaf,
 	nameFromRF,
 	ParseError(..),
-	Derivs(..),
+	Derivs(peg, pegFile, dvChars),
 	Pos(..),
 	ListPos(..)
 ) where
@@ -195,11 +195,8 @@ escapeC :: Char
 	= '"'					{ '"' }
 	/ '\''					{ '\'' }
 	/ '\\'					{ '\\' }
-	/ 'n'					{ newLine }
+	/ 'n'					{ '\n' }
 	/ 't'					{ tab }
-;
-dq :: ()
-	= '"'					{ () }
 ;
 pats :: PatQs
 	= p:pat _:spaces ps:pats		{ cons p ps }
@@ -322,16 +319,16 @@ spaces :: ()
 	/ 			{ () }
 ;
 space :: ()
-	= s:[isSpace s]			{ () }
-	/ '-' '-' _:notNLString _:nl	{ () }
-	/ _:comment			{ () }
+	= s:[isSpace s]				{ () }
+	/ '-' '-' _:notNLString _:newLine	{ () }
+	/ _:comment				{ () }
 ;
 notNLString :: String
-	= !_:nl c s:notNLString	{ cons c s }
-	/			{ emp }
+	= !_:newLine c s:notNLString		{ cons c s }
+	/					{ emp }
 ;
-nl :: ()
-	= '\n'			{ () }
+newLine :: ()
+	= '\n'					{ () }
 ;
 comment :: ()
 	= '{' '-' !'#' _:comments _:comEnd	{ () }
