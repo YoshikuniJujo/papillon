@@ -8,9 +8,8 @@ module Text.Papillon.Class (
 import Language.Haskell.TH
 
 classSourceQ :: Bool -> DecsQ
-classSourceQ th = sequence
-	[classS th, classSL th, instanceSLC th, instanceShowListPosPos,
-		instanceSrcStr th]
+classSourceQ th = sequence [classS th, classSL th, instanceSrcStr th,
+	instanceShowListPosPos, instanceSLC th]
 
 maybeN, nothingN, justN, consN, charN :: Bool -> Name
 maybeN True = ''Maybe

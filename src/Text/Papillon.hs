@@ -260,23 +260,26 @@ showReading _ n = "yet: " ++ n
 decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
 decParsed th src tkn parsed = do
 	glb <- runIO $ newIORef 0
-	pet <- parseErrorT th
-	tepm <- throwErrorPackratMQ th
-	iepe <- instanceErrorParseError th
+
+	d <- derivs th src tkn parsed
 	r <- result src
 	pm <- pmonad th src
-	d <- derivs th src tkn parsed
-	pt <- parseT src th
-	p <- funD (mkName "parse") [parseE th parsed]
+	pet <- parseErrorT th
+	iepe <- instanceErrorParseError th
 	tdvm <- typeDvM parsed
 	dvsm <- dvSomeM th parsed
 	tdvcm <- typeDvCharsM th tkn
 	dvcm <- dvCharsM th
+	pt <- parseT src th
+	p <- funD (mkName "parse") [parseE th parsed]
 	pts <- typeP parsed
 	ps <- pSomes glb th parsed
+
+	tepm <- throwErrorPackratMQ th
 	fm <- flipMaybeQ glb th
-	return $ pet : tepm ++ [iepe] ++ fm ++ [pm, r, d, pt, p] ++ tdvm ++ dvsm ++
-		[tdvcm, dvcm] ++ pts ++ ps
+
+	return $ d : r :pm : pet : iepe : tdvm ++ dvsm ++ tdvcm : dvcm :
+		pt : p : pts ++ ps ++ tepm ++ fm
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn peg = dataD (cxt []) (mkName "Derivs") [] [
@@ -460,7 +463,7 @@ parseE' th names = clause [varP pos, varP $ mkName "s"]
 	newPos = varE (mkName "updatePos")
 		`appE` varE (mkName "c")
 		`appE` varE pos
-	pos = mkName "pos___hoge"
+	pos = mkName "pos"
 parseE1 :: Bool -> String -> DecQ
 parseE1 th name = flip (valD $ varP $ mkName name) [] $ normalB $
 	varE (runStateTN th) `appE` varE (mkName $ "p_" ++ name)

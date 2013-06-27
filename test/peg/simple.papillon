@@ -21,6 +21,9 @@ showReading _ n = "yet: " ++ n
 
 [papillon|
 
-hello:: String = 'h' 'e' 'l' 'l' 'o'	{ "hello" };
+hello:: String
+	= c s:hello	{ c : s }
+	/		{ [] }
+;
 
 |]
