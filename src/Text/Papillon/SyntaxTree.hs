@@ -184,7 +184,7 @@ mkPegFile Nothing Nothing x y z w = (addModules, x ++ "\n" ++ y, z, w)
 
 addPragmas, addModules :: String
 addPragmas =
-	", FlexibleContexts, PackageImports, TypeFamilies, RankNTypes, " ++
+	"FlexibleContexts, PackageImports, TypeFamilies, RankNTypes, " ++
 	"FlexibleInstances #-}\n"
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++

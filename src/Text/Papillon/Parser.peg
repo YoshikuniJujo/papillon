@@ -37,11 +37,17 @@ pragma :: Maybe String
 	/ _:spaces						{ nothing }
 ;
 pragmaStr :: String
-	= !_:pragmaEnd c s:pragmaStr		{ cons c s }
-	/					{ emp }
+	= _:delPragmas _:spaces ',' _:spaces s:pragmaStr	{ ' ' : s }
+	/ !_:pragmaEnd !_:delPragmas c s:pragmaStr		{ c : s }
+	/							{ emp }
+;
+delPragmas :: ()
+	= 'Q' 'u' 'a' 's' 'i' 'Q' 'u' 'o' 't' 'e' 's'		{ () }
+	/ 'T' 'y' 'p' 'e' 'F' 'a' 'm' 'i' 'l' 'i' 'e' 's'	{ () }
 ;
 pragmaEnd :: ()
-	= '#' '-' '}'				{ () }
+	= _:delPragmas _:spaces '#' '-' '}'			{ () }
+	/ '#' '-' '}'						{ () }
 ;
 moduleDec :: Maybe String
 	= 'm' 'o' 'd' 'u' 'l' 'e' s:moduleDecStr _:whr	{ just s }

@@ -434,8 +434,8 @@ parseE' th names = clause [varP pos, varP $ mkName "s"]
 			++ [varE (mkName "char"), varE pos]] ++
 	map (parseE1 th) names ++ [
 	flip (valD $ varP $ mkName "char") [] $ normalB $
-		varE (mkName "flip") `appE` varE (runStateTN th) `appE`
-			varE (mkName "d") `appE` caseE (varE (getTokenN th) `appE`
+		varE (runStateTN th) `appE`
+			caseE (varE (getTokenN th) `appE`
 							varE (mkName "s")) [
 				match	(justN th `conP` [
 						tupP [varP (mkName "c"),
@@ -454,7 +454,7 @@ parseE' th names = clause [varP pos, varP $ mkName "s"]
 						(mkName "undefined")
 						[] "")
 					[]
-			 ]
+			 ] `appE` varE (mkName "d")
  ]
 	where
 	newPos = varE (mkName "updatePos")
@@ -518,10 +518,8 @@ pSome_ g th nls ret = fmap DoE $ do
 afterCheck :: Bool -> ExpQ -> Name -> [String] -> String -> StmtQ
 afterCheck th p d ns pc = do
 	pp <- p
-	noBindS $ condE p
-		(varE (returnN th) `appE` conE (mkName "()"))
-		(newThrowQ (show $ ppr pp) "not match: "
-			d ns pc)
+	noBindS $ varE (unlessN th) `appE` p `appE`
+		newThrowQ (show $ ppr pp) "not match: " d ns pc
 
 beforeMatch :: Bool -> Name -> PatQ -> Name -> [String] -> String -> Q [Stmt]
 beforeMatch th t n d ns nc = do
