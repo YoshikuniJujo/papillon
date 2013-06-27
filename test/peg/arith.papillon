@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, FlexibleContexts, TypeFamilies, UndecidableInstances #-}
+{-# LANGUAGE QuasiQuotes, FlexibleContexts, TypeFamilies #-}
 
 module Main where
 

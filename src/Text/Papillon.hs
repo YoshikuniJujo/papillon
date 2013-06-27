@@ -322,17 +322,20 @@ parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "po
 
 {-
 
-instance Pos s pos => Error (ParseError pos) where
-	strMsg msg = ParseError "" msg "" initialPos
+instance Error (ParseError pos) where
+	strMsg msg = ParseError "" msg "" undefined
 
 -}
 
 instanceErrorParseError :: Bool -> DecQ
 instanceErrorParseError th = instanceD
+{-
 --	(cxt [classP (mkName "Pos") [varT $ mkName "s", varT $ mkName "pos"]])
 	(cxt [	classP (mkName "Source") [varT $ mkName "s"],
 		equalP (conT (mkName "Pos") `appT` varT (mkName "s"))
 			(varT $ mkName "pos")])
+-}
+	(cxt [])
 	(conT (errorN th) `appT`
 		(conT (mkName "ParseError") `appT` varT (mkName "pos")))
 	[funD (strMsgN th) $ (: []) $ flip (clause [varP msg]) [] $ normalB ret]
@@ -342,7 +345,7 @@ instanceErrorParseError th = instanceD
 		`appE` litE (stringL "")
 		`appE` varE msg
 		`appE` litE (stringL "")
-		`appE` varE (mkName "initialPos")
+		`appE` varE (mkName "undefined")
 		`appE` varE (mkName "undefined")
 		`appE` varE (mkName "undefined")
 

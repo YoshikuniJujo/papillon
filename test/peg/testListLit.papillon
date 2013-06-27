@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, TypeFamilies, UndecidableInstances #-}
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
 
 import Text.Papillon
 import Data.Char
