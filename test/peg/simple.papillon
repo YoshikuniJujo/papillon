@@ -1,0 +1,26 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = case dv_hello $ parse initialPos "hello" of
+	Right (r, _) -> print r
+	Left err -> putStrLn $ showParseError err
+
+showParseError :: ParseError (Pos String) -> String
+showParseError (ParseError c m com (ListPos (CharPos p)) d ns) =
+	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
+	m ++ c ++ (if null com then "" else " {- " ++ com ++ " -}") ++
+	" at position: " ++ show p
+
+showReading :: Derivs -> String -> String
+showReading d "dvChars" = case dvChars d of
+	Right (c, _) -> show c
+	Left _ -> error "bad"
+showReading _ n = "yet: " ++ n
+
+[papillon|
+
+hello:: String = 'h' 'e' 'l' 'l' 'o'	{ "hello" };
+
+|]

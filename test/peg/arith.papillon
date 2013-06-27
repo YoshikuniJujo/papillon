@@ -1,28 +1,28 @@
-{-# LANGUAGE QuasiQuotes, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
 
 module Main where
 
 import Text.Papillon
-
 import Data.Char
-
-testExp, testExp', testExp'', testExp''', testErr, testErr' :: String
-testExp = "3 * (2 + 24) / 8 / 3"
-testExp' = "3 + 2 + 24 / 8 / 3"
-testExp'' = "50 + 3 * 6"
-testExp''' = "3 * (50 + 5) / 8"
-testErr = "8 * 2 + + 5 "
-testErr' = "***"
 
 main :: IO ()
 main = do
-	case dv_expression $ parse initialPos testExp of
+	case dv_expression $ parse initialPos "3 * (2 + 24) / 8 / 3" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case dv_expression $ parse initialPos testErr of
+	case dv_expression $ parse initialPos "3 + 2 + 24 / 8 / 3" of
+		Right (d, _) -> print d
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
+	case dv_expression $ parse initialPos "50 + 3 * 6" of
+		Right (d, _) -> print d
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
+	case dv_expression $ parse initialPos "3 * (50 + 5) / 8" of
+		Right (d, _) -> print d
+		Left pe -> putStrLn $ "error: " ++ showParseError pe
+	case dv_expression $ parse initialPos "8 * 2 + + 5" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case dv_expression $ parse initialPos testErr' of
+	case dv_expression $ parse initialPos "***" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 	case dv_expression $ parse initialPos "123<456" of

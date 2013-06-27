@@ -1,4 +1,11 @@
 echo
+echo simple.papillon
+runhaskell -isrc -Wall src/papillon test/peg/simple.papillon > tmp/simple.hs && \
+runhaskell -isrc -Wall tmp/simple.hs
+cp test/peg/simple.papillon tmp/simple_th.hs
+runhaskell -isrc -Wall tmp/simple_th.hs
+
+echo
 echo arith.papillon
 runhaskell -isrc -Wall src/papillon test/peg/arith.papillon > tmp/arith.hs && \
 runhaskell -isrc -Wall tmp/arith.hs
