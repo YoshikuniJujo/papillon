@@ -107,6 +107,10 @@ unlessN False = mkName "unless"
 errorN True = ''Error
 errorN False = mkName "Error"
 
+smartDoE :: [Stmt] -> Exp
+smartDoE [NoBindS ex] = ex
+smartDoE stmts = DoE stmts
+
 flipMaybeBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
 flipMaybeBody th code com d ns act = doE [
 	bindS (varP $ mkName "err") $ infixApp
@@ -410,7 +414,7 @@ pSomes1Sel g th sel = varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 	listE (map (uncurry $ pSome_ g th) sel)
 
 pSome_ :: IORef Int -> Bool -> [NameLeaf_] -> ExpQ -> ExpQ
-pSome_ g th nls ret = fmap DoE $ do
+pSome_ g th nls ret = fmap smartDoE $ do
 	x <- mapM (transLeaf g th) nls
 	r <- noBindS $ varE (returnN th) `appE` ret
 	return $ concat x ++ [r]
@@ -500,7 +504,7 @@ transLeaf g th (After nl) = do
 	d <- getNewName g "ddd"
 	sequence [
 		bindS (varP d) $ varE (getN th),
-		noBindS $ DoE <$> transLeaf' g th nl,
+		noBindS $ smartDoE <$> transLeaf' g th nl,
 		noBindS $ varE (putN th) `appE` varE d]
 transLeaf g th (NotAfter nl@(NameLeaf _ rf _) com) = do
 	d <- getNewName g "ddd"
@@ -512,7 +516,7 @@ transLeaf g th (NotAfter nl@(NameLeaf _ rf _) com) = do
 			(stringE com)
 			(varE d)
 			(listE $ map stringE $ nameFromRF rf)
-			(DoE <$> transLeaf' g th nl),
+			(smartDoE <$> transLeaf' g th nl),
 		noBindS $ varE (putN th) `appE` varE d]
 
 varPToWild :: PatQ -> PatQ
