@@ -73,32 +73,6 @@ isListUsedLeafName' (NameLeaf _ (FromList _) _) = True
 isListUsedLeafName' (NameLeaf _ (FromList1 _) _) = True
 isListUsedLeafName' _ = False
 
-usingNames :: Peg -> [String]
-usingNames = concatMap getNamesFromDefinition
-
-getNamesFromDefinition :: Definition -> [String]
-getNamesFromDefinition (_, _, sel) =
-	concatMap getNamesFromExpressionHs sel
-
-getNamesFromExpressionHs :: ExpressionHs -> [String]
-getNamesFromExpressionHs = concatMap getLeafName . fst
-
-getLeafName :: NameLeaf_ -> [String]
-getLeafName (Here nl) = getLeafName' nl
-getLeafName (NotAfter nl _) = getLeafName' nl
-getLeafName (After nl) = getLeafName' nl
-
-getLeafName' :: NameLeaf -> [String]
-getLeafName' (NameLeaf _ rf _) = getNamesFromReadFrom rf
-
-getNamesFromReadFrom :: ReadFrom -> [String]
-getNamesFromReadFrom (FromVariable n) = [n]
-getNamesFromReadFrom (FromList rf) = getNamesFromReadFrom rf
-getNamesFromReadFrom (FromList1 rf) = getNamesFromReadFrom rf
-getNamesFromReadFrom (FromOptional rf) = getNamesFromReadFrom rf
-getNamesFromReadFrom (FromSelection sel) = concatMap getNamesFromExpressionHs sel
-getNamesFromReadFrom _ = []
-
 catchErrorN, unlessN, errorN :: Bool -> Name
 catchErrorN True = 'catchError
 catchErrorN False = mkName "catchError"
@@ -222,13 +196,11 @@ decParsed th src tkn parsed = do
 	pm <- pmonad th src
 	pet <- parseErrorT th
 	iepe <- instanceErrorParseError th
-	tdvm <- typeDvM parsed
-	dvsm <- dvSomeM th parsed
 	tdvcm <- typeDvCharsM th tkn
 	dvcm <- dvCharsM th
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
-	return $ d : r :pm : pet : iepe : tdvm ++ dvsm ++ tdvcm : dvcm :
+	return $ d : r :pm : pet : iepe : tdvcm : dvcm :
 		pt : [p]
 
 initialPosN :: Bool -> Name
@@ -256,9 +228,6 @@ derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
 dvName :: String -> Name
 dvName = mkName
 
-dvMName :: String -> Name
-dvMName = mkName . (++ "M")
-
 pName :: String -> Name
 pName = mkName . (++ "P")
 
@@ -266,14 +235,6 @@ derivs1 :: Definition -> VarStrictTypeQ
 derivs1 (name, typ, _) =
 	varStrictType (dvName name) $ strictType notStrict $
 		conT (mkName "Result") `appT` typ
-
-{-
-
-data ParseError pos
-	= ParseError String String String Derivs ExpQ pos
-	deriving Show
-
--}
 
 parseErrorT :: Bool -> DecQ
 parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"])
@@ -396,25 +357,6 @@ parseE1 th tmps name = flip (valD $ varP tmps) [] $ normalB $
 	varE (runStateTN th) `appE` varE (pName name)
 		`appE` varE (mkName "d")
 
-typeDvM :: Peg -> DecsQ
-typeDvM pegg = let
-	used = usingNames pegg in
-	uncurry (zipWithM typeDvM1) $ unzip $ filter ((`elem` used) . fst)
-		$ map (\(n, t, _) -> (n, t)) pegg
-
-typeDvM1 :: String -> TypeQ -> DecQ
-typeDvM1 f t = sigD (dvMName f) $
-	conT (mkName "PackratM") `appT` t
-
-dvSomeM :: Bool -> Peg -> DecsQ
-dvSomeM th pegg = mapM (dvSomeM1 th) $
-	filter ((`elem` usingNames pegg) . (\(n, _, _) -> n)) pegg
-
-dvSomeM1 :: Bool -> Definition -> DecQ
-dvSomeM1 th (name, _, _) =
-	flip (valD $ varP $ dvMName name) [] $ normalB $
-		conE (stateTN' th) `appE` varE (dvName name)
-
 typeDvCharsM :: Bool -> TypeQ -> DecQ
 typeDvCharsM _ tkn =
 	sigD (mkName "dvCharsM") $ conT (mkName "PackratM") `appT` tkn
@@ -479,7 +421,7 @@ showNameLeaf (NameLeafList pat sel) =
 
 transReadFrom :: IORef Int -> Bool -> ReadFrom -> ExpQ
 transReadFrom _ _ FromToken = varE $ mkName "dvCharsM"
-transReadFrom _ _ (FromVariable var) = varE $ dvMName var
+transReadFrom _ th (FromVariable var) = conE (stateTN' th) `appE` varE (dvName var)
 transReadFrom g th (FromSelection sel) = pSomes1Sel g th sel
 transReadFrom g th (FromList rf) = varE (mkName "list") `appE` transReadFrom g th rf
 transReadFrom g th (FromList1 rf) = varE (mkName "list1") `appE` transReadFrom g th rf
