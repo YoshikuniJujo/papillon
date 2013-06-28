@@ -2,22 +2,6 @@
 * 次にやること           *
 **************************
 
-* ParseError の表示について
-	今は中身を見てやっている感じだが、もうすこし抽象度を上げたい気がする
-	つまり、それぞれのメンバーの名前で要素を得るほうが良い気がする
-	code, message, comment, readings, derivs, position の 6 つのフィールド
-	がある
-	とりあえず recC を使おうかな
-	フィールドの名前はもうすこしコンフリクトしにくい名前にしよう
-	peCode, peMessage, peComment, peReadings, peDerivs, pePosition でいいかな
-	これも snake や raw のときには、それぞれ
-	pe_code, pe_message, pe_comment, pe_readings, pe_derivs, pe_position
-	pecode, pemessage, pecomment, pereadings, pederivs, peposition の
-	ようにする
-	また prefix ももちろんつけることになるだろう
-
-	pePosition だけ pePositionStr で、特別扱いしてもいいかもしれない
-
 * リファクタリング
 
 **************************
@@ -60,6 +44,14 @@
 
 	Derivs も同様にする。ただし prefix の一文字目を大文字化する
 
+	ParseError のフィールド名
+	peCode, peMessage, peComment, peReadings, peDerivs, pePosition について
+	snake や raw のときには、それぞれ
+	pe_code, pe_message, pe_comment, pe_readings, pe_derivs, pe_position
+	pecode, pemessage, pecomment, pereadings, pederivs, peposition の
+	ようにする
+	また prefix ももちろんつけることになるだろう
+
 * papillon command は何も取らなければ filter とする。
 	また、papillon [Input] や papillon [Input] -o [Output] の形も使う。
 	そのうちに papillon -h や papillon --help も。
@@ -92,6 +84,14 @@
 
 * ParseError は th が True のときには、Papillon からの export でもいいが...
 	今のままでもいいし、どっちのほうがいいかな
+
+* 今は Main 内でのみ使っているが、それ以外の module で使ったときに、
+	未使用の warning が出ると思う
+	それに対処すること
+
+	pePositionS
+	他の pe... もそうだが、module 内で使わない場合に warning が出てしまう
+	あとで考えよう
 
 ******************************
 *  機能面における細かい修正  *

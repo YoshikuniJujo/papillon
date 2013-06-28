@@ -188,13 +188,14 @@ showReading _ n = "yet: " ++ n
 decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
 decParsed th src tkn parsed = do
 	glb <- runIO $ newIORef 0
-
 	d <- derivs th src tkn parsed
 	pet <- parseErrorT th
+	pepst <- pePositionST
+	pepsd <- pePositionSD
 	iepe <- instanceErrorParseError th
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
-	return $ d : pet : iepe : pt : [p]
+	return $ d : pet : pepst : pepsd : iepe : pt : [p]
 
 initialPosN :: Bool -> Name
 initialPosN True = 'initialPos
@@ -249,6 +250,34 @@ parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "po
 		"pePosition"
 	 ]
 
+{-
+
+pePositionS :: ParseError (Pos String) -> (Int, Int)
+pePositionS ParseError{ pePosition = ListPos (CharPos p) } = p
+
+-}
+
+infixr 8 `arrT`
+
+arrT :: TypeQ -> TypeQ -> TypeQ
+arrT x y = arrowT `appT` x `appT` y
+
+tupT :: [TypeQ] -> TypeQ
+tupT ts = foldl appT (tupleT $ length ts) ts
+
+pePositionST :: DecQ
+pePositionST = sigD (mkName "pePositionS") $
+	conT (mkName "ParseError") `appT`
+		(conT (mkName "Pos") `appT` conT (mkName "String"))
+	`arrT`
+	tupT [conT $ mkName "Int", conT $ mkName "Int"]
+pePositionSD :: DecQ
+pePositionSD = funD (mkName "pePositionS") $ (: []) $ clause
+	[pat] (normalB $ varE $ mkName "p") []
+	where
+	pat = recP (mkName "ParseError") [fieldPat (mkName "pePosition") $
+		conP (mkName "ListPos")
+			[conP (mkName "CharPos") [varP $ mkName "p"]]]
 
 {-
 

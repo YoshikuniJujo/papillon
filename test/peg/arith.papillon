@@ -40,7 +40,7 @@ showParseError pe =
 	com = peComment pe
 	ns = peReading pe
 	d = peDerivs pe
-	ListPos (CharPos p) = pePosition pe
+	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
 showReading d "derivsChars" = case derivsChars d of
