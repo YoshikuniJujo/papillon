@@ -16,7 +16,7 @@ true :: Bool
 true = True
 
 main :: IO ()
-main = case three $ parse initialPos "333" of
+main = case three $ parse "333" of
 	Right ((), _) -> putStrLn "OK!"
 	Left (ParseError c m p _ _ _) -> putStrLn $ "not matched: " ++ show (c, m, p)
 

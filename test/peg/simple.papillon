@@ -3,7 +3,7 @@
 import Text.Papillon
 
 main :: IO ()
-main = case hello $ parse initialPos "hello" of
+main = case hello $ parse "hello" of
 	Right (r, _) -> print r
 	Left err -> putStrLn $ showParseError err
 

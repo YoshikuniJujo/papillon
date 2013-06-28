@@ -4,7 +4,7 @@ import Text.Papillon
 
 main :: IO ()
 main = do
-	case checkTriple $ parse initialPos "ab cd a d ef hello, my friend" of
+	case checkTriple $ parse "ab cd a d ef hello, my friend" of
 		Right (r, _) -> print r
 		Left (ParseError c m p _ _ _) -> putStrLn $ "error: " ++ show (c, m, p)
 

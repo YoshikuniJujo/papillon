@@ -2,6 +2,16 @@
 * 次にやること           *
 **************************
 
+* parse の定義は以下のようにしたい
+	parse = parseXX_XX initialPos
+		where
+		parseXX_XX pos str = d
+			where
+			...
+	そうすると initialPos を明示的に指定せずにすむ
+
+* ...M や ...P はむしろ local に定義してしまったほうがいいかもしれない
+
 * dvchars とか dvpos はどうするか
 
 * 下のほうでいろいろと細かく書いているが、とりあえずまずは、名前は以下のようにしよう
@@ -11,14 +21,6 @@
 	parse
 	someM, otherM
 	someP, otherP
-
-* parse の定義は以下のようにしたい
-	parse = parseXX_XX initialPos
-		where
-		parseXX_XX pos str = d
-			where
-			...
-	そうすると initialPos を明示的に指定せずにすむ
 
 * 関数の名前について
 	parser とかそういう名前は conflict するので、もっとちゃんとした名前にする

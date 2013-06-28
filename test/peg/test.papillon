@@ -8,49 +8,49 @@ data SomeData = SomeData Int String deriving Show
 
 main :: IO ()
 main = do
-	case onlyDigits $ parse initialPos "123 abc" of
+	case onlyDigits $ parse "123 abc" of
 		Right (str, _) -> print $ str 4
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case onlyDigits $ parse initialPos "123 \n\t" of
+	case onlyDigits $ parse "123 \n\t" of
 		Right (str, _) -> print $ str 4
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case onlyDigits $ parse initialPos "123abc" of
+	case onlyDigits $ parse "123abc" of
 		Right (str, _) -> print $ str 4
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case mulDigits $ parse initialPos "559" of
+	case mulDigits $ parse "559" of
 		Right ((m, n), _) -> print (m 3, n ["hello", "friend"])
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case addDigits2 $ parse initialPos "33 25" of
+	case addDigits2 $ parse "33 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case divDigits $ parse initialPos "63 25" of
+	case divDigits $ parse "63 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case someData $ parse initialPos "63 25" of
+	case someData $ parse "63 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case getSomeData $ parse initialPos "63 25" of
+	case getSomeData $ parse "63 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case testSelLeaf $ parse initialPos "63 25" of
+	case testSelLeaf $ parse "63 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case testSelLeaf $ parse initialPos "abcde 25" of
+	case testSelLeaf $ parse "abcde 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case digits' $ parse initialPos "12345abc 25" of
+	case digits' $ parse "12345abc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case testAnd $ parse initialPos "12345abc 25" of
+	case testAnd $ parse "12345abc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case testAnd $ parse initialPos "12345bc 25" of
+	case testAnd $ parse "12345bc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case testNot $ parse initialPos "12345abc 25" of
+	case testNot $ parse "12345abc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case testNot $ parse initialPos "12345bc 25" of
+	case testNot $ parse "12345bc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
 

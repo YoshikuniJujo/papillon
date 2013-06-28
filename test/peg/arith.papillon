@@ -7,25 +7,25 @@ import Data.Char
 
 main :: IO ()
 main = do
-	case expression $ parse initialPos "3 * (2 + 24) / 8 / 3" of
+	case expression $ parse "3 * (2 + 24) / 8 / 3" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case expression $ parse initialPos "3 + 2 + 24 / 8 / 3" of
+	case expression $ parse "3 + 2 + 24 / 8 / 3" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case expression $ parse initialPos "50 + 3 * 6" of
+	case expression $ parse "50 + 3 * 6" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case expression $ parse initialPos "3 * (50 + 5) / 8" of
+	case expression $ parse "3 * (50 + 5) / 8" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case expression $ parse initialPos "8 * 2 + + 5" of
+	case expression $ parse "8 * 2 + + 5" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case expression $ parse initialPos "***" of
+	case expression $ parse "***" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case expression $ parse initialPos "123<456" of
+	case expression $ parse "123<456" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 

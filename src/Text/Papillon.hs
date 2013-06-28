@@ -227,12 +227,21 @@ decParsed th src tkn parsed = do
 	tdvcm <- typeDvCharsM th tkn
 	dvcm <- dvCharsM th
 	pt <- parseT src th
-	p <- funD (mkName "parse") [parseE glb th parsed]
+	p <- funD (mkName "parse") [parseEE glb th parsed]
 	pts <- typeP parsed
 	ps <- pSomes glb th parsed
 
 	return $ d : r :pm : pet : iepe : tdvm ++ dvsm ++ tdvcm : dvcm :
 		pt : p : pts ++ ps
+
+initialPosN :: Bool -> Name
+initialPosN True = 'initialPos
+initialPosN False = mkName "initialPos"
+
+parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
+parseEE glb th pg = clause []
+	(normalB $ varE (mkName "parseGen") `appE` varE (initialPosN th))
+	[funD (mkName "parseGen") [parseE glb th pg]]
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
@@ -330,9 +339,10 @@ pmonad th src = tySynD (mkName "PackratM") [] $ conT (stateTN th) `appT`
 	pe = conT (mkName "ParseError") `appT` (conT (mkName "Pos") `appT` src)
 
 parseT :: TypeQ -> Bool -> DecQ
-parseT src _ = sigD (mkName "parse") $ arrowT
-	`appT` (conT (mkName "Pos") `appT` src) 
-	`appT` (arrowT
+parseT src _ = sigD (mkName "parse") $ -- arrowT
+--	`appT` (conT (mkName "Pos") `appT` src) 
+--	`appT`
+	(arrowT
 		`appT` src
 		`appT` conT (mkName "Derivs"))
 newNewName :: IORef Int -> String -> Q Name
@@ -365,7 +375,7 @@ parseE' th tmps names = clause [varP pos, varP $ mkName "s"]
 					(normalB $ doE [
 						noBindS $ varE (putN th)
 							`appE`
-							(varE (mkName "parse") `appE`
+							(varE (mkName "parseGen") `appE`
 								newPos `appE` varE (mkName "s'")),
 						noBindS $ varE (returnN th) `appE`
 							varE (mkName "c")
