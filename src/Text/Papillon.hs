@@ -1,11 +1,7 @@
 {-# LANGUAGE TemplateHaskell, PackageImports, TypeFamilies, FlexibleContexts,
 	FlexibleInstances #-}
 
-module Text.Papillon (
-	papillon,
-	papillonStr,
-	papillonStr'
-) where
+module Text.Papillon (papillon, papillonStr') where
 
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
@@ -103,9 +99,6 @@ papillon = QuasiQuoter {
 	quoteType = undefined,
 	quoteDec = declaration True
  }
-
-papillonStr :: String -> IO String
-papillonStr src = show . ppr <$> runQ (declaration False src)
 
 papillonStr' :: String -> IO String
 papillonStr' src = do

@@ -7,6 +7,15 @@
 * papillonStr' について
 	関数名について考える
 	また、ByteString や Text も扱うかどうかについても考えること
+	これを Papillon から export する必要はないのかもしれない
+	とすると、module 構造を変える必要があるな
+
+* module 構造について
+	Papillon -+-> some
+                  |
+	papillon -+
+	とすることで、Papillon が papillonStr 等を export せずにすむ。
+	ただし、papillonStr を export するのが役立つ可能性もあるので考えること
 
 * リファクタリング
 
@@ -31,6 +40,9 @@
 	問題はすべての型が Show であるわけではないというところだ。
 	すべての型が Show である場合にのみ使える関数を TH で作ってもいいが ...
 	いずれにしてもいろいろと考察すること
+
+* peMessage で入手できる message について
+	もっとちゃんとした英語にできるだろうか
 
 **************************
 *  リファクタリング関係  *
@@ -65,12 +77,6 @@
 	また、papillon [Input] や papillon [Input] -o [Output] の形も使う。
 	そのうちに papillon -h や papillon --help も。
 	より使いやすく GetOpt を使ってみるのもいいかもしれない。
-* module 構造について
-	Papillon -+-> some
-                  |
-	papillon -+
-	とすることで、Papillon が papillonStr 等を export せずにすむ。
-	ただし、papillonStr を export するのが役立つ可能性もあるので考えること
 * Text/Papillon/Parser.hs を git から外す
 	これは papillon 自体がある程度安定してから、となるだろう。
 * Parser.peg を token を使って書き直す
