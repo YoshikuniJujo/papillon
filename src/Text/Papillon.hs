@@ -5,10 +5,6 @@ module Text.Papillon (
 	papillon,
 	papillonStr,
 	papillonStr',
-	Source(..),
-	SourceList(..),
-	ListPos(..),
-	Pos(..),
 	list, list1, papOptional
 ) where
 
@@ -20,14 +16,12 @@ import Control.Monad.Trans.Error (Error(..))
 
 import Control.Applicative
 
-import Text.Papillon.Parser hiding (initialPos, ParseError(..), Pos(..), ListPos(..))
-import qualified Text.Papillon.Parser as P
+import Text.Papillon.Parser
 import Data.IORef
 
 import Text.Papillon.Class
 import Text.Papillon.List
 
-classSourceQ True
 listDec True
 optionalDec True
 
@@ -121,19 +115,17 @@ papillonStr' :: String -> IO String
 papillonStr' src = do
 	let (ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
-	cls <- runQ $ classSourceQ False
 	lst <- runQ $ listDec False
 	opt <- runQ $ optionalDec False
 	return $ ppp ++
 		(if isListUsed pegg || isOptionalUsed pegg then "\nimport Control.Applicative\n" else "") ++
-		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++
-		"\n" ++ show (ppr cls) ++ "\n" ++
+		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n" ++
 		(if isListUsed pegg then show (ppr lst) else "") ++ "\n" ++
 		if isOptionalUsed pegg then show (ppr opt) else ""
 
 returnN, putN, stateTN', getN,
 	strMsgN, throwErrorN, runStateTN, justN, mplusN,
-	getTokenN, getsN :: Bool -> Name
+	getsN :: Bool -> Name
 returnN True = 'return
 returnN False = mkName "return"
 throwErrorN True = 'throwError
@@ -154,8 +146,6 @@ runStateTN True = 'runStateT
 runStateTN False = mkName "runStateT"
 justN True = 'Just
 justN False = mkName "Just"
-getTokenN True = 'getToken
-getTokenN False = mkName "getToken"
 
 eitherN :: Name
 eitherN = mkName "Either"
@@ -173,13 +163,13 @@ declaration' src = case pegFile $ parse src of
 		(ppp, pp, decParsed False s t p, atp, p)
 	Left err -> error $ "parse error: " ++ showParseError err
 
-showParseError :: P.ParseError (P.Pos String) -> String
-showParseError (P.ParseError c m _ d ns (P.ListPos (P.CharPos p))) =
+showParseError :: ParseError (Pos String) -> String
+showParseError (ParseError c m _ d ns (ListPos (CharPos p))) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ " at position: " ++ show p
 
-showReading :: P.Derivs -> String -> String
-showReading d "derivsChars" = case P.derivsChars d of
+showReading :: Derivs -> String -> String
+showReading d "derivsChars" = case derivsChars d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
@@ -194,16 +184,13 @@ decParsed th src tkn parsed = do
 	iepe <- instanceErrorParseError th
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
-	return $ d : pet : pepst : pepsd : iepe : pt : [p]
-
-initialPosN :: Bool -> Name
-initialPosN True = 'initialPos
-initialPosN False = mkName "initialPos"
+	cls <- runQ $ classSourceQ False
+	return $ d : pet : pepst : pepsd : iepe : pt : p : cls
 
 parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
 parseEE glb th pg = do
 	pgn <- newNewName glb "parse"
-	pgenE <- varE pgn `appE` varE (initialPosN th)
+	pgenE <- varE pgn `appE` varE (mkName "initialPos")
 	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pg
 	decs <- (:)
 		<$> (funD pgn [parseE glb th pgn pNames pg])
@@ -350,7 +337,7 @@ parseE' g th pgn tmps pnames = do
 parseChar :: Bool -> Name -> Name -> DecQ
 parseChar th pgn chars = flip (valD $ varP chars) [] $ normalB $
 	varE (runStateTN th) `appE`
-		caseE (varE (getTokenN th) `appE` varE s) [
+		caseE (varE (mkName "getToken") `appE` varE s) [
 			match (justN th `conP` [tupP [varP c, varP s']])
 				(normalB $ doE [
 					noBindS $ varE (putN th) `appE`
@@ -442,11 +429,6 @@ transReadFrom g th (FromSelection sel) = pSomes1Sel g th sel
 transReadFrom g th (FromList rf) = varE (mkName "list") `appE` transReadFrom g th rf
 transReadFrom g th (FromList1 rf) = varE (mkName "list1") `appE` transReadFrom g th rf
 transReadFrom g th (FromOptional rf) = varE (mkName "papOptional") `appE` transReadFrom g th rf
-
-{-
-getErrTypeName :: ReadFrom -> Name
-getErrTypeName 
--}
 
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
 transLeaf' g th (NameLeaf (n, nc) rf (Just (p, pc))) = do

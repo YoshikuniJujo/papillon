@@ -8,7 +8,6 @@ instance SourceList MyToken where
 	listToken (c : s) = Just (c, s)
 	listInitialPos = MyPos 0
 	listUpdatePos _ (MyPos n) = MyPos $ n + 1
-	listShowPos (MyPos n) = show n
 
 data MyToken = A | B | C deriving Show
 

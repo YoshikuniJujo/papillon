@@ -9,7 +9,7 @@ import Language.Haskell.TH
 
 classSourceQ :: Bool -> DecsQ
 classSourceQ th = sequence [classS th, classSL th, instanceSrcStr th,
-	instanceShowListPosPos, instanceSLC th]
+	instanceSLC th]
 
 maybeN, nothingN, justN, consN, charN :: Bool -> Name
 maybeN True = ''Maybe
@@ -122,7 +122,6 @@ instanceSrcStr _ =
 instance Show (ListPos a) => Show (Pos [a]) where
 	show (ListPos x) = "ListPos " ++ show x
 
--}
 
 instanceShowListPosPos :: DecQ
 instanceShowListPosPos = instanceD (cxt [cxtShowListPos]) decType [body]
@@ -145,6 +144,8 @@ instanceShowListPosPos = instanceD (cxt [cxtShowListPos]) decType [body]
 			str
 			(varE $ mkName "++")
 			(litE $ stringL ")")
+
+-}
 
 {-
 instance SourceList Char where
