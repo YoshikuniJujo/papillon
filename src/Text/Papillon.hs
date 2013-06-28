@@ -9,8 +9,7 @@ module Text.Papillon (
 	SourceList(..),
 	ListPos(..),
 	Pos(..),
-	list, list1,
-	papOptional
+	list, list1, papOptional
 ) where
 
 import Language.Haskell.TH.Quote
