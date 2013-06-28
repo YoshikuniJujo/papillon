@@ -3,6 +3,10 @@
 **************************
 
 * version up して install
+	mkParser して必要なら手直し
+
+* ~/local/poarage/dev-haskell/papillon/ ディレクトリを整理
+	古いバージョンは消してしまおう
 
 * papillonStr' について
 	関数名について考える
