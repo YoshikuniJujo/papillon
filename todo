@@ -2,6 +2,9 @@
 * 次にやること           *
 **************************
 
+* list, list1, papOptional をそれぞれ
+	listXX_XX, list1XX_XX, optionalXX_XX にしよう
+
 * リファクタリング
 
 **************************
