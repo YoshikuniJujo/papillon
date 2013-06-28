@@ -228,20 +228,20 @@ decParsed th src tkn parsed = do
 	dvcm <- dvCharsM th
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
-	pts <- typeP parsed
-	ps <- pSomes glb th parsed
-
 	return $ d : r :pm : pet : iepe : tdvm ++ dvsm ++ tdvcm : dvcm :
-		pt : p : pts ++ ps
+		pt : [p]
 
 initialPosN :: Bool -> Name
 initialPosN True = 'initialPos
 initialPosN False = mkName "initialPos"
 
 parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
-parseEE glb th pg = clause []
-	(normalB $ varE (mkName "parseGen") `appE` varE (initialPosN th))
-	[funD (mkName "parseGen") [parseE glb th pg]]
+parseEE glb th pg = do
+	pgenE <- varE (mkName "parseGen") `appE` varE (initialPosN th)
+	decs <- (:)
+		<$> (funD (mkName "parseGen") [parseE glb th pg])
+		<*> (pSomes glb th pg)
+	return $ Clause [] (NormalB pgenE) decs
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
@@ -257,10 +257,10 @@ dvName :: String -> Name
 dvName = mkName
 
 dvMName :: String -> Name
-dvMName = mkName . (++ "M") -- . ("dv_" ++)
+dvMName = mkName . (++ "M")
 
 pName :: String -> Name
-pName = mkName . (++ "P") -- . ("p_" ++)
+pName = mkName . (++ "P")
 
 derivs1 :: Definition -> VarStrictTypeQ
 derivs1 (name, typ, _) =
@@ -339,12 +339,10 @@ pmonad th src = tySynD (mkName "PackratM") [] $ conT (stateTN th) `appT`
 	pe = conT (mkName "ParseError") `appT` (conT (mkName "Pos") `appT` src)
 
 parseT :: TypeQ -> Bool -> DecQ
-parseT src _ = sigD (mkName "parse") $ -- arrowT
---	`appT` (conT (mkName "Pos") `appT` src) 
---	`appT`
-	(arrowT
-		`appT` src
-		`appT` conT (mkName "Derivs"))
+parseT src _ = sigD (mkName "parse") $ arrowT
+	`appT` src
+	`appT` conT (mkName "Derivs")
+
 newNewName :: IORef Int -> String -> Q Name
 newNewName g base = do
 	n <- runIO $ readIORef g
@@ -423,12 +421,6 @@ typeDvCharsM _ tkn =
 dvCharsM :: Bool -> DecQ
 dvCharsM th = flip (valD $ varP $ mkName "dvCharsM") [] $ normalB $
 	conE (stateTN' th) `appE` varE (mkName "dvChars")
-
-typeP :: Peg -> DecsQ
-typeP = uncurry (zipWithM typeP1) . unzip . map (\(n, t, _) -> (n, t))
-
-typeP1 :: String -> TypeQ -> DecQ
-typeP1 f t = sigD (pName f) $ conT (mkName "PackratM") `appT` t
 
 pSomes :: IORef Int -> Bool -> Peg -> DecsQ
 pSomes g th = mapM $ pSomes1 g th
