@@ -296,7 +296,7 @@ newNewName g base = do
 	newName (base ++ show n)
 parseE :: IORef Int -> Bool -> Peg -> ClauseQ
 parseE g th pegg = do
-	tmps <- mapM (newNewName g . ("local" ++)) names
+	tmps <- mapM (newNewName g) names
 	parseE' th tmps names
 	where
 	names = map (\(n, _, _) -> n) pegg

@@ -2,18 +2,20 @@
 * 次にやること           *
 **************************
 
-* version up して install
+* parseE' をすこし refactoring する必要があるな
+
+* local な名前 char も何とかしよう
+	charsXX_XX のようにしよう
+
+* local な名前は local にする
+	つまり parseGen ではなく parseXX_XX のようにする
+	また、someM や someP も someXX_XX のようにしよう
 
 * dvchars とか dvpos はどうするか
 
 * 下のほうでいろいろと細かく書いているが、とりあえずまずは、名前は以下のようにしよう
 	Derivs(Derivs, some, other, dvchars, dvpos)
 	parse
-
-* local な名前は local にする
-	つまり parseGen ではなく parseXX_XX のようにする
-	また、someM や someP も someXX_XX のようにしよう
-	前にことごとく local をつけた名前を someXX_XX という名前に変えようかな
 
 * 関数の名前について
 	parser とかそういう名前は conflict するので、もっとちゃんとした名前にする
