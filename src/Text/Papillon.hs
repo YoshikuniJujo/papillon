@@ -231,13 +231,22 @@ derivs1 src (name, typ, _) =
 parseErrorT :: Bool -> DecQ
 parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"])
 	[] $ (:[]) $
-	normalC (mkName "ParseError") [
-		strictType notStrict $ conT $ mkName "String",
-		strictType notStrict $ conT $ mkName "String",
-		strictType notStrict $ conT $ mkName "String",
-		strictType notStrict $ conT $ mkName "Derivs",
-		strictType notStrict $ listT `appT` conT (mkName "String"),
-		strictType notStrict $ varT $ mkName "pos"
+	recC (mkName "ParseError") [
+		varStrictType c $ strictType notStrict $ conT $ mkName "String",
+		varStrictType m $ strictType notStrict $ conT $ mkName "String",
+		varStrictType com $ strictType notStrict $ conT $ mkName "String",
+		varStrictType d $ strictType notStrict $ conT $ mkName "Derivs",
+		varStrictType r $ strictType notStrict $ listT `appT` conT (mkName "String"),
+		varStrictType pos $ strictType notStrict $ varT $ mkName "pos"
+	 ]
+	where
+	[c, m, com, r, d, pos] = map mkName [
+		"peCode",
+		"peMessage",
+		"peComment",
+		"peReading",
+		"peDerivs",
+		"pePosition"
 	 ]
 
 
