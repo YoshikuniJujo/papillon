@@ -1,11 +1,96 @@
-{-# LANGUAGE TypeFamilies, TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies, TemplateHaskell, PackageImports #-}
 
 module Text.Papillon.Class (
 --	Source(..),
-	classSourceQ
+	classSourceQ,
+	pePositionST,
+	pePositionSD,
+	instanceErrorParseError,
+	parseErrorT
 ) where
 
 import Language.Haskell.TH
+import "monads-tf" Control.Monad.Error
+import Control.Monad.Trans.Error (Error(..))
+
+errorN, strMsgN :: Bool -> Name
+errorN True = ''Error
+errorN False = mkName "Error"
+strMsgN True = 'strMsg
+strMsgN False = mkName "strMsg"
+
+parseErrorT :: Bool -> DecQ
+parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"])
+	[] $ (:[]) $
+	recC (mkName "ParseError") [
+		varStrictType c $ strictType notStrict $ conT $ mkName "String",
+		varStrictType m $ strictType notStrict $ conT $ mkName "String",
+		varStrictType com $ strictType notStrict $ conT $ mkName "String",
+		varStrictType d $ strictType notStrict $ conT $ mkName "Derivs",
+		varStrictType r $ strictType notStrict $ listT `appT` conT (mkName "String"),
+		varStrictType pos $ strictType notStrict $ varT $ mkName "pos"
+	 ]
+	where
+	[c, m, com, r, d, pos] = map mkName [
+		"peCode",
+		"peMessage",
+		"peComment",
+		"peReading",
+		"peDerivs",
+		"pePosition"
+	 ]
+
+{-
+
+pePositionS :: ParseError (Pos String) -> (Int, Int)
+pePositionS ParseError{ pePosition = ListPos (CharPos p) } = p
+
+-}
+
+{-
+
+instance Error (ParseError pos) where
+	strMsg msg = ParseError "" msg "" undefined
+
+-}
+
+instanceErrorParseError :: Bool -> DecQ
+instanceErrorParseError th = instanceD
+	(cxt [])
+	(conT (errorN th) `appT`
+		(conT (mkName "ParseError") `appT` varT (mkName "pos")))
+	[funD (strMsgN th) $ (: []) $ flip (clause [varP msg]) [] $ normalB ret]
+	where
+	msg = mkName "msg"
+	ret = conE (mkName "ParseError")
+		`appE` litE (stringL "")
+		`appE` varE msg
+		`appE` litE (stringL "")
+		`appE` varE (mkName "undefined")
+		`appE` varE (mkName "undefined")
+		`appE` varE (mkName "undefined")
+
+infixr 8 `arrT`
+
+arrT :: TypeQ -> TypeQ -> TypeQ
+arrT x y = arrowT `appT` x `appT` y
+
+tupT :: [TypeQ] -> TypeQ
+tupT ts = foldl appT (tupleT $ length ts) ts
+
+pePositionST :: DecQ
+pePositionST = sigD (mkName "pePositionS") $
+	conT (mkName "ParseError") `appT`
+		(conT (mkName "Pos") `appT` conT (mkName "String"))
+	`arrT`
+	tupT [conT $ mkName "Int", conT $ mkName "Int"]
+pePositionSD :: DecQ
+pePositionSD = funD (mkName "pePositionS") $ (: []) $ clause
+	[pat] (normalB $ varE $ mkName "p") []
+	where
+	pat = recP (mkName "ParseError") [fieldPat (mkName "pePosition") $
+		conP (mkName "ListPos")
+			[conP (mkName "CharPos") [varP $ mkName "p"]]]
 
 classSourceQ :: Bool -> DecsQ
 classSourceQ th = sequence [classS th, classSL th, instanceSrcStr th,

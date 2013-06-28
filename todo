@@ -2,8 +2,12 @@
 * 次にやること           *
 **************************
 
-* version up して install
-	mkParser して必要なら手直し
+* pePositionS に関する warning について
+	これを消すのは難しいな
+	これを消すためには ParseError と class Source 等を
+	papillon から export するようにする必要がある
+	そのうえで、papillon では pePositionS という文字列を探して、
+	存在すればこれを足すという必要があるな
 
 * ~/local/poarage/dev-haskell/papillon/ ディレクトリを整理
 	古いバージョンは消してしまおう
