@@ -202,10 +202,12 @@ initialPosN False = mkName "initialPos"
 
 parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
 parseEE glb th pg = do
-	pgenE <- varE (mkName "parseGen") `appE` varE (initialPosN th)
+	pgn <- newNewName glb "parse"
+	pgenE <- varE pgn `appE` varE (initialPosN th)
+	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pg
 	decs <- (:)
-		<$> (funD (mkName "parseGen") [parseE glb th pg])
-		<*> (pSomes glb th pg)
+		<$> (funD pgn [parseE glb th pgn pNames pg])
+		<*> (pSomes glb th pNames pg)
 	return $ Clause [] (NormalB pgenE) decs
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
@@ -218,15 +220,9 @@ derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
 	 ]
  ] []
 
-dvName :: String -> Name
-dvName = mkName
-
-pName :: String -> Name
-pName = mkName . (++ "P")
-
 derivs1 :: TypeQ -> Definition -> VarStrictTypeQ
 derivs1 src (name, typ, _) =
-	varStrictType (dvName name) $ strictType notStrict $ resultT src typ
+	varStrictType (mkName name) $ strictType notStrict $ resultT src typ
 
 parseErrorT :: Bool -> DecQ
 parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"])
@@ -294,59 +290,60 @@ newNewName g base = do
 	n <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	newName (base ++ show n)
-parseE :: IORef Int -> Bool -> Peg -> ClauseQ
-parseE g th pegg = do
+parseE :: IORef Int -> Bool -> Name -> [Name] -> Peg -> ClauseQ
+parseE g th pgn pnames pegg = do
 	tmps <- mapM (newNewName g) names
-	parseE' th tmps names
+	parseE' g th pgn tmps pnames
 	where
 	names = map (\(n, _, _) -> n) pegg
-parseE' :: Bool -> [Name] -> [String] -> ClauseQ
-parseE' th tmps names = clause [varP pos, varP $ mkName "s"]
+parseE' :: IORef Int -> Bool -> Name -> [Name] -> [Name] -> ClauseQ
+parseE' g th pgn tmps pnames = do
+	chars <- newNewName g "chars"
+	clause [varP $ mkName "pos", varP $ mkName "s"]
 					(normalB $ varE $ mkName "d") $ [
+		flip (valD $ varP $ mkName "d") [] $ normalB $ appsE $
+			conE (mkName "Derivs") :
+				map varE tmps ++ [varE chars, varE $ mkName "pos"]
+	 ] ++ zipWith (parseE1 th) tmps pnames ++ [parseChar th pgn chars]
 
-	flip (valD $ varP $ mkName "d") [] $ normalB $ appsE $
-		conE (mkName "Derivs") :
-			map varE tmps
-			++ [varE (mkName "char"), varE pos]] ++
-	zipWith (parseE1 th) tmps names ++ [
-	flip (valD $ varP $ mkName "char") [] $ normalB $
-		varE (runStateTN th) `appE`
-			caseE (varE (getTokenN th) `appE`
-							varE (mkName "s")) [
-				match	(justN th `conP` [
-						tupP [varP (mkName "c"),
-						varP (mkName "s'")]])
-					(normalB $ doE [
-						noBindS $ varE (putN th)
-							`appE`
-							(varE (mkName "parseGen") `appE`
-								newPos `appE` varE (mkName "s'")),
-						noBindS $ varE (returnN th) `appE`
-							varE (mkName "c")
-					 ])
-					[],
-				match	wildP
-					(normalB $ newThrowQ th "" "end of input"
-						(mkName "undefined")
-						[] "")
-					[]
-			 ] `appE` varE (mkName "d")
- ]
+parseChar :: Bool -> Name -> Name -> DecQ
+parseChar th pgn chars = flip (valD $ varP chars) [] $ normalB $
+	varE (runStateTN th) `appE`
+		caseE (varE (getTokenN th) `appE` varE s) [
+			match (justN th `conP` [tupP [varP c, varP s']])
+				(normalB $ doE [
+					noBindS $ varE (putN th) `appE`
+						(parseGenE
+							`appE` newPos
+							`appE` varE s'),
+					noBindS $ returnE `appE` varE c])
+				[],
+			match wildP
+				(normalB $ newThrowQ th "" "end of input"
+					(mkName "undefined")
+					[] "")
+				[]
+		 ] `appE` varE (mkName "d")
 	where
 	newPos = varE (mkName "updatePos")
 		`appE` varE (mkName "c")
 		`appE` varE pos
 	pos = mkName "pos"
-parseE1 :: Bool -> Name -> String -> DecQ
-parseE1 th tmps name = flip (valD $ varP tmps) [] $ normalB $
-	varE (runStateTN th) `appE` varE (pName name)
+	c = mkName "c"
+	s = mkName "s"
+	s' = mkName "s'"
+	returnE = varE $ returnN th
+	parseGenE = varE $ pgn
+parseE1 :: Bool -> Name -> Name -> DecQ
+parseE1 th tmp name = flip (valD $ varP tmp) [] $ normalB $
+	varE (runStateTN th) `appE` varE name
 		`appE` varE (mkName "d")
 
-pSomes :: IORef Int -> Bool -> Peg -> DecsQ
-pSomes g th = mapM $ pSomes1 g th
+pSomes :: IORef Int -> Bool -> [Name] -> Peg -> DecsQ
+pSomes g th = zipWithM $ pSomes1 g th
 
-pSomes1 :: IORef Int -> Bool -> Definition -> DecQ
-pSomes1 g th (name, _, sel) = flip (valD $ varP $ pName name) [] $
+pSomes1 :: IORef Int -> Bool -> Name -> Definition -> DecQ
+pSomes1 g th pname (_, _, sel) = flip (valD $ varP pname) [] $
 	normalB $ pSomes1Sel g th sel
 
 pSomes1Sel :: IORef Int -> Bool -> Selection -> ExpQ
@@ -399,7 +396,7 @@ showNameLeaf (NameLeafList pat sel) =
 
 transReadFrom :: IORef Int -> Bool -> ReadFrom -> ExpQ
 transReadFrom _ th FromToken = conE (stateTN' th) `appE` varE (mkName "dvChars")
-transReadFrom _ th (FromVariable var) = conE (stateTN' th) `appE` varE (dvName var)
+transReadFrom _ th (FromVariable var) = conE (stateTN' th) `appE` varE (mkName var)
 transReadFrom g th (FromSelection sel) = pSomes1Sel g th sel
 transReadFrom g th (FromList rf) = varE (mkName "list") `appE` transReadFrom g th rf
 transReadFrom g th (FromList1 rf) = varE (mkName "list1") `appE` transReadFrom g th rf
