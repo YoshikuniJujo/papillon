@@ -56,7 +56,7 @@ data Derivs
               nameLeaf :: (Result NameLeaf),
               nameLeafNoCom :: (Result NameLeaf),
               comForErr :: (Result String),
-              leaf :: (Result ((ReadFrom, (ExpQ, String)))),
+              leaf :: (Result ((ReadFrom, Maybe ((ExpQ, String))))),
               patOp :: (Result PatQ),
               pat :: (Result PatQ),
               pat1 :: (Result PatQ),
@@ -131,7 +131,7 @@ nameLeaf_M :: PackratM NameLeaf_
 nameLeafM :: PackratM NameLeaf
 nameLeafNoComM :: PackratM NameLeaf
 comForErrM :: PackratM String
-leafM :: PackratM ((ReadFrom, (ExpQ, String)))
+leafM :: PackratM ((ReadFrom, Maybe ((ExpQ, String))))
 patOpM :: PackratM PatQ
 patM :: PackratM PatQ
 pat1M :: PackratM PatQ
@@ -345,7 +345,7 @@ nameLeaf_P :: PackratM NameLeaf_
 nameLeafP :: PackratM NameLeaf
 nameLeafNoComP :: PackratM NameLeaf
 comForErrP :: PackratM String
-leafP :: PackratM ((ReadFrom, (ExpQ, String)))
+leafP :: PackratM ((ReadFrom, Maybe ((ExpQ, String))))
 patOpP :: PackratM PatQ
 patP :: PackratM PatQ
 pat1P :: PackratM PatQ
@@ -1527,9 +1527,7 @@ nameLeafP = foldl1 mplus [do d446_398 <- get
                              xx459_411 <- papOptional comForErrM
                              let com = xx459_411
                              unless True (gets dvPos >>= (throwError . ParseError "True" "not match: " "" d460_410 ["comForErr"]))
-                             return (NameLeaf (n,
-                                               maybe "" id com) FromToken (conE $ mkName "True",
-                                                                           ""))]
+                             return (NameLeaf (n, maybe "" id com) FromToken Nothing)]
 nameLeafNoComP = foldl1 mplus [do d462_412 <- get
                                   xx461_413 <- pat1M
                                   let n = xx461_413
@@ -1561,7 +1559,7 @@ nameLeafNoComP = foldl1 mplus [do d462_412 <- get
                                   d474_423 <- get
                                   _ <- spacesM
                                   unless True (gets dvPos >>= (throwError . ParseError "True" "not match: " "" d474_423 ["spaces"]))
-                                  return (NameLeaf (n, "") FromToken (conE $ mkName "True", ""))]
+                                  return (NameLeaf (n, "") FromToken Nothing)]
 comForErrP = foldl1 mplus [do d476_424 <- get
                               xx475_425 <- dvCharsM
                               case xx475_425 of
@@ -1648,17 +1646,17 @@ leafP = foldl1 mplus [do d500_445 <- get
                          xx501_448 <- testM
                          let t = xx501_448
                          unless True (gets dvPos >>= (throwError . ParseError "True" "not match: " "" d502_447 ["test"]))
-                         return (rf, t),
+                         return (rf, Just t),
                       do d504_449 <- get
                          xx503_450 <- readFromLsM
                          let rf = xx503_450
                          unless True (gets dvPos >>= (throwError . ParseError "True" "not match: " "" d504_449 ["readFromLs"]))
-                         return (rf, (true, "")),
+                         return (rf, Nothing),
                       do d506_451 <- get
                          xx505_452 <- testM
                          let t = xx505_452
                          unless True (gets dvPos >>= (throwError . ParseError "True" "not match: " "" d506_451 ["test"]))
-                         return (FromToken, t)]
+                         return (FromToken, Just t)]
 patOpP = foldl1 mplus [do d508_453 <- get
                           xx507_454 <- patM
                           let p = xx507_454

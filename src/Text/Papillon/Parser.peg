@@ -132,22 +132,22 @@ nameLeaf :: NameLeaf
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ NameLeaf (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces com:comForErr?
-		{ NameLeaf (n, maybe "" id com) FromToken (conE $ mkName "True", "") }
+		{ NameLeaf (n, maybe "" id com) FromToken Nothing }
 ;
 nameLeafNoCom :: NameLeaf
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ NameLeaf (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces
-		{ NameLeaf (n, "") FromToken (conE $ mkName "True", "") }
+		{ NameLeaf (n, "") FromToken Nothing }
 ;
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
 						{ s }
 ;
-leaf :: (ReadFrom, (ExpQ, String))
-	= rf:readFromLs t:test			{ (rf, t) }
-	/ rf:readFromLs				{ (rf, (true, "")) }
-	/ t:test				{ (FromToken, t) }
+leaf :: (ReadFrom, Maybe (ExpQ, String))
+	= rf:readFromLs t:test			{ (rf, Just t) }
+	/ rf:readFromLs				{ (rf, Nothing) }
+	/ t:test				{ (FromToken, Just t) }
 ;
 patOp :: PatQ
 	= p:pat o:opConName po:patOp		{ uInfixP p o po }

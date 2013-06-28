@@ -411,7 +411,7 @@ getErrTypeName
 -}
 
 transLeaf' :: IORef Int -> Bool -> NameLeaf -> Q [Stmt]
-transLeaf' g th (NameLeaf (n, nc) rf (p, pc)) = do
+transLeaf' g th (NameLeaf (n, nc) rf (Just (p, pc))) = do
 	t <- getNewName g "xx"
 	d <- getNewName g "d"
 	nn <- n
@@ -433,6 +433,26 @@ transLeaf' g th (NameLeaf (n, nc) rf (p, pc)) = do
 				m <- beforeMatch th t n d (nameFromRF rf) nc
 				c <- afterCheck th p d (nameFromRF rf) pc
 				return $ bd : s : m ++ [c]
+	where
+	notHaveOthers (VarP _) = True
+	notHaveOthers (TupP pats) = all notHaveOthers pats
+	notHaveOthers _ = False
+transLeaf' g th (NameLeaf (n, nc) rf Nothing) = do
+	t <- getNewName g "xx"
+	d <- getNewName g "d"
+	nn <- n
+	case nn of
+		WildP -> sequence [
+			bindS wildP $ transReadFrom g th rf,
+			noBindS $ varE (returnN th) `appE` tupE []
+		 ]
+		_	| notHaveOthers nn -> (: []) <$>
+				bindS n (transReadFrom g th rf)
+			| otherwise -> do
+				bd <- bindS (varP d) $ varE $ getN th
+				s <- bindS (varP t) $ transReadFrom g th rf
+				m <- beforeMatch th t n d (nameFromRF rf) nc
+				return $ bd : s : m
 	where
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
