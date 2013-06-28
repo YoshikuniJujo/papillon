@@ -132,7 +132,7 @@ papillonStr' src = do
 		(if isListUsed pegg then show (ppr lst) else "") ++ "\n" ++
 		if isOptionalUsed pegg then show (ppr opt) else ""
 
-returnN, stateTN, putN, stateTN', getN,
+returnN, putN, stateTN', getN,
 	strMsgN, throwErrorN, runStateTN, justN, mplusN,
 	getTokenN, getsN :: Bool -> Name
 returnN True = 'return
@@ -141,8 +141,6 @@ throwErrorN True = 'throwError
 throwErrorN False = mkName "throwError"
 strMsgN True = 'strMsg
 strMsgN False = mkName "strMsg"
-stateTN True = ''StateT
-stateTN False = mkName "StateT"
 putN True = 'put
 putN False = mkName "put"
 getsN True = 'gets
@@ -193,12 +191,11 @@ decParsed th src tkn parsed = do
 
 	d <- derivs th src tkn parsed
 	r <- result src
-	pm <- pmonad th src
 	pet <- parseErrorT th
 	iepe <- instanceErrorParseError th
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
-	return $ d : r :pm : pet : iepe : pt : [p]
+	return $ d : r : pet : iepe : pt : [p]
 
 initialPosN :: Bool -> Name
 initialPosN True = 'initialPos
@@ -286,13 +283,6 @@ result :: TypeQ -> DecQ
 result src = tySynD (mkName "Result") [PlainTV $ mkName "v"] $
 	conT eitherN `appT` pe `appT`
 		(tupleT 2 `appT` varT (mkName "v") `appT` conT (mkName "Derivs"))
-	where
-	pe = conT (mkName "ParseError") `appT` (conT (mkName "Pos") `appT` src)
-
-pmonad :: Bool -> TypeQ -> DecQ
-pmonad th src = tySynD (mkName "PackratM") [] $ conT (stateTN th) `appT`
-	conT (mkName "Derivs") `appT`
-		(conT eitherN `appT` pe)
 	where
 	pe = conT (mkName "ParseError") `appT` (conT (mkName "Pos") `appT` src)
 
