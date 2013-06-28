@@ -2,9 +2,19 @@
 * 次にやること           *
 **************************
 
-* version up して install
-* mkParser
-	手直し
+* ParseError の表示について
+	今は中身を見てやっている感じだが、もうすこし抽象度を上げたい気がする
+	つまり、それぞれのメンバーの名前で要素を得るほうが良い気がする
+	code, message, comment, readings, derivs, position の 6 つのフィールド
+	がある
+	とりあえず recC を使おうかな
+	フィールドの名前はもうすこしコンフリクトしにくい名前にしよう
+	peCode, peMessage, peComment, peReadings, peDerivs, pePosition でいいかな
+	これも snake や raw のときには、それぞれ
+	pe_code, pe_message, pe_comment, pe_readings, pe_derivs, pe_position
+	pecode, pemessage, pecomment, pereadings, pederivs, peposition の
+	ようにする
+	また prefix ももちろんつけることになるだろう
 
 * リファクタリング
 
@@ -15,6 +25,8 @@
 * escapeC について
 	\n, \t 以外の特殊文字についても考慮する
 * 非終端記号に大文字で始まるものも許すようにしようかな
+	これは prefix をつけることで可能と思われる
+	camel, snake, raw の指定とからめて
 
 **************************
 *  エラーメッセージ関係  *
@@ -29,38 +41,23 @@
 *  リファクタリング関係  *
 **************************
 
-* dv_... を ... にしてしまおうかと思うが ...
-	しかし、そうすると大文字の名前が使えない
-	たとえば前に get をつける、とか
-	あるいはつけるものを指定できるようにする、とか
-	指定できるようにするってのはいい考えかもしれないな
+* 関数等の名前について
+	つけるものを指定できるようにする
 	指定がなければ何もつけないという感じ
-	指定があればそれぞれの名前にそれがつくという感じ
-	また parse にもそれをつけてしまおう。
+	指定があればそれぞれの名前にそれがつく
+	また parse にもそれをつけてしまおう
 	それと行く行くは camel case 用のオプションをつけて、
 	myParse とかそういうふうにできるようにしよう。
 	自動で一番先頭を大文字にする。
 	先頭の case だけ違うものについてはとりあえずは自己責任で。
 	camel, snake, none から選べるようにするってのはありだな。
 
-	dvChars, dvPos はどうしようかな
-	これも hogechars や hogepos あるいは hogeChars や hogePos にすればいい
-	あるいは hoge_chars とか hoge_pos とか
-
-	Derivs も同様にする。ただし prefix の一文字目を大文字化する
-	Result や PackratM や ParseError も同様。
-
-	p_... は hogePSome または hoge_p_some あるいは hogepsome のようにしようかな
-	hoge が指定されなければそれぞれ pSome, p_some, psome のようになる
-
-	someM は snake case だと some_m か
-
-	行く行くは local name も camel と snake と none に対応させよう
-
 	derivsChars と derivsPosition は
 	先々では camel, snake, none の値によって変えることにしようかな
+	derivs_chars と derivs_position, derivschars と derivsposition のように
 
-* parser の呼び出しかたの改善
+	Derivs も同様にする。ただし prefix の一文字目を大文字化する
+
 * papillon command は何も取らなければ filter とする。
 	また、papillon [Input] や papillon [Input] -o [Output] の形も使う。
 	そのうちに papillon -h や papillon --help も。
@@ -102,6 +99,9 @@
 * 左再帰の解決はどうしようかな
 	pappy はこれにひどく時間がかかっていた
 * ; を省略可能にしようかな
+	あるいは省略不可とするか
+	省略不可のほうがインデントについての自由度が高くなり
+	parser が簡単になる
 * papillonStr' 等を String 以外も取れるようにする
 	StringLike とかかな
 
@@ -112,6 +112,8 @@
 * cabal に examples directory を追加する
 * cabal の description をもうすこしましにする
 * homepage に example をのせる
+	sakura VPS に papillon を install すれば、
+	インタラクティブなページが作れるかな
 
 **************************
 *  後々やること          *
@@ -119,9 +121,10 @@
 
 * 出来上がったコードを hlint で refactoring
 * unicode への対応
-* (t, _, h):triple で warning が出ないようにする
+* たとえば (Node l t):tree で warning が出ないようにする
 	つまり、もしもそのパターンが反駁不可であるならば、
 	_ -> ... を取らないようにする
 	とりあえずは VarP と WildP のみを含むものを check しよう
 	ひとつしか constructor を持たない物もそれらと同様に扱う必要がある
 	これにはおそらく reify が必要になるので後々することにしよう
+	これは th が True のときだけ reify を見るということで実現可能だろう
