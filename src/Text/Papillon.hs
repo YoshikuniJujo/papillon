@@ -190,12 +190,11 @@ decParsed th src tkn parsed = do
 	glb <- runIO $ newIORef 0
 
 	d <- derivs th src tkn parsed
-	r <- result src
 	pet <- parseErrorT th
 	iepe <- instanceErrorParseError th
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
-	return $ d : r : pet : iepe : pt : [p]
+	return $ d : pet : iepe : pt : [p]
 
 initialPosN :: Bool -> Name
 initialPosN True = 'initialPos
@@ -211,9 +210,9 @@ parseEE glb th pg = do
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
-	recC (mkName "Derivs") $ map derivs1 pegg ++ [
+	recC (mkName "Derivs") $ map (derivs1 src) pegg ++ [
 		varStrictType (mkName "dvChars") $ strictType notStrict $
-			conT (mkName "Result") `appT` tkn,
+			resultT src tkn,
 		varStrictType (mkName "dvPos") $ strictType notStrict $
 			conT (mkName "Pos") `appT` src
 	 ]
@@ -225,10 +224,9 @@ dvName = mkName
 pName :: String -> Name
 pName = mkName . (++ "P")
 
-derivs1 :: Definition -> VarStrictTypeQ
-derivs1 (name, typ, _) =
-	varStrictType (dvName name) $ strictType notStrict $
-		conT (mkName "Result") `appT` typ
+derivs1 :: TypeQ -> Definition -> VarStrictTypeQ
+derivs1 src (name, typ, _) =
+	varStrictType (dvName name) $ strictType notStrict $ resultT src typ
 
 parseErrorT :: Bool -> DecQ
 parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"])
@@ -279,10 +277,10 @@ throwErrorPackratMBody th code msg com d ns = infixApp
 			`appE` d
 			`appE` ns))
 
-result :: TypeQ -> DecQ
-result src = tySynD (mkName "Result") [PlainTV $ mkName "v"] $
+resultT :: TypeQ -> TypeQ -> TypeQ
+resultT src typ =
 	conT eitherN `appT` pe `appT`
-		(tupleT 2 `appT` varT (mkName "v") `appT` conT (mkName "Derivs"))
+		(tupleT 2 `appT` typ `appT` conT (mkName "Derivs"))
 	where
 	pe = conT (mkName "ParseError") `appT` (conT (mkName "Pos") `appT` src)
 
