@@ -13,7 +13,7 @@ module Text.Papillon.Parser (
 	showNameLeaf,
 	nameFromRF,
 	ParseError(..),
-	Derivs(peg, pegFile, dvChars),
+	Derivs(peg, pegFile, derivsChars),
 	Pos(..),
 	ListPos(..)
 ) where

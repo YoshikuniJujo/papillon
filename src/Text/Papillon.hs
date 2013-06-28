@@ -180,7 +180,7 @@ showParseError (P.ParseError c m _ d ns (P.ListPos (P.CharPos p))) =
 	m ++ c ++ " at position: " ++ show p
 
 showReading :: P.Derivs -> String -> String
-showReading d "dvChars" = case P.dvChars d of
+showReading d "derivsChars" = case P.derivsChars d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
