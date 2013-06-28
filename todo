@@ -2,15 +2,12 @@
 * 次にやること           *
 **************************
 
-* parse の定義は以下のようにしたい
-	parse = parseXX_XX initialPos
-		where
-		parseXX_XX pos str = d
-			where
-			...
-	そうすると initialPos を明示的に指定せずにすむ
+* version up して install
 
-* ...M や ...P はむしろ local に定義してしまったほうがいいかもしれない
+* someM や someP は parse の定義のなかで local にする
+	そうすると下の公開している名前のリストが減りいい感じになる
+
+* 前にことごとく local をつけた名前を someXX_XX という名前に変えようかな
 
 * dvchars とか dvpos はどうするか
 
@@ -21,6 +18,10 @@
 	parse
 	someM, otherM
 	someP, otherP
+
+* local な名前は local にする
+	つまり parseGen ではなく parseXX_XX のようにする
+	また、someM や someP も someXX_XX のようにしよう
 
 * 関数の名前について
 	parser とかそういう名前は conflict するので、もっとちゃんとした名前にする

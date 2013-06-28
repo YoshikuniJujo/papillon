@@ -191,13 +191,13 @@ eitherN = mkName "Either"
 
 declaration :: Bool -> String -> DecsQ
 declaration th str = do
-	let (src, tkn, parsed) = case peg $ parse P.initialPos str of
+	let (src, tkn, parsed) = case peg $ parse str of
 		Right ((s, t, p), _) -> (s, t, p)
 		Left err -> error $ "parse error: " ++ showParseError err
 	decParsed th src tkn parsed
 
 declaration' :: String -> (String, String, DecsQ, String, Peg)
-declaration' src = case pegFile $ parse P.initialPos src of
+declaration' src = case pegFile $ parse src of
 	Right ((ppp, pp, (s, t, p), atp), _) ->
 		(ppp, pp, decParsed False s t p, atp, p)
 	Left err -> error $ "parse error: " ++ showParseError err
