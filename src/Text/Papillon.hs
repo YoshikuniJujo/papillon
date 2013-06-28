@@ -196,12 +196,9 @@ decParsed th src tkn parsed = do
 	pm <- pmonad th src
 	pet <- parseErrorT th
 	iepe <- instanceErrorParseError th
-	tdvcm <- typeDvCharsM th tkn
-	dvcm <- dvCharsM th
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
-	return $ d : r :pm : pet : iepe : tdvcm : dvcm :
-		pt : [p]
+	return $ d : r :pm : pet : iepe : pt : [p]
 
 initialPosN :: Bool -> Name
 initialPosN True = 'initialPos
@@ -357,13 +354,6 @@ parseE1 th tmps name = flip (valD $ varP tmps) [] $ normalB $
 	varE (runStateTN th) `appE` varE (pName name)
 		`appE` varE (mkName "d")
 
-typeDvCharsM :: Bool -> TypeQ -> DecQ
-typeDvCharsM _ tkn =
-	sigD (mkName "dvCharsM") $ conT (mkName "PackratM") `appT` tkn
-dvCharsM :: Bool -> DecQ
-dvCharsM th = flip (valD $ varP $ mkName "dvCharsM") [] $ normalB $
-	conE (stateTN' th) `appE` varE (mkName "dvChars")
-
 pSomes :: IORef Int -> Bool -> Peg -> DecsQ
 pSomes g th = mapM $ pSomes1 g th
 
@@ -420,7 +410,7 @@ showNameLeaf (NameLeafList pat sel) =
 -}
 
 transReadFrom :: IORef Int -> Bool -> ReadFrom -> ExpQ
-transReadFrom _ _ FromToken = varE $ mkName "dvCharsM"
+transReadFrom _ th FromToken = conE (stateTN' th) `appE` varE (mkName "dvChars")
 transReadFrom _ th (FromVariable var) = conE (stateTN' th) `appE` varE (dvName var)
 transReadFrom g th (FromSelection sel) = pSomes1Sel g th sel
 transReadFrom g th (FromList rf) = varE (mkName "list") `appE` transReadFrom g th rf
