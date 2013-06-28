@@ -3,7 +3,6 @@
 **************************
 
 * class Source sl where のあたりを見直すこと
-	listShowPos はいらない
 
 * リファクタリング
 

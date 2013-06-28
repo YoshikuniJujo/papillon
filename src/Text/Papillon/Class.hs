@@ -24,7 +24,7 @@ charN True = ''Char
 charN False = mkName "Char"
 
 source, sourceList, listTokenN, tokenN, getTokenN, posN, updatePosN,
-	listPosN, listUpdatePosN, listShowPosN, initialPosN, listInitialPosN
+	listPosN, listUpdatePosN, initialPosN, listInitialPosN
 	:: Name
 sourceList = mkName "SourceList"
 listTokenN = mkName "listToken"
@@ -35,7 +35,6 @@ posN = mkName "Pos"
 updatePosN = mkName "updatePos"
 listPosN = mkName "ListPos"
 listUpdatePosN = mkName "listUpdatePos"
-listShowPosN = mkName "listShowPos"
 initialPosN = mkName "initialPos"
 listInitialPosN = mkName "listInitialPos"
 
@@ -73,7 +72,6 @@ class SourceList c where
 	listToken :: [c] -> Maybe (c, [c])
 	listInitialPos :: ListPos c
 	listUpdatePos :: c -> ListPos c -> ListPos c
-	listShowPos :: ListPos c -> String
 -}
 
 classSL th = classD (cxt []) sourceList [PlainTV c] [] [
@@ -85,10 +83,7 @@ classSL th = classD (cxt []) sourceList [PlainTV c] [] [
 		`appT` varT c
 		`appT` (arrowT
 			`appT` (conT listPosN `appT` varT c)
-			`appT` (conT listPosN `appT` varT c)),
-	sigD listShowPosN $ arrowT
-		`appT` (conT listPosN `appT` varT c)
-		`appT` conT (mkName "String")
+			`appT` (conT listPosN `appT` varT c))
  ] where
 	c = mkName "c"
 	tupleBody = tupleT 2 `appT` varT c `appT` (listT `appT` varT c)
@@ -160,7 +155,6 @@ instance SourceList Char where
 	listUpdatePos '\n' (CharPos (y, x)) = CharPos (y + 1, 0)
 	listUpdatePos '\t' (CharPOs (y, x)) = CharPos (y, x + 8)
 	listUpdatePos _ (CharPos (y, x)) = CharPos (y, x + 1)
-	listShowPos (CharPos p)= show p
 -}
 
 instanceSLC th = instanceD (cxt []) (conT sourceList `appT` conT (charN th)) [
@@ -185,19 +179,13 @@ instanceSLC th = instanceD (cxt []) (conT sourceList `appT` conT (charN th)) [
 		flip (clause [wildP, pCharPos [tupP [varP y, varP x]]]) [] $
 			normalB $ eCharPos `appE` tupE [
 				varE y, infixApp (varE x) plus one]
-	 ],
-	funD listShowPosN [
-		flip (clause [pCharPos [varP pos]]) [] $ normalB $
-			varE (mkName "show") `appE` varE pos
 	 ]
  ] where
 	c = mkName "c"
 	s = mkName "s"
 	y = mkName "y"
 	x = mkName "x"
-	pos = mkName "pos"
 	tupleBody = tupE [varE c, varE s]
---	int = conT $ mkName "Int"
 	one = litE $ integerL 1
 	zero = litE $ integerL 0
 	plus = varE $ mkName "+"
