@@ -2,30 +2,10 @@
 * 次にやること           *
 **************************
 
-* dvchars とか dvpos はどうするか
-	dvchars は derivsChars とし、dvpos は derivsPosition としようかな
-	先々では camel, snake, none の値によって変えることにしようかな
+* version up して install
+* mkParser
+	手直し
 
-* 下のほうでいろいろと細かく書いているが、とりあえずまずは、名前は以下のようにしよう
-	Derivs(Derivs, some, other, dvchars, dvpos)
-	parse
-
-* 関数の名前について
-	parser とかそういう名前は conflict するので、もっとちゃんとした名前にする
-	とくに ...M という名前を使ったときに問題がある
-
-	[papillon| ... |] 内でグローバルに定義される名前
-	Derivs (Derivs, dv_..., dvChars, dvPos)
-	Result
-	PackratM
-	ParseError
-	dv_...M
-	dvCharM
-	parse
-	p_...
-
-* 使いかたの見直し
-	parse initialPos の initialPos の部分は省略するようにしよう
 * リファクタリング
 
 **************************
@@ -77,8 +57,8 @@
 
 	行く行くは local name も camel と snake と none に対応させよう
 
-	...M の M は suffixM とかで変えられるようにするというのもひとつの手だ
-	...P の P は suffixP とかで変えられるようにするというのもひとつの手だ
+	derivsChars と derivsPosition は
+	先々では camel, snake, none の値によって変えることにしようかな
 
 * parser の呼び出しかたの改善
 * papillon command は何も取らなければ filter とする。

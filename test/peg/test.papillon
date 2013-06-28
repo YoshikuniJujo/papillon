@@ -62,7 +62,7 @@ showParseError (ParseError c m com d ns (ListPos (CharPos p))) =
 	" at position: " ++ show p
 
 showReading :: Derivs -> String -> String
-showReading d "dvChars" = case dvChars d of
+showReading d "derivsChars" = case derivsChars d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
 showReading d "other" = case other d of

@@ -210,12 +210,16 @@ parseEE glb th pg = do
 		<*> (pSomes glb th pNames pg)
 	return $ Clause [] (NormalB pgenE) decs
 
+dvCharsN, dvPosN :: Name
+dvCharsN = mkName "derivsChars"
+dvPosN = mkName "derivsPosition"
+
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
 	recC (mkName "Derivs") $ map (derivs1 src) pegg ++ [
-		varStrictType (mkName "dvChars") $ strictType notStrict $
+		varStrictType dvCharsN $ strictType notStrict $
 			resultT src tkn,
-		varStrictType (mkName "dvPos") $ strictType notStrict $
+		varStrictType dvPosN $ strictType notStrict $
 			conT (mkName "Pos") `appT` src
 	 ]
  ] []
@@ -262,7 +266,7 @@ instanceErrorParseError th = instanceD
 
 throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
 throwErrorPackratMBody th code msg com d ns = infixApp
-	(varE (getsN th) `appE` varE (mkName "dvPos"))
+	(varE (getsN th) `appE` varE dvPosN)
 	(varE $ mkName ">>=") (infixApp
 		(varE $ throwErrorN th)
 		(varE $ mkName ".")
@@ -395,7 +399,7 @@ showNameLeaf (NameLeafList pat sel) =
 -}
 
 transReadFrom :: IORef Int -> Bool -> ReadFrom -> ExpQ
-transReadFrom _ th FromToken = conE (stateTN' th) `appE` varE (mkName "dvChars")
+transReadFrom _ th FromToken = conE (stateTN' th) `appE` varE dvCharsN
 transReadFrom _ th (FromVariable var) = conE (stateTN' th) `appE` varE (mkName var)
 transReadFrom g th (FromSelection sel) = pSomes1Sel g th sel
 transReadFrom g th (FromList rf) = varE (mkName "list") `appE` transReadFrom g th rf
