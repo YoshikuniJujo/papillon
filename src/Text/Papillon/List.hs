@@ -8,7 +8,6 @@ module Text.Papillon.List (
 import Language.Haskell.TH
 import Control.Applicative
 import Control.Monad
--- import "monads-tf" Control.Monad.State
 
 {-
 
@@ -18,13 +17,17 @@ list1 p = (:) <$> p <*> list p
 
 -}
 
-monadPlusN, mplusN, applicativeN :: Bool -> Name
+monadPlusN, mplusN, applicativeN, applyN, applyContN :: Bool -> Name
 monadPlusN True = ''MonadPlus
 monadPlusN False = mkName "MonadPlus"
 applicativeN True = ''Applicative
 applicativeN False = mkName "Applicative"
 mplusN True = 'mplus
 mplusN False = mkName "mplus"
+applyN True = '(<$>)
+applyN False = mkName "<$>"
+applyContN True = '(<*>)
+applyContN False = mkName "<*>"
 
 listDec :: Bool -> DecsQ
 listDec th = sequence [
@@ -49,8 +52,8 @@ listDec th = sequence [
 	p = mkName "p"
 	returnEmpty = varE (mkName "return") `appE` listE []
 	cons = conE $ mkName ":"
-	app = varE $ mkName "<$>"
-	next = varE $ mkName "<*>"
+	app = varE $ applyN th
+	next = varE $ applyContN th
 
 {-
 
@@ -77,4 +80,4 @@ optionalDec th = sequence [
 	optionalN = mkName "papOptional"
 	mplusE x = infixApp x (varE $ mplusN th)
 	returnNothing = varE (mkName "return") `appE` conE (mkName "Nothing")
-	app x = infixApp x (varE $ mkName "<$>")
+	app x = infixApp x (varE $ applyN th)

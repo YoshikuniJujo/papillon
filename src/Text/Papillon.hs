@@ -4,8 +4,7 @@
 module Text.Papillon (
 	papillon,
 	papillonStr,
-	papillonStr',
-	list, list1, papOptional
+	papillonStr'
 ) where
 
 import Language.Haskell.TH.Quote
@@ -21,9 +20,6 @@ import Data.IORef
 
 import Text.Papillon.Class
 import Text.Papillon.List
-
-listDec True
-optionalDec True
 
 isOptionalUsed :: Peg -> Bool
 isOptionalUsed = any isOptionalUsedDefinition
@@ -115,13 +111,9 @@ papillonStr' :: String -> IO String
 papillonStr' src = do
 	let (ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
-	lst <- runQ $ listDec False
-	opt <- runQ $ optionalDec False
 	return $ ppp ++
 		(if isListUsed pegg || isOptionalUsed pegg then "\nimport Control.Applicative\n" else "") ++
-		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n" ++
-		(if isListUsed pegg then show (ppr lst) else "") ++ "\n" ++
-		if isOptionalUsed pegg then show (ppr opt) else ""
+		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n"
 
 returnN, putN, stateTN', getN,
 	strMsgN, throwErrorN, runStateTN, justN, mplusN,
@@ -195,7 +187,11 @@ parseEE glb th pg = do
 	decs <- (:)
 		<$> (funD pgn [parseE glb th pgn pNames pg])
 		<*> (pSomes glb th pNames pg)
-	return $ Clause [] (NormalB pgenE) decs
+	ld <- listDec th
+	od <- optionalDec th
+	return $ Clause [] (NormalB pgenE) $ decs ++
+		(if isListUsed pg then ld else []) ++
+		(if isOptionalUsed pg then od else [])
 
 dvCharsN, dvPosN :: Name
 dvCharsN = mkName "derivsChars"
