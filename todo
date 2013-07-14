@@ -2,13 +2,6 @@
 * 次にやること           *
 **************************
 
-* pePositionS に関する warning について
-	これを消すのは難しいな
-	これを消すためには ParseError と class Source 等を
-	Papillon から export するようにする必要がある
-	そのうえで、papillon では pePositionS という文字列を探して、
-	存在すればこれを足すという必要があるな
-
 * class Source とか ParseError とかを Papillon から export するようにする
 
 * ~/local/poarage/dev-haskell/papillon/ ディレクトリを整理
@@ -41,6 +34,18 @@
 * 非終端記号に大文字で始まるものも許すようにしようかな
 	これは prefix をつけることで可能と思われる
 	camel, snake, raw の指定とからめて
+
+**************************
+*  warning 関係          *
+**************************
+
+* pePositionS に関する warning について
+	これを消すのは難しいな
+	これを消すためには ParseError と class Source 等を
+	Papillon から export するようにする必要がある
+	そのうえで、papillon では pePositionS という文字列を探して、
+	存在すればこれを足すという必要があるな
+	papillon のほうは解決
 
 **************************
 *  エラーメッセージ関係  *

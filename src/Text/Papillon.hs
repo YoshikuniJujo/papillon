@@ -12,6 +12,7 @@ import Control.Applicative
 
 import Text.Papillon.Parser
 import Data.IORef
+import Data.List
 
 import Text.Papillon.Class
 import Text.Papillon.List
@@ -135,13 +136,23 @@ declaration th str = do
 	let (src, tkn, parsed) = case peg $ parse str of
 		Right ((s, t, p), _) -> (s, t, p)
 		Left err -> error $ "parse error: " ++ showParseError err
-	decParsed th src tkn parsed
+	decs <- decParsed th src tkn parsed
+	pepst <- pePositionST
+	pepsd <- pePositionSD
+	return $ pepst : pepsd : decs
 
 declaration' :: String -> (String, String, DecsQ, String, Peg)
 declaration' src = case pegFile $ parse src of
 	Right ((ppp, pp, (s, t, p), atp), _) ->
-		(ppp, pp, decParsed False s t p, atp, p)
+		(ppp, pp, decs s t p, atp, p)
 	Left err -> error $ "parse error: " ++ showParseError err
+	where
+	decs s t p = if "pePositionS" `isInfixOf` src
+		then (\pt pd ds -> pt : pd : ds)
+			<$> pePositionST
+			<*> pePositionSD
+			<*> decParsed False s t p
+		else decParsed False s t p
 
 showParseError :: ParseError (Pos String) -> String
 showParseError (ParseError c m _ d ns (ListPos (CharPos p))) =
@@ -159,13 +170,11 @@ decParsed th src tkn parsed = do
 	glb <- runIO $ newIORef 0
 	d <- derivs th src tkn parsed
 	pet <- parseErrorT th
-	pepst <- pePositionST
-	pepsd <- pePositionSD
 	iepe <- instanceErrorParseError th
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
 	cls <- runQ $ classSourceQ False
-	return $ d : pet : pepst : pepsd : iepe : pt : p : cls
+	return $ d : pet : iepe : pt : p : cls
 
 parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
 parseEE glb th pg = do

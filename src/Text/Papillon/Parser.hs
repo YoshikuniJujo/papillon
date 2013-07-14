@@ -126,8 +126,6 @@ data ParseError pos
                   peDerivs :: Derivs,
                   peReading :: ([String]),
                   pePosition :: pos}
-pePositionS :: ParseError (Pos String) -> (Int, Int)
-pePositionS (ParseError {pePosition = ListPos (CharPos p)}) = p
 instance Error (ParseError pos)
     where strMsg msg = ParseError "" msg "" undefined undefined undefined
 parse :: String -> Derivs
