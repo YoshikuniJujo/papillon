@@ -2,6 +2,13 @@
 * 次にやること           *
 **************************
 
+* papillon の動作を変更し、import Hoge.Hage.Papillon のような感じにしようかな
+	Hoge.Hage.Papillon のなかで、共通の関数等を export する
+	% papillon ./src/Hoge/Hage.papillon のような感じにすると、
+	./src/Hoge/Hage.hs ./src/Hoge/Hage/Papillon.hs が作成される。
+	module Hoge.Hage の部分の読み込みが必要になる。
+	まずは手始めに、data ParseError をそっちに移してみよう。
+
 * class Source とかを Papillon から export するようにする
 
 * hackage への登録をそろそろしようかな
