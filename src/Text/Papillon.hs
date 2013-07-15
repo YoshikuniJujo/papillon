@@ -1,7 +1,10 @@
 {-# LANGUAGE TemplateHaskell, PackageImports, TypeFamilies, FlexibleContexts,
 	FlexibleInstances #-}
 
-module Text.Papillon (papillon, papillonStr') where
+module Text.Papillon (
+	papillon,
+	papillonStr'
+) where
 
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
@@ -139,7 +142,9 @@ declaration th str = do
 	decs <- decParsed th src tkn parsed
 	pepst <- pePositionST
 	pepsd <- pePositionSD
-	return $ pepst : pepsd : decs
+	pe <- parseErrorT True
+	iepe <- instanceErrorParseError True
+	return $ pepst : pepsd : pe : iepe : decs
 
 declaration' :: String -> (String, String, DecsQ, String, Peg)
 declaration' src = case pegFile $ parse src of
@@ -147,7 +152,11 @@ declaration' src = case pegFile $ parse src of
 		(ppp, pp, decs s t p, atp, p)
 	Left err -> error $ "parse error: " ++ showParseError err
 	where
-	decs s t p = if "pePositionS" `isInfixOf` src
+	decs s t p = (\pe iepe ds -> pe : iepe : ds)
+		<$> parseErrorT False
+		<*> instanceErrorParseError False
+		<*> addPePositionS s t p
+	addPePositionS s t p = if "pePositionS" `isInfixOf` src
 		then (\pt pd ds -> pt : pd : ds)
 			<$> pePositionST
 			<*> pePositionSD
@@ -169,12 +178,10 @@ decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
 decParsed th src tkn parsed = do
 	glb <- runIO $ newIORef 0
 	d <- derivs th src tkn parsed
-	pet <- parseErrorT th
-	iepe <- instanceErrorParseError th
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
 	cls <- runQ $ classSourceQ False
-	return $ d : pet : iepe : pt : p : cls
+	return $ d : pt : p : cls
 
 parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
 parseEE glb th pg = do

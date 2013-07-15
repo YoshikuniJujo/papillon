@@ -3,6 +3,9 @@
 **************************
 
 * class Source とか ParseError とかを Papillon から export するようにする
+	ParseError は Derivs を含むので無理だ。
+	もし、するなら data ParseError pos drv = ... のようにする必要がある。
+	class Source とかは可能だと思う。
 
 * papillonStr' について
 	関数名について考える
