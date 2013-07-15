@@ -2,6 +2,8 @@
 * 次にやること           *
 **************************
 
+* ParseError を Papillon から export するようにする
+
 * class Source とか ParseError とかを Papillon から export するようにする
 	ParseError は Derivs を含むので無理だ。
 	もし、するなら data ParseError pos drv = ... のようにする必要がある。
