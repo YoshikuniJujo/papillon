@@ -4,9 +4,6 @@
 
 * class Source とか ParseError とかを Papillon から export するようにする
 
-* ~/local/poarage/dev-haskell/papillon/ ディレクトリを整理
-	古いバージョンは消してしまおう
-
 * papillonStr' について
 	関数名について考える
 	また、ByteString や Text も扱うかどうかについても考えること
@@ -149,6 +146,13 @@
 * homepage に example をのせる
 	sakura VPS に papillon を install すれば、
 	インタラクティブなページが作れるかな
+
+**************************
+*  パッケージ関係        *
+**************************
+
+* ~/local/portage/dev-haskell/papillon/ ディレクトリを整理
+	古いバージョンは消してしまおう
 
 **************************
 *  後々やること          *
