@@ -3,7 +3,8 @@
 
 module Text.Papillon (
 	papillon,
-	papillonStr'
+	papillonStr',
+	ParseError(..)
 ) where
 
 import Language.Haskell.TH.Quote
@@ -142,9 +143,7 @@ declaration th str = do
 	decs <- decParsed th src tkn parsed
 	pepst <- pePositionST
 	pepsd <- pePositionSD
-	pe <- parseErrorT True
-	iepe <- instanceErrorParseError True
-	return $ pepst : pepsd : pe : iepe : decs
+	return $ pepst : pepsd : decs
 
 declaration' :: String -> (String, String, DecsQ, String, Peg)
 declaration' src = case pegFile $ parse src of
