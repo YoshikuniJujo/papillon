@@ -4,6 +4,7 @@
 module Text.Papillon (
 	papillon,
 	papillonStr,
+--	papillonConstant,
 	ParseError(..)
 ) where
 
@@ -106,9 +107,12 @@ papillonStr :: String -> IO String
 papillonStr src = do
 	let (ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
+	pe <- runQ $ parseErrorT False
+	iepe <- runQ $ instanceErrorParseError False
 	return $ ppp ++
 		(if isListUsed pegg || isOptionalUsed pegg then "\nimport Control.Applicative\n" else "") ++
-		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n"
+		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n" ++
+		show (ppr pe) ++ "\n" ++ show (ppr iepe) ++ "\n"
 
 returnN, putN, stateTN', getN,
 	throwErrorN, runStateTN, justN, mplusN,
@@ -148,13 +152,9 @@ declaration th str = do
 declaration' :: String -> (String, String, DecsQ, String, Peg)
 declaration' src = case pegFile $ parse src of
 	Right ((ppp, pp, (s, t, p), atp), _) ->
-		(ppp, pp, decs s t p, atp, p)
+		(ppp, pp, addPePositionS s t p, atp, p)
 	Left err -> error $ "parse error: " ++ showParseError err
 	where
-	decs s t p = (\pe iepe ds -> pe : iepe : ds)
-		<$> parseErrorT False
-		<*> instanceErrorParseError False
-		<*> addPePositionS s t p
 	addPePositionS s t p = if "pePositionS" `isInfixOf` src
 		then (\pt pd ds -> pt : pd : ds)
 			<$> pePositionST
