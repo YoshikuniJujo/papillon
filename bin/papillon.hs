@@ -4,4 +4,4 @@ import System.Environment
 main :: IO ()
 main = do
 	fn : _ <- getArgs
-	putStr =<< papillonStr' =<< readFile fn
+	putStr =<< papillonStr =<< readFile fn

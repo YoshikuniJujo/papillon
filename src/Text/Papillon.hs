@@ -3,7 +3,7 @@
 
 module Text.Papillon (
 	papillon,
-	papillonStr',
+	papillonStr,
 	ParseError(..)
 ) where
 
@@ -102,8 +102,8 @@ papillon = QuasiQuoter {
 	quoteDec = declaration True
  }
 
-papillonStr' :: String -> IO String
-papillonStr' src = do
+papillonStr :: String -> IO String
+papillonStr src = do
 	let (ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
 	return $ ppp ++
