@@ -163,7 +163,7 @@ declaration' src = case pegFile $ parse src of
 			<*> decParsed False s t p
 		else decParsed False s t p
 
-showParseError :: ParseError (Pos String) -> String
+showParseError :: ParseError (Pos String) Derivs -> String
 showParseError (ParseError c m _ d ns (ListPos (CharPos p))) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ " at position: " ++ show p

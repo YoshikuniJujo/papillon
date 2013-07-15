@@ -28,106 +28,144 @@ import Data.Char
 import Language.Haskell.TH
 import Text.Papillon.SyntaxTree
 
-data Derivs
-    = Derivs {pegFile :: (Either (ParseError (Pos String))
-                                 ((PegFile, Derivs))),
-              pragma :: (Either (ParseError (Pos String))
-                                ((Maybe String, Derivs))),
-              pragmaStr :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              pragmaItems :: (Either (ParseError (Pos String))
-                                     (([String], Derivs))),
-              delPragmas :: (Either (ParseError (Pos String)) (((), Derivs))),
-              pragmaEnd :: (Either (ParseError (Pos String)) (((), Derivs))),
-              moduleDec :: (Either (ParseError (Pos String))
-                                   ((Maybe String, Derivs))),
-              moduleDecStr :: (Either (ParseError (Pos String))
-                                      ((String, Derivs))),
-              whr :: (Either (ParseError (Pos String)) (((), Derivs))),
-              preImpPap :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              prePeg :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              afterPeg :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              importPapillon :: (Either (ParseError (Pos String))
-                                        (((), Derivs))),
-              varToken :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              typToken :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              pap :: (Either (ParseError (Pos String)) (((), Derivs))),
-              peg :: (Either (ParseError (Pos String)) ((TTPeg, Derivs))),
-              sourceType :: (Either (ParseError (Pos String))
-                                    ((String, Derivs))),
-              peg_ :: (Either (ParseError (Pos String)) ((Peg, Derivs))),
-              definition :: (Either (ParseError (Pos String))
-                                    ((Definition, Derivs))),
-              selection :: (Either (ParseError (Pos String))
-                                   ((Selection, Derivs))),
-              expressionHs :: (Either (ParseError (Pos String))
-                                      ((ExpressionHs, Derivs))),
-              expression :: (Either (ParseError (Pos String))
-                                    ((Expression, Derivs))),
-              nameLeaf_ :: (Either (ParseError (Pos String))
-                                   ((NameLeaf_, Derivs))),
-              nameLeaf :: (Either (ParseError (Pos String))
-                                  ((NameLeaf, Derivs))),
-              nameLeafNoCom :: (Either (ParseError (Pos String))
-                                       ((NameLeaf, Derivs))),
-              comForErr :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              leaf :: (Either (ParseError (Pos String))
-                              (((ReadFrom, Maybe ((ExpQ, String))), Derivs))),
-              patOp :: (Either (ParseError (Pos String)) ((PatQ, Derivs))),
-              pat :: (Either (ParseError (Pos String)) ((PatQ, Derivs))),
-              pat1 :: (Either (ParseError (Pos String)) ((PatQ, Derivs))),
-              patList :: (Either (ParseError (Pos String)) (([PatQ], Derivs))),
-              opConName :: (Either (ParseError (Pos String)) ((Name, Derivs))),
-              charLit :: (Either (ParseError (Pos String)) ((Char, Derivs))),
-              stringLit :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              escapeC :: (Either (ParseError (Pos String)) ((Char, Derivs))),
-              pats :: (Either (ParseError (Pos String)) ((PatQs, Derivs))),
-              readFromLs :: (Either (ParseError (Pos String))
-                                    ((ReadFrom, Derivs))),
-              readFrom :: (Either (ParseError (Pos String))
-                                  ((ReadFrom, Derivs))),
-              test :: (Either (ParseError (Pos String))
-                              (((ExR, String), Derivs))),
-              hsExpLam :: (Either (ParseError (Pos String)) ((ExR, Derivs))),
-              hsExpTyp :: (Either (ParseError (Pos String)) ((ExR, Derivs))),
-              hsExpOp :: (Either (ParseError (Pos String)) ((ExR, Derivs))),
-              hsOp :: (Either (ParseError (Pos String)) ((ExR, Derivs))),
-              opTail :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              hsExp :: (Either (ParseError (Pos String)) ((Ex, Derivs))),
-              hsExp1 :: (Either (ParseError (Pos String)) ((ExR, Derivs))),
-              hsExpTpl :: (Either (ParseError (Pos String)) ((ExRL, Derivs))),
-              hsTypeArr :: (Either (ParseError (Pos String)) ((TypeQ, Derivs))),
-              hsType :: (Either (ParseError (Pos String)) ((Typ, Derivs))),
-              hsType1 :: (Either (ParseError (Pos String)) ((TypeQ, Derivs))),
-              hsTypeTpl :: (Either (ParseError (Pos String)) ((TypeQL, Derivs))),
-              typ :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              variable :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              tvtail :: (Either (ParseError (Pos String)) ((String, Derivs))),
-              integer :: (Either (ParseError (Pos String)) ((Integer, Derivs))),
-              alpha :: (Either (ParseError (Pos String)) ((Char, Derivs))),
-              upper :: (Either (ParseError (Pos String)) ((Char, Derivs))),
-              lower :: (Either (ParseError (Pos String)) ((Char, Derivs))),
-              digit :: (Either (ParseError (Pos String)) ((Char, Derivs))),
-              spaces :: (Either (ParseError (Pos String)) (((), Derivs))),
-              space :: (Either (ParseError (Pos String)) (((), Derivs))),
-              notNLString :: (Either (ParseError (Pos String))
-                                     ((String, Derivs))),
-              newLine :: (Either (ParseError (Pos String)) (((), Derivs))),
-              comment :: (Either (ParseError (Pos String)) (((), Derivs))),
-              comments :: (Either (ParseError (Pos String)) (((), Derivs))),
-              notComStr :: (Either (ParseError (Pos String)) (((), Derivs))),
-              comEnd :: (Either (ParseError (Pos String)) (((), Derivs))),
-              derivsChars :: (Either (ParseError (Pos String))
-                                     ((Token String, Derivs))),
-              derivsPosition :: (Pos String)}
-data ParseError pos
+data ParseError pos drv
     = ParseError {peCode :: String,
                   peMessage :: String,
                   peComment :: String,
-                  peDerivs :: Derivs,
+                  peDerivs :: drv,
                   peReading :: ([String]),
                   pePosition :: pos}
-instance Error (ParseError pos)
+instance Error (ParseError pos drv)
     where strMsg msg = ParseError "" msg "" undefined undefined undefined
+data Derivs
+    = Derivs {pegFile :: (Either (ParseError (Pos String) Derivs)
+                                 ((PegFile, Derivs))),
+              pragma :: (Either (ParseError (Pos String) Derivs)
+                                ((Maybe String, Derivs))),
+              pragmaStr :: (Either (ParseError (Pos String) Derivs)
+                                   ((String, Derivs))),
+              pragmaItems :: (Either (ParseError (Pos String) Derivs)
+                                     (([String], Derivs))),
+              delPragmas :: (Either (ParseError (Pos String) Derivs)
+                                    (((), Derivs))),
+              pragmaEnd :: (Either (ParseError (Pos String) Derivs)
+                                   (((), Derivs))),
+              moduleDec :: (Either (ParseError (Pos String) Derivs)
+                                   ((Maybe String, Derivs))),
+              moduleDecStr :: (Either (ParseError (Pos String) Derivs)
+                                      ((String, Derivs))),
+              whr :: (Either (ParseError (Pos String) Derivs) (((), Derivs))),
+              preImpPap :: (Either (ParseError (Pos String) Derivs)
+                                   ((String, Derivs))),
+              prePeg :: (Either (ParseError (Pos String) Derivs)
+                                ((String, Derivs))),
+              afterPeg :: (Either (ParseError (Pos String) Derivs)
+                                  ((String, Derivs))),
+              importPapillon :: (Either (ParseError (Pos String) Derivs)
+                                        (((), Derivs))),
+              varToken :: (Either (ParseError (Pos String) Derivs)
+                                  ((String, Derivs))),
+              typToken :: (Either (ParseError (Pos String) Derivs)
+                                  ((String, Derivs))),
+              pap :: (Either (ParseError (Pos String) Derivs) (((), Derivs))),
+              peg :: (Either (ParseError (Pos String) Derivs) ((TTPeg, Derivs))),
+              sourceType :: (Either (ParseError (Pos String) Derivs)
+                                    ((String, Derivs))),
+              peg_ :: (Either (ParseError (Pos String) Derivs) ((Peg, Derivs))),
+              definition :: (Either (ParseError (Pos String) Derivs)
+                                    ((Definition, Derivs))),
+              selection :: (Either (ParseError (Pos String) Derivs)
+                                   ((Selection, Derivs))),
+              expressionHs :: (Either (ParseError (Pos String) Derivs)
+                                      ((ExpressionHs, Derivs))),
+              expression :: (Either (ParseError (Pos String) Derivs)
+                                    ((Expression, Derivs))),
+              nameLeaf_ :: (Either (ParseError (Pos String) Derivs)
+                                   ((NameLeaf_, Derivs))),
+              nameLeaf :: (Either (ParseError (Pos String) Derivs)
+                                  ((NameLeaf, Derivs))),
+              nameLeafNoCom :: (Either (ParseError (Pos String) Derivs)
+                                       ((NameLeaf, Derivs))),
+              comForErr :: (Either (ParseError (Pos String) Derivs)
+                                   ((String, Derivs))),
+              leaf :: (Either (ParseError (Pos String) Derivs)
+                              (((ReadFrom, Maybe ((ExpQ, String))), Derivs))),
+              patOp :: (Either (ParseError (Pos String) Derivs)
+                               ((PatQ, Derivs))),
+              pat :: (Either (ParseError (Pos String) Derivs) ((PatQ, Derivs))),
+              pat1 :: (Either (ParseError (Pos String) Derivs) ((PatQ, Derivs))),
+              patList :: (Either (ParseError (Pos String) Derivs)
+                                 (([PatQ], Derivs))),
+              opConName :: (Either (ParseError (Pos String) Derivs)
+                                   ((Name, Derivs))),
+              charLit :: (Either (ParseError (Pos String) Derivs)
+                                 ((Char, Derivs))),
+              stringLit :: (Either (ParseError (Pos String) Derivs)
+                                   ((String, Derivs))),
+              escapeC :: (Either (ParseError (Pos String) Derivs)
+                                 ((Char, Derivs))),
+              pats :: (Either (ParseError (Pos String) Derivs)
+                              ((PatQs, Derivs))),
+              readFromLs :: (Either (ParseError (Pos String) Derivs)
+                                    ((ReadFrom, Derivs))),
+              readFrom :: (Either (ParseError (Pos String) Derivs)
+                                  ((ReadFrom, Derivs))),
+              test :: (Either (ParseError (Pos String) Derivs)
+                              (((ExR, String), Derivs))),
+              hsExpLam :: (Either (ParseError (Pos String) Derivs)
+                                  ((ExR, Derivs))),
+              hsExpTyp :: (Either (ParseError (Pos String) Derivs)
+                                  ((ExR, Derivs))),
+              hsExpOp :: (Either (ParseError (Pos String) Derivs)
+                                 ((ExR, Derivs))),
+              hsOp :: (Either (ParseError (Pos String) Derivs) ((ExR, Derivs))),
+              opTail :: (Either (ParseError (Pos String) Derivs)
+                                ((String, Derivs))),
+              hsExp :: (Either (ParseError (Pos String) Derivs) ((Ex, Derivs))),
+              hsExp1 :: (Either (ParseError (Pos String) Derivs)
+                                ((ExR, Derivs))),
+              hsExpTpl :: (Either (ParseError (Pos String) Derivs)
+                                  ((ExRL, Derivs))),
+              hsTypeArr :: (Either (ParseError (Pos String) Derivs)
+                                   ((TypeQ, Derivs))),
+              hsType :: (Either (ParseError (Pos String) Derivs)
+                                ((Typ, Derivs))),
+              hsType1 :: (Either (ParseError (Pos String) Derivs)
+                                 ((TypeQ, Derivs))),
+              hsTypeTpl :: (Either (ParseError (Pos String) Derivs)
+                                   ((TypeQL, Derivs))),
+              typ :: (Either (ParseError (Pos String) Derivs)
+                             ((String, Derivs))),
+              variable :: (Either (ParseError (Pos String) Derivs)
+                                  ((String, Derivs))),
+              tvtail :: (Either (ParseError (Pos String) Derivs)
+                                ((String, Derivs))),
+              integer :: (Either (ParseError (Pos String) Derivs)
+                                 ((Integer, Derivs))),
+              alpha :: (Either (ParseError (Pos String) Derivs)
+                               ((Char, Derivs))),
+              upper :: (Either (ParseError (Pos String) Derivs)
+                               ((Char, Derivs))),
+              lower :: (Either (ParseError (Pos String) Derivs)
+                               ((Char, Derivs))),
+              digit :: (Either (ParseError (Pos String) Derivs)
+                               ((Char, Derivs))),
+              spaces :: (Either (ParseError (Pos String) Derivs) (((), Derivs))),
+              space :: (Either (ParseError (Pos String) Derivs) (((), Derivs))),
+              notNLString :: (Either (ParseError (Pos String) Derivs)
+                                     ((String, Derivs))),
+              newLine :: (Either (ParseError (Pos String) Derivs)
+                                 (((), Derivs))),
+              comment :: (Either (ParseError (Pos String) Derivs)
+                                 (((), Derivs))),
+              comments :: (Either (ParseError (Pos String) Derivs)
+                                  (((), Derivs))),
+              notComStr :: (Either (ParseError (Pos String) Derivs)
+                                   (((), Derivs))),
+              comEnd :: (Either (ParseError (Pos String) Derivs) (((), Derivs))),
+              derivsChars :: (Either (ParseError (Pos String) Derivs)
+                                     ((Token String, Derivs))),
+              derivsPosition :: (Pos String)}
 parse :: String -> Derivs
 parse = parse0_0 initialPos
           where parse0_0 pos s = d
