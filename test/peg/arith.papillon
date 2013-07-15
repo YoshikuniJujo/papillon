@@ -29,7 +29,7 @@ main = do
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 
-showParseError :: ParseError (Pos String) -> String
+showParseError :: ParseError (Pos String) Derivs -> String
 showParseError pe =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ (if null com then "" else " {- " ++ com ++ " -}") ++

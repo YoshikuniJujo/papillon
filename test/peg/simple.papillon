@@ -7,7 +7,7 @@ main = case hello $ parse "hello" of
 	Right (r, _) -> print r
 	Left err -> putStrLn $ showParseError err
 
-showParseError :: ParseError (Pos String) -> String
+showParseError :: ParseError (Pos String) Derivs -> String
 showParseError pe =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ (if null com then "" else " {- " ++ com ++ " -}") ++

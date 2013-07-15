@@ -2,7 +2,7 @@
 * 次にやること           *
 **************************
 
-* data ParseError pos drv = ... のような形にしよう。
+* version up して install
 
 * class Source とか ParseError とかを Papillon から export するようにする
 	ParseError は Derivs を含むので無理だ。
@@ -153,11 +153,17 @@
 	インタラクティブなページが作れるかな
 
 **************************
-*  パッケージ関係        *
+*  パッケージ/開発関係   *
 **************************
+
+* hackage への登録をそろそろしようかな
 
 * ~/local/portage/dev-haskell/papillon/ ディレクトリを整理
 	古いバージョンは消してしまおう
+
+* 機能追加やバグの修正など、些細な修正以外は branch を作ることにする
+	作業用の branch を作り、問題が無ければ、master に marge して
+	branch を消すという作業習慣をつけよう
 
 **************************
 *  後々やること          *

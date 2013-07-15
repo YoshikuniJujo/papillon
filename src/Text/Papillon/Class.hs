@@ -1,7 +1,6 @@
 {-# LANGUAGE TypeFamilies, TemplateHaskell, PackageImports #-}
 
 module Text.Papillon.Class (
---	Source(..),
 	classSourceQ,
 	pePositionST,
 	pePositionSD,
@@ -20,13 +19,14 @@ strMsgN True = 'strMsg
 strMsgN False = mkName "strMsg"
 
 parseErrorT :: Bool -> DecQ
-parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError") [PlainTV $ mkName "pos"])
+parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError")
+		[PlainTV $ mkName "pos", PlainTV $ mkName "drv"])
 	[] $ (:[]) $
 	recC (mkName "ParseError") [
 		varStrictType c $ strictType notStrict $ conT $ mkName "String",
 		varStrictType m $ strictType notStrict $ conT $ mkName "String",
 		varStrictType com $ strictType notStrict $ conT $ mkName "String",
-		varStrictType d $ strictType notStrict $ conT $ mkName "Derivs",
+		varStrictType d $ strictType notStrict $ varT $ mkName "drv",
 		varStrictType r $ strictType notStrict $ listT `appT` conT (mkName "String"),
 		varStrictType pos $ strictType notStrict $ varT $ mkName "pos"
 	 ]
@@ -58,7 +58,9 @@ instanceErrorParseError :: Bool -> DecQ
 instanceErrorParseError th = instanceD
 	(cxt [])
 	(conT (errorN th) `appT`
-		(conT (mkName "ParseError") `appT` varT (mkName "pos")))
+		(conT (mkName "ParseError")
+			`appT` varT (mkName "pos")
+			`appT` varT (mkName "drv")))
 	[funD (strMsgN th) $ (: []) $ flip (clause [varP msg]) [] $ normalB ret]
 	where
 	msg = mkName "msg"
@@ -80,8 +82,10 @@ tupT ts = foldl appT (tupleT $ length ts) ts
 
 pePositionST :: DecQ
 pePositionST = sigD (mkName "pePositionS") $
-	conT (mkName "ParseError") `appT`
-		(conT (mkName "Pos") `appT` conT (mkName "String"))
+	forallT [PlainTV $ mkName "drv"] (cxt []) $
+	conT (mkName "ParseError")
+		`appT` (conT (mkName "Pos") `appT` conT (mkName "String"))
+		`appT` (varT $ mkName "drv")
 	`arrT`
 	tupT [conT $ mkName "Int", conT $ mkName "Int"]
 pePositionSD :: DecQ
@@ -244,7 +248,6 @@ instance SourceList Char where
 -}
 
 instanceSLC th = instanceD (cxt []) (conT sourceList `appT` conT (charN th)) [
---	tySynInstD listPosN [conT $ charN th] $ tupleT 2 `appT` int `appT` int,
 	newtypeInstD (cxt []) listPosN [conT $ charN th] (
 		normalC (mkName "CharPos") [
 			strictType notStrict $ tupleT 2

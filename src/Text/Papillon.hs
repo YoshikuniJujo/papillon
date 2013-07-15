@@ -237,7 +237,9 @@ resultT src typ =
 	conT eitherN `appT` pe `appT`
 		(tupleT 2 `appT` typ `appT` conT (mkName "Derivs"))
 	where
-	pe = conT (mkName "ParseError") `appT` (conT (mkName "Pos") `appT` src)
+	pe = conT (mkName "ParseError")
+		`appT` (conT (mkName "Pos") `appT` src)
+		`appT` (conT $ mkName "Derivs")
 
 parseT :: TypeQ -> Bool -> DecQ
 parseT src _ = sigD (mkName "parse") $ arrowT

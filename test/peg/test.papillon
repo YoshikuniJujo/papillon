@@ -54,7 +54,7 @@ main = do
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
 
-showParseError :: ParseError (Pos String) -> String
+showParseError :: ParseError (Pos String) Derivs -> String
 showParseError (ParseError c m com d ns (ListPos (CharPos p))) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++
