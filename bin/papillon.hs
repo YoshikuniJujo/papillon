@@ -1,33 +1,51 @@
-import Text.Papillon
+import Text.PapillonCore
 import System.Environment
-import System.IO
 import System.Directory
 import System.FilePath
 import Data.List
+import Language.Haskell.TH
+
+import Class
+
+papillonStr :: String -> IO (String, String, String)
+papillonStr src = do
+	let 	(mn, ppp, pp, decsQ, atp, app) = papillonFile src
+		mName = intercalate "." $ myInit mn ++ ["Papillon"]
+		importConst = "\nimport " ++ mName ++ "\n"
+		dir = joinPath $ myInit mn
+	decs <- runQ decsQ
+	return (dir, mName,
+		ppp ++ importConst ++
+		(if app then "\nimport Control.Applicative\n" else "") ++
+		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n")
+
+papillonConstant :: String -> IO String
+papillonConstant mName = do
+	src <- runQ $ do
+		pe <- parseErrorT False
+		iepe <- instanceErrorParseError False
+		pepst <- pePositionST
+		pepsd <- pePositionSD
+		cls <- classSourceQ False
+		return $ [pe, iepe, pepst, pepsd] ++ cls
+	return $
+		"{-# LANGUAGE RankNTypes, TypeFamilies #-}\n" ++
+		"module " ++ mName ++ " (\n\t" ++
+		intercalate ",\n\t" exportList ++ ") where\n" ++
+		"import Control.Monad.Trans.Error (Error(..))\n" ++
+		show (ppr src) ++ "\n"
 
 main :: IO ()
 main = do
-	args@(fn : _) <- getArgs
-	(mn, psrc, src) <- papillonStr =<< readFile fn
-	cnst <- papillonConstant
+	args <- getArgs
 	case args of
-		[_] -> do
-			putStr $ psrc ++ "\n" ++ src ++ "\n" ++ cnst
-			hPutStrLn stderr $ show mn
-		[_, dist] -> do
-			let	dir = joinPath $ dist : myInit mn
-				mName = intercalate "." $ myInit mn ++ ["Papillon"]
+		[fn, dist] -> do
+			(d, mName, src) <- papillonStr =<< readFile fn
+			let dir = dist </> d
 			createDirectoryIfMissing True dir
-			writeFile (dir </> takeBaseName fn <.> "hs") $
-				psrc ++ "\nimport " ++ mName ++ "\n" ++
-				src -- ++ "\n" ++ cnst
-			writeFile (dir </> "Papillon" <.> "hs") $
-				"{-# LANGUAGE RankNTypes, TypeFamilies #-}\n" ++
-				"module " ++ mName ++ " (\n\t" ++
-				intercalate ",\n\t" exportList ++
-				") where\n" ++
-				"import Control.Monad.Trans.Error (Error(..))\n" ++
-				cnst
+			writeFile (dir </> takeBaseName fn <.> "hs") src
+			writeFile (dir </> "Papillon" <.> "hs")
+				=<< papillonConstant mName
 		_ -> error "bad arguments"
 
 exportList :: [String]

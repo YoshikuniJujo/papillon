@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeFamilies, TemplateHaskell, PackageImports #-}
 
-module Text.Papillon.Class (
+module Class (
 	classSourceQ,
 	pePositionST,
 	pePositionSD,

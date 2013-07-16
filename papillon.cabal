@@ -29,11 +29,11 @@ source-repository	this
 
 library
   hs-source-dirs:	src
-  exposed-modules:	Text.Papillon
+  exposed-modules:	Text.Papillon, Text.PapillonCore
   other-modules:
     Text.Papillon.Parser,
     Text.Papillon.Papillon,
-    Text.Papillon.Class,
+    Text.Papillon.Papillon,
     Text.Papillon.List,
     Text.Papillon.SyntaxTree
   build-depends:	base > 3 && < 5, template-haskell, monads-tf, transformers

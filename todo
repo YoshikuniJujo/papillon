@@ -2,12 +2,13 @@
 * 次にやること           *
 **************************
 
-* module 構造について
-	Papillon -+-> some
-                  |
-	papillon -+
-	とすることで、Papillon が papillonStr 等を export せずにすむ。
-	ただし、papillonStr を export するのが役立つ可能性もあるので考えること
+* version up して install
+
+* papillonFile の返り値をきれいにする
+	([String], [String], [String], String, DecsQ, String, Bool)
+	といった感じにしようかな。内訳はそれぞれ、
+	(moduleName, exportList, imports, preD, decs, postD, needApplicative)
+	といった感じ。
 
 * hackage への登録をそろそろしようかな
 
