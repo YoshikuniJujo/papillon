@@ -10,8 +10,11 @@
 		tmp/simple.hs
 	runhaskell tmp/simple.hs
 	としてあるが、これを以下のようにする。
-	runhaskell -isrc -Wall bin/papillon test/peg/simple.papillon tmp/simple/
-	runhaskell -itmp/simple tmp/simple/simple.hs
+	runhaskell -isrc -Wall bin/papillon test/peg/simple.papillon tmp/
+	runhaskell -itmp/ tmp/simple.hs
+
+	ただし、module A.B.C where を見て directory dist/A/B を作りそこに出力
+	するという処理が必要だ。
 
 * filter っぽさは減ってしまうが、dir を指定し、そこに出力するようにするか
 	papillon hoge.papillon だったら、Main directory を作成し、
@@ -25,6 +28,17 @@
 	存在する場合には上書きし、Hoge directory を作成し、
 	そこに Papillon.hs を置く。
 	とりあえず、最後の version だけを作ろう。
+
+	むしろ、もとと同じ direcctory 上に置いたほうがいいかもしれない。
+	つまり、papillon src/Hage/Hoge.papillon dist だったら dist/Hage/Papillon.hs
+	papillon src/hoge.papillon dist だったら dist/Papillon.hs そうすれば
+	共通で使えるし。
+
+	中身を見て、module Hage.Hoge.Boke の ["Hage", "Hoge", "Boke"] の init から
+	path を作る。
+
+	また Papillon.hs が存在していたら、中身をチェックし同じならそのまま、
+	異なっていたら error 終了することにしよう。
 
 * papillon の動作を変更し、import Hoge.Hage.Papillon のような感じにしようかな
 	Hoge.Hage.Papillon のなかで、共通の関数等を export する
