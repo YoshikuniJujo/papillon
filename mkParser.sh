@@ -1,5 +1,2 @@
-# runhaskell -isrc bin/papillon src/Text/Papillon/Parser.peg > tmp/Parser.hs && \
-# papillon src/Text/Papillon/Parser.peg > tmp/Parser.hs && \
-# mv tmp/Parser.hs src/Text/Papillon/Parser.hs
-
-runhaskell -isrc bin/papillon src/Text/Papillon/Parser.peg src
+# runhaskell -isrc bin/papillon src/Text/Papillon/Parser.peg src
+papillon src/Text/Papillon/Parser.peg src
