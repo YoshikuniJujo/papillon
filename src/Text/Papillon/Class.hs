@@ -85,7 +85,7 @@ pePositionST = sigD (mkName "pePositionS") $
 	forallT [PlainTV $ mkName "drv"] (cxt []) $
 	conT (mkName "ParseError")
 		`appT` (conT (mkName "Pos") `appT` conT (mkName "String"))
-		`appT` (varT $ mkName "drv")
+		`appT` varT (mkName "drv")
 	`arrT`
 	tupT [conT $ mkName "Int", conT $ mkName "Int"]
 pePositionSD :: DecQ

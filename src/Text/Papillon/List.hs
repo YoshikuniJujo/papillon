@@ -29,6 +29,11 @@ applyN False = mkName "<$>"
 applyContN True = '(<*>)
 applyContN False = mkName "<*>"
 
+m, a, p :: Name
+m = mkName "m"
+a = mkName "a"
+p = mkName "p"
+
 listDec :: Name -> Name -> Bool -> DecsQ
 listDec list list1 th = sequence [
 	sigD list $ forallT [PlainTV m, PlainTV a]
@@ -44,12 +49,7 @@ listDec list list1 th = sequence [
 	funD list1 $ (: []) $ flip (clause [varP p]) [] $ normalB $
 		infixApp (infixApp cons app (varE p)) next (varE list `appE` varE p)
  ] where
---	list = mkName "list"
---	list1 = mkName "list1"
 	vm = varT m
-	m = mkName "m"
-	a = mkName "a"
-	p = mkName "p"
 	returnEmpty = varE (mkName "return") `appE` listE []
 	cons = conE $ mkName ":"
 	app = varE $ applyN th
@@ -74,10 +74,6 @@ optionalDec optionalN th = sequence [
 		classP (applicativeN th) [varT m]
 	 ]
 	arrT f x = arrowT `appT` f `appT` x
-	m = mkName "m"
-	a = mkName "a"
-	p = mkName "p"
---	optionalN = mkName "papOptional"
 	mplusE x = infixApp x (varE $ mplusN th)
 	returnNothing = varE (mkName "return") `appE` conE (mkName "Nothing")
 	app x = infixApp x (varE $ applyN th)

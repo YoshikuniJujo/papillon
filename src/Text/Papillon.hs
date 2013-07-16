@@ -5,12 +5,13 @@ module Text.Papillon (
 	papillon,
 	papillonStr,
 	papillonConstant,
+
 	ParseError(..),
-	Pos(..),
-	pePositionS,
 	Source(..),
 	SourceList(..),
-	ListPos(..)
+	Pos(..),
+	ListPos(..),
+	pePositionS,
 ) where
 
 import Language.Haskell.TH.Quote
@@ -112,7 +113,7 @@ papillonStr :: String -> IO ([String], String, String)
 papillonStr src = do
 	let (mn, ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
-	return $ (
+	return (
 		mn,
 		ppp,
 		(if isListUsed pegg || isOptionalUsed pegg
@@ -195,8 +196,8 @@ parseEE glb th pg = do
 
 	pgenE <- varE pgn `appE` varE (mkName "initialPos")
 	decs <- (:)
-		<$> (funD pgn [parseE glb th pgn pNames pg])
-		<*> (pSomes glb th listN list1N optionalN pNames pg)
+		<$> funD pgn [parseE glb th pgn pNames pg]
+		<*> pSomes glb th listN list1N optionalN pNames pg
 	ld <- listDec listN list1N th
 	od <- optionalDec optionalN th
 	return $ Clause [] (NormalB pgenE) $ decs ++
@@ -241,7 +242,7 @@ resultT src typ =
 	where
 	pe = conT (mkName "ParseError")
 		`appT` (conT (mkName "Pos") `appT` src)
-		`appT` (conT $ mkName "Derivs")
+		`appT` conT (mkName "Derivs")
 
 parseT :: TypeQ -> Bool -> DecQ
 parseT src _ = sigD (mkName "parse") $ arrowT
@@ -296,7 +297,7 @@ parseChar th pgn chars = flip (valD $ varP chars) [] $ normalB $
 	s = mkName "s"
 	s' = mkName "s'"
 	returnE = varE $ returnN th
-	parseGenE = varE $ pgn
+	parseGenE = varE pgn
 parseE1 :: Bool -> Name -> Name -> DecQ
 parseE1 th tmp name = flip (valD $ varP tmp) [] $ normalB $
 	varE (runStateTN th) `appE` varE name
@@ -366,11 +367,16 @@ transReadFrom g th l l1 o (FromList rf) = varE l `appE` transReadFrom g th l l1 
 transReadFrom g th l l1 o (FromList1 rf) = varE l1 `appE` transReadFrom g th l l1 o rf
 transReadFrom g th l l1 o (FromOptional rf) = varE o `appE` transReadFrom g th l l1 o rf
 
-transLeaf' :: IORef Int -> Bool -> Name -> Name -> Name -> NameLeaf -> Q [Stmt]
-transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf (Just (p, pc))) = do
+mkTDNN :: IORef Int -> PatQ -> Q (Name, Name, Pat)
+mkTDNN g n = do
 	t <- getNewName g "xx"
 	d <- getNewName g "d"
 	nn <- n
+	return (t, d, nn)
+
+transLeaf' :: IORef Int -> Bool -> Name -> Name -> Name -> NameLeaf -> Q [Stmt]
+transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf (Just (p, pc))) = do
+	(t, d, nn) <- mkTDNN g n
 	case nn of
 		WildP -> sequence [
 			bindS (varP d) $ varE $ getN th,
@@ -385,7 +391,8 @@ transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf (Just (p, pc))) = do
 				return $ bd : s : m : [c]
 			| otherwise -> do
 				bd <- bindS (varP d) $ varE $ getN th
-				s <- bindS (varP t) $ transReadFrom g th lst lst1 opt rf
+				s <- bindS (varP t) $
+						transReadFrom g th lst lst1 opt rf
 				m <- beforeMatch th t n d (nameFromRF rf) nc
 				c <- afterCheck th p d (nameFromRF rf) pc
 				return $ bd : s : m ++ [c]
@@ -394,9 +401,7 @@ transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf (Just (p, pc))) = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf Nothing) = do
-	t <- getNewName g "xx"
-	d <- getNewName g "d"
-	nn <- n
+	(t, d, nn) <- mkTDNN g n
 	case nn of
 		WildP -> sequence [
 			bindS wildP $ transReadFrom g th lst lst1 opt rf,
@@ -406,7 +411,8 @@ transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf Nothing) = do
 				bindS n (transReadFrom g th lst lst1 opt rf)
 			| otherwise -> do
 				bd <- bindS (varP d) $ varE $ getN th
-				s <- bindS (varP t) $ transReadFrom g th lst lst1 opt rf
+				s <- bindS (varP t) $
+					transReadFrom g th lst lst1 opt rf
 				m <- beforeMatch th t n d (nameFromRF rf) nc
 				return $ bd : s : m
 	where
