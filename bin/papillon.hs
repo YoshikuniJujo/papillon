@@ -24,7 +24,7 @@ main = do
 			writeFile (dir </> "Papillon" <.> "hs") $
 				"{-# LANGUAGE RankNTypes, TypeFamilies #-}\n" ++
 				"module " ++ mName ++ " (\n\t" ++
-				intercalate ", \n\t" exportList ++
+				intercalate ",\n\t" exportList ++
 				") where\n" ++
 				"import Control.Monad.Trans.Error (Error(..))\n" ++
 				cnst
