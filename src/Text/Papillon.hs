@@ -4,7 +4,7 @@
 module Text.Papillon (
 	papillon,
 	papillonStr,
---	papillonConstant,
+	papillonConstant,
 	ParseError(..)
 ) where
 
@@ -103,16 +103,21 @@ papillon = QuasiQuoter {
 	quoteDec = declaration True
  }
 
-papillonStr :: String -> IO String
+papillonStr :: String -> IO (String, String)
 papillonStr src = do
 	let (ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
+	return $ (
+		ppp,
+		(if isListUsed pegg || isOptionalUsed pegg
+			then "\nimport Control.Applicative\n" else "") ++
+		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n")
+
+papillonConstant :: IO String
+papillonConstant = do
 	pe <- runQ $ parseErrorT False
 	iepe <- runQ $ instanceErrorParseError False
-	return $ ppp ++
-		(if isListUsed pegg || isOptionalUsed pegg then "\nimport Control.Applicative\n" else "") ++
-		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n" ++
-		show (ppr pe) ++ "\n" ++ show (ppr iepe) ++ "\n"
+	return $ show (ppr [pe, iepe]) ++ "\n"
 
 returnN, putN, stateTN', getN,
 	throwErrorN, runStateTN, justN, mplusN,

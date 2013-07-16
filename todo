@@ -2,6 +2,30 @@
 * 次にやること           *
 **************************
 
+* 下を実行するためにまずすること
+	まずは現在のやりかたと、下のやりかたの両方ができる形にする。
+	つまり、まずは Papillon.hs は作らないやりかた。
+	今は
+	runhaskell -isrc -Wall bin/papillon test/peg/simple.papillon >
+		tmp/simple.hs
+	runhaskell tmp/simple.hs
+	としてあるが、これを以下のようにする。
+	runhaskell -isrc -Wall bin/papillon test/peg/simple.papillon tmp/simple/
+	runhaskell -itmp/simple tmp/simple/simple.hs
+
+* filter っぽさは減ってしまうが、dir を指定し、そこに出力するようにするか
+	papillon hoge.papillon だったら、Main directory を作成し、
+	Main/Papillon.hs に constant な source を置く。
+	papillon Hoge.papillon だったら、Hoge directory を作成し、
+	Hoge/Papillon.hs に ...
+	papillon src/Hoge.papillon だったら、src/Hoge/Papillon.hs に。
+	また、明示的に dir を指定した場合、つまり、
+	papillon src/Hoge.papillon dist のようにした場合には、
+	dist 以下に、module の directory 構造を作成し、
+	存在する場合には上書きし、Hoge directory を作成し、
+	そこに Papillon.hs を置く。
+	とりあえず、最後の version だけを作ろう。
+
 * papillon の動作を変更し、import Hoge.Hage.Papillon のような感じにしようかな
 	Hoge.Hage.Papillon のなかで、共通の関数等を export する
 	% papillon ./src/Hoge/Hage.papillon のような感じにすると、
@@ -145,6 +169,8 @@
 	parser が簡単になる
 * papillonStr' 等を String 以外も取れるようにする
 	StringLike とかかな
+
+* papillon は getOpt を使うようにしよう
 
 **************************
 *  ドキュメント関係      *

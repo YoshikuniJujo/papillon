@@ -4,4 +4,6 @@ import System.Environment
 main :: IO ()
 main = do
 	fn : _ <- getArgs
-	putStr =<< papillonStr =<< readFile fn
+	(psrc, src) <- papillonStr =<< readFile fn
+	cnst <- papillonConstant
+	putStr $ psrc ++ "\n" ++ src ++ "\n" ++ cnst
