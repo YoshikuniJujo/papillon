@@ -21,6 +21,7 @@ module Text.Papillon.Parser (
 import Data.Char
 import Language.Haskell.TH
 import Text.Papillon.SyntaxTree
+import Data.List
 
 [papillon|
 
@@ -58,8 +59,13 @@ pragmaEnd :: ()
 	/ '#' '-' '}'						{ () }
 ;
 moduleDec :: Maybe String
-	= 'm' 'o' 'd' 'u' 'l' 'e' s:moduleDecStr _:whr	{ just s }
+	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces n:moduleName s:moduleDecStr _:whr
+					{ just $ intercalate "." n ++ s }
 	/						{ nothing }
+;
+moduleName :: [String]
+	= t:typ '.' n:moduleName			{ t : n }
+	/ t:typ						{ [t] }
 ;
 moduleDecStr :: String
 	= !_:whr c s:moduleDecStr			{ cons c s }
