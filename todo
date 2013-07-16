@@ -2,6 +2,13 @@
 * 次にやること           *
 **************************
 
+* module 構造について
+	Papillon -+-> some
+                  |
+	papillon -+
+	とすることで、Papillon が papillonStr 等を export せずにすむ。
+	ただし、papillonStr を export するのが役立つ可能性もあるので考えること
+
 * hackage への登録をそろそろしようかな
 
 * papillonStr について
@@ -9,13 +16,6 @@
 	また、ByteString や Text も扱うかどうかについても考えること
 	これを Papillon から export する必要はないのかもしれない
 	とすると、module 構造を変える必要があるな
-
-* module 構造について
-	Papillon -+-> some
-                  |
-	papillon -+
-	とすることで、Papillon が papillonStr 等を export せずにすむ。
-	ただし、papillonStr を export するのが役立つ可能性もあるので考えること
 
 * リファクタリング
 
