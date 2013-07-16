@@ -22,11 +22,23 @@ main = do
 				psrc ++ "\nimport " ++ mName ++ "\n" ++
 				src -- ++ "\n" ++ cnst
 			writeFile (dir </> "Papillon" <.> "hs") $
-				"module " ++ mName ++
-				" (ParseError(..)) where\n" ++
+				"{-# LANGUAGE RankNTypes, TypeFamilies #-}\n" ++
+				"module " ++ mName ++ " (\n\t" ++
+				intercalate ", \n\t" exportList ++
+				") where\n" ++
 				"import Control.Monad.Trans.Error (Error(..))\n" ++
 				cnst
 		_ -> error "bad arguments"
+
+exportList :: [String]
+exportList = [
+	"ParseError(..)",
+	"Pos(..)",
+	"pePositionS",
+	"Source(..)",
+	"SourceList(..)",
+	"ListPos(..)"
+ ]
 
 myInit :: [a] -> [a]
 myInit [] = []

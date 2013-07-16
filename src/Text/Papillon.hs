@@ -5,7 +5,8 @@ module Text.Papillon (
 	papillon,
 	papillonStr,
 	papillonConstant,
-	ParseError(..)
+	ParseError(..),
+--	pePositionS
 ) where
 
 import Language.Haskell.TH.Quote
@@ -17,7 +18,7 @@ import Control.Applicative
 
 import Text.Papillon.Parser
 import Data.IORef
-import Data.List
+-- import Data.List
 
 import Text.Papillon.Class
 import Text.Papillon.List
@@ -107,18 +108,24 @@ papillonStr :: String -> IO ([String], String, String)
 papillonStr src = do
 	let (mn, ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
+--	pepst <- runQ pePositionST
+--	pepsd <- runQ pePositionSD
 	return $ (
 		mn,
 		ppp,
 		(if isListUsed pegg || isOptionalUsed pegg
 			then "\nimport Control.Applicative\n" else "") ++
-		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n")
+		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n") -- ++
+--		show (ppr [pepst, pepsd]) ++ "\n")
 
 papillonConstant :: IO String
 papillonConstant = do
 	pe <- runQ $ parseErrorT False
 	iepe <- runQ $ instanceErrorParseError False
-	return $ show (ppr [pe, iepe]) ++ "\n"
+	pepst <- runQ pePositionST
+	pepsd <- runQ pePositionSD
+	cls <- runQ $ classSourceQ False
+	return $ show (ppr $ [pe, iepe, pepst, pepsd] ++ cls) ++ "\n"
 
 returnN, putN, stateTN', getN,
 	throwErrorN, runStateTN, justN, mplusN,
@@ -150,23 +157,18 @@ declaration th str = do
 	let (src, tkn, parsed) = case peg $ parse str of
 		Right ((s, t, p), _) -> (s, t, p)
 		Left err -> error $ "parse error: " ++ showParseError err
+--	decParsed th src tkn parsed
+	cls <- runQ $ classSourceQ False
 	decs <- decParsed th src tkn parsed
 	pepst <- pePositionST
 	pepsd <- pePositionSD
-	return $ pepst : pepsd : decs
+	return $ pepst : pepsd : decs ++ cls
 
 declaration' :: String -> ([String], String, String, DecsQ, String, Peg)
 declaration' src = case pegFile $ parse src of
 	Right ((mn, ppp, pp, (s, t, p), atp), _) ->
-		(mn, ppp, pp, addPePositionS s t p, atp, p)
+		(mn, ppp, pp, decParsed False s t p, atp, p)
 	Left err -> error $ "parse error: " ++ showParseError err
-	where
-	addPePositionS s t p = if "pePositionS" `isInfixOf` src
-		then (\pt pd ds -> pt : pd : ds)
-			<$> pePositionST
-			<*> pePositionSD
-			<*> decParsed False s t p
-		else decParsed False s t p
 
 showParseError :: ParseError (Pos String) Derivs -> String
 showParseError (ParseError c m _ d ns (ListPos (CharPos p))) =
@@ -185,8 +187,9 @@ decParsed th src tkn parsed = do
 	d <- derivs th src tkn parsed
 	pt <- parseT src th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
-	cls <- runQ $ classSourceQ False
-	return $ d : pt : p : cls
+--	cls <- runQ $ classSourceQ False
+--	return $ d : pt : p : cls
+	return $ d : pt : [p]
 
 parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
 parseEE glb th pg = do
