@@ -3,7 +3,14 @@
 **************************
 
 * 以下をやるのだが、次は module Hoge (...) where の ... の部分を分けよう。
-	中を ',' で separate すれば良いし、逆は intercalate ", " をすれば良い。
+	中を ',' で separate すれば良いし、逆は intercalate ",\n\t" をすれば良い。
+	まずは、とりあえず、parser の方だけでやり、
+	すぐに "(\n\t" ++ intercalate ",\n\t" some ++ ") where\n" をしてしまおう
+	parser のなかで '(', ')' の対応を見て行く必要があるかもしれない。
+	'(', ')', ',' 以外の文字の並び str とその 3 つが出てくれば良いのだろう。
+	str を ',' で区切ったものを strs とすると、ひとつの要素は、
+	str ('(' strs ')')? または '(' str ')' となり、これを ',' で
+	区切ったものが全体となる。最後の ',' はあっても良い
 
 * papillonFile の返り値をきれいにする
 	(String, [String], [String], [String], String, DecsQ, String, Bool)
