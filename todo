@@ -2,11 +2,19 @@
 * 次にやること           *
 **************************
 
+* 以下をやるのだが、次は module Hoge (...) where の ... の部分を分けよう。
+	中を ',' で separate すれば良いし、逆は intercalate ", " をすれば良い。
+
 * papillonFile の返り値をきれいにする
-	([String], [String], [String], String, DecsQ, String, Bool)
+	(String, [String], [String], [String], String, DecsQ, String, Bool)
 	といった感じにしようかな。内訳はそれぞれ、
-	(moduleName, exportList, imports, preD, decs, postD, needApplicative)
+	(pragma, moduleName, exportList, imports, preD, decs, postD, needApp)
 	といった感じ。
+	imports と preD は分けなくてもいいかもしれない。
+	そうすると
+	(String, [String], [String], String, DecsQ, String, Bool)
+
+* version up して install
 
 * hackage への登録をそろそろしようかな
 

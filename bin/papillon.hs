@@ -9,12 +9,14 @@ import Class
 
 papillonStr :: String -> IO (String, String, String)
 papillonStr src = do
-	let 	(mn, ppp, pp, decsQ, atp, app) = papillonFile src
+	let 	(prgm, mn, ppp, pp, decsQ, atp, app) = papillonFile src
 		mName = intercalate "." $ myInit mn ++ ["Papillon"]
 		importConst = "\nimport " ++ mName ++ "\n"
 		dir = joinPath $ myInit mn
 	decs <- runQ decsQ
 	return (dir, mName,
+		prgm ++
+		(if null mn then "" else "module " ++ intercalate "." mn) ++
 		ppp ++ importConst ++
 		(if app then "\nimport Control.Applicative\n" else "") ++
 		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n")
