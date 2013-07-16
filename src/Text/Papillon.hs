@@ -103,11 +103,12 @@ papillon = QuasiQuoter {
 	quoteDec = declaration True
  }
 
-papillonStr :: String -> IO (String, String)
+papillonStr :: String -> IO ([String], String, String)
 papillonStr src = do
-	let (ppp, pp, decsQ, atp, pegg) = declaration' src
+	let (mn, ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
 	return $ (
+		mn,
 		ppp,
 		(if isListUsed pegg || isOptionalUsed pegg
 			then "\nimport Control.Applicative\n" else "") ++
@@ -154,10 +155,10 @@ declaration th str = do
 	pepsd <- pePositionSD
 	return $ pepst : pepsd : decs
 
-declaration' :: String -> (String, String, DecsQ, String, Peg)
+declaration' :: String -> ([String], String, String, DecsQ, String, Peg)
 declaration' src = case pegFile $ parse src of
-	Right ((ppp, pp, (s, t, p), atp), _) ->
-		(ppp, pp, addPePositionS s t p, atp, p)
+	Right ((mn, ppp, pp, (s, t, p), atp), _) ->
+		(mn, ppp, pp, addPePositionS s t p, atp, p)
 	Left err -> error $ "parse error: " ++ showParseError err
 	where
 	addPePositionS s t p = if "pePositionS" `isInfixOf` src

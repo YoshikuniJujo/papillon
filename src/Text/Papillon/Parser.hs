@@ -28,7 +28,7 @@ import Control.Applicative
 import Data.Char
 import Language.Haskell.TH
 import Text.Papillon.SyntaxTree
-import Data.List
+-- import Data.List
 
 data Derivs
     = Derivs {pegFile :: (Either (ParseError (Pos String) Derivs)
@@ -44,7 +44,7 @@ data Derivs
               pragmaEnd :: (Either (ParseError (Pos String) Derivs)
                                    (((), Derivs))),
               moduleDec :: (Either (ParseError (Pos String) Derivs)
-                                   ((Maybe String, Derivs))),
+                                   ((Maybe (([String], String)), Derivs))),
               moduleName :: (Either (ParseError (Pos String) Derivs)
                                     (([String], Derivs))),
               moduleDecStr :: (Either (ParseError (Pos String) Derivs)
@@ -718,7 +718,7 @@ parse = parse0_0 initialPos
                                                   s <- StateT moduleDecStr
                                                   _ <- StateT whr
                                                   return ()
-                                                  return (just $ intercalate "." n ++ s),
+                                                  return (just (n, s)),
                                                return nothing]
                 moduleName11_78 = foldl1 mplus [do t <- StateT typ
                                                    d352_252 <- get

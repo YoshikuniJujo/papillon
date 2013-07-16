@@ -168,23 +168,27 @@ toExGetEx = toEx . getEx
 emp :: [a]
 emp = []
 
-type PegFile = (String, String, TTPeg, String)
-mkPegFile :: Maybe String -> Maybe String -> String -> String -> TTPeg -> String
+type PegFile = ([String], String, String, TTPeg, String)
+correctMD :: ([String], String) -> String
+correctMD (n, o) = intercalate "." n ++ o
+mkPegFile :: Maybe String -> Maybe ([String], String) -> String -> String -> TTPeg -> String
 	-> PegFile
-mkPegFile (Just p) (Just md) x y z w =
-	("{-#" ++ p ++ addPragmas ++ "module " ++ md ++ " where\n" ++
+mkPegFile (Just p) (Just md) x y z w = (
+	fst md,
+	"{-#" ++ p ++ addPragmas ++ "module " ++ correctMD md ++ " where\n" ++
 	addModules,
 	x ++ "\n" ++ y, z, w)
-mkPegFile Nothing (Just md) x y z w =
-	(x ++ "\n" ++ "module " ++ md ++ " where\n" ++
-	addModules,
+mkPegFile Nothing (Just md) x y z w = (
+	fst md,
+	x ++ "\n" ++ "module " ++ correctMD md ++ " where\n" ++ addModules,
 	x ++ "\n" ++ y, z, w)
 mkPegFile (Just p) Nothing x y z w = (
+	[],
 	"{-#" ++ p ++ addPragmas ++
 	addModules,
 	x ++ "\n" ++ y
 	, z, w)
-mkPegFile Nothing Nothing x y z w = (addModules, x ++ "\n" ++ y, z, w)
+mkPegFile Nothing Nothing x y z w = ([], addModules, x ++ "\n" ++ y, z, w)
 
 addPragmas, addModules :: String
 addPragmas =
