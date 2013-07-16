@@ -6,7 +6,11 @@ module Text.Papillon (
 	papillonStr,
 	papillonConstant,
 	ParseError(..),
---	pePositionS
+	Pos(..),
+	pePositionS,
+	Source(..),
+	SourceList(..),
+	ListPos(..)
 ) where
 
 import Language.Haskell.TH.Quote
@@ -101,22 +105,19 @@ papillon = QuasiQuoter {
 	quoteExp = undefined,
 	quotePat = undefined,
 	quoteType = undefined,
-	quoteDec = declaration True
+	quoteDec = declaration
  }
 
 papillonStr :: String -> IO ([String], String, String)
 papillonStr src = do
 	let (mn, ppp, pp, decsQ, atp, pegg) = declaration' src
 	decs <- runQ decsQ
---	pepst <- runQ pePositionST
---	pepsd <- runQ pePositionSD
 	return $ (
 		mn,
 		ppp,
 		(if isListUsed pegg || isOptionalUsed pegg
 			then "\nimport Control.Applicative\n" else "") ++
-		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n") -- ++
---		show (ppr [pepst, pepsd]) ++ "\n")
+		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n")
 
 papillonConstant :: IO String
 papillonConstant = do
@@ -152,17 +153,10 @@ justN False = mkName "Just"
 eitherN :: Name
 eitherN = mkName "Either"
 
-declaration :: Bool -> String -> DecsQ
-declaration th str = do
-	let (src, tkn, parsed) = case peg $ parse str of
-		Right ((s, t, p), _) -> (s, t, p)
-		Left err -> error $ "parse error: " ++ showParseError err
---	decParsed th src tkn parsed
-	cls <- runQ $ classSourceQ False
-	decs <- decParsed th src tkn parsed
-	pepst <- pePositionST
-	pepsd <- pePositionSD
-	return $ pepst : pepsd : decs ++ cls
+declaration :: String -> DecsQ
+declaration str = case peg $ parse str of
+	Right ((src, tkn, parsed), _) -> decParsed True src tkn parsed
+	Left err -> error $ "parse error: " ++ showParseError err
 
 declaration' :: String -> ([String], String, String, DecsQ, String, Peg)
 declaration' src = case pegFile $ parse src of

@@ -8,13 +8,15 @@ module Text.Papillon.Parser (
 	NameLeaf_(..),
 	ReadFrom(..),
 	parse,
-	initialPos,
 	showNameLeaf,
 	nameFromRF,
 	ParseError(..),
 	Derivs(peg, pegFile, derivsChars),
 	Pos(..),
-	ListPos(..)
+	ListPos(..),
+	pePositionS,
+	Source(..),
+	SourceList(..),
 )  where
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error

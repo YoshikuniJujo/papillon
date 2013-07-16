@@ -68,7 +68,7 @@ showReading d "derivsChars" = case derivsChars d of
 showReading d "other" = case other d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
-showReading _ n = "yet: " ++ n
+showReading _ n = "shorReading: yet: " ++ n
 
 [papillon|
 

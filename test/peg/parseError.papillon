@@ -28,7 +28,7 @@ showReading d "string" = case string d of
 showReading d "other" = case other d of
 	Right (s, _) -> show s
 	Left _ -> error "bad"
-showReading _ n = "yet: " ++ n
+showReading _ n = "showReading: yet: " ++ n
 
 type Nil = ()
 nil :: Nil

@@ -2,13 +2,9 @@
 * 次にやること           *
 **************************
 
-* version up して install
-
-* class Source とかを Papillon から export するようにする
-
 * hackage への登録をそろそろしようかな
 
-* papillonStr' について
+* papillonStr について
 	関数名について考える
 	また、ByteString や Text も扱うかどうかについても考えること
 	これを Papillon から export する必要はないのかもしれない
