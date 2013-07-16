@@ -2,8 +2,6 @@
 * 次にやること           *
 **************************
 
-* version up して install
-
 * papillonFile の返り値をきれいにする
 	([String], [String], [String], String, DecsQ, String, Bool)
 	といった感じにしようかな。内訳はそれぞれ、
