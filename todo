@@ -2,44 +2,10 @@
 * 次にやること           *
 **************************
 
-* 下を実行するためにすること
-	次は mn を使って "\nimport A.B.Papillon\n" を入れる。
-	そして、dist/A/B/Papillon.hs を書く。
-	Papillon.hs は top に "module A.B.Papillon (ParseError(..)) where\n" を
-	置く。
-
-* filter っぽさは減ってしまうが、dir を指定し、そこに出力するようにするか
-	papillon hoge.papillon だったら、Main directory を作成し、
-	Main/Papillon.hs に constant な source を置く。
-	papillon Hoge.papillon だったら、Hoge directory を作成し、
-	Hoge/Papillon.hs に ...
-	papillon src/Hoge.papillon だったら、src/Hoge/Papillon.hs に。
-	また、明示的に dir を指定した場合、つまり、
-	papillon src/Hoge.papillon dist のようにした場合には、
-	dist 以下に、module の directory 構造を作成し、
-	存在する場合には上書きし、Hoge directory を作成し、
-	そこに Papillon.hs を置く。
-	とりあえず、最後の version だけを作ろう。
-
-	むしろ、もとと同じ direcctory 上に置いたほうがいいかもしれない。
-	つまり、papillon src/Hage/Hoge.papillon dist だったら dist/Hage/Papillon.hs
-	papillon src/hoge.papillon dist だったら dist/Papillon.hs そうすれば
-	共通で使えるし。
-
-	中身を見て、module Hage.Hoge.Boke の ["Hage", "Hoge", "Boke"] の init から
-	path を作る。
-
-	また Papillon.hs が存在していたら、中身をチェックし同じならそのまま、
-	異なっていたら error 終了することにしよう。
-
-* papillon の動作を変更し、import Hoge.Hage.Papillon のような感じにしようかな
-	Hoge.Hage.Papillon のなかで、共通の関数等を export する
-	% papillon ./src/Hoge/Hage.papillon のような感じにすると、
-	./src/Hoge/Hage.hs ./src/Hoge/Hage/Papillon.hs が作成される。
-	module Hoge.Hage の部分の読み込みが必要になる。
-	まずは手始めに、data ParseError をそっちに移してみよう。
+* pePositionS を src/Hoge/Papillon.hs に移す。
 
 * class Source とかを Papillon から export するようにする
+* class Source とかを src/Hoge/Papillon.hs に移す。
 
 * hackage への登録をそろそろしようかな
 
@@ -177,6 +143,20 @@
 	StringLike とかかな
 
 * papillon は getOpt を使うようにしよう
+
+* Papillon.hs を上書きから守る
+	また Papillon.hs が存在していたら、中身をチェックし同じならそのまま、
+	異なっていたら error 終了することにしよう。
+
+* papillon の commandline argument について
+	papillon hoge.papillon だったら、同じ directory に constant な source を置く。
+	papillon Hoge.papillon だったら、同じ directory に
+	papillon src/Hoge.papillon だったら、src/Papillon.hs に。
+	また、明示的に dir を指定した場合、つまり、
+	papillon src/Hoge.papillon dist のようにした場合には、
+	dist 以下に、module の directory 構造を作成し、
+	存在する場合にはそのまま、そこに Papillon.hs を置く。
+	とりあえず、最後の version だけを作った。
 
 **************************
 *  ドキュメント関係      *

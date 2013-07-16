@@ -3,6 +3,7 @@ import System.Environment
 import System.IO
 import System.Directory
 import System.FilePath
+import Data.List
 
 main :: IO ()
 main = do
@@ -15,9 +16,16 @@ main = do
 			hPutStrLn stderr $ show mn
 		[_, dist] -> do
 			let	dir = joinPath $ dist : myInit mn
+				mName = intercalate "." $ myInit mn ++ ["Papillon"]
 			createDirectoryIfMissing True dir
 			writeFile (dir </> takeBaseName fn <.> "hs") $
-				psrc ++ "\n" ++ src ++ "\n" ++ cnst
+				psrc ++ "\nimport " ++ mName ++ "\n" ++
+				src -- ++ "\n" ++ cnst
+			writeFile (dir </> "Papillon" <.> "hs") $
+				"module " ++ mName ++
+				" (ParseError(..)) where\n" ++
+				"import Control.Monad.Trans.Error (Error(..))\n" ++
+				cnst
 		_ -> error "bad arguments"
 
 myInit :: [a] -> [a]

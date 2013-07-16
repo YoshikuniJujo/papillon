@@ -196,8 +196,7 @@ addPragmas =
 	"#-}\n"
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
-	"import \"monads-tf\" Control.Monad.Error\n" ++
-	"import Control.Monad.Trans.Error (Error (..))\n"
+	"import \"monads-tf\" Control.Monad.Error\n"
 
 charP :: Char -> PatQ
 charP = litP . charL
