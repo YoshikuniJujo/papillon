@@ -2,21 +2,11 @@
 * 次にやること           *
 **************************
 
-* version up して install
-
-* 下を実行するためにまずすること
-	まずは現在のやりかたと、下のやりかたの両方ができる形にする。
-	つまり、まずは Papillon.hs は作らないやりかた。
-	今は
-	runhaskell -isrc -Wall bin/papillon test/peg/simple.papillon >
-		tmp/simple.hs
-	runhaskell tmp/simple.hs
-	としてあるが、これを以下のようにする。
-	runhaskell -isrc -Wall bin/papillon test/peg/simple.papillon tmp/
-	runhaskell -itmp/ tmp/simple.hs
-
-	ただし、module A.B.C where を見て directory dist/A/B を作りそこに出力
-	するという処理が必要だ。
+* 下を実行するためにすること
+	次は mn を使って "\nimport A.B.Papillon\n" を入れる。
+	そして、dist/A/B/Papillon.hs を書く。
+	Papillon.hs は top に "module A.B.Papillon (ParseError(..)) where\n" を
+	置く。
 
 * filter っぽさは減ってしまうが、dir を指定し、そこに出力するようにするか
 	papillon hoge.papillon だったら、Main directory を作成し、
