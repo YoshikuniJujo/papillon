@@ -18,8 +18,8 @@ module Text.Papillon.Parser (
 )  where
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
-import Control.Monad.Trans.Error (Error (..))
 
+import Text.Papillon.Papillon
 
 import Control.Applicative
 
@@ -2044,13 +2044,3 @@ instance SourceList Char
           listUpdatePos '\n' (CharPos (y, _)) = CharPos (y + 1, 0)
           listUpdatePos _ (CharPos (y, x)) = CharPos (y, x + 1)
 
-
-data ParseError pos drv
-    = ParseError {peCode :: String,
-                  peMessage :: String,
-                  peComment :: String,
-                  peDerivs :: drv,
-                  peReading :: ([String]),
-                  pePosition :: pos}
-instance Error (ParseError pos drv)
-    where strMsg msg = ParseError "" msg "" undefined undefined undefined
