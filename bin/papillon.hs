@@ -14,8 +14,13 @@ main = do
 			putStr $ psrc ++ "\n" ++ src ++ "\n" ++ cnst
 			hPutStrLn stderr $ show mn
 		[_, dist] -> do
-			let	dir = joinPath $ dist : init mn
+			let	dir = joinPath $ dist : myInit mn
 			createDirectoryIfMissing True dir
 			writeFile (dir </> takeBaseName fn <.> "hs") $
 				psrc ++ "\n" ++ src ++ "\n" ++ cnst
 		_ -> error "bad arguments"
+
+myInit :: [a] -> [a]
+myInit [] = []
+myInit [_] = []
+myInit (x : xs) = x : myInit xs
