@@ -15,7 +15,7 @@ papillonStr src = do
 		dir = joinPath $ myInit mn
 	decs <- runQ decsQ
 	return (dir, mName,
-		prgm ++
+		showPragma prgm ++
 		(if null mn then "" else "module " ++ intercalate "." mn) ++
 		ppp ++ importConst ++
 		(if app then "\nimport Control.Applicative\n" else "") ++

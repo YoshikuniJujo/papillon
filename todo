@@ -21,6 +21,21 @@
 	そうすると
 	(String, [String], [String], String, DecsQ, String, Bool)
 
+	プラグマ、モジュール名、エクスポートリスト、インポートリストが必要だ。
+	([Pragma], ModuleName, [Export], [Import], String, DecsQ, String, Bool)
+	といった感じか。
+
+	data Pragma = LanguagePragma [String] | OtherPragma String
+	type ModuleName = [String]
+	data Export
+		= ExportV String | ExportT String (Maybe [String])
+		| ExportM ModuleName
+	data Import = Import String Bool ModuleName (Maybe String) Bool
+		(Maybe ImportList)
+
+	上記はちょっとやりすぎ感がある。
+	([Pragma], ModuleName, String, String, DecsQ, String, Bool) でいい気もする。
+
 * version up して install
 
 * hackage への登録をそろそろしようかな

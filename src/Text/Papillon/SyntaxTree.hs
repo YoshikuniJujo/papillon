@@ -168,35 +168,46 @@ toExGetEx = toEx . getEx
 emp :: [a]
 emp = []
 
-type PegFile = (String, [String], String, String, TTPeg, String)
+type PegFile = ([PPragma], [String], String, String, TTPeg, String)
+data PPragma = LanguagePragma [String] deriving Show
+showPragma :: [PPragma] -> String
+showPragma [LanguagePragma p] = "{-# LANGUAGE " ++ intercalate ", " p ++ " #-}\n"
+showPragma _ = error "yet"
+mkLanguagePragma :: [String] -> [PPragma]
+mkLanguagePragma p = [LanguagePragma $ p ++ addPragmas]
+
+addPragmas :: [String]
+addPragmas = [
+	"FlexibleContexts",
+	"PackageImports",
+	"TypeFamilies",
+	"RankNTypes" ]
+
+addModules :: String
+addModules =
+	"import \"monads-tf\" Control.Monad.State\n" ++
+	"import \"monads-tf\" Control.Monad.Error\n"
+
 correctMD :: ([String], String) -> String
 correctMD (n, o) = intercalate "." n ++ o
-mkPegFile :: Maybe String -> Maybe ([String], String) -> String -> String -> TTPeg -> String
-	-> PegFile
+mkPegFile :: Maybe [String] -> Maybe ([String], String) -> String -> String ->
+	TTPeg -> String -> PegFile
 mkPegFile (Just p) (Just md) x y z w = (
-	"{-#" ++ p ++ addPragmas,
+	mkLanguagePragma p,
 	fst md,
 	snd md ++ " where\n" ++
 	addModules,
 	x ++ "\n" ++ y, z, w)
 mkPegFile Nothing (Just md) x y z w = (
-	"{-#" ++ addPragmas,
+	mkLanguagePragma [],
 	fst md,
 	snd md ++ " where\n" ++
 	addModules,
 	x ++ "\n" ++ y, z, w)
 mkPegFile (Just p) Nothing x y z w =
-	("{-#" ++ p ++ addPragmas, [], addModules, x ++ "\n" ++ y, z, w)
+	(mkLanguagePragma p, [], addModules, x ++ "\n" ++ y, z, w)
 mkPegFile Nothing Nothing x y z w =
-	("{-#" ++ addPragmas, [], addModules, x ++ "\n" ++ y, z, w)
-
-addPragmas, addModules :: String
-addPragmas =
-	"FlexibleContexts, PackageImports, TypeFamilies, RankNTypes " ++
-	"#-}\n"
-addModules =
-	"import \"monads-tf\" Control.Monad.State\n" ++
-	"import \"monads-tf\" Control.Monad.Error\n"
+	(mkLanguagePragma [], [], addModules, x ++ "\n" ++ y, z, w)
 
 charP :: Char -> PatQ
 charP = litP . charL

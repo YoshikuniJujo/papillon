@@ -18,6 +18,9 @@ module Text.Papillon.Parser (
 	pePositionS,
 	Source(..),
 	SourceList(..),
+
+	showPragma,
+	PPragma
 ) where
 
 import Data.Char
@@ -35,11 +38,11 @@ pegFile :: PegFile
 		'|' ']' '\n' atp:afterPeg
 			{ mkPegFile pr md emp pp p atp }
 ;
-pragma :: Maybe String
+pragma :: Maybe [String]
 	= _:spaces '{' '-' '#' _:spaces 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E'
 		_:spaces s:pragmaItems _:pragmaEnd _:spaces
-				{ just $ " LANGUAGE " ++ concatMap (++ ", ") s }
-	/ _:spaces						{ nothing }
+					{ Just s }
+	/ _:spaces			{ Nothing }
 ;
 pragmaStr :: String
 	= _:delPragmas _:spaces ',' _:spaces s:pragmaStr	{ ' ' : s }
@@ -62,16 +65,16 @@ pragmaEnd :: ()
 ;
 moduleDec :: Maybe ([String], String)
 	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces n:moduleName s:moduleDecStr _:whr
-								{ just (n, s) }
-	/							{ nothing }
+								{ Just (n, s) }
+	/							{ Nothing }
 ;
 moduleName :: [String]
 	= t:typ '.' n:moduleName			{ t : n }
 	/ t:typ						{ [t] }
 ;
 moduleDecStr :: String
-	= !_:whr c s:moduleDecStr			{ cons c s }
-	/						{ emp }
+	= !_:whr c s:moduleDecStr			{ c : s }
+	/						{ "" }
 ;
 whr :: ()
 	= 'w' 'h' 'e' 'r' 'e'				{ () }

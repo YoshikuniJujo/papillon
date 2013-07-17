@@ -17,6 +17,9 @@ module Text.Papillon.Parser (
 	pePositionS,
 	Source(..),
 	SourceList(..),
+
+	showPragma,
+	PPragma
 )  where
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
@@ -36,7 +39,7 @@ data Derivs
     = Derivs {pegFile :: (Either (ParseError (Pos String) Derivs)
                                  ((PegFile, Derivs))),
               pragma :: (Either (ParseError (Pos String) Derivs)
-                                ((Maybe String, Derivs))),
+                                ((Maybe ([String]), Derivs))),
               pragmaStr :: (Either (ParseError (Pos String) Derivs)
                                    ((String, Derivs))),
               pragmaItems :: (Either (ParseError (Pos String) Derivs)
@@ -394,10 +397,10 @@ parse = parse0_0 initialPos
                                               return ()
                                               _ <- StateT spaces
                                               return ()
-                                              return (just $ " LANGUAGE " ++ concatMap (++ ", ") s),
+                                              return (Just s),
                                            do _ <- StateT spaces
                                               return ()
-                                              return nothing]
+                                              return Nothing]
                 pragmaStr6_73 = foldl1 mplus [do _ <- StateT delPragmas
                                                  return ()
                                                  _ <- StateT spaces
@@ -720,8 +723,8 @@ parse = parse0_0 initialPos
                                                   s <- StateT moduleDecStr
                                                   _ <- StateT whr
                                                   return ()
-                                                  return (just (n, s)),
-                                               return nothing]
+                                                  return (Just (n, s)),
+                                               return Nothing]
                 moduleName11_78 = foldl1 mplus [do t <- StateT typ
                                                    d352_252 <- get
                                                    xx351_253 <- StateT derivsChars
@@ -741,8 +744,8 @@ parse = parse0_0 initialPos
                                                      put ddd357_254
                                                      c <- StateT derivsChars
                                                      s <- StateT moduleDecStr
-                                                     return (cons c s),
-                                                  return emp]
+                                                     return (c : s),
+                                                  return ""]
                 whr13_80 = foldl1 mplus [do d365_255 <- get
                                             xx364_256 <- StateT derivsChars
                                             case xx364_256 of
