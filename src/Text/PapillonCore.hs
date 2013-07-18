@@ -2,27 +2,31 @@
 	FlexibleInstances #-}
 
 module Text.PapillonCore (
+	-- * For Text.Papillon library
 	papillonCore,
-
-	papillonFile,
-	PPragma(..),
-	ModuleName,
-	ExportList,
-	Code,
 
 	Source(..),
 	SourceList(..),
+
+	-- ** For parse error message
 	ParseError,
 	mkParseError,
-	peCode,
-	peMessage,
 	peDerivs,
 	peReading,
+	peMessage,
+	peCode,
 	peComment,
 	pePosition,
 	pePositionS,
 	Pos(..),
 	ListPos(..),
+
+	-- * For papillon command
+	papillonFile,
+	PPragma(..),
+	ModuleName,
+	ExportList,
+	Code,
 ) where
 
 import Language.Haskell.TH

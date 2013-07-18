@@ -1,18 +1,19 @@
 module Text.Papillon (
 	papillon,
-	ParseError,
-	mkParseError,
-	peCode,
-	peMessage,
-	peDerivs,
-	peComment,
-	peReading,
-	pePosition,
-	pePositionS,
 	Source(..),
 	SourceList(..),
 	Pos(..),
 	ListPos(..),
+	-- * For parse error message
+	ParseError,
+	mkParseError,
+	peDerivs,
+	peReading,
+	peMessage,
+	peCode,
+	peComment,
+	pePosition,
+	pePositionS,
 ) where
 
 import Text.PapillonCore

@@ -13,9 +13,9 @@ showParseError pe =
 	m ++ c ++ (if null com then "" else " {- " ++ com ++ " -}") ++
 	" at position: " ++ show p
 	where
-	[c, m, com] = ($ pe) `map` [peCode, peMessage, peComment]
-	ns = peReading pe
 	d = peDerivs pe
+	ns = peReading pe
+	[m, c, com] = ($ pe) `map` [peMessage, peCode, peComment]
 	p = pePositionS pe
 	
 
