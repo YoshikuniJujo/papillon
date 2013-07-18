@@ -12,11 +12,17 @@ module Text.PapillonCore (
 
 	Source(..),
 	SourceList(..),
-	ParseError(..),
+	ParseError,
 	mkParseError,
+	peCode,
+	peMessage,
+	peDerivs,
+	peReading,
+	peComment,
+	pePosition,
+	pePositionS,
 	Pos(..),
 	ListPos(..),
-	pePositionS,
 ) where
 
 import Language.Haskell.TH

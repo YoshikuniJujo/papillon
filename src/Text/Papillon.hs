@@ -7,11 +7,12 @@ module Text.Papillon (
 	peDerivs,
 	peComment,
 	peReading,
+	pePosition,
+	pePositionS,
 	Source(..),
 	SourceList(..),
 	Pos(..),
 	ListPos(..),
-	pePositionS,
 ) where
 
 import Text.PapillonCore

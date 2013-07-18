@@ -5,6 +5,7 @@
 * version up して install
 
 * ParseError のそれぞれの項目を入手する関数の名前について見直す
+	cabal haddock をして、それぞれを確認、また、並び順についても
 
 * showReading をコード生成できるかな
 	Show a => についてならできそうな気がするけど ...
@@ -160,11 +161,6 @@
 **************************
 *  ドキュメント関係      *
 **************************
-
-* ドキュメントをローカルに作成したい
-	src directory を汚さずに haddock を作る方法はあるかな?
-	cabal doc とかでできるかな?
-		-> cabal haddock でできた
 
 * homepage 関係
 	sakura VPS に papillon を install すれば、

@@ -7,8 +7,9 @@ module Text.Papillon.Papillon (
 	peComment,
 	peDerivs,
 	peReading,
-	Pos(..),
+	pePosition,
 	pePositionS,
+	Pos(..),
 	Source(..),
 	SourceList(..),
 	ListPos(..)) where
