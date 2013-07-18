@@ -164,6 +164,7 @@
 * ドキュメントをローカルに作成したい
 	src directory を汚さずに haddock を作る方法はあるかな?
 	cabal doc とかでできるかな?
+		-> cabal haddock でできた
 
 * homepage 関係
 	sakura VPS に papillon を install すれば、
