@@ -2,12 +2,16 @@
 * 次にやること           *
 **************************
 
-* cabal に examples directory を追加する
-* cabal の description をもうすこしましにする
-	はじめは show example directory とすればいいだろう
-
 * ParseError をさらさないようにする
 	それぞれの項目を入手する関数だけを export するようにしたい
+	それぞれの項目を入手する関数の名前についても見直す必要があるだろう
+
+* simple な example source file を作成する
+
+* cabal に examples directory を追加する
+	extra-source-files: を使えば良いだろう
+* cabal の description をもうすこしましにする
+	はじめは show example directory とすればいいだろう
 
 * homepage に example をのせる
 
