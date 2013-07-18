@@ -2,6 +2,26 @@
 * 次にやること           *
 **************************
 
+* derivsChars について
+	名前の見直し
+	baseToken とかのほうがいいのでは?
+	ただ char に限らないが char を推奨しているということはある
+	また s をつけないほうが正確な気もする
+	char だけだと名前の conflict が起こりまくりそう
+	papillonChar とかでもいいかもしれない
+	大きくは変えず derivsChar でもいいかも
+	よく考えよう
+
+	なかで指定するようにするという方法もあるな
+
+	それと合わせて、derivsPosition についても考えよう
+
+	* chars と position にしてしまおうかな
+
+	conflict については2つの道がある
+	まずは prefix をつけるということ
+	もうひとつは chars と position の名前を上書きできるようにすること
+
 * ParseError のそれぞれの項目を入手する関数の名前について見直す
 	cabal haddock をして、それぞれを確認、また、並び順についても
 
