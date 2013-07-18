@@ -2,15 +2,14 @@
 * 次にやること           *
 **************************
 
-* version up して install
+* cabal に examples directory を追加する
+* cabal の description をもうすこしましにする
+	はじめは show example directory とすればいいだろう
 
-* hackage への登録をそろそろしようかな
+* ParseError をさらさないようにする
+	それぞれの項目を入手する関数だけを export するようにしたい
 
-* papillonStr について
-	関数名について考える
-	また、ByteString や Text も扱うかどうかについても考えること
-	これを Papillon から export する必要はないのかもしれない
-	とすると、module 構造を変える必要があるな
+* homepage に example をのせる
 
 * リファクタリング
 
@@ -23,6 +22,7 @@
 
 * escapeC について
 	\n, \t 以外の特殊文字についても考慮する
+
 * 非終端記号に大文字で始まるものも許すようにしようかな
 	これは prefix をつけることで可能と思われる
 	camel, snake, raw の指定とからめて
@@ -30,14 +30,6 @@
 **************************
 *  warning 関係          *
 **************************
-
-* pePositionS に関する warning について
-	これを消すのは難しいな
-	これを消すためには ParseError と class Source 等を
-	Papillon から export するようにする必要がある
-	そのうえで、papillon では pePositionS という文字列を探して、
-	存在すればこれを足すという必要があるな
-	papillon のほうは解決
 
 **************************
 *  エラーメッセージ関係  *
@@ -115,6 +107,12 @@
 	他の pe... もそうだが、module 内で使わない場合に warning が出てしまう
 	あとで考えよう
 
+* papillonStr について
+	関数名について考える
+	また、ByteString や Text も扱うかどうかについても考えること
+	これを Papillon から export する必要はないのかもしれない
+	とすると、module 構造を変える必要があるな
+
 ******************************
 *  機能面における細かい修正  *
 ******************************
@@ -152,9 +150,7 @@
 *  ドキュメント関係      *
 **************************
 
-* cabal に examples directory を追加する
-* cabal の description をもうすこしましにする
-* homepage に example をのせる
+* homepage 関係
 	sakura VPS に papillon を install すれば、
 	インタラクティブなページが作れるかな
 
