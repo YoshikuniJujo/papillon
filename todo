@@ -2,10 +2,6 @@
 * 次にやること           *
 **************************
 
-* version up して install
-
-* hackage への upload
-
 * 以下をやるのだが、次は module Hoge (...) where の ... の部分を分けよう。
 	中を ',' で separate すれば良いし、逆は intercalate ",\n\t" をすれば良い。
 	まずは、とりあえず、parser の方だけでやり、
