@@ -2,40 +2,6 @@
 * 次にやること           *
 **************************
 
-* 以下をやるのだが、次は module Hoge (...) where の ... の部分を分けよう。
-	中を ',' で separate すれば良いし、逆は intercalate ",\n\t" をすれば良い。
-	まずは、とりあえず、parser の方だけでやり、
-	すぐに "(\n\t" ++ intercalate ",\n\t" some ++ ") where\n" をしてしまおう
-	parser のなかで '(', ')' の対応を見て行く必要があるかもしれない。
-	'(', ')', ',' 以外の文字の並び str とその 3 つが出てくれば良いのだろう。
-	str を ',' で区切ったものを strs とすると、ひとつの要素は、
-	str ('(' strs ')')? または '(' str ')' となり、これを ',' で
-	区切ったものが全体となる。最後の ',' はあっても良い
-
-* papillonFile の返り値をきれいにする
-	(String, [String], [String], [String], String, DecsQ, String, Bool)
-	といった感じにしようかな。内訳はそれぞれ、
-	(pragma, moduleName, exportList, imports, preD, decs, postD, needApp)
-	といった感じ。
-	imports と preD は分けなくてもいいかもしれない。
-	そうすると
-	(String, [String], [String], String, DecsQ, String, Bool)
-
-	プラグマ、モジュール名、エクスポートリスト、インポートリストが必要だ。
-	([Pragma], ModuleName, [Export], [Import], String, DecsQ, String, Bool)
-	といった感じか。
-
-	data Pragma = LanguagePragma [String] | OtherPragma String
-	type ModuleName = [String]
-	data Export
-		= ExportV String | ExportT String (Maybe [String])
-		| ExportM ModuleName
-	data Import = Import String Bool ModuleName (Maybe String) Bool
-		(Maybe ImportList)
-
-	上記はちょっとやりすぎ感がある。
-	([Pragma], ModuleName, String, String, DecsQ, String, Bool) でいい気もする。
-
 * version up して install
 
 * hackage への登録をそろそろしようかな
@@ -216,3 +182,49 @@
 	ひとつしか constructor を持たない物もそれらと同様に扱う必要がある
 	これにはおそらく reify が必要になるので後々することにしよう
 	これは th が True のときだけ reify を見るということで実現可能だろう
+
+**************************
+* 目を通して消す         *
+**************************
+
+* 以下をやるのだが、次は module Hoge (...) where の ... の部分を分けよう。
+	中を ',' で separate すれば良いし、逆は intercalate ",\n\t" をすれば良い。
+	まずは、とりあえず、parser の方だけでやり、
+	すぐに "(\n\t" ++ intercalate ",\n\t" some ++ ") where\n" をしてしまおう
+	parser のなかで '(', ')' の対応を見て行く必要があるかもしれない。
+	'(', ')', ',' 以外の文字の並び str とその 3 つが出てくれば良いのだろう。
+	str を ',' で区切ったものを strs とすると、ひとつの要素は、
+	str ('(' strs ')')? または '(' str ')' となり、これを ',' で
+	区切ったものが全体となる。最後の ',' はあっても良い
+
+	それとも (...) 内を String としてそのまま出すか、
+	あるいはもっとちゃんとパースするか。
+	パースする必要は無いよな。
+	いじる必要が無いわけだから。
+	(...) の ... の部分だけを出してもいいし、
+	あるいは今のままでもいいかもしれない。
+	')' _:spaces 'w' 'h' 'e' 'r' 'e' を認識させようかな。
+
+* papillonFile の返り値をきれいにする
+	(String, [String], [String], [String], String, DecsQ, String, Bool)
+	といった感じにしようかな。内訳はそれぞれ、
+	(pragma, moduleName, exportList, imports, preD, decs, postD, needApp)
+	といった感じ。
+	imports と preD は分けなくてもいいかもしれない。
+	そうすると
+	(String, [String], [String], String, DecsQ, String, Bool)
+
+	プラグマ、モジュール名、エクスポートリスト、インポートリストが必要だ。
+	([Pragma], ModuleName, [Export], [Import], String, DecsQ, String, Bool)
+	といった感じか。
+
+	data Pragma = LanguagePragma [String] | OtherPragma String
+	type ModuleName = [String]
+	data Export
+		= ExportV String | ExportT String (Maybe [String])
+		| ExportM ModuleName
+	data Import = Import String Bool ModuleName (Maybe String) Bool
+		(Maybe ImportList)
+
+	上記はちょっとやりすぎ感がある。
+	([Pragma], ModuleName, String, String, DecsQ, String, Bool) でいい気もする。

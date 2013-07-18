@@ -168,27 +168,27 @@ toExGetEx = toEx . getEx
 emp :: [a]
 emp = []
 
-type PegFile = ([PPragma], ModuleName, String, String, TTPeg, String)
+type PegFile = ([PPragma], ModuleName, Maybe ExportList, Code, TTPeg, Code)
 data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
 type ModuleName = [String]
+type ExportList = String
+type Code = String
 
 addModules :: String
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n"
 
-correctMD :: ([String], String) -> String
-correctMD (n, o) = intercalate "." n ++ o
-mkPegFile :: [PPragma] -> Maybe ([String], String) -> String -> String ->
+mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
 	TTPeg -> String -> PegFile
 mkPegFile ps (Just md) x y z w = (
 	ps,
 	fst md,
-	snd md ++ " where\n" ++
-	addModules,
+	snd md,
+	addModules ++
 	x ++ "\n" ++ y, z, w)
 mkPegFile ps Nothing x y z w =
-	(ps, [], addModules, x ++ "\n" ++ y, z, w)
+	(ps, [], Nothing, addModules ++ x ++ "\n" ++ y, z, w)
 
 charP :: Char -> PatQ
 charP = litP . charL

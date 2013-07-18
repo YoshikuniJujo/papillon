@@ -20,7 +20,9 @@ module Text.Papillon.Parser (
 	SourceList(..),
 
 	PPragma(..),
-	ModuleName
+	ModuleName,
+	ExportList,
+	Code
 ) where
 
 import Data.Char
@@ -44,10 +46,10 @@ pragmas :: [PPragma]
 pragma :: PPragma
 	= '{' '-' '#' _:spaces 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces
 		s:pragmaItems _:pragmaEnd _:spaces	{ LanguagePragma s }
-	/ '{' '-' '#' _:spaces s:pragmaStr2 _:pragmaEnd	{ OtherPragma s }
+	/ '{' '-' '#' _:spaces s:pragmaStr _:pragmaEnd	{ OtherPragma s }
 ;
-pragmaStr2 :: String
-	= !_:pragmaEnd c s:pragmaStr2				{ c : s }
+pragmaStr :: String
+	= !_:pragmaEnd c s:pragmaStr				{ c : s }
 	/							{ "" }
 ;
 pragmaItems :: [String]
@@ -57,12 +59,17 @@ pragmaItems :: [String]
 pragmaEnd :: ()
 	= _:spaces '#' '-' '}'					{ () }
 ;
-moduleDec :: Maybe ([String], String)
-	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces n:moduleName s:moduleDecStr _:whr
-								{ Just (n, s) }
-	/							{ Nothing }
+moduleDec :: Maybe ([String], Maybe String)
+	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces
+		n:moduleName _:spaces
+		'(' _:spaces s:moduleDecStr _:whr
+							{ Just (n, Just s) }
+	/ 'm' 'o' 'd' 'u' 'l' 'e' _:spaces
+		n:moduleName _:spaces 'w' 'h' 'e' 'r' 'e' _:spaces
+							{ Just (n, Nothing) }
+	/						{ Nothing }
 ;
-moduleName :: [String]
+moduleName :: ModuleName
 	= t:typ '.' n:moduleName			{ t : n }
 	/ t:typ						{ [t] }
 ;
@@ -71,7 +78,7 @@ moduleDecStr :: String
 	/						{ "" }
 ;
 whr :: ()
-	= 'w' 'h' 'e' 'r' 'e'				{ () }
+	= _:spaces ')' _:spaces 'w' 'h' 'e' 'r' 'e'	{ () }
 ;
 preImpPap :: String
 	= !_:importPapillon !_:pap c pip:preImpPap	{ cons c pip }

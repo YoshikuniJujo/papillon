@@ -9,7 +9,7 @@ import Class
 
 papillonStr :: String -> IO (String, String, String)
 papillonStr src = do
-	let 	(prgm, mn, ppp, pp, decsQ, atp, app) = papillonFile src
+	let 	(prgm, mn, ppp, pp, decsQ, atp) = papillonFile src
 		mName = intercalate "." $ myInit mn ++ ["Papillon"]
 		importConst = "\nimport " ++ mName ++ "\n"
 		dir = joinPath $ myInit mn
@@ -17,9 +17,13 @@ papillonStr src = do
 	return (dir, mName,
 		unlines (map showPragma $ addPragmas $ delPragmas prgm) ++
 		(if null mn then "" else "module " ++ intercalate "." mn) ++
-		ppp ++ importConst ++
-		(if app then "\nimport Control.Applicative\n" else "") ++
+		showExportList ppp ++ (if null mn then "" else "where\n") ++
+		importConst ++
 		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n")
+
+showExportList :: Maybe ExportList -> String
+showExportList (Just el) = " (\n\t" ++ el ++ "\n) "
+showExportList Nothing = " "
 
 showPragma :: PPragma -> String
 showPragma (LanguagePragma []) = ""

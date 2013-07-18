@@ -3,8 +3,12 @@
 
 module Text.PapillonCore (
 	papillonCore,
+
 	papillonFile,
 	PPragma(..),
+	ModuleName,
+	ExportList,
+	Code,
 
 	Source(..),
 	SourceList(..),
@@ -130,13 +134,16 @@ papillonCore str = case peg $ parse str of
 	Left err -> error $ "parse error: " ++ showParseError err
 
 papillonFile :: String ->
-	([PPragma], ModuleName, String, String, DecsQ, String, Bool)
+	([PPragma], ModuleName, Maybe ExportList, Code, DecsQ, Code)
 papillonFile str = case pegFile $ parse str of
 	Right ((prgm, mn, ppp, pp, (src, tkn, parsed), atp), _) ->
-		(prgm, mn, ppp, pp, decParsed False src tkn parsed, atp,
-			needApplicative parsed)
+		(prgm, mn, ppp, addApplicative parsed ++ pp,
+			decParsed False src tkn parsed, atp)
 	Left err -> error $ "parse error: " ++ showParseError err
 	where
+	addApplicative pg = if needApplicative pg
+		then "import Control.Applicative\n"
+		else ""
 	needApplicative pg = isListUsed pg || isOptionalUsed pg
 
 showParseError :: ParseError (Pos String) Derivs -> String
