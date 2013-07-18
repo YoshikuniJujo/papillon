@@ -168,20 +168,9 @@ toExGetEx = toEx . getEx
 emp :: [a]
 emp = []
 
-type PegFile = ([PPragma], [String], String, String, TTPeg, String)
-data PPragma = LanguagePragma [String] deriving Show
-showPragma :: [PPragma] -> String
-showPragma [LanguagePragma p] = "{-# LANGUAGE " ++ intercalate ", " p ++ " #-}\n"
-showPragma _ = error "yet"
-mkLanguagePragma :: [String] -> [PPragma]
-mkLanguagePragma p = [LanguagePragma $ p ++ addPragmas]
-
-addPragmas :: [String]
-addPragmas = [
-	"FlexibleContexts",
-	"PackageImports",
-	"TypeFamilies",
-	"RankNTypes" ]
+type PegFile = ([PPragma], ModuleName, String, String, TTPeg, String)
+data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
+type ModuleName = [String]
 
 addModules :: String
 addModules =
@@ -190,24 +179,16 @@ addModules =
 
 correctMD :: ([String], String) -> String
 correctMD (n, o) = intercalate "." n ++ o
-mkPegFile :: Maybe [String] -> Maybe ([String], String) -> String -> String ->
+mkPegFile :: [PPragma] -> Maybe ([String], String) -> String -> String ->
 	TTPeg -> String -> PegFile
-mkPegFile (Just p) (Just md) x y z w = (
-	mkLanguagePragma p,
+mkPegFile ps (Just md) x y z w = (
+	ps,
 	fst md,
 	snd md ++ " where\n" ++
 	addModules,
 	x ++ "\n" ++ y, z, w)
-mkPegFile Nothing (Just md) x y z w = (
-	mkLanguagePragma [],
-	fst md,
-	snd md ++ " where\n" ++
-	addModules,
-	x ++ "\n" ++ y, z, w)
-mkPegFile (Just p) Nothing x y z w =
-	(mkLanguagePragma p, [], addModules, x ++ "\n" ++ y, z, w)
-mkPegFile Nothing Nothing x y z w =
-	(mkLanguagePragma [], [], addModules, x ++ "\n" ++ y, z, w)
+mkPegFile ps Nothing x y z w =
+	(ps, [], addModules, x ++ "\n" ++ y, z, w)
 
 charP :: Char -> PatQ
 charP = litP . charL

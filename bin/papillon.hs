@@ -15,11 +15,34 @@ papillonStr src = do
 		dir = joinPath $ myInit mn
 	decs <- runQ decsQ
 	return (dir, mName,
-		showPragma prgm ++
+		unlines (map showPragma $ addPragmas $ delPragmas prgm) ++
 		(if null mn then "" else "module " ++ intercalate "." mn) ++
 		ppp ++ importConst ++
 		(if app then "\nimport Control.Applicative\n" else "") ++
 		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n")
+
+showPragma :: PPragma -> String
+showPragma (LanguagePragma []) = ""
+showPragma (LanguagePragma p) = "{-# LANGUAGE " ++ intercalate ", " p ++ " #-}"
+showPragma (OtherPragma p) = "{-# " ++ p ++ " #-}"
+
+addPragmas :: [PPragma] -> [PPragma]
+addPragmas [] = [LanguagePragma additionalPragmas]
+addPragmas (LanguagePragma p : ps) = LanguagePragma (p ++ additionalPragmas) : ps
+addPragmas (op : ps) = op : addPragmas ps
+
+delPragmas :: [PPragma] -> [PPragma]
+delPragmas [] = []
+delPragmas (LanguagePragma p : ps) =
+	LanguagePragma (filter (`notElem` ["QuasiQuotes", "TypeFamilies"]) p) : ps
+delPragmas (op : ps) = op : delPragmas ps
+
+additionalPragmas :: [String]
+additionalPragmas = [
+	"PackageImports",
+	"TypeFamilies",
+	"RankNTypes"
+ ]
 
 papillonConstant :: String -> IO String
 papillonConstant mName = do

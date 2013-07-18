@@ -4,7 +4,7 @@
 module Text.PapillonCore (
 	papillonCore,
 	papillonFile,
-	showPragma,
+	PPragma(..),
 
 	Source(..),
 	SourceList(..),
@@ -129,7 +129,8 @@ papillonCore str = case peg $ parse str of
 	Right ((src, tkn, parsed), _) -> decParsed True src tkn parsed
 	Left err -> error $ "parse error: " ++ showParseError err
 
-papillonFile :: String -> ([PPragma], [String], String, String, DecsQ, String, Bool)
+papillonFile :: String ->
+	([PPragma], ModuleName, String, String, DecsQ, String, Bool)
 papillonFile str = case pegFile $ parse str of
 	Right ((prgm, mn, ppp, pp, (src, tkn, parsed), atp), _) ->
 		(prgm, mn, ppp, pp, decParsed False src tkn parsed, atp,

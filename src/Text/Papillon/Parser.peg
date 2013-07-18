@@ -19,49 +19,43 @@ module Text.Papillon.Parser (
 	Source(..),
 	SourceList(..),
 
-	showPragma,
-	PPragma
+	PPragma(..),
+	ModuleName
 ) where
 
 import Data.Char
 import Language.Haskell.TH
 import Text.Papillon.SyntaxTree
--- import Data.List
 
 [papillon|
 
 pegFile :: PegFile
-	= pr:pragma md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
+	= pr:pragmas md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
 		p:peg _:spaces '|' ']' '\n' atp:afterPeg
 			{ mkPegFile pr md pip pp p atp }
-	/ pr:pragma md:moduleDec pp:prePeg _:pap p:peg _:spaces
+	/ pr:pragmas md:moduleDec pp:prePeg _:pap p:peg _:spaces
 		'|' ']' '\n' atp:afterPeg
 			{ mkPegFile pr md emp pp p atp }
 ;
-pragma :: Maybe [String]
-	= _:spaces '{' '-' '#' _:spaces 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E'
-		_:spaces s:pragmaItems _:pragmaEnd _:spaces
-					{ Just s }
-	/ _:spaces			{ Nothing }
+pragmas :: [PPragma]
+	= _:spaces pr:pragma prs:pragmas	{ pr : prs }
+	/ _:spaces				{ [] }
 ;
-pragmaStr :: String
-	= _:delPragmas _:spaces ',' _:spaces s:pragmaStr	{ ' ' : s }
-	/ !_:pragmaEnd !_:delPragmas c s:pragmaStr		{ c : s }
-	/							{ emp }
+pragma :: PPragma
+	= '{' '-' '#' _:spaces 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces
+		s:pragmaItems _:pragmaEnd _:spaces	{ LanguagePragma s }
+	/ '{' '-' '#' _:spaces s:pragmaStr2 _:pragmaEnd	{ OtherPragma s }
+;
+pragmaStr2 :: String
+	= !_:pragmaEnd c s:pragmaStr2				{ c : s }
+	/							{ "" }
 ;
 pragmaItems :: [String]
-	= _:delPragmas _:spaces ',' _:spaces i:pragmaItems	{ i }
-	/ t:typToken ',' _:spaces i:pragmaItems			{ t : i }
-	/ _:delPragmas _:spaces					{ [] }
+	= t:typToken ',' _:spaces i:pragmaItems			{ t : i }
 	/ t:typToken						{ [t] }
 ;
-delPragmas :: ()
-	= 'Q' 'u' 'a' 's' 'i' 'Q' 'u' 'o' 't' 'e' 's'		{ () }
-	/ 'T' 'y' 'p' 'e' 'F' 'a' 'm' 'i' 'l' 'i' 'e' 's'	{ () }
-;
 pragmaEnd :: ()
-	= _:delPragmas _:spaces '#' '-' '}'			{ () }
-	/ '#' '-' '}'						{ () }
+	= _:spaces '#' '-' '}'					{ () }
 ;
 moduleDec :: Maybe ([String], String)
 	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces n:moduleName s:moduleDecStr _:whr
@@ -193,12 +187,10 @@ opConName :: Name
 ;
 charLit :: Char
 	= c:[isAlphaNumOt c]			{ c }
---	/ '\\' c:[elemNTs c]			{ getNTs c }
 	/ '\\' c:escapeC			{ c }
 ;
 stringLit :: String
 	= c:[isStrLitC c] s:stringLit			{ cons c s }
---	/ '\\' c:[not $ isStrLitC c] s:stringLit	{ c : s }
 	/ '\\' c:escapeC s:stringLit			{ c : s }
 	/						{ emp }
 ;
