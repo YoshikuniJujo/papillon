@@ -55,11 +55,16 @@ main = do
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
 
 showParseError :: ParseError (Pos String) Derivs -> String
-showParseError (ParseError c m com d ns (ListPos (CharPos p))) =
+showParseError pe =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++
 	(if null com then "" else " {- " ++ com ++ " -}") ++
 	" at position: " ++ show p
+	where
+	[c, m, com] = ($ pe) `map` [peCode, peMessage, peComment]
+	ns = peReading pe
+	d = peDerivs pe
+	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
 showReading d "derivsChars" = case derivsChars d of

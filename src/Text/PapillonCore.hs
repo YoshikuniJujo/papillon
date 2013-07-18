@@ -13,6 +13,7 @@ module Text.PapillonCore (
 	Source(..),
 	SourceList(..),
 	ParseError(..),
+	mkParseError,
 	Pos(..),
 	ListPos(..),
 	pePositionS,
@@ -147,9 +148,14 @@ papillonFile str = case pegFile $ parse str of
 	needApplicative pg = isListUsed pg || isOptionalUsed pg
 
 showParseError :: ParseError (Pos String) Derivs -> String
-showParseError (ParseError c m _ d ns (ListPos (CharPos p))) =
+showParseError pe = -- (ParseError c m _ d ns (ListPos (CharPos p))) =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ " at position: " ++ show p
+	where
+	[c, m, _] = ($ pe) `map` [peCode, peMessage, peComment]
+	ns = peReading pe
+	d = peDerivs pe
+	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
 showReading d "derivsChars" = case derivsChars d of
@@ -207,7 +213,7 @@ throwErrorPackratMBody th code msg com d ns = infixApp
 	(varE $ mkName ">>=") (infixApp
 		(varE $ throwErrorN th)
 		(varE $ mkName ".")
-		(conE (mkName "ParseError")
+		(varE (mkName "mkParseError")
 			`appE` code
 			`appE` msg
 			`appE` com

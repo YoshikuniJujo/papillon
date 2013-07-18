@@ -12,6 +12,7 @@ module Text.Papillon.Parser (
 	showNameLeaf,
 	nameFromRF,
 	ParseError(..),
+	mkParseError,
 	Derivs(peg, pegFile, derivsChars),
 	Pos(..),
 	ListPos(..),

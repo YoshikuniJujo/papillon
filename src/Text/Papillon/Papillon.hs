@@ -1,6 +1,12 @@
 {-# LANGUAGE RankNTypes, TypeFamilies #-}
 module Text.Papillon.Papillon (
-	ParseError(..),
+	ParseError,
+	mkParseError,
+	peCode,
+	peMessage,
+	peComment,
+	peDerivs,
+	peReading,
 	Pos(..),
 	pePositionS,
 	Source(..),
@@ -16,6 +22,9 @@ data ParseError pos drv
                   pePosition :: pos}
 instance Error (ParseError pos drv)
     where strMsg msg = ParseError "" msg "" undefined undefined undefined
+mkParseError :: forall pos drv . String ->
+                                 String -> String -> drv -> [String] -> pos -> ParseError pos drv
+mkParseError = ParseError
 pePositionS :: forall drv . ParseError (Pos String) drv ->
                             (Int, Int)
 pePositionS (ParseError {pePosition = ListPos (CharPos p)}) = p

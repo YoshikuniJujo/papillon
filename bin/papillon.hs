@@ -53,10 +53,12 @@ papillonConstant mName = do
 	src <- runQ $ do
 		pe <- parseErrorT False
 		iepe <- instanceErrorParseError False
+		mkpet <- mkParseErrorTHT
+		mkpe <- mkParseErrorTH
 		pepst <- pePositionST
 		pepsd <- pePositionSD
 		cls <- classSourceQ False
-		return $ [pe, iepe, pepst, pepsd] ++ cls
+		return $ [pe, iepe, mkpet, mkpe, pepst, pepsd] ++ cls
 	return $
 		"{-# LANGUAGE RankNTypes, TypeFamilies #-}\n" ++
 		"module " ++ mName ++ " (\n\t" ++
@@ -79,7 +81,13 @@ main = do
 
 exportList :: [String]
 exportList = [
-	"ParseError(..)",
+	"ParseError",
+	"mkParseError",
+	"peCode",
+	"peMessage",
+	"peComment",
+	"peDerivs",
+	"peReading",
 	"Pos(..)",
 	"pePositionS",
 	"Source(..)",

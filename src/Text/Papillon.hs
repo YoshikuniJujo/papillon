@@ -1,6 +1,12 @@
 module Text.Papillon (
 	papillon,
-	ParseError(..),
+	ParseError,
+	mkParseError,
+	peCode,
+	peMessage,
+	peDerivs,
+	peComment,
+	peReading,
 	Source(..),
 	SourceList(..),
 	Pos(..),

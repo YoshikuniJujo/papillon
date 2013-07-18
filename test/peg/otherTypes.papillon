@@ -29,7 +29,7 @@ instance Source YourSource where
 main :: IO ()
 main = case str $ parse DEF of
 	Right (r, _) -> print r
-	Left (ParseError c m p _ _ _) -> putStrLn $ "not match: " ++ show (c, m, p)
+	Left _ -> putStrLn $ "not match"
 
 type MyTokens = [MyToken]
 type YourTokens = [YourToken]

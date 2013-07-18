@@ -4,6 +4,8 @@ module Class (
 	classSourceQ,
 	pePositionST,
 	pePositionSD,
+	mkParseErrorTHT,
+	mkParseErrorTH,
 	instanceErrorParseError,
 	parseErrorT
 ) where
@@ -17,6 +19,23 @@ errorN True = ''Error
 errorN False = mkName "Error"
 strMsgN True = 'strMsg
 strMsgN False = mkName "strMsg"
+
+stringT :: TypeQ
+stringT = varT $ mkName "String"
+
+mkParseErrorTHT :: DecQ
+mkParseErrorTHT = sigD (mkName "mkParseError") $
+	forallT [PlainTV pos, PlainTV drv] (cxt []) $
+		stringT `arrT` stringT `arrT` stringT `arrT` varT drv `arrT`
+			listT `appT` stringT `arrT` varT pos `arrT` 
+		varT (mkName "ParseError") `appT` varT pos `appT` varT drv
+	where
+	pos = mkName "pos"
+	drv = mkName "drv"
+
+mkParseErrorTH :: DecQ
+mkParseErrorTH = flip (valD $ varP $ mkName "mkParseError") [] $ normalB $
+	varE $ mkName "ParseError"
 
 parseErrorT :: Bool -> DecQ
 parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError")

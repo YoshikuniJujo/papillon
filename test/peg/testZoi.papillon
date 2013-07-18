@@ -6,7 +6,7 @@ import Data.Char
 main :: IO ()
 main = case something $ parse "zoi gy. hello myfriend gy" of
 	Right (r, _) -> print r
-	Left (ParseError c m p _ _ _) -> putStrLn $ "not match: " ++ show (c, m, p)
+	Left _ -> putStrLn $ "not match"
 
 cons :: a -> [a] -> [a]
 cons = (:)

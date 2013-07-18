@@ -6,7 +6,7 @@ import Data.Char
 main :: IO ()
 main = case testLL $ parse "3, 8, 5" of
 	Right (r, _) -> print r
-	Left (ParseError c m p _ _ _) -> putStrLn $ "error: " ++ show (c, m, p)
+	Left _ -> putStrLn $ "error"
 
 [papillon|
 
