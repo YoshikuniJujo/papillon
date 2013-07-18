@@ -4,6 +4,11 @@
 
 * version up して install
 
+* cabal haddock の結果をよく見る
+	それぞれの項目についてと並び順について
+	また、説明も入れてみようかな
+	haddock の書式について調べる必要があるな
+
 * ParseError のそれぞれの項目を入手する関数の名前について見直す
 	cabal haddock をして、それぞれを確認、また、並び順についても
 
