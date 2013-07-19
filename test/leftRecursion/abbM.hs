@@ -27,7 +27,7 @@ parse :: [AB] -> Derivs
 parse s = d
 	where
 	d = Derivs ds dab
-	ds = runStateT sm $ d { drvS = Right (Left False, undefined) }
+	ds = runStateT sm $ d { drvS = Right (Left False, d) }
 	dab = flip runStateT d $ case s of
 		c : cs -> do
 			put $ parse cs
@@ -43,7 +43,18 @@ sm = foldl1 mplus [ do
 			case mc of
 				Right c -> return $ Right $ Rec s c
 				_ -> throwError Fail
-		_ -> throwError Fail
+		Left False -> do
+			d <- get
+			sm'' <- StateT $ const $
+				runStateT sm d { drvS = Left Fail }
+			case sm'' of
+				Right s' -> do
+					mc <- StateT chars
+					case mc of
+						Right c -> return $ Right $ Rec s' c
+						_ -> throwError Fail
+				_ -> throwError Fail
+		Left True -> throwError Fail
 			
  , do	mc <- StateT chars
 	case mc of
