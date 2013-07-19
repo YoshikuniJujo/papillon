@@ -1,0 +1,20 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+module Main where
+
+import Data.Char
+
+main :: IO ()
+main = case sub $ parse "8-3-2" of
+	Right (r, _) -> print r
+	Left _ -> error "bad"
+
+[papillon|
+
+sub :: Int
+	= n:num '-' s:sub	{ n + - s }
+	/ n:num			{ n };
+
+num :: Int = c:[isDigit c]	{ read [c] };
+
+|]
