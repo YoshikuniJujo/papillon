@@ -4,65 +4,56 @@ import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
 import Control.Applicative
 
-data AB = A | B | C deriving Show
+data AB = A | B deriving Show
 data S = Rec S AB | Atom AB deriving Show
--- data S = Rec AB S | Atom AB deriving Show
 
-data Fail = Fail deriving Show
+-- S = S b | a
 
+data Fail = Fail | LR deriving Show
 instance Error Fail where
 
-type Return a = Either Fail (Either Bool a, Derivs)
+type Result a = Either Fail (a, Derivs)
 
 data Derivs = Derivs {
-	drvS :: Return S,
-	chars :: Return AB
- }
-
-testPackrat :: S
-testPackrat = case drvS $ parse [A, B, B, C] of
-	Right (Right r, _) -> r
-	_ -> error "bad"
+	getS :: Result S,
+	chars :: Result AB
+ } deriving Show
 
 parse :: [AB] -> Derivs
-parse s = d
+parse abstr = d
 	where
-	d = Derivs ds dab
-	ds = runStateT sm $ d { drvS = Right (Left False, d) }
-	dab = flip runStateT d $ case s of
-		c : cs -> do
-			put $ parse cs
-			return $ Right c
-		_ -> throwError Fail
+	d = Derivs s c
+	s = runStateT ruleS d { getS = Left LR }
+	c = flip runStateT d $ do
+		case abstr of
+			ab : abs -> do
+				put $ parse abs
+				return ab
+			_ -> throwError Fail
 
-sm :: StateT Derivs (Either Fail) (Either Bool S)
-sm = foldl1 mplus [ do
-	sm' <- StateT drvS
-	case sm' of
-		Right s -> do
-			mc <- StateT chars
-			case mc of
-				Right c -> return $ Right $ Rec s c
-				_ -> throwError Fail
-		Left False -> grow sm (\x d -> d { drvS = x }) $ Left Fail
-		Left True -> throwError Fail
-			
- , do	mc <- StateT chars
-	case mc of
-		Right c -> return $ Right $ Atom c
-		_ -> throwError Fail
+ruleS :: StateT Derivs (Either Fail) S
+ruleS = foldl1 mplus [
+   do	catchError (do
+		s <- StateT getS
+		c <- StateT chars
+		return $ Rec s c) $ \e -> case e of
+			LR -> grow ruleS
+				(\mx d -> d { getS = mx `runStateT` d })
+				(throwError Fail)
+			_ -> throwError Fail
+ , do	c <- StateT chars
+	return $ Atom c
  ]
 
-grow :: StateT Derivs (Either Fail) (Either Bool a)
-	-> (Return a -> Derivs -> Derivs)
-	-> Return a -> StateT Derivs (Either Fail) (Either Bool a)
-grow action update x = do
-	modify $ update x
-	(b, r) <- catchError ((True ,) <$> action) $ const $ do
-		xx <- StateT $ const x
-		return (False, xx)
-	d <- get
-	if b then grow action update $ Right (r, d) else return r
+grow :: (MonadError m, MonadState m, Functor m) =>
+	m a -> (m a -> StateType m -> StateType m) -> m a -> m a
+grow action update mx = do
+	modify $ update mx
+	(b, r) <- catchError ((True ,) <$> action) $ const $
+		(False ,) <$> mx
+	if b then grow action update (return r) else return r
 
-setDrvS :: Return S -> Derivs -> Derivs
-setDrvS s d = d { drvS = s }
+getParseResult :: Derivs -> S
+getParseResult d = case getS d of
+	Right (r, _) -> r
+	_ -> error "parse error"
