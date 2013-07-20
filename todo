@@ -2,8 +2,6 @@
 * 次にやること           *
 **************************
 
-* version up して install
-
 * そして、some :: Char = c:some { c } のような rule を評価して、
 	それぞれの runStateT hogexx_xx d に { hoge = Left DirectLeftRecursion }
 	をつければ良いだろう。
