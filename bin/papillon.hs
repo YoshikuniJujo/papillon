@@ -55,10 +55,15 @@ papillonConstant mName = do
 		iepe <- instanceErrorParseError False
 		mkpet <- mkParseErrorTHT
 		mkpe <- mkParseErrorTH
+		dlrt <- mkDirectLeftRecursionT
+		dlr <- mkDirectLeftRecursion
+		idlrt <- mkIsDirectLeftRecursionT
+		idlr <- mkIsDirectLeftRecursion
 		pepst <- pePositionST
 		pepsd <- pePositionSD
 		cls <- classSourceQ False
-		return $ [pe, iepe, mkpet, mkpe, pepst, pepsd] ++ cls
+		return $ [pe, iepe, mkpet, mkpe, dlrt, dlr, idlrt, idlr,
+			pepst, pepsd] ++ cls
 	return $
 		"{-# LANGUAGE RankNTypes, TypeFamilies #-}\n" ++
 		"module " ++ mName ++ " (\n\t" ++
@@ -83,6 +88,8 @@ exportList :: [String]
 exportList = [
 	"ParseError",
 	"mkParseError",
+	"directLeftRecursion",
+	"isDirectLeftRecursion",
 	"peCode",
 	"peMessage",
 	"peComment",

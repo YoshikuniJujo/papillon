@@ -2,11 +2,7 @@
 * 次にやること           *
 **************************
 
-* まずは、ParseError = ... | DirectLeftRecursion のようにしようかな
-	isDirectLeftRecursion を作ろう
-	isDirectLeftRecursion :: ParseError -> Bool
-	isDirectLeftRecursion DirectLeftRecursion = True
-	isDirectLeftRecursion _ = False
+* version up して install
 
 * そして、some :: Char = c:some { c } のような rule を評価して、
 	それぞれの runStateT hogexx_xx d に { hoge = Left DirectLeftRecursion }
