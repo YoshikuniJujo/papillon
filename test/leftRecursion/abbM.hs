@@ -37,24 +37,21 @@ parse s = d
 sm :: StateT Derivs (Either Fail) (Either Bool S)
 sm = foldl1 mplus [ do
 	sm' <- StateT drvS
-	case sm' of
-		Right s -> do
-			mc <- StateT chars
-			case mc of
-				Right c -> return $ Right $ Rec s c
-				_ -> throwError Fail
+	ss <- case sm' of
+		Right s -> return s
 		Left False -> do
-			d <- get
-			sm'' <- StateT $ const $
-				runStateT sm d { drvS = Left Fail }
-			case sm'' of
-				Right s' -> do
-					mc <- StateT chars
-					case mc of
-						Right c -> return $ Right $ Rec s' c
-						_ -> throwError Fail
+--			d <- get
+			modify $ setDrvS $ Left Fail
+			ms' <- sm
+--			put d
+			case ms' of
+				Right s' -> return s'
 				_ -> throwError Fail
 		Left True -> throwError Fail
+	mc <- StateT chars
+	case mc of
+		Right c -> return $ Right $ Rec ss c
+		_ -> throwError Fail
 			
  , do	mc <- StateT chars
 	case mc of
