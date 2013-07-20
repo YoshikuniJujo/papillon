@@ -20,7 +20,7 @@ data Derivs = Derivs {
  }
 
 testPackrat :: S
-testPackrat = case drvS $ parse [A, B, B] of
+testPackrat = case drvS $ parse [A, B, B, C] of
 	Right (Right r, _) -> r
 	_ -> error "bad"
 
@@ -44,7 +44,7 @@ sm = foldl1 mplus [ do
 			case mc of
 				Right c -> return $ Right $ Rec s c
 				_ -> throwError Fail
-		Left False -> grow $ Left Fail
+		Left False -> grow sm (\x d -> d { drvS = x }) $ Left Fail
 		Left True -> throwError Fail
 			
  , do	mc <- StateT chars
@@ -53,15 +53,16 @@ sm = foldl1 mplus [ do
 		_ -> throwError Fail
  ]
 
-grow :: Return S -> StateT Derivs (Either Fail) (Either Bool S)
-grow x = do
-	d <- get
-	put d { drvS = x }
-	(b, r) <- catchError ((True ,) <$> sm) $ const $ do
+grow :: StateT Derivs (Either Fail) (Either Bool a)
+	-> (Return a -> Derivs -> Derivs)
+	-> Return a -> StateT Derivs (Either Fail) (Either Bool a)
+grow action update x = do
+	modify $ update x
+	(b, r) <- catchError ((True ,) <$> action) $ const $ do
 		xx <- StateT $ const x
 		return (False, xx)
 	d <- get
-	if b then grow $ Right (r, d) else return r
+	if b then grow action update $ Right (r, d) else return r
 
 setDrvS :: Return S -> Derivs -> Derivs
 setDrvS s d = d { drvS = s }
