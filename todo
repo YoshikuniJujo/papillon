@@ -3,9 +3,9 @@
 **************************
 
 * そして、some :: Char = c:some { c } のような rule を評価して、
+	Left DirectLeftRecursion error が返るようにしよう。
 	それぞれの runStateT hogexx_xx d に { hoge = Left DirectLeftRecursion }
 	をつければ良いだろう。
-	Left DirectLeftRecursion error が返るようにしよう。
 
 * そのあと、catchError で DirectLeftRecursion を catch して ParseError を
 	わかりやすいメッセージをつけて返せるようにしよう。
