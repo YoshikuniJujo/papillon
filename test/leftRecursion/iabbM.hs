@@ -7,7 +7,8 @@ import Control.Applicative
 data AB = A | B deriving Show
 data S = Rec S AB | Atom AB deriving Show
 
--- S = S b | a
+-- X = S
+-- S = X b | a
 
 data Fail = Fail | LR deriving Show
 instance Error Fail where
@@ -15,6 +16,7 @@ instance Error Fail where
 type Result a = Either Fail (a, Derivs)
 
 data Derivs = Derivs {
+	getX :: Result S,
 	getS :: Result S,
 	chars :: Result AB
  } deriving Show
@@ -22,7 +24,8 @@ data Derivs = Derivs {
 parse :: [AB] -> Derivs
 parse abstr = d
 	where
-	d = Derivs s c
+	d = Derivs x s c
+	x = runStateT ruleX d { getX = Left LR }
 	s = runStateT ruleS d { getS = Left LR }
 	c = flip runStateT d $ do
 		case abstr of
@@ -31,16 +34,28 @@ parse abstr = d
 				return ab
 			_ -> throwError Fail
 
+ruleX :: StateT Derivs (Either Fail) S
+ruleX = catchError (StateT getS) $ \e -> case e of
+-- ruleX = catchError ruleS $ \e -> case e of
+{-
+	LR -> grow ruleX
+		(\mx d -> d { getX = mx `runStateT` d })
+		(throwError Fail)
+-}
+	_ -> throwError Fail
+
 ruleS :: StateT Derivs (Either Fail) S
-ruleS = foldl1 mplus [
-   do	catchError (do
-		s <- StateT getS
-		c <- StateT chars
-		return $ Rec s c) $ \e -> case e of
-			LR -> grow ruleS
-				(\mx d -> d { getS = mx `runStateT` d })
-				(throwError Fail)
-			_ -> throwError Fail
+ruleS = foldl1 mplus [ catchError (do
+	s <- StateT getX
+--	s <- ruleX
+	c <- StateT chars
+	return $ Rec s c) $ \e -> case e of
+{-
+		LR -> grow ruleS
+			(\mx d -> d { getS = mx `runStateT` d })
+			(throwError Fail)
+-}
+		_ -> throwError Fail
  , do	c <- StateT chars
 	return $ Atom c
  ]
