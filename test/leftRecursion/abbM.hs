@@ -1,9 +1,10 @@
-{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE PackageImports, TupleSections #-}
 
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
+import Control.Applicative
 
-data AB = A | B deriving Show
+data AB = A | B | C deriving Show
 data S = Rec S AB | Atom AB deriving Show
 -- data S = Rec AB S | Atom AB deriving Show
 
@@ -37,27 +38,30 @@ parse s = d
 sm :: StateT Derivs (Either Fail) (Either Bool S)
 sm = foldl1 mplus [ do
 	sm' <- StateT drvS
-	ss <- case sm' of
-		Right s -> return s
-		Left False -> do
---			d <- get
-			modify $ setDrvS $ Left Fail
-			ms' <- sm
---			put d
-			case ms' of
-				Right s' -> return s'
+	case sm' of
+		Right s -> do
+			mc <- StateT chars
+			case mc of
+				Right c -> return $ Right $ Rec s c
 				_ -> throwError Fail
+		Left False -> grow $ Left Fail
 		Left True -> throwError Fail
-	mc <- StateT chars
-	case mc of
-		Right c -> return $ Right $ Rec ss c
-		_ -> throwError Fail
 			
  , do	mc <- StateT chars
 	case mc of
 		Right c -> return $ Right $ Atom c
 		_ -> throwError Fail
  ]
+
+grow :: Return S -> StateT Derivs (Either Fail) (Either Bool S)
+grow x = do
+	d <- get
+	put d { drvS = x }
+	(b, r) <- catchError ((True ,) <$> sm) $ const $ do
+		xx <- StateT $ const x
+		return (False, xx)
+	d <- get
+	if b then grow $ Right (r, d) else return r
 
 setDrvS :: Return S -> Derivs -> Derivs
 setDrvS s d = d { drvS = s }
