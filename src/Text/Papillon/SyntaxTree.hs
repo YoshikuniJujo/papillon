@@ -15,7 +15,7 @@ data ReadFrom
 
 nameFromRF :: ReadFrom -> [String]
 nameFromRF (FromVariable s) = [s]
-nameFromRF FromToken = ["derivsChars"]
+nameFromRF FromToken = ["char"]
 nameFromRF (FromList rf) = nameFromRF rf
 nameFromRF (FromList1 rf) = nameFromRF rf
 nameFromRF (FromOptional rf) = nameFromRF rf

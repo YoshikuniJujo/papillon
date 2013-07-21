@@ -2,29 +2,9 @@
 * 次にやること           *
 **************************
 
-* 左再帰にはとりあえずは対応しないことにする
-
 * version up して install
 
-* derivsChars について
-	名前の見直し
-	baseToken とかのほうがいいのでは?
-	ただ char に限らないが char を推奨しているということはある
-	また s をつけないほうが正確な気もする
-	char だけだと名前の conflict が起こりまくりそう
-	papillonChar とかでもいいかもしれない
-	大きくは変えず derivsChar でもいいかも
-	よく考えよう
-
-	なかで指定するようにするという方法もあるな
-
-	それと合わせて、derivsPosition についても考えよう
-
-	* chars と position にしてしまおうかな
-
-	conflict については2つの道がある
-	まずは prefix をつけるということ
-	もうひとつは chars と position の名前を上書きできるようにすること
+* position にする
 
 * ParseError のそれぞれの項目を入手する関数の名前について見直す
 	cabal haddock をして、それぞれを確認、また、並び順についても
@@ -182,6 +162,11 @@
 	dist 以下に、module の directory 構造を作成し、
 	存在する場合にはそのまま、そこに Papillon.hs を置く。
 	とりあえず、最後の version だけを作った。
+
+* char と position について
+	conflict については2つの道がある
+	まずは prefix をつけるということ
+	もうひとつは chars と position の名前を上書きできるようにすること
 
 **************************
 *  ドキュメント関係      *

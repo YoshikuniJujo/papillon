@@ -170,7 +170,7 @@ showParseError pe = -- (ParseError c m _ d ns (ListPos (CharPos p))) =
 	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
-showReading d "derivsChars" = case derivsChars d of
+showReading d "char" = case char d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
@@ -202,7 +202,7 @@ parseEE glb th pg = do
 		(if isOptionalUsed pg then od else [])
 
 dvCharsN, dvPosN :: Name
-dvCharsN = mkName "derivsChars"
+dvCharsN = mkName "char"
 dvPosN = mkName "derivsPosition"
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
