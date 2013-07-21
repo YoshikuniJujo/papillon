@@ -2,7 +2,7 @@
 * 次にやること           *
 **************************
 
-* position を (Int, pos) のようにしよう
+* position を (Integer, pos) のようにしよう
 
 * catchError で DirectLeftRecursion を catch して ParseError を
 	わかりやすいメッセージをつけて返せるようにしよう。
