@@ -39,7 +39,8 @@ ruleS = foldl1 mplus [
 		c <- StateT chars
 		case c of
 			B -> return $ Rec s c
-			_ -> throwError Fail) $ \e -> case e of
+			_ -> throwError Fail) $
+		\e -> case e of
 			LR -> grow ruleS
 				(\x d -> d { getS = x })
 				(Left Fail)
@@ -62,14 +63,19 @@ grow :: PMonad a -> (Either Fail (a, Derivs) -> Derivs -> Derivs)
 grow action update x = do
 	d0 <- get
 	modify $ update x
-	(b, r) <- catchError ((True ,) <$> action) $ const $
-		(False ,) <$> StateT (const x)
+	(b, r) <- flip catchError
+		(const $ (False ,) <$> StateT (const x)) $ ((True ,) <$>) $ do
+			a <- action
+			p' <- gets position
+			case x of
+				Right (_, d) ->
+					if position d >= p'
+					then throwError Fail
+					else return a
+				_ -> return a
 	d1 <- get
-	let b' = case x of
-		Right (_, Derivs { position = p }) -> p < position d1
-		_ -> True
 	put d0
-	if b && b' then grow action update (Right (r, d1)) else StateT $ const x
+	if b then grow action update (Right (r, d1)) else StateT $ const x
 
 getParseResult :: Derivs -> S
 getParseResult d = case getS d of
