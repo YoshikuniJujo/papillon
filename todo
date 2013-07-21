@@ -2,11 +2,6 @@
 * 次にやること           *
 **************************
 
-* some :: Char = c:some { c } のような rule を評価して、
-	Left DirectLeftRecursion error が返るようにしよう。
-	それぞれの runStateT hogexx_xx d に { hoge = Left DirectLeftRecursion }
-	をつければ良いだろう。
-
 * position を (Int, pos) のようにしよう
 
 * catchError で DirectLeftRecursion を catch して ParseError を

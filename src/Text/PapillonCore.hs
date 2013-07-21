@@ -11,6 +11,8 @@ module Text.PapillonCore (
 	-- ** For parse error message
 	ParseError,
 	mkParseError,
+	directLeftRecursion,
+	isDirectLeftRecursion,
 	peDerivs,
 	peReading,
 	peMessage,
@@ -252,18 +254,18 @@ newNewName g base = do
 parseE :: IORef Int -> Bool -> Name -> [Name] -> Peg -> ClauseQ
 parseE g th pgn pnames pegg = do
 	tmps <- mapM (newNewName g) names
-	parseE' g th pgn tmps pnames
+	parseE' g th pgn tmps pnames $ map mkName names
 	where
 	names = map (\(n, _, _) -> n) pegg
-parseE' :: IORef Int -> Bool -> Name -> [Name] -> [Name] -> ClauseQ
-parseE' g th pgn tmps pnames = do
+parseE' :: IORef Int -> Bool -> Name -> [Name] -> [Name] -> [Name] -> ClauseQ
+parseE' g th pgn tmps pnames names = do
 	chars <- newNewName g "chars"
 	clause [varP $ mkName "pos", varP $ mkName "s"]
 					(normalB $ varE $ mkName "d") $ [
 		flip (valD $ varP $ mkName "d") [] $ normalB $ appsE $
 			conE (mkName "Derivs") :
 				map varE tmps ++ [varE chars, varE $ mkName "pos"]
-	 ] ++ zipWith (parseE1 th) tmps pnames ++ [parseChar th pgn chars]
+	 ] ++ zipWith3 (parseE1 th) tmps pnames names ++ [parseChar th pgn chars]
 
 parseChar :: Bool -> Name -> Name -> DecQ
 parseChar th pgn chars = flip (valD $ varP chars) [] $ normalB $
@@ -293,10 +295,12 @@ parseChar th pgn chars = flip (valD $ varP chars) [] $ normalB $
 	s' = mkName "s'"
 	returnE = varE $ returnN th
 	parseGenE = varE pgn
-parseE1 :: Bool -> Name -> Name -> DecQ
-parseE1 th tmp name = flip (valD $ varP tmp) [] $ normalB $
+parseE1 :: Bool -> Name -> Name -> Name -> DecQ
+parseE1 th tmp name n = flip (valD $ varP tmp) [] $ normalB $
 	varE (runStateTN th) `appE` varE name
-		`appE` varE (mkName "d")
+		`appE` recUpdE (varE $ mkName "d") [return (n, dlr)]
+	where
+	dlr = ConE (mkName "Left") `AppE` VarE (mkName "directLeftRecursion")
 
 pSomes :: IORef Int -> Bool -> Name -> Name -> Name -> [Name] -> Peg -> DecsQ
 pSomes g th lst lst1 opt = zipWithM $ pSomes1 g th lst lst1 opt

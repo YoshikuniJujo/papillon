@@ -12,6 +12,8 @@ module Text.Papillon.Parser (
 	nameFromRF,
 	ParseError(..),
 	mkParseError,
+	directLeftRecursion,
+	isDirectLeftRecursion,
 	Derivs(peg, pegFile, derivsChars),
 	Pos(..),
 	ListPos(..),

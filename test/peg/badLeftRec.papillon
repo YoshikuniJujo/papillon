@@ -1,0 +1,16 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = case leftRec $ parse "aaa" of
+	Right (r, _) -> print r
+	Left pe -> if isDirectLeftRecursion pe
+		then putStrLn "direct left recursion" else return ()
+
+[papillon|
+
+leftRec :: Char
+	= c:leftRec	{ c };
+
+|]

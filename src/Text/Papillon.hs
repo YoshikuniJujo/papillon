@@ -7,6 +7,8 @@ module Text.Papillon (
 	-- * For parse error message
 	ParseError,
 	mkParseError,
+	directLeftRecursion,
+	isDirectLeftRecursion,
 	peDerivs,
 	peReading,
 	peMessage,
