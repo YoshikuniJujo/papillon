@@ -3,6 +3,9 @@
 **************************
 
 * simple な example source file を作成する
+	とりあえず wikipedia の四則演算の例を arith.hs とした
+	しかし、これはごちゃごちゃしているので、もっと簡単な例を作りたい
+	name: value といった形のファイルをパースする例を作るか
 
 * cabal に examples directory を追加する
 	extra-source-files: を使えば良いだろう

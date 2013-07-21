@@ -16,7 +16,10 @@ synopsis:	packrat parser
 description:
 	blah blah blah
 
-extra-source-files:	examples/arith.hs
+extra-source-files:
+  examples/arith.hs
+  examples/config.hs
+  examples/test.config
 
 source-repository	head
   type:		git
