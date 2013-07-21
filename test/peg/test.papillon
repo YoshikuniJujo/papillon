@@ -67,7 +67,7 @@ showParseError pe =
 	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
-showReading d "derivsChars" = case derivsChars d of
+showReading d "char" = case char d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
 showReading d "other" = case other d of

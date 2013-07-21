@@ -203,7 +203,7 @@ parseEE glb th pg = do
 
 dvCharsN, dvPosN :: Name
 dvCharsN = mkName "char"
-dvPosN = mkName "derivsPosition"
+dvPosN = mkName "position"
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
