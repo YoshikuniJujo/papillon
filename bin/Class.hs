@@ -6,10 +6,6 @@ module Class (
 	pePositionSD,
 	mkParseErrorTHT,
 	mkParseErrorTH,
-	mkDirectLeftRecursionT,
-	mkDirectLeftRecursion,
-	mkIsDirectLeftRecursionT,
-	mkIsDirectLeftRecursion,
 	instanceErrorParseError,
 	parseErrorT
 ) where
@@ -41,36 +37,6 @@ mkParseErrorTH :: DecQ
 mkParseErrorTH = flip (valD $ varP $ mkName "mkParseError") [] $ normalB $
 	varE $ mkName "ParseError"
 
-mkDirectLeftRecursionT :: DecQ
-mkDirectLeftRecursionT = sigD (mkName "directLeftRecursion") $
-	forallT [PlainTV pos, PlainTV drv] (cxt []) $
-		conT (mkName "ParseError") `appT` varT pos `appT` varT drv
-	where
-	pos = mkName "pos"
-	drv = mkName "drv"
-
-mkDirectLeftRecursion :: DecQ
-mkDirectLeftRecursion =
-	flip (valD $ varP $ mkName "directLeftRecursion") [] $ normalB $
-		varE $ mkName "DirectLeftRecursion"
-
-mkIsDirectLeftRecursionT :: DecQ
-mkIsDirectLeftRecursionT = sigD (mkName "isDirectLeftRecursion") $
-	forallT [PlainTV pos, PlainTV drv] (cxt []) $
-		conT (mkName "ParseError") `appT` varT pos `appT` varT drv
-		`arrT`
-		conT (mkName "Bool")
-	where
-	pos = mkName "pos"
-	drv = mkName "drv"
-
-mkIsDirectLeftRecursion :: DecQ
-mkIsDirectLeftRecursion = funD (mkName "isDirectLeftRecursion") [
-	flip (clause [conP (mkName "DirectLeftRecursion") []]) [] $ normalB $
-		conE $ mkName "True",
-	flip (clause [wildP]) [] $ normalB $ conE $ mkName "False"
- ]
-
 parseErrorT :: Bool -> DecQ
 parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError")
 		[PlainTV $ mkName "pos", PlainTV $ mkName "drv"])
@@ -80,8 +46,7 @@ parseErrorT _ = flip (dataD (cxt []) (mkName "ParseError")
 			varStrictType com strT,
 			varStrictType d drvT,
 			varStrictType r lstT,
-			varStrictType pos posT ],
-		normalC (mkName "DirectLeftRecursion") []
+			varStrictType pos posT ]
 	 ]
 	where
 	[c, m, com, r, d, pos] = map mkName [
@@ -147,8 +112,7 @@ pePositionST = sigD (mkName "pePositionS") $
 	tupT [conT $ mkName "Int", conT $ mkName "Int"]
 pePositionSD :: DecQ
 pePositionSD = funD (mkName "pePositionS") $ [
-	clause [pat] (normalB $ varE $ mkName "p") [],
-	clause [wildP] (normalB $ varE $ mkName "undefined") []
+	clause [pat] (normalB $ varE $ mkName "p") []
  ]
 	where
 	pat = recP (mkName "ParseError") [fieldPat (mkName "pePosition") $

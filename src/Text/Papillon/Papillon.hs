@@ -2,8 +2,6 @@
 module Text.Papillon.Papillon (
 	ParseError,
 	mkParseError,
-	directLeftRecursion,
-	isDirectLeftRecursion,
 	peCode,
 	peMessage,
 	peComment,
@@ -23,22 +21,14 @@ data ParseError pos drv
                   peDerivs :: drv,
                   peReading :: ([String]),
                   pePosition :: pos}
-    | DirectLeftRecursion
 instance Error (ParseError pos drv)
     where strMsg msg = ParseError "" msg "" undefined undefined undefined
 mkParseError :: forall pos drv . String ->
                                  String -> String -> drv -> [String] -> pos -> ParseError pos drv
 mkParseError = ParseError
-directLeftRecursion :: forall pos drv . ParseError pos drv
-directLeftRecursion = DirectLeftRecursion
-isDirectLeftRecursion :: forall pos drv . ParseError pos drv ->
-                                          Bool
-isDirectLeftRecursion (DirectLeftRecursion) = True
-isDirectLeftRecursion _ = False
 pePositionS :: forall drv . ParseError (Pos String) drv ->
                             (Int, Int)
 pePositionS (ParseError {pePosition = ListPos (CharPos p)}) = p
-pePositionS _ = undefined
 class Source sl
     where type Token sl
           data Pos sl

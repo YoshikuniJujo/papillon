@@ -11,8 +11,6 @@ module Text.PapillonCore (
 	-- ** For parse error message
 	ParseError,
 	mkParseError,
-	directLeftRecursion,
-	isDirectLeftRecursion,
 	peDerivs,
 	peReading,
 	peMessage,
