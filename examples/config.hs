@@ -21,10 +21,10 @@ value :: Int
 	= ds:(d:[isDigit d] { d })+		{ read ds }
 ;
 conf1 :: (String, Int)
-	= n:name ':' ' ' v:value		{ (n, v) }
+	= n:name ':' ' ' v:value '\n'		{ (n, v) }
 ;
 conf :: [(String, Int)]
-	= cs:(c:conf1 '\n' { c })+ !_:[True]	{ cs }
+	= cs:(c:conf1 { c })+ !_:[True]	{ cs }
 ;
 
 |]

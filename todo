@@ -2,17 +2,17 @@
 * 次にやること           *
 **************************
 
-* simple な example source file を作成する
-	とりあえず wikipedia の四則演算の例を arith.hs とした
-	しかし、これはごちゃごちゃしているので、もっと簡単な例を作りたい
-	name: value といった形のファイルをパースする例を作るか
-
-* cabal に examples directory を追加する
-	extra-source-files: を使えば良いだろう
-* cabal の description をもうすこしましにする
-	はじめは show example directory とすればいいだろう
+* n:name+ のような表記を許すかどうか
+	本質的な曖昧性は無いと思うのでやろうと思えば出来るとは思うが
+	つまり、selection と name の両方を取れるようにするということ
+	そして、name だったらそれに対応する selection を使えば良い
 
 * homepage に example をのせる
+	はじめは簡単な例から徐々に難しい例へと
+
+* simple な example source file を作成する
+
+* cabal の description をもうすこしましにする
 
 * リファクタリング
 
