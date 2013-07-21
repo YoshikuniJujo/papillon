@@ -16,18 +16,19 @@ type Result a = Either Fail (a, Derivs)
 
 data Derivs = Derivs {
 	getS :: Result S,
-	chars :: Result AB
+	chars :: Result AB,
+	position :: Integer
  } deriving Show
 
-parse :: [AB] -> Derivs
-parse abstr = d
+parse :: Integer -> [AB] -> Derivs
+parse p abstr = d
 	where
-	d = Derivs s c
+	d = Derivs s c p
 	s = runStateT ruleS d { getS = Left LR }
 	c = flip runStateT d $ do
 		case abstr of
 			ab : abs -> do
-				put $ parse abs
+				put $ parse (p + 1) abs
 				return ab
 			_ -> throwError Fail
 
@@ -36,22 +37,39 @@ ruleS = foldl1 mplus [
    do	catchError (do
 		s <- StateT getS
 		c <- StateT chars
-		return $ Rec s c) $ \e -> case e of
+		case c of
+			B -> return $ Rec s c
+			_ -> throwError Fail) $ \e -> case e of
 			LR -> grow ruleS
-				(\mx d -> d { getS = mx `runStateT` d })
-				(throwError Fail)
+				(\x d -> d { getS = x })
+				(Left Fail)
 			_ -> throwError Fail
  , do	c <- StateT chars
-	return $ Atom c
+	case c of
+		A -> return $ Atom A
+		_ -> throwError Fail
  ]
 
+type PMonad = StateT Derivs (Either Fail)
+
+{-
 grow :: (MonadError m, MonadState m, Functor m) =>
 	m a -> (m a -> StateType m -> StateType m) -> m a -> m a
-grow action update mx = do
-	modify $ update mx
+-}
+
+grow :: PMonad a -> (Either Fail (a, Derivs) -> Derivs -> Derivs)
+	-> Either Fail (a, Derivs) -> PMonad a
+grow action update x = do
+	d0 <- get
+	modify $ update x
 	(b, r) <- catchError ((True ,) <$> action) $ const $
-		(False ,) <$> mx
-	if b then grow action update (return r) else return r
+		(False ,) <$> StateT (const x)
+	d1 <- get
+	let b' = case x of
+		Right (_, Derivs { position = p }) -> p < position d1
+		_ -> True
+	put d0
+	if b && b' then grow action update (Right (r, d1)) else StateT $ const x
 
 getParseResult :: Derivs -> S
 getParseResult d = case getS d of
