@@ -296,11 +296,8 @@ parseChar th pgn chars = flip (valD $ varP chars) [] $ normalB $
 	returnE = varE $ returnN th
 	parseGenE = varE pgn
 parseE1 :: Bool -> Name -> Name -> Name -> DecQ
-parseE1 th tmp name n = flip (valD $ varP tmp) [] $ normalB $
-	varE (runStateTN th) `appE` varE name
-		`appE` recUpdE (varE $ mkName "d") [return (n, dlr)]
-	where
-	dlr = ConE (mkName "Left") `AppE` VarE (mkName "directLeftRecursion")
+parseE1 th tmp name _ = flip (valD $ varP tmp) [] $ normalB $
+	varE (runStateTN th) `appE` varE name `appE` varE (mkName "d")
 
 pSomes :: IORef Int -> Bool -> Name -> Name -> Name -> [Name] -> Peg -> DecsQ
 pSomes g th lst lst1 opt = zipWithM $ pSomes1 g th lst lst1 opt

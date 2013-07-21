@@ -2,51 +2,9 @@
 * 次にやること           *
 **************************
 
-* position を (Integer, pos) のようにしよう
+* 左再帰にはとりあえずは対応しないことにする
 
-* catchError で DirectLeftRecursion を catch して ParseError を
-	わかりやすいメッセージをつけて返せるようにしよう。
-
-* ParseError を返す、dummy の grow を定義し、そこからメッセージを返すようにする。
-	catchError をつけて、
-	if isDirectLeftRecursion e then grow else throwError e
-	のようにしよう
-
-* grow の中身を作る。
-	呼び出しのほうでは、grow rule (\x d -> d { hoge = x }) (Left pe)
-	のような感じ。
-	grow の関数自体は複雑
-
-* 直接左再帰のみに対応することにする
-	grow 関数を定義する
-	runStateT rule d { hoge = Left LR } のような感じにする
-	... `catchError` \e -> case e of
-		LR -> grow rule (\x d -> d { hoge = x `runStateT d })
-			(throwError Fail)
-		_ -> throwError Fail
-	のような形にする
-	grow 関数はどうしようかな
-	とりあえず、parse = ... where のなかで定義するようにしよう
-	まずは、ParseError = ... | DirectLeftRecursion のようにしようかな
-	そして、some :: Char = c:some { c } のような rule を評価して、
-	Left DirectLeftRecursion error が返るようにしよう。
-	そのあと、catchError で DirectLeftRecursion を catch して ParseError を
-	わかりやすいメッセージをつけて返せるようにしよう。
-	ParseError を返す、dummy の grow を定義し、そこからメッセージを返す
-	ようにする。
-	grow の中身を作る。
-
-* 左再帰の解決はどうしようかな
-	pappy はこれにひどく時間がかかっていた
-	解決するかどうかを switching できるようにする
-	また O 記法でどのくらいになるか調べる
-
-	するとしたら、とりあえず直接左再帰だな。
-	間接左再帰まで対応しようとすると大変そうだ。
-
-	もっと直接的な方法を使おう。
-	同じルールで同じ入力を検出した場合にどう動くか。
-	ルールと入力のペアも Derivs に入れておく?
+* version up して install
 
 * derivsChars について
 	名前の見直し
@@ -307,3 +265,53 @@
 
 	上記はちょっとやりすぎ感がある。
 	([Pragma], ModuleName, String, String, DecsQ, String, Bool) でいい気もする。
+
+**************************
+* 左再帰について         *
+**************************
+
+* position を (Integer, pos) のようにしよう
+
+* catchError で DirectLeftRecursion を catch して ParseError を
+	わかりやすいメッセージをつけて返せるようにしよう。
+
+* ParseError を返す、dummy の grow を定義し、そこからメッセージを返すようにする。
+	catchError をつけて、
+	if isDirectLeftRecursion e then grow else throwError e
+	のようにしよう
+
+* grow の中身を作る。
+	呼び出しのほうでは、grow rule (\x d -> d { hoge = x }) (Left pe)
+	のような感じ。
+	grow の関数自体は複雑
+
+* 直接左再帰のみに対応することにする
+	grow 関数を定義する
+	runStateT rule d { hoge = Left LR } のような感じにする
+	... `catchError` \e -> case e of
+		LR -> grow rule (\x d -> d { hoge = x `runStateT d })
+			(throwError Fail)
+		_ -> throwError Fail
+	のような形にする
+	grow 関数はどうしようかな
+	とりあえず、parse = ... where のなかで定義するようにしよう
+	まずは、ParseError = ... | DirectLeftRecursion のようにしようかな
+	そして、some :: Char = c:some { c } のような rule を評価して、
+	Left DirectLeftRecursion error が返るようにしよう。
+	そのあと、catchError で DirectLeftRecursion を catch して ParseError を
+	わかりやすいメッセージをつけて返せるようにしよう。
+	ParseError を返す、dummy の grow を定義し、そこからメッセージを返す
+	ようにする。
+	grow の中身を作る。
+
+* 左再帰の解決はどうしようかな
+	pappy はこれにひどく時間がかかっていた
+	解決するかどうかを switching できるようにする
+	また O 記法でどのくらいになるか調べる
+
+	するとしたら、とりあえず直接左再帰だな。
+	間接左再帰まで対応しようとすると大変そうだ。
+
+	もっと直接的な方法を使おう。
+	同じルールで同じ入力を検出した場合にどう動くか。
+	ルールと入力のペアも Derivs に入れておく?
