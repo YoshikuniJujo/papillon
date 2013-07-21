@@ -2,18 +2,25 @@
 * 次にやること           *
 **************************
 
-* そして、some :: Char = c:some { c } のような rule を評価して、
+* some :: Char = c:some { c } のような rule を評価して、
 	Left DirectLeftRecursion error が返るようにしよう。
 	それぞれの runStateT hogexx_xx d に { hoge = Left DirectLeftRecursion }
 	をつければ良いだろう。
 
-* そのあと、catchError で DirectLeftRecursion を catch して ParseError を
+* position を (Int, pos) のようにしよう
+
+* catchError で DirectLeftRecursion を catch して ParseError を
 	わかりやすいメッセージをつけて返せるようにしよう。
 
-* ParseError を返す、dummy の grow を定義し、そこからメッセージを返す
-	ようにする。
+* ParseError を返す、dummy の grow を定義し、そこからメッセージを返すようにする。
+	catchError をつけて、
+	if isDirectLeftRecursion e then grow else throwError e
+	のようにしよう
 
 * grow の中身を作る。
+	呼び出しのほうでは、grow rule (\x d -> d { hoge = x }) (Left pe)
+	のような感じ。
+	grow の関数自体は複雑
 
 * 直接左再帰のみに対応することにする
 	grow 関数を定義する
