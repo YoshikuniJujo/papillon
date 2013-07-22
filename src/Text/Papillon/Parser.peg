@@ -251,6 +251,9 @@ selectCharsLs :: ReadFrom
 ;
 selectChars :: ReadFrom
 	= '[' cs:(c:[isLower c] { c })+ ']'	{ FromTokenChars cs }
+	/ '[' cb:[cb `notElem` "\\-"] '-'
+		ce:[ce `notElem` "\\-"] ']'	{ FromTokenChars [cb .. ce] }
+	/ '\'' c:[c `notElem` "\\'"] '\''	{ FromTokenChars [c] }
 ;
 test :: (ExR, String)
 	= '[' h:hsExpLam _:spaces com:comForErr? ']'	{ (h, maybe "" id com) }
