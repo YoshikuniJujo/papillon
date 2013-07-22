@@ -2,13 +2,10 @@
 * 次にやること           *
 **************************
 
-* Either をもっとちゃんとやれば、plain style の一部には使い道がありそうだ
-	今は、Either X (Either Y (Exither Z ())) となっているが、
-	Either X (Either Y Z) のようにしたい。
+* plain style を使ったテスト
 
 * リファクタリング
 	plain style の部分をどの程度残すか、あるいは全部消すか、
-	または、たとえば Either を使いすぎるところを直すか、
 	そのへんを決定する必要がある。
 
 * homepage に example をのせる
