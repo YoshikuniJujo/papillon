@@ -2,30 +2,11 @@
 * 次にやること           *
 **************************
 
-* 問題が発生
-	value <- [0-9]+ / '(' expr ')';
-	expr <- value;
-	のような表現では、expr の型が定まらないため無限ループになってしまう
-
-* 一番下のパーサとして [a-zA-Z] のような表現ができるようにしよう
-	lower <- [a-z];
-	lowers <- [a-z]+;
-	のような感じにできたらいい。
-
-	StateT char >>= \c -> unless (c `elem` cs) (throwError ...)
-
-* plain style で &, ! を使えるようにする <- refactoring が必要だろう
-* plain style で	"hoge" と、'h' を使えるようにする
-* ';' を省略できるようにすれば、PEG をそのまま読み込める。
-
-* import Applicative の読み込み条件に PlainExpressionHs の有無も入れる。
-	あるいは、いっそ warning は無視することにして、import Control.Applicative
-	は無条件で入れてしまうというのもありかもな。
+* 例えば、<isDigit> とすると、d:[isDigit d] { d } を表せるようにするってのはどうか
+	良さそうだ。
 
 * str :: Either (String, String) (Either (String, String) ()) がパースエラーになる
 	上記を解決すること
-
-* 今は、<*> を export しているが、他の方法が無いか考えること
 
 * homepage に example をのせる
 	はじめは簡単な例から徐々に難しい例へと
@@ -327,3 +308,34 @@
 	もっと直接的な方法を使おう。
 	同じルールで同じ入力を検出した場合にどう動くか。
 	ルールと入力のペアも Derivs に入れておく?
+
+**************************
+* plain style について   *
+**************************
+
+* 問題が発生
+	value <- [0-9]+ / '(' expr ')';
+	expr <- value;
+	のような表現では、expr の型が定まらないため無限ループになってしまう
+
+* plain style について
+	plain style の一番の問題点としては、再帰的な定義が使えないこと。
+	次に問題なのはひとつしか選択肢が無くても Either X () のようになって
+	しまうこと。
+
+* 一番下のパーサとして [a-zA-Z] のような表現ができるようにしよう
+	lower <- [a-z];
+	lowers <- [a-z]+;
+	のような感じにできたらいい。
+
+	StateT char >>= \c -> unless (c `elem` cs) (throwError ...)
+
+* plain style で &, ! を使えるようにする <- refactoring が必要だろう
+* plain style で	"hoge" と、'h' を使えるようにする
+* ';' を省略できるようにすれば、PEG をそのまま読み込める。
+
+* import Applicative の読み込み条件に PlainExpressionHs の有無も入れる。
+	あるいは、いっそ warning は無視することにして、import Control.Applicative
+	は無条件で入れてしまうというのもありかもな。
+
+* 今は、<*> を export しているが、他の方法が無いか考えること
