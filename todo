@@ -2,6 +2,8 @@
 * 次にやること           *
 **************************
 
+* searchDefinition の中身を作る
+
 * some <- hage / boke; のような表記を許すようにする
 	自動的に型を判定する必要がある
 	Selection -> TypeQ を作ろう。
@@ -60,6 +62,8 @@
 
 * str :: Either (String, String) (Either (String, String) ()) がパースエラーになる
 	上記を解決すること
+
+* 今は、<*> を export しているが、他の方法が無いか考えること
 
 * homepage に example をのせる
 	はじめは簡単な例から徐々に難しい例へと

@@ -13,6 +13,16 @@ data ReadFrom
 	| FromList1 ReadFrom
 	| FromOptional ReadFrom
 
+getReadFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
+getReadFromType peg tknt (FromVariable var) =
+	getDefinitionType tknt $ searchDefinition peg var
+getReadFromType peg tknt (FromSelection sel) = getSelectionType peg tknt sel
+getReadFromType _ tknt FromToken = tknt
+getReadFromType peg tknt (FromList rf) = listT `appT` getReadFromType peg tknt rf
+getReadFromType peg tknt (FromList1 rf) = listT `appT` getReadFromType peg tknt rf
+getReadFromType peg tknt (FromOptional rf) =
+	conT (mkName "Maybe") `appT` getReadFromType peg tknt rf
+
 nameFromRF :: ReadFrom -> [String]
 nameFromRF (FromVariable s) = [s]
 nameFromRF FromToken = ["char"]
@@ -75,6 +85,11 @@ data ExpressionHs
 	 }
 	| PlainExpressionHs [ReadFrom]
 
+getExpressionHsType :: Peg -> TypeQ -> ExpressionHs -> TypeQ
+getExpressionHsType peg tknt (PlainExpressionHs rfs) =
+	foldr appT (tupleT $ length rfs) $ map (getReadFromType peg tknt) rfs
+getExpressionHsType _ _ _ = error "getExpressionHsType: can't get type"
+
 showExpressionHs :: ExpressionHs -> Q String
 showExpressionHs (ExpressionHs ex hs) = do
 	expp <- showExpression ex
@@ -90,6 +105,13 @@ data Selection
 	= Selection { expressions :: [ExpressionHs] }
 	| PlainSelection { plainExpressions :: [ExpressionHs] }
 
+getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
+getSelectionType peg tknt (PlainSelection ex) =
+	foldr appT eitherT $ map (getExpressionHsType peg tknt) ex
+	where
+	eitherT = conT $ mkName "Either"
+getSelectionType _ _ _ = error "getSelectionType: can't get type"
+
 showSelection :: Selection -> Q String
 showSelection (Selection ehss) = intercalate " / " <$> mapM showExpressionHs ehss
 showSelection (PlainSelection ehss) =
@@ -102,6 +124,12 @@ nameFromSelection (PlainSelection exs) = concatMap nameFromExpressionHs exs
 type Definition = (String, TypeQ, Selection)
 type Peg = [Definition]
 type TTPeg = (TypeQ, TypeQ, Peg)
+
+searchDefinition :: Peg -> String -> Definition
+searchDefinition _peg _var = error "searchDefinition: yet"
+
+getDefinitionType :: TypeQ -> Definition -> TypeQ
+getDefinitionType _ (_, typ, _) = typ
 
 type Ex = (ExpQ -> ExpQ) -> ExpQ
 type ExR = ExpQ
