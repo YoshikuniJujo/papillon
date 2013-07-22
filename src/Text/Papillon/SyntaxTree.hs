@@ -116,10 +116,10 @@ data Selection
 
 getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
 getSelectionType peg tknt (PlainSelection ex) =
-	foldr (\x y -> (eitherT `appT` x) `appT` y) (conT $ mkName "()") $
-		map (getExpressionHsType peg tknt) ex
+	foldr (\x y -> (eitherT `appT` x) `appT` y) (last types) (init types)
 	where
 	eitherT = conT $ mkName "Either"
+	types = map (getExpressionHsType peg tknt) ex
 getSelectionType _ _ _ = error "getSelectionType: can't get type"
 
 showSelection :: Selection -> Q String

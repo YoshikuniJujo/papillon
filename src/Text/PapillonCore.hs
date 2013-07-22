@@ -346,12 +346,16 @@ pSomes1Sel g th lst lst1 opt (Selection sel) =
 pSomes1Sel g th lst lst1 opt (PlainSelection sel) =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 		listE (zipWith
-			(flip putLeftRight . processExpressionHs g th lst lst1 opt)
+			(flip (putLeftRight $ length sel) .
+				processExpressionHs g th lst lst1 opt)
 			sel [0..])
 
-putLeftRight :: Int -> ExpQ -> ExpQ
-putLeftRight 0 ex = leftE `appE` ex
-putLeftRight n ex = rightE `appE` putLeftRight (n - 1) ex
+putLeftRight :: Int -> Int -> ExpQ -> ExpQ
+putLeftRight 1 0 ex = ex
+putLeftRight _ 0 ex = leftE `appE` ex
+putLeftRight l n ex
+	| n == l - 1 = rightE `appE` putLeftRight (l - 1) (n - 1) ex
+	| otherwise = rightE `appE` putLeftRight l (n - 1) ex
 
 rightE, leftE :: ExpQ
 rightE = varE (mkName "fmap") `appE` conE (mkName "Right")

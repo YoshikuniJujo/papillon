@@ -95,3 +95,10 @@ runhaskell -isrc -ibin -Wall bin/papillon test/peg/testPatOp.papillon tmp/ && \
 runhaskell -isrc -itmp -Wall tmp/testPatOp.hs
 cp test/peg/testPatOp.papillon tmp/testPatOp_th.hs
 runhaskell -isrc -Wall tmp/testPatOp_th.hs
+
+echo
+echo plainTest.papillon
+runhaskell -isrc -ibin -Wall bin/papillon test/peg/plainTest.papillon tmp/ && \
+runhaskell -isrc -itmp -Wall tmp/plainTest.hs
+cp test/peg/plainTest.papillon tmp/plainTest_th.hs
+runhaskell -isrc -Wall tmp/plainTest_th.hs
