@@ -9,6 +9,7 @@ data ReadFrom
 	= FromVariable String
 	| FromSelection Selection
 	| FromToken
+	| FromTokenChars [Char]
 	| FromList ReadFrom
 	| FromList1 ReadFrom
 	| FromOptional ReadFrom
@@ -18,6 +19,7 @@ getReadFromType peg tknt (FromVariable var) =
 	getDefinitionType peg tknt $ searchDefinition peg var
 getReadFromType peg tknt (FromSelection sel) = getSelectionType peg tknt sel
 getReadFromType _ tknt FromToken = tknt
+getReadFromType _ tknt (FromTokenChars _) = tknt
 getReadFromType peg tknt (FromList rf) = listT `appT` getReadFromType peg tknt rf
 getReadFromType peg tknt (FromList1 rf) = listT `appT` getReadFromType peg tknt rf
 getReadFromType peg tknt (FromOptional rf) =
@@ -26,6 +28,7 @@ getReadFromType peg tknt (FromOptional rf) =
 nameFromRF :: ReadFrom -> [String]
 nameFromRF (FromVariable s) = [s]
 nameFromRF FromToken = ["char"]
+nameFromRF (FromTokenChars _) = ["char"]
 nameFromRF (FromList rf) = nameFromRF rf
 nameFromRF (FromList1 rf) = nameFromRF rf
 nameFromRF (FromOptional rf) = nameFromRF rf
@@ -33,6 +36,7 @@ nameFromRF (FromSelection sel) = nameFromSelection sel
 
 showReadFrom :: ReadFrom -> Q String
 showReadFrom FromToken = return ""
+showReadFrom (FromTokenChars cs) = return $ '[' : cs ++ "]"
 showReadFrom (FromVariable v) = return v
 showReadFrom (FromList rf) = (++ "*") <$> showReadFrom rf
 showReadFrom (FromList1 rf) = (++ "+") <$> showReadFrom rf

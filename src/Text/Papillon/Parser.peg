@@ -145,7 +145,11 @@ expressionHs :: ExpressionHs
 		{ ExpressionHs e h }
 ;
 plainExpressionHs :: ExpressionHs
-	= rfs:(rf:readFromLs _:spaces { rf })* { PlainExpressionHs rfs }
+	= rfs:(rf:plainReadFromLs _:spaces { rf })* { PlainExpressionHs rfs }
+;
+plainReadFromLs :: ReadFrom
+	= rf:readFromLs	{ rf }
+	/ rf:selectCharsLs	{ rf }
 ;
 expression :: Expression
 	= l:nameLeaf_ _:spaces e:expression	{ cons l e }
@@ -238,6 +242,15 @@ readFromLs :: ReadFrom
 readFrom :: ReadFrom
 	= v:variable				{ FromVariable v }
 	/ '(' s:selection ')'			{ FromSelection s }
+;
+selectCharsLs :: ReadFrom
+	= rf:selectChars '*'			{ FromList rf }
+	/ rf:selectChars '+'			{ FromList1 rf }
+	/ rf:selectChars '?'			{ FromOptional rf }
+	/ rf:selectChars			{ rf }
+;
+selectChars :: ReadFrom
+	= '[' cs:(c:[isLower c] { c })+ ']'	{ FromTokenChars cs }
 ;
 test :: (ExR, String)
 	= '[' h:hsExpLam _:spaces com:comForErr? ']'	{ (h, maybe "" id com) }

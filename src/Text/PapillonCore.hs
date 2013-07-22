@@ -423,6 +423,17 @@ showNameLeaf (NameLeafList pat sel) =
 
 transReadFrom :: IORef Int -> Bool -> Name -> Name -> Name -> ReadFrom -> ExpQ
 transReadFrom _ th _ _ _ FromToken = conE (stateTN' th) `appE` varE dvCharsN
+transReadFrom g th _ _ _ rf@(FromTokenChars cs) = do
+	d <- newNewName g "d"
+	r <- newNewName g "r"
+	doE [
+		bindS (varP d) $ varE $ getN th,
+		bindS (varP r) $ conE (stateTN' th) `appE` varE dvCharsN,
+		afterCheck th (test r) d (nameFromRF rf) "",
+		noBindS $ varE (mkName "return") `appE` varE r
+	 ]
+	where
+	test d' = infixApp (varE d') (varE $ mkName "elem") (litE $ stringL cs)
 transReadFrom _ th _ _ _ (FromVariable var) = conE (stateTN' th) `appE` varE (mkName var)
 transReadFrom g th l l1 o (FromSelection sel) = pSomes1Sel g th l l1 o sel
 transReadFrom g th l l1 o (FromList rf) = varE l `appE` transReadFrom g th l l1 o rf
