@@ -2,6 +2,39 @@
 * 次にやること           *
 **************************
 
+* plain style で &, ! を使えるようにする <- refactoring が必要だろう
+
+	transReadFrom を使って、return (,,,) <*> ... <*> ... <*> ... のような
+	形にしよう。
+	foldl (\x y -> infixApp x (<*>) y) (return (,,,)) $ map transReadFrom rfs
+	のような感じ。
+	また、import Applicative の読み込み条件に PlainExpressionHs の有無も入れる。
+
+* まずは、some :: String = other; から行こうかな
+	v: の部分と { } を省略した場合には、それぞれの値を (x, y, z) としたものを
+	返すようにすれば良い。(,,) <$> mx <*> my <*> mz または、
+	return (,,) <*> mx <*> my <*> mz とするか。
+	後者のほうが作りやすいかもしれない。
+	Expression あたりを変えればできそうだ。
+
+* 下を実現するために、まずは Selection -> TypeQ を作る必要がある
+	NameLeaf までたどって、それが char だったら、Char で、
+	それ以外だったら Definition を探し、その TypeQ を取得する。
+	Peg -> String -> TypeQ を作ろう。
+	それを使えば、Peg -> NameLeaf_ -> TypeQ が作れる。
+	これを使いさらに、Peg -> Expression -> TypeQ が作れる。(X, Y, Z, ...)
+	それを使って Peg -> Selection -> TypeQ が作れる。Either X (Either Y z
+
+* some <- hage / boke; のような表記を許すようにしてみようかな
+	U+2190 も使えるようにしようかな(面白いから)
+	&, ! も使える必要があるし、*, +, ? も使える必要がある () もか
+	"hoge" と、 'h' もだ。
+	面倒臭そうなところは型を調べるところだ。
+	そこのところの処理を早い段階でやってしまおう。
+	その後、';' を省略できるようにすれば、PEG をそのまま読み込める。
+
+	まずは一番単純な some <- other; という rule からやろうかな。
+
 * ns:name+ のような表記を許すかどうか
 	本質的な曖昧性は無いと思うのでやろうと思えば出来るとは思うが
 	つまり、selection と name の両方を取れるようにするということ
