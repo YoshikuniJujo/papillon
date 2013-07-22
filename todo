@@ -2,16 +2,7 @@
 * 次にやること           *
 **************************
 
-* document を書こう
-	item :: Type
-		= pat1:source1[test1]  pat2:source2[test2] ... { ret }
-		/ ...
-	;
-	pat1:source1[test1]	-- read from source1
-	pat1:[test1]		-- read from char
-	pat1			-- read from char and not test
-
-	<test>			-- syntax sugar for 'c:[test c] { c }'
+* リファクタリング
 
 * homepage に example をのせる
 	はじめは簡単な例から徐々に難しい例へと
@@ -19,8 +10,6 @@
 * simple な example source file を作成する
 
 * cabal の description をもうすこしましにする
-
-* リファクタリング
 
 **************************
 * parser の表記/機能関係 *
