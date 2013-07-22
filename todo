@@ -12,6 +12,32 @@
 	前者なら either id id で簡単に変換できるし。
 	より複雑でも either (either id id) id で何とかなる。
 
+	これをするためには、l:lower { l } / u:upper { u } と、
+	lower / upper とを分けてパースする必要があるな。
+	まずはそこからだ。
+	まずは型をその2つで分けよう。
+
+	Either (Either X Y) Z を使うならば、
+	X は Left (Left x) で Y は Left (Right y) で Z は Right z となるだろう。
+	Either (Either (Either X Y) Z) W ならば、
+	X は Left (Left (Left x)) で
+	Y は Left (Left (Right y)) で
+	Z は Left (Right z) で
+	W は Right w となるだろう。
+	putLeftRight :: Int -> Int -> ExpQ -> ExpQ を作ろう。
+
+	1
+	x ->	Left x ->	Left (Left x) ->	Left (Left (Left x))
+	2
+		Right y ->	Left (Right y) ->	Left (Left (Right y))
+	3
+				Right z ->		Left (Right z)
+
+	コンピュータで処理しやすさを考えれば、
+	Either (Either (Either () X) Y) Z または、
+	Either X (Either Y (Either Z ())) のほうが良さそうだ。
+	そうすれば Left x, Right (Left y), Right (Right (Left z)) のようにできる
+
 * plain style で &, ! を使えるようにする <- refactoring が必要だろう
 
 * import Applicative の読み込み条件に PlainExpressionHs の有無も入れる。
@@ -62,6 +88,9 @@
 	これは、ありかもしれない。
 	より、一般化すれば、hoge hage boke のような場合に { } を省略した場合のみ、
 	(h1, h2, h3) のような tuple になるとすることが考えられる
+
+* str :: Either (String, String) (Either (String, String) ()) がパースエラーになる
+	上記を解決すること
 
 * homepage に example をのせる
 	はじめは簡単な例から徐々に難しい例へと
