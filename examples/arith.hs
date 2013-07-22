@@ -27,11 +27,12 @@ factor :: Int
 	/ '(' e:expr ')'	{ e }
 ;
 term :: Int
-	= v0:factor vs:(op:op1 v:factor { (`op` v) })*
-				{ foldl (flip ($)) v0 vs }
+	= f0:factor fs:(op:op1 f:factor { (`op` f) })*
+				{ foldl (flip ($)) f0 fs }
 ;
 expr :: Int
-	= p0:term ps:(op:op2 p:term { (`op` p) })*
-				{ foldl (flip ($)) p0 ps }
+	= t0:term ts:(op:op2 t:term { (`op` t) })*
+				{ foldl (flip ($)) t0 ts }
 ;
+
 |]
