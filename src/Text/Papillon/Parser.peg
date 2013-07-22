@@ -142,7 +142,12 @@ plainSelection :: Selection
 ;
 expressionHs :: ExpressionHs
 	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
-		{ ExpressionHs e h }
+						{ ExpressionHs e h }
+	/ e:expressionHsSugar			{ e }
+;
+expressionHsSugar :: ExpressionHs
+	= '<' _:spaces h:hsExpLam _:spaces '>'
+		{ ExpressionHsSugar h }
 ;
 plainExpressionHs :: ExpressionHs
 	= rfs:(rf:plainReadFromLs _:spaces { rf })* { PlainExpressionHs rfs }
@@ -242,6 +247,7 @@ readFromLs :: ReadFrom
 readFrom :: ReadFrom
 	= v:variable				{ FromVariable v }
 	/ '(' s:selection ')'			{ FromSelection s }
+	/ e:expressionHsSugar			{ FromSelection $ Selection [e] }
 ;
 selectCharsLs :: ReadFrom
 	= rf:selectChars '*'			{ FromList rf }

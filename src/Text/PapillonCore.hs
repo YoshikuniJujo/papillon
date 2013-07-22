@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, PackageImports, TypeFamilies, FlexibleContexts,
-	FlexibleInstances #-}
+	FlexibleInstances, TupleSections #-}
 
 module Text.PapillonCore (
 	-- * For Text.Papillon library
@@ -57,6 +57,7 @@ isOptionalUsedDefinition (PlainDefinition _ (PlainSelection sel)) =
 
 isOptionalUsedSelection :: ExpressionHs -> Bool
 isOptionalUsedSelection (ExpressionHs ex _) = any isOptionalUsedLeafName ex
+isOptionalUsedSelection (ExpressionHsSugar _) = False
 isOptionalUsedSelection (PlainExpressionHs rfs) = any isOptionalUsedReadFrom rfs
 
 isOptionalUsedLeafName :: NameLeaf_ -> Bool
@@ -88,6 +89,7 @@ isListUsedDefinition (PlainDefinition _ (PlainSelection sel)) =
 
 isListUsedSelection :: ExpressionHs -> Bool
 isListUsedSelection (ExpressionHs ex _) = any isListUsedLeafName ex
+isListUsedSelection (ExpressionHsSugar _) = False
 isListUsedSelection (PlainExpressionHs rfs) = any isListUsedReadFrom rfs
 
 isListUsedLeafName :: NameLeaf_ -> Bool
@@ -359,6 +361,12 @@ processExpressionHs ::
 	IORef Int -> Bool -> Name -> Name -> Name -> ExpressionHs -> ExpQ
 processExpressionHs g th lst lst1 opt (ExpressionHs expr exr) =
 	pSome_ g th lst lst1 opt expr exr
+processExpressionHs g th lst lst1 opt (ExpressionHsSugar ex) = do
+	r <- newNewName g "r"
+	pSome_ g th lst lst1 opt [expr r] (varE r)
+	where
+	expr x = Here $ NameLeaf (varP x, "") FromToken $ Just $ (, "") $
+		ex `appE` varE x
 processExpressionHs g th lst lst1 opt (PlainExpressionHs rfs) =
 	foldl (\x y -> infixApp x appApply y)
 		(returnEQ `appE` tupleE g (length rfs)) $

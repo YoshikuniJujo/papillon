@@ -87,6 +87,7 @@ data ExpressionHs
 		expressionHsExpression :: Expression,
 		expressionHsExR :: ExR
 	 }
+	| ExpressionHsSugar ExR
 	| PlainExpressionHs [ReadFrom]
 
 getExpressionHsType :: Peg -> TypeQ -> ExpressionHs -> TypeQ
@@ -99,10 +100,14 @@ showExpressionHs (ExpressionHs ex hs) = do
 	expp <- showExpression ex
 	hss <- hs
 	return $ expp ++ " { " ++ show (ppr hss) ++ " }"
+showExpressionHs (ExpressionHsSugar hs) = do
+	hss <- hs
+	return $ "<" ++ show (ppr hss) ++ ">"
 showExpressionHs (PlainExpressionHs rfs) = unwords <$> mapM showReadFrom rfs
 
 nameFromExpressionHs :: ExpressionHs -> [String]
 nameFromExpressionHs (ExpressionHs ex _) = nameFromExpression ex
+nameFromExpressionHs (ExpressionHsSugar _) = []
 nameFromExpressionHs (PlainExpressionHs rfs) = concatMap nameFromRF rfs
 
 data Selection
