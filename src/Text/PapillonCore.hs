@@ -27,6 +27,7 @@ module Text.PapillonCore (
 	ModuleName,
 	ExportList,
 	Code,
+	(<*>)
 ) where
 
 import Language.Haskell.TH
@@ -48,7 +49,8 @@ isOptionalUsedDefinition :: Definition -> Bool
 isOptionalUsedDefinition (_, _, sel) = any isOptionalUsedSelection sel
 
 isOptionalUsedSelection :: ExpressionHs -> Bool
-isOptionalUsedSelection = any isOptionalUsedLeafName . fst
+isOptionalUsedSelection (ExpressionHs ex _) = any isOptionalUsedLeafName ex
+isOptionalUsedSelection (PlainExpressionHs rfs) = any isOptionalUsedReadFrom rfs
 
 isOptionalUsedLeafName :: NameLeaf_ -> Bool
 isOptionalUsedLeafName (Here nl) = isOptionalUsedLeafName' nl
@@ -70,7 +72,8 @@ isListUsedDefinition :: Definition -> Bool
 isListUsedDefinition (_, _, sel) = any isListUsedSelection sel
 
 isListUsedSelection :: ExpressionHs -> Bool
-isListUsedSelection = any isListUsedLeafName . fst
+isListUsedSelection (ExpressionHs ex _) = any isListUsedLeafName ex
+isListUsedSelection (PlainExpressionHs rfs) = any isListUsedReadFrom rfs
 
 isListUsedLeafName :: NameLeaf_ -> Bool
 isListUsedLeafName (Here nl) = isListUsedLeafName' nl
@@ -81,6 +84,11 @@ isListUsedLeafName' :: NameLeaf -> Bool
 isListUsedLeafName' (NameLeaf _ (FromList _) _) = True
 isListUsedLeafName' (NameLeaf _ (FromList1 _) _) = True
 isListUsedLeafName' _ = False
+
+isListUsedReadFrom :: ReadFrom -> Bool
+isListUsedReadFrom (FromList _) = True
+isListUsedReadFrom (FromList1 _) = True
+isListUsedReadFrom _ = False
 
 catchErrorN, unlessN :: Bool -> Name
 catchErrorN True = 'catchError
@@ -307,7 +315,29 @@ pSomes1 g th lst lst1 opt pname (_, _, sel) = flip (valD $ varP pname) [] $
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
 pSomes1Sel g th lst lst1 opt sel =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
-		listE (map (uncurry $ pSome_ g th lst lst1 opt) sel)
+		listE (map (processExpressionHs g th lst lst1 opt) sel)
+
+processExpressionHs ::
+	IORef Int -> Bool -> Name -> Name -> Name -> ExpressionHs -> ExpQ
+processExpressionHs g th lst lst1 opt (ExpressionHs expr exr) =
+	pSome_ g th lst lst1 opt expr exr
+processExpressionHs g th lst lst1 opt (PlainExpressionHs rfs) =
+	foldl (\x y -> infixApp x appApply y)
+		(returnEQ `appE` tupleE g (length rfs)) $
+			map (transReadFrom g th lst lst1 opt) rfs
+
+tupleE :: IORef Int -> Int -> ExpQ
+tupleE _ 0 = conE $ mkName "()"
+tupleE _ 1 = varE $ mkName "id"
+tupleE g n = do
+	xs <- replicateM n $ newNewName g "x"
+	lamE (map varP xs) $ tupE (map varE xs)
+
+appApply :: ExpQ
+appApply = varE $ mkName "<*>"
+
+returnEQ :: ExpQ
+returnEQ = varE $ mkName "return"
 
 pSome_ :: IORef Int -> Bool -> Name -> Name -> Name -> [NameLeaf_] -> ExpQ -> ExpQ
 pSome_ g th lst lst1 opt nls ret = fmap smartDoE $ do

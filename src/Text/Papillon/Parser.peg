@@ -4,7 +4,7 @@ module Text.Papillon.Parser (
 	Peg,
 	Definition,
 	Selection,
-	ExpressionHs,
+	ExpressionHs(..),
 	NameLeaf(..),
 	NameLeaf_(..),
 	ReadFrom(..),
@@ -129,7 +129,9 @@ selection :: Selection
 ;
 expressionHs :: ExpressionHs
 	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
-		{ mkExpressionHs e h }
+		{ ExpressionHs e h }
+	/ rfs:(rf:readFromLs _:spaces { rf })*
+		{ PlainExpressionHs rfs }
 ;
 expression :: Expression
 	= l:nameLeaf_ _:spaces e:expression	{ cons l e }

@@ -2,22 +2,23 @@
 * 次にやること           *
 **************************
 
+* foo :: String = bar baz; はできるようになった
+	次は foo :: String = bar baz / hoge piyo あたりかな。
+	Either X (Either Y Z) または、Either (Either X Y) Z のどちらかの
+	型を返せば良いとも思うが、
+	あるいは同じ型という場合のみを扱うことにして、そのままの型を返すという
+	選択肢もある。
+	しかし、前者のほうが良いだろう。
+	前者なら either id id で簡単に変換できるし。
+	より複雑でも either (either id id) id で何とかなる。
+
 * plain style で &, ! を使えるようにする <- refactoring が必要だろう
 
-	transReadFrom を使って、return (,,,) <*> ... <*> ... <*> ... のような
-	形にしよう。
-	foldl (\x y -> infixApp x (<*>) y) (return (,,,)) $ map transReadFrom rfs
-	のような感じ。
-	また、import Applicative の読み込み条件に PlainExpressionHs の有無も入れる。
+* import Applicative の読み込み条件に PlainExpressionHs の有無も入れる。
+	あるいは、いっそ warning は無視することにして、import Control.Applicative
+	は無条件で入れてしまうというのもありかもな。
 
-* まずは、some :: String = other; から行こうかな
-	v: の部分と { } を省略した場合には、それぞれの値を (x, y, z) としたものを
-	返すようにすれば良い。(,,) <$> mx <*> my <*> mz または、
-	return (,,) <*> mx <*> my <*> mz とするか。
-	後者のほうが作りやすいかもしれない。
-	Expression あたりを変えればできそうだ。
-
-* 下を実現するために、まずは Selection -> TypeQ を作る必要がある
+* 下を実現するために、Selection -> TypeQ を作る必要がある
 	NameLeaf までたどって、それが char だったら、Char で、
 	それ以外だったら Definition を探し、その TypeQ を取得する。
 	Peg -> String -> TypeQ を作ろう。
@@ -34,6 +35,11 @@
 	その後、';' を省略できるようにすれば、PEG をそのまま読み込める。
 
 	まずは一番単純な some <- other; という rule からやろうかな。
+
+* 一番下のパーサとして [a-zA-Z] のような表現ができるようにしよう
+	lower <- [a-z];
+	lowers <- [a-z]+;
+	のような感じにできたらいい。
 
 * ns:name+ のような表記を許すかどうか
 	本質的な曖昧性は無いと思うのでやろうと思えば出来るとは思うが

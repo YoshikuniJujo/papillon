@@ -68,16 +68,23 @@ showExpression ex = unwords <$> mapM showNameLeaf_ ex
 nameFromExpression :: Expression -> [String]
 nameFromExpression = nameFromNameLeaf_ . head
 
-type ExpressionHs = (Expression, ExR)
+data ExpressionHs
+	= ExpressionHs {
+		expressionHsExpression :: Expression,
+		expressionHsExR :: ExR
+	 }
+	| PlainExpressionHs [ReadFrom]
 
 showExpressionHs :: ExpressionHs -> Q String
-showExpressionHs (ex, hs) = do
+showExpressionHs (ExpressionHs ex hs) = do
 	expp <- showExpression ex
 	hss <- hs
 	return $ expp ++ " { " ++ show (ppr hss) ++ " }"
+showExpressionHs (PlainExpressionHs rfs) = unwords <$> mapM showReadFrom rfs
 
 nameFromExpressionHs :: ExpressionHs -> [String]
-nameFromExpressionHs = nameFromExpression . fst
+nameFromExpressionHs (ExpressionHs ex _) = nameFromExpression ex
+nameFromExpressionHs (PlainExpressionHs rfs) = concatMap nameFromRF rfs
 
 type Selection = [ExpressionHs]
 

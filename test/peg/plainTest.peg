@@ -1,0 +1,28 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Text.Papillon
+import Data.Char
+
+main :: IO ()
+main = do
+	case str $ parse "Hello, world" of
+		Right (r, _) -> print r
+		Left _ -> putStrLn "parse error"
+	case str $ parse "hellO, world" of
+		Right (r, _) -> print r
+		Left _ -> putStrLn "parse error"
+
+[papillon|
+
+uppers :: String
+	= s:(c:[isUpper c] { c })+	{ s }
+;
+lowers :: String
+	= s:(c:[isLower c] { c })+	{ s }
+;
+str :: (String, String)
+	= uppers lowers
+	/ lowers uppers
+;
+
+|]
