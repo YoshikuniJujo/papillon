@@ -2,8 +2,9 @@
 
 module Text.Papillon.Parser (
 	Peg,
-	Definition,
+	Definition(..),
 	Selection(..),
+	getSelectionType,
 	ExpressionHs(..),
 	NameLeaf(..),
 	NameLeaf_(..),
@@ -122,6 +123,8 @@ definition :: Definition
 	= v:variable _:spaces ':' ':'
 		_:spaces t:hsTypeArr _:spaces '='
 		_:spaces sel:selection _:spaces ';'	{ mkDef v t sel }
+	/ v:variable _:spaces '<' '-' _:spaces
+		sel:plainSelection _:spaces ';'		{ PlainDefinition v sel }
 ;
 selection :: Selection
 	= s:normalSelection	{ s }

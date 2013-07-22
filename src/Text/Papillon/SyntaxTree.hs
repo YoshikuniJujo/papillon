@@ -15,7 +15,7 @@ data ReadFrom
 
 getReadFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
 getReadFromType peg tknt (FromVariable var) =
-	getDefinitionType tknt $ searchDefinition peg var
+	getDefinitionType peg tknt $ searchDefinition peg var
 getReadFromType peg tknt (FromSelection sel) = getSelectionType peg tknt sel
 getReadFromType _ tknt FromToken = tknt
 getReadFromType peg tknt (FromList rf) = listT `appT` getReadFromType peg tknt rf
@@ -87,7 +87,7 @@ data ExpressionHs
 
 getExpressionHsType :: Peg -> TypeQ -> ExpressionHs -> TypeQ
 getExpressionHsType peg tknt (PlainExpressionHs rfs) =
-	foldr appT (tupleT $ length rfs) $ map (getReadFromType peg tknt) rfs
+	foldl appT (tupleT $ length rfs) $ map (getReadFromType peg tknt) rfs
 getExpressionHsType _ _ _ = error "getExpressionHsType: can't get type"
 
 showExpressionHs :: ExpressionHs -> Q String
@@ -107,7 +107,8 @@ data Selection
 
 getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
 getSelectionType peg tknt (PlainSelection ex) =
-	foldr appT eitherT $ map (getExpressionHsType peg tknt) ex
+	foldr (\x y -> (eitherT `appT` x) `appT` y) (conT $ mkName "()") $
+		map (getExpressionHsType peg tknt) ex
 	where
 	eitherT = conT $ mkName "Either"
 getSelectionType _ _ _ = error "getSelectionType: can't get type"
@@ -121,15 +122,24 @@ nameFromSelection :: Selection -> [String]
 nameFromSelection (Selection exs) = concatMap nameFromExpressionHs exs
 nameFromSelection (PlainSelection exs) = concatMap nameFromExpressionHs exs
 
-type Definition = (String, TypeQ, Selection)
+data Definition
+	= Definition String TypeQ Selection
+	| PlainDefinition String Selection
 type Peg = [Definition]
 type TTPeg = (TypeQ, TypeQ, Peg)
 
 searchDefinition :: Peg -> String -> Definition
-searchDefinition _peg _var = error "searchDefinition: yet"
+searchDefinition peg var = case filter ((== var) . getDefinitionName) peg of
+	[d] -> d
+	_ -> error "searchDefinition: bad"
 
-getDefinitionType :: TypeQ -> Definition -> TypeQ
-getDefinitionType _ (_, typ, _) = typ
+getDefinitionName :: Definition -> String
+getDefinitionName (Definition n _ _) = n
+getDefinitionName (PlainDefinition n _) = n
+
+getDefinitionType :: Peg -> TypeQ -> Definition -> TypeQ
+getDefinitionType _ _ (Definition _ typ _) = typ
+getDefinitionType peg tknt (PlainDefinition _ sel) = getSelectionType peg tknt sel
 
 type Ex = (ExpQ -> ExpQ) -> ExpQ
 type ExR = ExpQ
@@ -172,8 +182,8 @@ conToPatQ t = conP (mkName t)
 mkExpressionHs :: a -> ExR -> (a, ExR)
 mkExpressionHs x y = (x, y)
 
-mkDef :: a -> TypeQ -> c -> (a, TypeQ, c)
-mkDef x y z = (x, y, z)
+mkDef :: String -> TypeQ -> Selection -> Definition
+mkDef = Definition
 
 isOpTailChar :: Char -> Bool
 isOpTailChar = (`elem` ":+*/-!|&.^=<>$")

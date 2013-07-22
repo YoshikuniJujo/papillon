@@ -2,71 +2,18 @@
 * 次にやること           *
 **************************
 
-* searchDefinition の中身を作る
-
-* type Definition -> data
-	getDefinitionType も変える必要があるな
-	つまり、TypeQ を含まない物も作る必要がある
-
-* Definition が TypeQ を持たない物だった場合に自動導出する
-
-* Parser の変更
-
-* some <- hage / boke; のような表記を許すようにする
-	自動的に型を判定する必要がある
-	Selection -> TypeQ を作ろう。
-	PlainSelection の場合のみ。Selection の場合には error
-
-* 下を実現するために、Selection -> TypeQ を作る必要がある
-	NameLeaf までたどって、それが char だったら、Char で、
-	それ以外だったら Definition を探し、その TypeQ を取得する。
-	Peg -> String -> TypeQ を作ろう。
-	それを使えば、Peg -> NameLeaf_ -> TypeQ が作れる。
-	これを使いさらに、Peg -> Expression -> TypeQ が作れる。(X, Y, Z, ...)
-	それを使って Peg -> Selection -> TypeQ が作れる。Either X (Either Y z
-
-* some <- hage / boke; のような表記を許すようにしてみようかな
-	U+2190 も使えるようにしようかな(面白いから)
-	&, ! も使える必要があるし、*, +, ? も使える必要がある () もか
-	"hoge" と、 'h' もだ。
-	面倒臭そうなところは型を調べるところだ。
-	そこのところの処理を早い段階でやってしまおう。
-	その後、';' を省略できるようにすれば、PEG をそのまま読み込める。
-
-	まずは一番単純な some <- other; という rule からやろうかな。
-
 * 一番下のパーサとして [a-zA-Z] のような表現ができるようにしよう
 	lower <- [a-z];
 	lowers <- [a-z]+;
 	のような感じにできたらいい。
 
 * plain style で &, ! を使えるようにする <- refactoring が必要だろう
+* plain style で	"hoge" と、'h' を使えるようにする
+* ';' を省略できるようにすれば、PEG をそのまま読み込める。
 
 * import Applicative の読み込み条件に PlainExpressionHs の有無も入れる。
 	あるいは、いっそ warning は無視することにして、import Control.Applicative
 	は無条件で入れてしまうというのもありかもな。
-
-* ns:name+ のような表記を許すかどうか
-	本質的な曖昧性は無いと思うのでやろうと思えば出来るとは思うが
-	つまり、selection と name の両方を取れるようにするということ
-	そして、name だったらそれに対応する selection を使えば良い
-	それよりも、ns:name+ は ns:(n:name { n })+ のように解釈するようにするか
-	これはうまくいきそうだが
-
-	それと関連して (foo / bar) を (f:foo { f } / b:bar { b }) と解釈させる
-	ことも可能。
-
-	そんなことを始めると、そもそも、
-	some :: Hoge = hage / boke; とかも可能に出来そうではあるが。
-	other :: Hoge = some; とか。今いちな感じもする。
-
-	いずれにしても、するかどうかをよく考えること。
-
-	するとすれば、ひとつだけしか無い場合で、{ } の部分を省略した場合のみ、
-	それが、あれを表すと解釈すれば良い。
-	これは、ありかもしれない。
-	より、一般化すれば、hoge hage boke のような場合に { } を省略した場合のみ、
-	(h1, h2, h3) のような tuple になるとすることが考えられる
 
 * str :: Either (String, String) (Either (String, String) ()) がパースエラーになる
 	上記を解決すること
@@ -100,6 +47,8 @@
 	今の仕様だと n - s が n (negate s) になってしまう
 
 * '(' のあとに space を許す
+
+* some <- hage / boke; のような表記で U+2190 も使えるようにしようかな(面白いから)
 
 **************************
 *  warning 関係          *

@@ -24,7 +24,7 @@ conf1 :: (String, Int)
 	= n:name ':' ' ' v:value '\n'		{ (n, v) }
 ;
 conf :: [(String, Int)]
-	= cs:(c:conf1 { c })+ !_:[True]	{ cs }
+	= cs:conf1+ !_:[True]	{ cs }
 ;
 
 |]

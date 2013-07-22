@@ -22,10 +22,6 @@ uppers :: String
 lowers :: String
 	= s:(c:[isLower c] { c })+	{ s }
 ;
-str :: Hoge
--- str :: Either (String, String) (Either (String, String) ())
-	= uppers lowers
-	/ lowers uppers
-;
+str <- uppers lowers / lowers uppers;
 
 |]
