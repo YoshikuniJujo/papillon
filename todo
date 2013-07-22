@@ -2,8 +2,6 @@
 * 次にやること           *
 **************************
 
-* version up して install
-
 * some <- hage / boke; のような表記を許すようにする
 	自動的に型を判定する必要がある
 	Selection -> TypeQ を作ろう。
