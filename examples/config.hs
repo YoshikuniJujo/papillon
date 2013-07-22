@@ -15,16 +15,16 @@ main = do
 [papillon|
 
 name :: String
-	= s:(c:[isLower c] { c })+		{ s }
+	= s:<isLower>+			{ s }
 ;
 value :: Int
-	= ds:(d:[isDigit d] { d })+		{ read ds }
+	= ds:<isDigit>+			{ read ds }
 ;
 conf1 :: (String, Int)
-	= n:name ':' ' ' v:value '\n'		{ (n, v) }
+	= n:name ':' ' ' v:value '\n'	{ (n, v) }
 ;
 conf :: [(String, Int)]
-	= cs:conf1+ !_:[True]	{ cs }
+	= cs:conf1+ !_:[True]		{ cs }
 ;
 
 |]

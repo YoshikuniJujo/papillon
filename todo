@@ -2,12 +2,6 @@
 * 次にやること           *
 **************************
 
-* 例えば、<isDigit> とすると、d:[isDigit d] { d } を表せるようにするってのはどうか
-	良さそうだ。
-
-* str :: Either (String, String) (Either (String, String) ()) がパースエラーになる
-	上記を解決すること
-
 * homepage に example をのせる
 	はじめは簡単な例から徐々に難しい例へと
 
@@ -37,6 +31,9 @@
 * '(' のあとに space を許す
 
 * some <- hage / boke; のような表記で U+2190 も使えるようにしようかな(面白いから)
+
+* str :: Either (String, String) (Either (String, String) ()) がパースエラーになる
+	上記を解決すること
 
 **************************
 *  warning 関係          *

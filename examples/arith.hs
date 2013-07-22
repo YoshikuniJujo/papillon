@@ -1,6 +1,5 @@
 {-# LANGUAGE QuasiQuotes, TypeFamilies #-}
 
-import Prelude hiding (product, sum)
 import Text.Papillon
 import Data.Char
 import System.Environment
@@ -14,17 +13,25 @@ main = do
 
 [papillon|
 
-value :: Int
-	= ds:(d:[isDigit d] { d })+	{ read ds }
-	/ '(' e:expr ')'		{ e }
+op1 :: Int -> Int -> Int
+	= '*'			{ (*) }
+	/ '/'			{ div }
+	/ '%'			{ mod }
 ;
-product :: Int
-	= v0:value ops:(op:('*' { (*) } / '/' { div }) v:value { (`op` v) })*
-					{ foldl (flip ($)) v0 ops }
+op2 :: Int -> Int -> Int
+	= '+'			{ (+) }
+	/ '-'			{ (-) }
+;
+factor :: Int
+	= ds:<isDigit>+		{ read ds }
+	/ '(' e:expr ')'	{ e }
+;
+term :: Int
+	= v0:factor vs:(op:op1 v:factor { (`op` v) })*
+				{ foldl (flip ($)) v0 vs }
 ;
 expr :: Int
-	= p0:product ops:(op:('+' { (+) } / '-' { (-) }) p:product { (`op` p) })*
-					{ foldl (flip ($)) p0 ops }
+	= p0:term ps:(op:op2 p:term { (`op` p) })*
+				{ foldl (flip ($)) p0 ps }
 ;
-
 |]
