@@ -7,6 +7,8 @@
 	lowers <- [a-z]+;
 	のような感じにできたらいい。
 
+	StateT char >>= \c -> unless (c `elem` cs) (throwError ...)
+
 * plain style で &, ! を使えるようにする <- refactoring が必要だろう
 * plain style で	"hoge" と、'h' を使えるようにする
 * ';' を省略できるようにすれば、PEG をそのまま読み込める。
