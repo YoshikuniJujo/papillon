@@ -86,13 +86,18 @@ nameFromExpressionHs :: ExpressionHs -> [String]
 nameFromExpressionHs (ExpressionHs ex _) = nameFromExpression ex
 nameFromExpressionHs (PlainExpressionHs rfs) = concatMap nameFromRF rfs
 
-type Selection = [ExpressionHs]
+data Selection
+	= Selection { expressions :: [ExpressionHs] }
+	| PlainSelection { plainExpressions :: [ExpressionHs] }
 
 showSelection :: Selection -> Q String
-showSelection ehss = intercalate " / " <$> mapM showExpressionHs ehss
+showSelection (Selection ehss) = intercalate " / " <$> mapM showExpressionHs ehss
+showSelection (PlainSelection ehss) =
+	intercalate " / " <$> mapM showExpressionHs ehss
 
 nameFromSelection :: Selection -> [String]
-nameFromSelection = concatMap nameFromExpressionHs
+nameFromSelection (Selection exs) = concatMap nameFromExpressionHs exs
+nameFromSelection (PlainSelection exs) = concatMap nameFromExpressionHs exs
 
 type Definition = (String, TypeQ, Selection)
 type Peg = [Definition]

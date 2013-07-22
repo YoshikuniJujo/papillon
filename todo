@@ -2,47 +2,10 @@
 * 次にやること           *
 **************************
 
-* foo :: String = bar baz; はできるようになった
-	次は foo :: String = bar baz / hoge piyo あたりかな。
-	Either X (Either Y Z) または、Either (Either X Y) Z のどちらかの
-	型を返せば良いとも思うが、
-	あるいは同じ型という場合のみを扱うことにして、そのままの型を返すという
-	選択肢もある。
-	しかし、前者のほうが良いだろう。
-	前者なら either id id で簡単に変換できるし。
-	より複雑でも either (either id id) id で何とかなる。
-
-	これをするためには、l:lower { l } / u:upper { u } と、
-	lower / upper とを分けてパースする必要があるな。
-	まずはそこからだ。
-	まずは型をその2つで分けよう。
-
-	Either (Either X Y) Z を使うならば、
-	X は Left (Left x) で Y は Left (Right y) で Z は Right z となるだろう。
-	Either (Either (Either X Y) Z) W ならば、
-	X は Left (Left (Left x)) で
-	Y は Left (Left (Right y)) で
-	Z は Left (Right z) で
-	W は Right w となるだろう。
-	putLeftRight :: Int -> Int -> ExpQ -> ExpQ を作ろう。
-
-	1
-	x ->	Left x ->	Left (Left x) ->	Left (Left (Left x))
-	2
-		Right y ->	Left (Right y) ->	Left (Left (Right y))
-	3
-				Right z ->		Left (Right z)
-
-	コンピュータで処理しやすさを考えれば、
-	Either (Either (Either () X) Y) Z または、
-	Either X (Either Y (Either Z ())) のほうが良さそうだ。
-	そうすれば Left x, Right (Left y), Right (Right (Left z)) のようにできる
-
-* plain style で &, ! を使えるようにする <- refactoring が必要だろう
-
-* import Applicative の読み込み条件に PlainExpressionHs の有無も入れる。
-	あるいは、いっそ warning は無視することにして、import Control.Applicative
-	は無条件で入れてしまうというのもありかもな。
+* some <- hage / boke; のような表記を許すようにする
+	自動的に型を判定する必要がある
+	Selection -> TypeQ を作ろう。
+	PlainSelection の場合のみ。Selection の場合には error
 
 * 下を実現するために、Selection -> TypeQ を作る必要がある
 	NameLeaf までたどって、それが char だったら、Char で、
@@ -66,6 +29,12 @@
 	lower <- [a-z];
 	lowers <- [a-z]+;
 	のような感じにできたらいい。
+
+* plain style で &, ! を使えるようにする <- refactoring が必要だろう
+
+* import Applicative の読み込み条件に PlainExpressionHs の有無も入れる。
+	あるいは、いっそ warning は無視することにして、import Control.Applicative
+	は無条件で入れてしまうというのもありかもな。
 
 * ns:name+ のような表記を許すかどうか
 	本質的な曖昧性は無いと思うのでやろうと思えば出来るとは思うが

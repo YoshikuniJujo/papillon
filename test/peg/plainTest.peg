@@ -12,6 +12,8 @@ main = do
 		Right (r, _) -> print r
 		Left _ -> putStrLn "parse error"
 
+type Hoge = Either (String, String) (Either (String, String) ())
+
 [papillon|
 
 uppers :: String
@@ -20,7 +22,8 @@ uppers :: String
 lowers :: String
 	= s:(c:[isLower c] { c })+	{ s }
 ;
-str :: (String, String)
+str :: Hoge
+-- str :: Either (String, String) (Either (String, String) ())
 	= uppers lowers
 	/ lowers uppers
 ;

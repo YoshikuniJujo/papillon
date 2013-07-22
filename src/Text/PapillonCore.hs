@@ -46,7 +46,8 @@ isOptionalUsed :: Peg -> Bool
 isOptionalUsed = any isOptionalUsedDefinition
 
 isOptionalUsedDefinition :: Definition -> Bool
-isOptionalUsedDefinition (_, _, sel) = any isOptionalUsedSelection sel
+isOptionalUsedDefinition (_, _, Selection sel) = any isOptionalUsedSelection sel
+isOptionalUsedDefinition (_, _, PlainSelection sel) = any isOptionalUsedSelection sel
 
 isOptionalUsedSelection :: ExpressionHs -> Bool
 isOptionalUsedSelection (ExpressionHs ex _) = any isOptionalUsedLeafName ex
@@ -62,14 +63,16 @@ isOptionalUsedLeafName' (NameLeaf _ rf _) = isOptionalUsedReadFrom rf
 
 isOptionalUsedReadFrom :: ReadFrom -> Bool
 isOptionalUsedReadFrom (FromOptional _) = True
-isOptionalUsedReadFrom (FromSelection sel) = any isOptionalUsedSelection sel
+isOptionalUsedReadFrom (FromSelection (Selection sel)) =
+	any isOptionalUsedSelection sel
 isOptionalUsedReadFrom _ = False
 
 isListUsed :: Peg -> Bool
 isListUsed = any isListUsedDefinition
 
 isListUsedDefinition :: Definition -> Bool
-isListUsedDefinition (_, _, sel) = any isListUsedSelection sel
+isListUsedDefinition (_, _, Selection sel) = any isListUsedSelection sel
+isListUsedDefinition (_, _, PlainSelection sel) = any isListUsedSelection sel
 
 isListUsedSelection :: ExpressionHs -> Bool
 isListUsedSelection (ExpressionHs ex _) = any isListUsedLeafName ex
@@ -313,9 +316,22 @@ pSomes1 g th lst lst1 opt pname (_, _, sel) = flip (valD $ varP pname) [] $
 	normalB $ pSomes1Sel g th lst lst1 opt sel
 
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
-pSomes1Sel g th lst lst1 opt sel =
+pSomes1Sel g th lst lst1 opt (Selection sel) =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 		listE (map (processExpressionHs g th lst lst1 opt) sel)
+pSomes1Sel g th lst lst1 opt (PlainSelection sel) =
+	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
+		listE (zipWith
+			(flip putLeftRight . processExpressionHs g th lst lst1 opt)
+			sel [0..])
+
+putLeftRight :: Int -> ExpQ -> ExpQ
+putLeftRight 0 ex = leftE `appE` ex
+putLeftRight n ex = rightE `appE` putLeftRight (n - 1) ex
+
+rightE, leftE :: ExpQ
+rightE = varE (mkName "fmap") `appE` conE (mkName "Right")
+leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
 
 processExpressionHs ::
 	IORef Int -> Bool -> Name -> Name -> Name -> ExpressionHs -> ExpQ
