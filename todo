@@ -4,6 +4,14 @@
 
 * searchDefinition の中身を作る
 
+* type Definition -> data
+	getDefinitionType も変える必要があるな
+	つまり、TypeQ を含まない物も作る必要がある
+
+* Definition が TypeQ を持たない物だった場合に自動導出する
+
+* Parser の変更
+
 * some <- hage / boke; のような表記を許すようにする
 	自動的に型を判定する必要がある
 	Selection -> TypeQ を作ろう。
