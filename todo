@@ -3,7 +3,13 @@
 **************************
 
 * Parser.peg のリファクタリング
-	まず名前を変えようかな Parser.papillon のほうが良さそうだ
+	まずは以前の papillon の制限によるトリッキーなコードを直す
+	getEx や applyEx 等々を直書きするようにする
+	u:[isUpper u] { u } 等を <isUpper> 等を使って書き換える
+
+* import Text.Papillon を消すわけだが
+	今は単純な import 文しか消せない
+	ちゃんと消そうと思ったら import 文をちゃんと parse しなくちゃならない
 
 * リファクタリング
 	plain style の部分をどの程度残すか、あるいは全部消すか、

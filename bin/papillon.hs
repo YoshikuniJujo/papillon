@@ -7,6 +7,11 @@ import Language.Haskell.TH
 
 import Class
 
+addModules :: String
+addModules =
+	"import \"monads-tf\" Control.Monad.State\n" ++
+	"import \"monads-tf\" Control.Monad.Error\n"
+
 papillonStr :: String -> IO (String, String, String)
 papillonStr src = do
 	let 	(prgm, mn, ppp, pp, decsQ, atp) = papillonFile src
@@ -18,7 +23,7 @@ papillonStr src = do
 		unlines (map showPragma $ addPragmas $ delPragmas prgm) ++
 		(if null mn then "" else "module " ++ intercalate "." mn) ++
 		showExportList ppp ++ (if null mn then "" else "where\n") ++
-		importConst ++
+		importConst ++ addModules ++
 		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n")
 
 showExportList :: Maybe ExportList -> String

@@ -169,17 +169,6 @@ toTyp tp f = f tp
 ctLeaf_ :: PatQ -> NameLeaf
 ctLeaf_ n = NameLeaf (n, "") FromToken Nothing
 
-true :: ExpQ
-true = conE $ mkName "True"
-
-just :: a -> Maybe a
-just = Just
-nothing :: Maybe a
-nothing = Nothing
-
-cons :: a -> [a] -> [a]
-cons = (:)
-
 type PatQs = [PatQ]
 
 strToPatQ :: String -> PatQ
@@ -188,17 +177,8 @@ strToPatQ = varP . mkName
 conToPatQ :: String -> [PatQ] -> PatQ
 conToPatQ t = conP (mkName t)
 
-mkExpressionHs :: a -> ExR -> (a, ExR)
-mkExpressionHs x y = (x, y)
-
-mkDef :: String -> TypeQ -> Selection -> Definition
-mkDef = Definition
-
 isOpTailChar :: Char -> Bool
 isOpTailChar = (`elem` ":+*/-!|&.^=<>$")
-
-colon :: Char
-colon = ':'
 
 isOpHeadChar :: Char -> Bool
 isOpHeadChar = (`elem` "+*/-!|&.^=<>$")
@@ -224,43 +204,21 @@ getEx ex = ex id
 toExGetEx :: Ex -> Ex
 toExGetEx = toEx . getEx
 
-emp :: [a]
-emp = []
-
 type PegFile = ([PPragma], ModuleName, Maybe ExportList, Code, TTPeg, Code)
 data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
 type ModuleName = [String]
 type ExportList = String
 type Code = String
 
-addModules :: String
-addModules =
-	"import \"monads-tf\" Control.Monad.State\n" ++
-	"import \"monads-tf\" Control.Monad.Error\n"
-
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
 	TTPeg -> String -> PegFile
-mkPegFile ps (Just md) x y z w = (
-	ps,
-	fst md,
-	snd md,
-	addModules ++
-	x ++ "\n" ++ y, z, w)
-mkPegFile ps Nothing x y z w =
-	(ps, [], Nothing, addModules ++ x ++ "\n" ++ y, z, w)
-
-charP :: Char -> PatQ
-charP = litP . charL
-stringP :: String -> PatQ
-stringP = litP . stringL
+mkPegFile ps (Just md) x y z w = (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
+mkPegFile ps Nothing x y z w = (ps, [], Nothing, x ++ "\n" ++ y, z, w)
 
 isStrLitC, isAlphaNumOt, elemNTs :: Char -> Bool
 isAlphaNumOt = (`notElem` "\\'")
 elemNTs = (`elem` "nt\\'")
 isStrLitC = (`notElem` "\"\\")
-
-tab :: Char
-tab = '\t'
 
 isComma, isKome, isOpen, isClose, isGt, isQuestion, isBQ, isAmp :: Char -> Bool
 isComma = (== ',')
