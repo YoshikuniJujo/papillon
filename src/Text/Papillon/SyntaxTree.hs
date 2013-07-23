@@ -49,7 +49,7 @@ data ReadFrom
 	= FromVariable String
 	| FromSelection Selection
 	| FromToken
-	| FromTokenChars [Char]
+	| FromTokenChars String
 	| FromList ReadFrom
 	| FromList1 ReadFrom
 	| FromOptional ReadFrom
