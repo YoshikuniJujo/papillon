@@ -1,7 +1,6 @@
 module Text.Papillon.SyntaxTree where
 
 import Language.Haskell.TH
-import Data.Char
 import Control.Applicative
 import Data.List
 
@@ -160,12 +159,6 @@ type TypeQL = [TypeQ]
 tupT :: [TypeQ] -> TypeQ
 tupT ts = foldl appT (tupleT $ length ts) ts
 
-getTyp :: Typ -> TypeQ
-getTyp t = t id
-
-toTyp :: TypeQ -> Typ
-toTyp tp f = f tp
-
 ctLeaf_ :: PatQ -> NameLeaf
 ctLeaf_ n = NameLeaf (n, "") FromToken Nothing
 
@@ -220,27 +213,10 @@ isAlphaNumOt = (`notElem` "\\'")
 elemNTs = (`elem` "nt\\'")
 isStrLitC = (`notElem` "\"\\")
 
-isComma, isKome, isOpen, isClose, isGt, isQuestion, isBQ, isAmp :: Char -> Bool
-isComma = (== ',')
-isKome = (== '*')
-isOpen = (== '(')
-isClose = (== ')')
-isGt = (== '>')
-isQuestion = (== '?')
-isBQ = (== '`')
-isAmp = (== '&')
-
 getNTs :: Char -> Char
 getNTs 'n' = '\n'
 getNTs 't' = '\t'
-getNTs '\\' = '\\'
-getNTs '\'' = '\''
 getNTs o = o
-isLowerU :: Char -> Bool
-isLowerU c = isLower c || c == '_'
 
-tString :: String
-tString = "String"
 mkTTPeg :: String -> Peg -> TTPeg
-mkTTPeg s p =
-	(conT $ mkName s, conT (mkName "Token") `appT` conT (mkName s), p)
+mkTTPeg s p = (conT $ mkName s, conT (mkName "Token") `appT` conT (mkName s), p)

@@ -117,7 +117,7 @@ pap :: ()
 ;
 peg :: TTPeg
 	= _:spaces s:sourceType p:peg_		{ mkTTPeg s p }
-	/ p:peg_				{ mkTTPeg tString p }
+	/ p:peg_				{ mkTTPeg "String" p }
 ;
 sourceType :: String
 	= "source":varToken ':' _:spaces v:typToken
@@ -173,7 +173,7 @@ expression :: Expression
 nameLeaf_ :: NameLeaf_
 	= '!' nl:nameLeafNoCom _:spaces com:comForErr?
 						{ NotAfter nl $ maybe "" id com }
-	/ c:[isAmp c] nl:nameLeaf		{ After nl }
+	/ '&' nl:nameLeaf			{ After nl }
 	/ nl:nameLeaf				{ Here nl }
 ;
 nameLeaf :: NameLeaf
@@ -199,7 +199,7 @@ leaf :: (ReadFrom, Maybe (ExpQ, String))
 ;
 patOp :: PatQ
 	= p:pat o:opConName po:patOp		{ uInfixP p o po }
-	/ p:pat _:spaces q:[isBQ q] t:typ q_:[isBQ q_] _:spaces po:patOp
+	/ p:pat _:spaces '`' t:typ '`' _:spaces po:patOp
 						{ uInfixP p (mkName t) po }
 	/ p:pat					{ p }
 ;
@@ -276,7 +276,7 @@ test :: (ExR, String)
 						{ (h, maybe "" id com) }
 ;
 hsExpLam :: ExR
-	= '\\' _:spaces ps:pats _:spaces '-' c:[isGt c] _:spaces e:hsExpTyp
+	= '\\' _:spaces ps:pats _:spaces '-' '>' _:spaces e:hsExpTyp
 						{ lamE ps e }
 	/ e:hsExpTyp				{ e }
 ;
@@ -293,8 +293,8 @@ hsExpOp :: ExR
 hsOp :: ExR
 	= c:[isOpHeadChar c] o:opTail 		{ varE $ mkName $ c : o }
 	/ ':' !':' o:opTail			{ conE $ mkName $ ':' : o }
-	/ c:[isBQ c] v:variable c_:[isBQ c_]	{ varE $ mkName v }
-	/ c:[isBQ c] t:typ c_:[isBQ c_]		{ conE $ mkName t }
+	/ '`' v:variable '`'			{ varE $ mkName v }
+	/ '`' t:typ '`'				{ conE $ mkName t }
 ;
 opTail :: String
 	= c:[isOpTailChar c] s:opTail		{ c : s }
@@ -317,29 +317,29 @@ hsExp1 :: ExR
 	/ '-' _:spaces e:hsExp1			{ appE (varE $ mkName "negate") e }
 ;
 hsExpTpl :: ExRL
-	= e:hsExpLam _:spaces c:[isComma c] _:spaces et:hsExpTpl
+	= e:hsExpLam _:spaces ',' _:spaces et:hsExpTpl
 						{ e : et }
 	/ e:hsExpLam				{ [e] }
 	/					{ [] }
 ;
 hsTypeArr :: TypeQ
-	= l:hsType '-' c:[isGt c] _:spaces r:hsTypeArr
-					{ appT (appT arrowT (getTyp l)) r }
-	/ t:hsType			{ getTyp t }
+	= l:hsType '-' '>' _:spaces r:hsTypeArr
+						{ appT (appT arrowT $ l id) r }
+	/ t:hsType				{ t id }
 ;
 hsType :: Typ
-	= t:hsType1 ts:hsType			{ applyTyp (toTyp t) ts }
-	/ t:hsType1				{ toTyp t }
+	= t:hsType1 ts:hsType			{ applyTyp ($ t) ts }
+	/ t:hsType1				{ ($ t) }
 ;
 hsType1 :: TypeQ
 	= '[' ']' _:spaces			{ listT }
 	/ '[' t:hsTypeArr ']' _:spaces		{ listT `appT` t }
 	/ '(' _:spaces tt:hsTypeTpl ')'		{ tupT tt }
 	/ t:typToken				{ conT $ mkName t }
-	/ '(' '-' c:[isGt c] ')' _:spaces	{ arrowT }
+	/ '(' '-' '>' ')' _:spaces	{ arrowT }
 ;
 hsTypeTpl :: TypeQL
-	= t:hsTypeArr c:[isComma c] _:spaces tt:hsTypeTpl
+	= t:hsTypeArr ',' _:spaces tt:hsTypeTpl
 						{ t : tt }
 	/ t:hsTypeArr				{ [t] }
 	/					{ [] }
@@ -367,7 +367,7 @@ upper :: Char
 	= u:[isUpper u]				{ u }
 ;
 lower :: Char
-	= l:[isLowerU l]			{ l }
+	= l:[isLower l || l == '_' ]		{ l }
 ;
 digit :: Char
 	= d:[isDigit d]				{ d }
