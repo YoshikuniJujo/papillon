@@ -32,7 +32,8 @@ module Text.Papillon.Parser (
 import Text.Papillon.SyntaxTree
 import Language.Haskell.TH (
 	Name, TypeQ, PatQ, ExpQ, mkName,
-	conT, listT, appT, arrowT, wildP, litP, conP, tupP, listP, uInfixP,
+	conT, tupleT, listT, appT, arrowT,
+	wildP, litP, varP, conP, tupP, listP, uInfixP,
 	litE, varE, conE, tupE, listE, sigE, appE, infixE, uInfixE, lamE,
 	integerL, charL, stringL)
 import Data.Char (isSpace, isDigit, isUpper, isLower)
@@ -115,9 +116,13 @@ typToken :: String
 pap :: ()
 	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ () }
 ;
-peg :: TTPeg
-	= _:spaces s:sourceType p:peg_		{ mkTTPeg s p }
-	/ p:peg_				{ mkTTPeg "String" p }
+peg :: (TypeQ, TypeQ, Peg)
+	= _:spaces s:sourceType p:peg_
+		{ (conT $ mkName s,
+			conT (mkName "Token") `appT` conT (mkName s), p) }
+	/ p:peg_
+		{ (conT $ mkName "String",
+			conT (mkName "Token") `appT` conT (mkName "String"), p) }
 ;
 sourceType :: String
 	= "source":varToken ':' _:spaces v:typToken
@@ -204,14 +209,14 @@ patOp :: PatQ
 	/ p:pat					{ p }
 ;
 pat :: PatQ
-	= t:typ _:spaces ps:pats		{ conToPatQ t ps }
+	= t:typ _:spaces ps:pats		{ conP (mkName t) ps }
 	/ '(' o:opConName ')'_:spaces ps:pats	{ conP o ps }
 	/ p:pat1				{ p }
 ;
 pat1 :: PatQ
-	= t:typ					{ conToPatQ t [] }
+	= t:typ					{ conP (mkName t) [] }
 	/ "_":variable				{ wildP }
-	/ n:variable				{ strToPatQ n }
+	/ n:variable				{ varP $ mkName n }
 	/ i:integer				{ litP (integerL i) }
 	/ '-' _:spaces i:integer		{ litP (integerL $ - i) }
 	/ '\'' c:charLit '\''			{ litP $ charL c }
@@ -229,11 +234,11 @@ opConName :: Name
 	= ':' ot:opTail				{ mkName $ ':' : ot }
 ;
 charLit :: Char
-	= c:[isAlphaNumOt c]			{ c }
+	= c:[c `notElem` "\\'"]			{ c }
 	/ '\\' c:escapeC			{ c }
 ;
 stringLit :: String
-	= c:[isStrLitC c] s:stringLit		{ c : s }
+	= c:[c `notElem` "\"\\"] s:stringLit	{ c : s }
 	/ '\\' c:escapeC s:stringLit		{ c : s }
 	/					{ "" }
 ;
@@ -244,7 +249,7 @@ escapeC :: Char
 	/ 'n'					{ '\n' }
 	/ 't'					{ '\t' }
 ;
-pats :: PatQs
+pats :: [PatQ]
 	= p:pat _:spaces ps:pats		{ p : ps }
 	/					{ [] }
 ;
@@ -271,40 +276,40 @@ selectChars :: ReadFrom
 		ce:[ce `notElem` "\\-"] ']'	{ FromTokenChars [cb .. ce] }
 	/ '\'' c:[c `notElem` "\\'"] '\''	{ FromTokenChars [c] }
 ;
-test :: (ExR, String)
+test :: (ExpQ, String)
 	= '[' h:hsExpLam _:spaces com:comForErr? ']'
 						{ (h, maybe "" id com) }
 ;
-hsExpLam :: ExR
+hsExpLam :: ExpQ
 	= '\\' _:spaces ps:pats _:spaces '-' '>' _:spaces e:hsExpTyp
 						{ lamE ps e }
 	/ e:hsExpTyp				{ e }
 ;
-hsExpTyp :: ExR
+hsExpTyp :: ExpQ
 	= eo:hsExpOp ':' ':' _:spaces t:hsTypeArr
 						{ sigE eo t }
 	/ eo:hsExpOp				{ eo }
 ;
-hsExpOp :: ExR
+hsExpOp :: ExpQ
 	= l:hsExp _:spaces o:hsOp _:spaces r:hsExpOp
-						{ uInfixE (getEx l) o r }
-	/ e:hsExp				{ getEx e }
+						{ uInfixE (l id) o r }
+	/ e:hsExp				{ e id }
 ;
-hsOp :: ExR
-	= c:[isOpHeadChar c] o:opTail 		{ varE $ mkName $ c : o }
+hsOp :: ExpQ
+	= c:[c `elem` "+*/-!|&.^=<>$"] o:opTail { varE $ mkName $ c : o }
 	/ ':' !':' o:opTail			{ conE $ mkName $ ':' : o }
 	/ '`' v:variable '`'			{ varE $ mkName v }
 	/ '`' t:typ '`'				{ conE $ mkName t }
 ;
 opTail :: String
-	= c:[isOpTailChar c] s:opTail		{ c : s }
+	= c:[c `elem` ":+*/-!|&.^=<>$"] s:opTail{ c : s }
 	/					{ "" }
 ;
-hsExp :: Ex
-	= e:hsExp1 _:spaces h:hsExp		{ applyExR e h }
-	/ e:hsExp1				{ toEx e }
+hsExp :: (ExpQ -> ExpQ) -> ExpQ
+	= e:hsExp1 _:spaces h:hsExp		{ \f -> h (f e `appE`) }
+	/ e:hsExp1				{ \f -> f e }
 ;
-hsExp1 :: ExR
+hsExp1 :: ExpQ
 	= '(' l:(e:hsExpTyp {e})? _:spaces o:hsOp _:spaces r:(e:hsExpTyp {e})? ')'
 						{ infixE l o r }
 	/ '(' et:hsExpTpl ')'			{ tupE et }
@@ -316,7 +321,7 @@ hsExp1 :: ExR
 	/ '"' s:stringLit '"'			{ litE $ stringL s }
 	/ '-' _:spaces e:hsExp1			{ appE (varE $ mkName "negate") e }
 ;
-hsExpTpl :: ExRL
+hsExpTpl :: [ExpQ]
 	= e:hsExpLam _:spaces ',' _:spaces et:hsExpTpl
 						{ e : et }
 	/ e:hsExpLam				{ [e] }
@@ -328,17 +333,18 @@ hsTypeArr :: TypeQ
 	/ t:hsType				{ t id }
 ;
 hsType :: (TypeQ -> TypeQ) -> TypeQ
-	= t:hsType1 ts:hsType			{ applyTyp ($ t) ts }
+	= t:hsType1 ts:hsType			{ \f -> ts (f t `appT`) }
 	/ t:hsType1				{ ($ t) }
 ;
 hsType1 :: TypeQ
 	= '[' ']' _:spaces			{ listT }
 	/ '[' t:hsTypeArr ']' _:spaces		{ listT `appT` t }
-	/ '(' _:spaces tt:hsTypeTpl ')' _:spaces{ tupT tt }
+	/ '(' _:spaces tt:hsTypeTpl ')' _:spaces
+					{ foldl appT (tupleT $ length tt) tt }
 	/ t:typToken				{ conT $ mkName t }
 	/ '(' '-' '>' ')' _:spaces		{ arrowT }
 ;
-hsTypeTpl :: TypeQL
+hsTypeTpl :: [TypeQ]
 	= t:hsTypeArr ',' _:spaces tt:hsTypeTpl
 						{ t : tt }
 	/ t:hsTypeArr				{ [t] }
