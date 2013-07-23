@@ -116,13 +116,9 @@ typToken :: String
 pap :: ()
 	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ () }
 ;
-peg :: (TypeQ, TypeQ, Peg)
-	= _:spaces s:sourceType p:peg_
-		{ (conT $ mkName s,
-			conT (mkName "Token") `appT` conT (mkName s), p) }
-	/ p:peg_
-		{ (conT $ mkName "String",
-			conT (mkName "Token") `appT` conT (mkName "String"), p) }
+peg :: (TypeQ, Peg)
+	= _:spaces s:sourceType p:peg_		{ (conT $ mkName s, p) }
+	/ p:peg_				{ (conT $ mkName "String", p) }
 ;
 sourceType :: String
 	= "source":varToken ':' _:spaces v:typToken

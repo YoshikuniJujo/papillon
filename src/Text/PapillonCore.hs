@@ -166,15 +166,16 @@ eitherN = mkName "Either"
 
 papillonCore :: String -> DecsQ
 papillonCore str = case peg $ parse str of
-	Right ((src, tkn, parsed), _) -> decParsed True src tkn parsed
+	Right ((src, parsed), _) ->
+		decParsed True src (conT (mkName "Token") `appT` src) parsed
 	Left err -> error $ "parse error: " ++ showParseError err
 
 papillonFile :: String ->
 	([PPragma], ModuleName, Maybe ExportList, Code, DecsQ, Code)
 papillonFile str = case pegFile $ parse str of
-	Right ((prgm, mn, ppp, pp, (src, tkn, parsed), atp), _) ->
+	Right ((prgm, mn, ppp, pp, (src, parsed), atp), _) ->
 		(prgm, mn, ppp, addApplicative parsed ++ pp,
-			decParsed False src tkn parsed, atp)
+		decParsed False src (conT (mkName "Token") `appT` src) parsed, atp)
 	Left err -> error $ "parse error: " ++ showParseError err
 	where
 	addApplicative pg = if needApplicative pg

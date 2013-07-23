@@ -172,13 +172,13 @@ getDefinitionType _ _ (Definition _ typ _) = typ
 getDefinitionType peg tknt (PlainDefinition _ sel) = getSelectionType peg tknt sel
 
 type PegFile =
-	([PPragma], ModuleName, Maybe ExportList, Code, (TypeQ, TypeQ, Peg), Code)
+	([PPragma], ModuleName, Maybe ExportList, Code, (TypeQ, Peg), Code)
 data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
 type ModuleName = [String]
 type ExportList = String
 type Code = String
 
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
-	(TypeQ, TypeQ, Peg) -> String -> PegFile
+	(TypeQ, Peg) -> String -> PegFile
 mkPegFile ps (Just md) x y z w = (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
 mkPegFile ps Nothing x y z w = (ps, [], Nothing, x ++ "\n" ++ y, z, w)
