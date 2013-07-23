@@ -4,7 +4,7 @@ module Text.Papillon.Parser (
 	Peg,
 	Definition(..),
 	Selection(..),
-	ExpressionHs(..),
+	Expression(..),
 	NameLeaf(..),
 	NameLeaf_(..),
 	ReadFrom(..),
@@ -141,33 +141,33 @@ selection :: Selection
 	= s:normalSelection			{ Selection s }
 	/ s:plainSelection			{ PlainSelection s }
 ;
-normalSelection :: [ExpressionHs]
+normalSelection :: [Expression]
 	= ex:expressionHs _:spaces '/' _:spaces sel:normalSelection
 						{ ex : sel }
 	/ ex:expressionHs			{ [ex] }
 ;
-plainSelection :: [ExpressionHs]
+plainSelection :: [Expression]
 	= ex:plainExpressionHs _:spaces '/' _:spaces sel:plainSelection
 						{ ex : sel }
 	/ ex:plainExpressionHs			{ [ex] }
 ;
-expressionHs :: ExpressionHs
+expressionHs :: Expression
 	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
-						{ ExpressionHs e h }
+						{ Expression e h }
 	/ e:expressionHsSugar			{ e }
 ;
-expressionHsSugar :: ExpressionHs
-	= '<' _:spaces h:hsExpLam _:spaces '>'	{ ExpressionHsSugar h }
+expressionHsSugar :: Expression
+	= '<' _:spaces h:hsExpLam _:spaces '>'	{ ExpressionSugar h }
 ;
-plainExpressionHs :: ExpressionHs
+plainExpressionHs :: Expression
 	= rfs:(rf:plainReadFromLs _:spaces { rf })*
-						{ PlainExpressionHs rfs }
+						{ PlainExpression rfs }
 ;
 plainReadFromLs :: ReadFrom
 	= rf:readFromLs				{ rf }
 	/ rf:selectCharsLs			{ rf }
 ;
-expression :: Expression
+expression :: [NameLeaf_]
 	= l:nameLeaf_ _:spaces e:expression	{ l : e }
 	/ 					{ [] }
 ;

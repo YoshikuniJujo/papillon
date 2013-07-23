@@ -55,10 +55,10 @@ isOptionalUsedDefinition (PlainDefinition _ (Selection sel)) =
 isOptionalUsedDefinition (PlainDefinition _ (PlainSelection sel)) =
 	any isOptionalUsedSelection sel
 
-isOptionalUsedSelection :: ExpressionHs -> Bool
-isOptionalUsedSelection (ExpressionHs ex _) = any isOptionalUsedLeafName ex
-isOptionalUsedSelection (ExpressionHsSugar _) = False
-isOptionalUsedSelection (PlainExpressionHs rfs) = any isOptionalUsedReadFrom rfs
+isOptionalUsedSelection :: Expression -> Bool
+isOptionalUsedSelection (Expression ex _) = any isOptionalUsedLeafName ex
+isOptionalUsedSelection (ExpressionSugar _) = False
+isOptionalUsedSelection (PlainExpression rfs) = any isOptionalUsedReadFrom rfs
 
 isOptionalUsedLeafName :: NameLeaf_ -> Bool
 isOptionalUsedLeafName (Here nl) = isOptionalUsedLeafName' nl
@@ -87,10 +87,10 @@ isListUsedDefinition (PlainDefinition _ (Selection sel)) =
 isListUsedDefinition (PlainDefinition _ (PlainSelection sel)) =
 	any isListUsedSelection sel
 
-isListUsedSelection :: ExpressionHs -> Bool
-isListUsedSelection (ExpressionHs ex _) = any isListUsedLeafName ex
-isListUsedSelection (ExpressionHsSugar _) = False
-isListUsedSelection (PlainExpressionHs rfs) = any isListUsedReadFrom rfs
+isListUsedSelection :: Expression -> Bool
+isListUsedSelection (Expression ex _) = any isListUsedLeafName ex
+isListUsedSelection (ExpressionSugar _) = False
+isListUsedSelection (PlainExpression rfs) = any isListUsedReadFrom rfs
 
 isListUsedLeafName :: NameLeaf_ -> Bool
 isListUsedLeafName (Here nl) = isListUsedLeafName' nl
@@ -363,16 +363,16 @@ rightE = varE (mkName "fmap") `appE` conE (mkName "Right")
 leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
 
 processExpressionHs ::
-	IORef Int -> Bool -> Name -> Name -> Name -> ExpressionHs -> ExpQ
-processExpressionHs g th lst lst1 opt (ExpressionHs expr exr) =
+	IORef Int -> Bool -> Name -> Name -> Name -> Expression -> ExpQ
+processExpressionHs g th lst lst1 opt (Expression expr exr) =
 	pSome_ g th lst lst1 opt expr exr
-processExpressionHs g th lst lst1 opt (ExpressionHsSugar ex) = do
+processExpressionHs g th lst lst1 opt (ExpressionSugar ex) = do
 	r <- newNewName g "r"
 	pSome_ g th lst lst1 opt [expr r] (varE r)
 	where
 	expr x = Here $ NameLeaf (varP x, "") FromToken $ Just $ (, "") $
 		ex `appE` varE x
-processExpressionHs g th lst lst1 opt (PlainExpressionHs rfs) =
+processExpressionHs g th lst lst1 opt (PlainExpression rfs) =
 	foldl (\x y -> infixApp x appApply y)
 		(returnEQ `appE` tupleE g (length rfs)) $
 			map (transReadFrom g th lst lst1 opt) rfs

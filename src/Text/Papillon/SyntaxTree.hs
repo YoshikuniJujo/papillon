@@ -2,8 +2,7 @@ module Text.Papillon.SyntaxTree (
 	Peg,
 	Definition(..),
 	Selection(..),
-	ExpressionHs(..),
-	Expression,
+	Expression(..),
 	NameLeaf_(..),
 	NameLeaf(..),
 	ReadFrom(..),
@@ -27,6 +26,25 @@ import Language.Haskell.TH
 import Control.Applicative
 import Data.List
 
+type Peg = [Definition]
+data Definition
+	= Definition String TypeQ Selection
+	| PlainDefinition String Selection
+data Selection
+	= Selection { expressions :: [Expression] }
+	| PlainSelection { plainExpressions :: [Expression] }
+data Expression
+	= Expression {
+		expressionHsExpression :: [NameLeaf_],
+		expressionHsExR :: ExpQ
+	 }
+	| ExpressionSugar ExpQ
+	| PlainExpression [ReadFrom]
+data NameLeaf_
+	= Here NameLeaf
+	| After NameLeaf
+	| NotAfter NameLeaf String
+data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
 data ReadFrom
 	= FromVariable String
 	| FromSelection Selection
@@ -65,8 +83,6 @@ showReadFrom (FromList1 rf) = (++ "+") <$> showReadFrom rf
 showReadFrom (FromOptional rf) = (++ "?") <$> showReadFrom rf
 showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
 
-data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
-
 showNameLeaf :: NameLeaf -> Q String
 showNameLeaf (NameLeaf (pat, _) rf (Just (p, _))) = do
 	patt <- pat
@@ -81,11 +97,6 @@ showNameLeaf (NameLeaf (pat, _) rf Nothing) = do
 nameFromNameLeaf :: NameLeaf -> [String]
 nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf
 
-data NameLeaf_
-	= Here NameLeaf
-	| After NameLeaf
-	| NotAfter NameLeaf String
-
 showNameLeaf_ :: NameLeaf_ -> Q String
 showNameLeaf_ (Here nl) = showNameLeaf nl
 showNameLeaf_ (After nl) = ('&' :) <$> showNameLeaf nl
@@ -96,52 +107,38 @@ nameFromNameLeaf_ (Here nl) = nameFromNameLeaf nl
 nameFromNameLeaf_ (After nl) = nameFromNameLeaf nl
 nameFromNameLeaf_ (NotAfter nl _) = nameFromNameLeaf nl
 
-type Expression = [NameLeaf_]
-
-showExpression :: Expression -> Q String
+showExpression :: [NameLeaf_] -> Q String
 showExpression ex = unwords <$> mapM showNameLeaf_ ex
 
-nameFromExpression :: Expression -> [String]
+nameFromExpression :: [NameLeaf_] -> [String]
 nameFromExpression = nameFromNameLeaf_ . head
 
-data ExpressionHs
-	= ExpressionHs {
-		expressionHsExpression :: Expression,
-		expressionHsExR :: ExpQ
-	 }
-	| ExpressionHsSugar ExpQ
-	| PlainExpressionHs [ReadFrom]
-
-getExpressionHsType :: Peg -> TypeQ -> ExpressionHs -> TypeQ
-getExpressionHsType peg tknt (PlainExpressionHs rfs) =
+getExpressionType :: Peg -> TypeQ -> Expression -> TypeQ
+getExpressionType peg tknt (PlainExpression rfs) =
 	foldl appT (tupleT $ length rfs) $ map (getReadFromType peg tknt) rfs
-getExpressionHsType _ _ _ = error "getExpressionHsType: can't get type"
+getExpressionType _ _ _ = error "getExpressionType: can't get type"
 
-showExpressionHs :: ExpressionHs -> Q String
-showExpressionHs (ExpressionHs ex hs) = do
+showExpressionHs :: Expression -> Q String
+showExpressionHs (Expression ex hs) = do
 	expp <- showExpression ex
 	hss <- hs
 	return $ expp ++ " { " ++ show (ppr hss) ++ " }"
-showExpressionHs (ExpressionHsSugar hs) = do
+showExpressionHs (ExpressionSugar hs) = do
 	hss <- hs
 	return $ "<" ++ show (ppr hss) ++ ">"
-showExpressionHs (PlainExpressionHs rfs) = unwords <$> mapM showReadFrom rfs
+showExpressionHs (PlainExpression rfs) = unwords <$> mapM showReadFrom rfs
 
-nameFromExpressionHs :: ExpressionHs -> [String]
-nameFromExpressionHs (ExpressionHs ex _) = nameFromExpression ex
-nameFromExpressionHs (ExpressionHsSugar _) = []
-nameFromExpressionHs (PlainExpressionHs rfs) = concatMap nameFromRF rfs
-
-data Selection
-	= Selection { expressions :: [ExpressionHs] }
-	| PlainSelection { plainExpressions :: [ExpressionHs] }
+nameFromExpressionHs :: Expression -> [String]
+nameFromExpressionHs (Expression ex _) = nameFromExpression ex
+nameFromExpressionHs (ExpressionSugar _) = []
+nameFromExpressionHs (PlainExpression rfs) = concatMap nameFromRF rfs
 
 getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
 getSelectionType peg tknt (PlainSelection ex) =
 	foldr (\x y -> (eitherT `appT` x) `appT` y) (last types) (init types)
 	where
 	eitherT = conT $ mkName "Either"
-	types = map (getExpressionHsType peg tknt) ex
+	types = map (getExpressionType peg tknt) ex
 getSelectionType _ _ _ = error "getSelectionType: can't get type"
 
 showSelection :: Selection -> Q String
@@ -152,11 +149,6 @@ showSelection (PlainSelection ehss) =
 nameFromSelection :: Selection -> [String]
 nameFromSelection (Selection exs) = concatMap nameFromExpressionHs exs
 nameFromSelection (PlainSelection exs) = concatMap nameFromExpressionHs exs
-
-data Definition
-	= Definition String TypeQ Selection
-	| PlainDefinition String Selection
-type Peg = [Definition]
 
 searchDefinition :: Peg -> String -> Definition
 searchDefinition peg var = case filter ((== var) . getDefinitionName) peg of

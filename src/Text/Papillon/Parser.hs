@@ -3,7 +3,7 @@ module Text.Papillon.Parser (
 	Peg,
 	Definition(..),
 	Selection(..),
-	ExpressionHs(..),
+	Expression(..),
 	NameLeaf(..),
 	NameLeaf_(..),
 	ReadFrom(..),
@@ -87,19 +87,19 @@ data Derivs
               selection :: (Either (ParseError (Pos String) Derivs)
                                    ((Selection, Derivs))),
               normalSelection :: (Either (ParseError (Pos String) Derivs)
-                                         (([ExpressionHs], Derivs))),
+                                         (([Expression], Derivs))),
               plainSelection :: (Either (ParseError (Pos String) Derivs)
-                                        (([ExpressionHs], Derivs))),
+                                        (([Expression], Derivs))),
               expressionHs :: (Either (ParseError (Pos String) Derivs)
-                                      ((ExpressionHs, Derivs))),
+                                      ((Expression, Derivs))),
               expressionHsSugar :: (Either (ParseError (Pos String) Derivs)
-                                           ((ExpressionHs, Derivs))),
+                                           ((Expression, Derivs))),
               plainExpressionHs :: (Either (ParseError (Pos String) Derivs)
-                                           ((ExpressionHs, Derivs))),
+                                           ((Expression, Derivs))),
               plainReadFromLs :: (Either (ParseError (Pos String) Derivs)
                                          ((ReadFrom, Derivs))),
               expression :: (Either (ParseError (Pos String) Derivs)
-                                    ((Expression, Derivs))),
+                                    (([NameLeaf_], Derivs))),
               nameLeaf_ :: (Either (ParseError (Pos String) Derivs)
                                    ((NameLeaf_, Derivs))),
               nameLeaf :: (Either (ParseError (Pos String) Derivs)
@@ -1046,7 +1046,7 @@ parse = parse0_0 initialPos
                                                           _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d534_316 ["char"])
                                                       let '}' = xx533_317
                                                       return ()
-                                                      return (ExpressionHs e h),
+                                                      return (Expression e h),
                                                    do e <- StateT expressionHsSugar
                                                       return e]
                 expressionHsSugar29_103 = foldl1 mplus [do d538_318 <- get
@@ -1068,12 +1068,12 @@ parse = parse0_0 initialPos
                                                                _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d546_320 ["char"])
                                                            let '>' = xx545_321
                                                            return ()
-                                                           return (ExpressionHsSugar h)]
+                                                           return (ExpressionSugar h)]
                 plainExpressionHs30_104 = foldl1 mplus [do rfs <- list1_322 (foldl1 mplus [do rf <- StateT plainReadFromLs
                                                                                               _ <- StateT spaces
                                                                                               return ()
                                                                                               return rf])
-                                                           return (PlainExpressionHs rfs)]
+                                                           return (PlainExpression rfs)]
                 plainReadFromLs31_105 = foldl1 mplus [do rf <- StateT readFromLs
                                                          return rf,
                                                       do rf <- StateT selectCharsLs
