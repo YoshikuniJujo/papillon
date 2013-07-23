@@ -29,9 +29,9 @@ module Text.Papillon.Parser (
 ) where
 
 import Text.Papillon.Papillon
-import Control.Applicative
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
+import Control.Applicative
 
 
 
@@ -151,7 +151,7 @@ data Derivs
               hsTypeArr :: (Either (ParseError (Pos String) Derivs)
                                    ((TypeQ, Derivs))),
               hsType :: (Either (ParseError (Pos String) Derivs)
-                                ((Typ, Derivs))),
+                                (((TypeQ -> TypeQ) -> TypeQ, Derivs))),
               hsType1 :: (Either (ParseError (Pos String) Derivs)
                                  ((TypeQ, Derivs))),
               hsTypeTpl :: (Either (ParseError (Pos String) Derivs)
