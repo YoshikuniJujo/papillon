@@ -107,31 +107,25 @@ nameFromNameLeaf_ (Here nl) = nameFromNameLeaf nl
 nameFromNameLeaf_ (After nl) = nameFromNameLeaf nl
 nameFromNameLeaf_ (NotAfter nl _) = nameFromNameLeaf nl
 
-showExpression :: [NameLeaf_] -> Q String
-showExpression ex = unwords <$> mapM showNameLeaf_ ex
-
-nameFromExpression :: [NameLeaf_] -> [String]
-nameFromExpression = nameFromNameLeaf_ . head
-
 getExpressionType :: Peg -> TypeQ -> Expression -> TypeQ
 getExpressionType peg tknt (PlainExpression rfs) =
 	foldl appT (tupleT $ length rfs) $ map (getReadFromType peg tknt) rfs
 getExpressionType _ _ _ = error "getExpressionType: can't get type"
 
-showExpressionHs :: Expression -> Q String
-showExpressionHs (Expression ex hs) = do
-	expp <- showExpression ex
+showExpression :: Expression -> Q String
+showExpression (Expression ex hs) = do
+	expp <- unwords <$> mapM showNameLeaf_ ex
 	hss <- hs
 	return $ expp ++ " { " ++ show (ppr hss) ++ " }"
-showExpressionHs (ExpressionSugar hs) = do
+showExpression (ExpressionSugar hs) = do
 	hss <- hs
 	return $ "<" ++ show (ppr hss) ++ ">"
-showExpressionHs (PlainExpression rfs) = unwords <$> mapM showReadFrom rfs
+showExpression (PlainExpression rfs) = unwords <$> mapM showReadFrom rfs
 
-nameFromExpressionHs :: Expression -> [String]
-nameFromExpressionHs (Expression ex _) = nameFromExpression ex
-nameFromExpressionHs (ExpressionSugar _) = []
-nameFromExpressionHs (PlainExpression rfs) = concatMap nameFromRF rfs
+nameFromExpression :: Expression -> [String]
+nameFromExpression (Expression ex _) = nameFromNameLeaf_ $ head ex
+nameFromExpression (ExpressionSugar _) = []
+nameFromExpression (PlainExpression rfs) = concatMap nameFromRF rfs
 
 getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
 getSelectionType peg tknt (PlainSelection ex) =
@@ -142,13 +136,13 @@ getSelectionType peg tknt (PlainSelection ex) =
 getSelectionType _ _ _ = error "getSelectionType: can't get type"
 
 showSelection :: Selection -> Q String
-showSelection (Selection ehss) = intercalate " / " <$> mapM showExpressionHs ehss
+showSelection (Selection ehss) = intercalate " / " <$> mapM showExpression ehss
 showSelection (PlainSelection ehss) =
-	intercalate " / " <$> mapM showExpressionHs ehss
+	intercalate " / " <$> mapM showExpression ehss
 
 nameFromSelection :: Selection -> [String]
-nameFromSelection (Selection exs) = concatMap nameFromExpressionHs exs
-nameFromSelection (PlainSelection exs) = concatMap nameFromExpressionHs exs
+nameFromSelection (Selection exs) = concatMap nameFromExpression exs
+nameFromSelection (PlainSelection exs) = concatMap nameFromExpression exs
 
 searchDefinition :: Peg -> String -> Definition
 searchDefinition peg var = case filter ((== var) . getDefinitionName) peg of
