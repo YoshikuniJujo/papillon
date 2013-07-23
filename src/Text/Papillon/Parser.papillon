@@ -334,9 +334,9 @@ hsType :: Typ
 hsType1 :: TypeQ
 	= '[' ']' _:spaces			{ listT }
 	/ '[' t:hsTypeArr ']' _:spaces		{ listT `appT` t }
-	/ '(' _:spaces tt:hsTypeTpl ')'		{ tupT tt }
+	/ '(' _:spaces tt:hsTypeTpl ')' _:spaces{ tupT tt }
 	/ t:typToken				{ conT $ mkName t }
-	/ '(' '-' '>' ')' _:spaces	{ arrowT }
+	/ '(' '-' '>' ')' _:spaces		{ arrowT }
 ;
 hsTypeTpl :: TypeQL
 	= t:hsTypeArr ',' _:spaces tt:hsTypeTpl
