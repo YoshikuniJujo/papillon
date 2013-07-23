@@ -6,7 +6,7 @@ module Text.Papillon.Parser (
 	Selection(..),
 	Expression(..),
 	NameLeaf(..),
-	NameLeaf_(..),
+	HA(..),
 	ReadFrom(..),
 
 	getSelectionType,
@@ -167,15 +167,15 @@ plainReadFromLs :: ReadFrom
 	= rf:readFromLs				{ rf }
 	/ rf:selectCharsLs			{ rf }
 ;
-expression :: [NameLeaf_]
+expression :: [(HA, NameLeaf)]
 	= l:nameLeaf_ _:spaces e:expression	{ l : e }
 	/ 					{ [] }
 ;
-nameLeaf_ :: NameLeaf_
+nameLeaf_ :: (HA, NameLeaf)
 	= '!' nl:nameLeafNoCom _:spaces com:comForErr?
-						{ NotAfter nl $ maybe "" id com }
-	/ '&' nl:nameLeaf			{ After nl }
-	/ nl:nameLeaf				{ Here nl }
+						{ (NotAfter $ maybe "" id com, nl) }
+	/ '&' nl:nameLeaf			{ (After, nl) }
+	/ nl:nameLeaf				{ (Here, nl) }
 ;
 nameLeaf :: NameLeaf
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf

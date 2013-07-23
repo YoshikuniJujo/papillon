@@ -5,7 +5,8 @@ module Text.Papillon.Parser (
 	Selection(..),
 	Expression(..),
 	NameLeaf(..),
-	NameLeaf_(..),
+	HA(..),
+--	NameLeaf_,
 	ReadFrom(..),
 
 	getSelectionType,
@@ -99,9 +100,9 @@ data Derivs
               plainReadFromLs :: (Either (ParseError (Pos String) Derivs)
                                          ((ReadFrom, Derivs))),
               expression :: (Either (ParseError (Pos String) Derivs)
-                                    (([NameLeaf_], Derivs))),
+                                    (([(HA, NameLeaf)], Derivs))),
               nameLeaf_ :: (Either (ParseError (Pos String) Derivs)
-                                   ((NameLeaf_, Derivs))),
+                                   (((HA, NameLeaf), Derivs))),
               nameLeaf :: (Either (ParseError (Pos String) Derivs)
                                   ((NameLeaf, Derivs))),
               nameLeafNoCom :: (Either (ParseError (Pos String) Derivs)
@@ -1095,7 +1096,7 @@ parse = parse0_0 initialPos
                                                    _ <- StateT spaces
                                                    return ()
                                                    com <- optional3_325 (StateT comForErr)
-                                                   return (NotAfter nl $ maybe "" id com),
+                                                   return (NotAfter $ maybe "" id com, nl),
                                                 do d572_326 <- get
                                                    xx571_327 <- StateT char
                                                    case xx571_327 of
@@ -1104,9 +1105,9 @@ parse = parse0_0 initialPos
                                                    let '&' = xx571_327
                                                    return ()
                                                    nl <- StateT nameLeaf
-                                                   return (After nl),
+                                                   return (After, nl),
                                                 do nl <- StateT nameLeaf
-                                                   return (Here nl)]
+                                                   return (Here, nl)]
                 nameLeaf34_108 = foldl1 mplus [do n <- StateT pat1
                                                   _ <- StateT spaces
                                                   return ()

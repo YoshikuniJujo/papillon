@@ -3,7 +3,7 @@ module Text.Papillon.SyntaxTree (
 	Definition(..),
 	Selection(..),
 	Expression(..),
-	NameLeaf_(..),
+	HA(..),
 	NameLeaf(..),
 	ReadFrom(..),
 
@@ -35,15 +35,12 @@ data Selection
 	| PlainSelection { plainExpressions :: [Expression] }
 data Expression
 	= Expression {
-		expressionHsExpression :: [NameLeaf_],
+		expressionHsExpression :: [(HA, NameLeaf)],
 		expressionHsExR :: ExpQ
 	 }
 	| ExpressionSugar ExpQ
 	| PlainExpression [ReadFrom]
-data NameLeaf_
-	= Here NameLeaf
-	| After NameLeaf
-	| NotAfter NameLeaf String
+data HA = Here | After | NotAfter String deriving Show
 data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
 data ReadFrom
 	= FromVariable String
@@ -97,15 +94,15 @@ showNameLeaf (NameLeaf (pat, _) rf Nothing) = do
 nameFromNameLeaf :: NameLeaf -> [String]
 nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf
 
-showNameLeaf_ :: NameLeaf_ -> Q String
-showNameLeaf_ (Here nl) = showNameLeaf nl
-showNameLeaf_ (After nl) = ('&' :) <$> showNameLeaf nl
-showNameLeaf_ (NotAfter nl _) = ('!' :) <$> showNameLeaf nl
+showNameLeaf_ :: (HA, NameLeaf) -> Q String
+showNameLeaf_ (Here, nl) = showNameLeaf nl
+showNameLeaf_ (After, nl) = ('&' :) <$> showNameLeaf nl
+showNameLeaf_ (NotAfter _, nl) = ('!' :) <$> showNameLeaf nl
 
-nameFromNameLeaf_ :: NameLeaf_ -> [String]
-nameFromNameLeaf_ (Here nl) = nameFromNameLeaf nl
-nameFromNameLeaf_ (After nl) = nameFromNameLeaf nl
-nameFromNameLeaf_ (NotAfter nl _) = nameFromNameLeaf nl
+nameFromNameLeaf_ :: (HA, NameLeaf) -> [String]
+nameFromNameLeaf_ (Here, nl) = nameFromNameLeaf nl
+nameFromNameLeaf_ (After, nl) = nameFromNameLeaf nl
+nameFromNameLeaf_ (NotAfter _, nl) = nameFromNameLeaf nl
 
 getExpressionType :: Peg -> TypeQ -> Expression -> TypeQ
 getExpressionType peg tknt (PlainExpression rfs) =

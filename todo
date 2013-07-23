@@ -2,9 +2,8 @@
 * 次にやること           *
 **************************
 
-* NameLeaf_ を (HA, NameLeaf) にしようかな
-	まずは、data HA = Here | After | NotAfter とする
-	そして、type NameLeaf_ = (HA, NameLeaf) とし、関係する場所を書き換える
+* NameLeaf_ を (HA, NameLeaf) にした
+	NameLeaf_ のつく関数を何とかする
 
 * ExpressionHs のつく関数名の名前を変える
 
