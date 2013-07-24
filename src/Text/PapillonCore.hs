@@ -54,9 +54,7 @@ isOptionalUsedSelection (ExpressionSugar _) = False
 isOptionalUsedSelection (PlainExpression rfs) = any isOptionalUsedReadFrom rfs
 
 isOptionalUsedLeafName :: (HA, NameLeaf) -> Bool
-isOptionalUsedLeafName (Here, nl) = isOptionalUsedLeafName' nl
-isOptionalUsedLeafName (NotAfter _, nl) = isOptionalUsedLeafName' nl
-isOptionalUsedLeafName (After, nl) = isOptionalUsedLeafName' nl
+isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
 
 isOptionalUsedLeafName' :: NameLeaf -> Bool
 isOptionalUsedLeafName' (NameLeaf _ rf _) = isOptionalUsedReadFrom rf
@@ -79,9 +77,7 @@ isListUsedSelection (ExpressionSugar _) = False
 isListUsedSelection (PlainExpression rfs) = any isListUsedReadFrom rfs
 
 isListUsedLeafName :: (HA, NameLeaf) -> Bool
-isListUsedLeafName (Here, nl) = isListUsedLeafName' nl
-isListUsedLeafName (NotAfter _, nl) = isListUsedLeafName' nl
-isListUsedLeafName (After, nl) = isListUsedLeafName' nl
+isListUsedLeafName (_, nl) = isListUsedLeafName' nl
 
 isListUsedLeafName' :: NameLeaf -> Bool
 isListUsedLeafName' (NameLeaf _ (FromList _) _) = True
@@ -347,11 +343,16 @@ leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
 
 processExpressionHs ::
 	IORef Int -> Bool -> Name -> Name -> Name -> Expression -> ExpQ
-processExpressionHs g th lst lst1 opt (Expression expr exr) =
-	pSome_ g th lst lst1 opt expr exr
+processExpressionHs g th lst lst1 opt (Expression expr ret) = fmap smartDoE $ do
+	x <- forM expr $ \(ha, nl@(NameLeaf _ rf _)) -> do
+		nls <- showNameLeaf nl
+		processHA g th ha nls (nameFromRF rf) $
+			transLeaf g th lst lst1 opt nl
+	r <- noBindS $ varE (returnN th) `appE` ret
+	return $ concat x ++ [r]
 processExpressionHs g th lst lst1 opt (ExpressionSugar ex) = do
 	r <- newNewName g "r"
-	pSome_ g th lst lst1 opt [expr r] (varE r)
+	processExpressionHs g th lst lst1 opt (Expression [expr r] (varE r))
 	where
 	expr x = (Here ,) $ NameLeaf (varP x, "") (FromVariable Nothing) $
 		Just $ (, "") $ ex `appE` varE x
@@ -372,12 +373,6 @@ appApply = varE $ mkName "<*>"
 
 returnEQ :: ExpQ
 returnEQ = varE $ mkName "return"
-
-pSome_ :: IORef Int -> Bool -> Name -> Name -> Name -> [(HA, NameLeaf)] -> ExpQ -> ExpQ
-pSome_ g th lst lst1 opt nls ret = fmap smartDoE $ do
-	x <- mapM (transLeaf g th lst lst1 opt) nls
-	r <- noBindS $ varE (returnN th) `appE` ret
-	return $ concat x ++ [r]
 
 afterCheck :: Bool -> ExpQ -> Name -> [String] -> String -> StmtQ
 afterCheck th p d ns pc = do
@@ -445,8 +440,8 @@ mkTDNN g n = do
 	nn <- n
 	return (t, d, nn)
 
-transLeaf' :: IORef Int -> Bool -> Name -> Name -> Name -> NameLeaf -> Q [Stmt]
-transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf (Just (p, pc))) = do
+transLeaf :: IORef Int -> Bool -> Name -> Name -> Name -> NameLeaf -> Q [Stmt]
+transLeaf g th lst lst1 opt (NameLeaf (n, nc) rf (Just (p, pc))) = do
 	(t, d, nn) <- mkTDNN g n
 	case nn of
 		WildP -> sequence [
@@ -471,7 +466,7 @@ transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf (Just (p, pc))) = do
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
-transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf Nothing) = do
+transLeaf g th lst lst1 opt (NameLeaf (n, nc) rf Nothing) = do
 	(t, d, nn) <- mkTDNN g n
 	case nn of
 		WildP -> sequence [
@@ -491,25 +486,24 @@ transLeaf' g th lst lst1 opt (NameLeaf (n, nc) rf Nothing) = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 
-transLeaf :: IORef Int -> Bool -> Name -> Name -> Name -> (HA, NameLeaf) -> Q [Stmt]
-transLeaf g th lst lst1 opt (Here, nl) = transLeaf' g th lst lst1 opt nl
-transLeaf g th lst lst1 opt (After, nl) = do
+processHA :: IORef Int -> Bool -> HA -> String -> [String] -> Q [Stmt] -> Q [Stmt]
+processHA _ _ Here _ _ act = act
+processHA g th After _ _ act = do
 	d <- getNewName g "ddd"
 	sequence [
 		bindS (varP d) $ varE (getN th),
-		noBindS $ smartDoE <$> transLeaf' g th lst lst1 opt nl,
+		noBindS $ smartDoE <$> act,
 		noBindS $ varE (putN th) `appE` varE d]
-transLeaf g th lst lst1 opt (NotAfter com, nl@(NameLeaf _ rf _)) = do
+processHA g th (NotAfter com) nls names act = do
 	d <- getNewName g "ddd"
-	nls <- showNameLeaf nl
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ flipMaybeBody th
 			(stringE nls)
 			(stringE com)
 			(varE d)
-			(listE $ map stringE $ nameFromRF rf)
-			(smartDoE <$> transLeaf' g th lst lst1 opt nl),
+			(listE $ map stringE names)
+			(smartDoE <$> act),
 		noBindS $ varE (putN th) `appE` varE d]
 
 varPToWild :: PatQ -> PatQ

@@ -3,7 +3,6 @@
 **************************
 
 * SyntaxTree のリファクタリング
-	PapillonCore で HA の部分の処理と NameLeaf の部分の処理を分けたい
 	PlainExpression はおそらくまちがっている
 		これは、newNewName を利用するべきかもしれないが、
 		newNewName はここにはない。
