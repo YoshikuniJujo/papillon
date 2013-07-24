@@ -3,7 +3,8 @@
 module Text.Papillon.SyntaxTree (
 	Peg,
 	Definition,
-	NP(..), Selection,
+	Selection(..),
+	PlainExpression,
 	Expression(..),
 	HA(..), NameLeaf(..),
 	ReadFrom(..),
@@ -30,33 +31,36 @@ import Control.Arrow
 import Data.List
 import Data.Maybe
 
+data HA = Here | After | NotAfter String deriving (Show, Eq)
+
 type Peg = [Definition]
 type Definition = (String, Maybe TypeQ, Selection)
-data NP = Normal | Plain deriving Show
-type Selection = (NP, [Expression])
+
+data Selection = Selection [Expression] | PlainSelection [PlainExpression]
+
+type PlainExpression = [(HA, ReadFrom)]
 data Expression
-	= Expression {
-		expressionHsExpression :: [(HA, NameLeaf)],
-		expressionHsExR :: ExpQ
-	 }
+	= Expression [(HA, NameLeaf)] ExpQ
 	| ExpressionSugar ExpQ
-	| PlainExpression [(HA, ReadFrom)]
-data HA = Here | After | NotAfter String deriving (Show, Eq)
+
 data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
+
 data ReadFrom
 	= FromVariable (Maybe String)
 	| FromSelection Selection
 	| FromList ReadFrom
 	| FromList1 ReadFrom
 	| FromOptional ReadFrom
+
 fromTokenChars :: String -> ReadFrom
 fromTokenChars cs =
-	FromSelection $ (Normal ,) $ (: []) $ ExpressionSugar $
+	FromSelection $ Selection $ (: []) $ ExpressionSugar $
 		infixE Nothing (varE $ mkName "elem") $ Just $ litE $ stringL cs
 
 showSelection :: Selection -> Q String
-showSelection (Normal, ehss) = intercalate " / " <$> mapM showExpression ehss
-showSelection (Plain, ehss) = intercalate " / " <$> mapM showExpression ehss
+showSelection (Selection ehss) = intercalate " / " <$> mapM showExpression ehss
+showSelection (PlainSelection ehss) =
+	intercalate " / " <$> mapM showPlainExpression ehss
 
 showExpression :: Expression -> Q String
 showExpression (Expression ex hs) =
@@ -64,7 +68,9 @@ showExpression (Expression ex hs) =
 		<$> mapM (uncurry (<$>) . (((++) . showHA) *** showNameLeaf)) ex
 		<*> hs
 showExpression (ExpressionSugar hs) = ('<' :) . (++ ">") . show . ppr <$> hs
-showExpression (PlainExpression rfs) =
+
+showPlainExpression :: PlainExpression -> Q String
+showPlainExpression rfs =
 	unwords <$> mapM (\(ha, rf) -> (showHA ha ++) <$> showReadFrom rf) rfs
 
 showHA :: HA -> String
@@ -96,19 +102,18 @@ getDefinitionType _ _ (_, (Just typ), _) = typ
 getDefinitionType peg tknt (_, _, sel) = getSelectionType peg tknt sel
 
 getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
-getSelectionType peg tknt (Plain, ex) =
+getSelectionType peg tknt (PlainSelection ex) =
 	foldr (\x y -> (eitherT `appT` x) `appT` y) (last types) (init types)
 	where
 	eitherT = conT $ mkName "Either"
-	types = map (getExpressionType peg tknt) ex
-getSelectionType _ tknt (Normal, [ExpressionSugar _]) = tknt
+	types = map (getPlainExpressionType peg tknt) ex
+getSelectionType _ tknt (Selection [ExpressionSugar _]) = tknt
 getSelectionType _ _ _ = error "getSelectionType: can't get type"
 
-getExpressionType :: Peg -> TypeQ -> Expression -> TypeQ
-getExpressionType peg tknt (PlainExpression rfs) =
+getPlainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
+getPlainExpressionType peg tknt rfs =
 	foldl appT (tupleT $ length $ filter ((== Here) . fst) rfs) $ catMaybes $
 		map (getHAReadFromType peg tknt) rfs
-getExpressionType _ _ _ = error "getExpressionType: can't get type"
 
 getHAReadFromType :: Peg -> TypeQ -> (HA, ReadFrom) -> Maybe TypeQ
 getHAReadFromType peg tknt (Here, rf) = Just $ getReadFromType peg tknt rf
@@ -130,13 +135,15 @@ searchDefinition peg var = case filter ((== var) . \(n, _, _) -> n) peg of
 	_ -> error "searchDefinition: bad"
 
 nameFromSelection :: Selection -> [String]
-nameFromSelection (Normal, exs) = concatMap nameFromExpression exs
-nameFromSelection (Plain, exs) = concatMap nameFromExpression exs
+nameFromSelection (Selection exs) = concatMap nameFromExpression exs
+nameFromSelection (PlainSelection exs) = concatMap nameFromPlainExpression exs
 
 nameFromExpression :: Expression -> [String]
 nameFromExpression (Expression ex _) = nameFromNameLeaf $ snd $ head ex
 nameFromExpression (ExpressionSugar _) = []
-nameFromExpression (PlainExpression rfs) = concatMap (nameFromRF . snd) rfs
+
+nameFromPlainExpression :: PlainExpression -> [String]
+nameFromPlainExpression rfs = concatMap (nameFromRF . snd) rfs
 
 nameFromNameLeaf :: NameLeaf -> [String]
 nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf

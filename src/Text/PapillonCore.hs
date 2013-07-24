@@ -46,13 +46,16 @@ isOptionalUsed :: Peg -> Bool
 isOptionalUsed = any isOptionalUsedDefinition
 
 isOptionalUsedDefinition :: Definition -> Bool
-isOptionalUsedDefinition (_, _, (_, sel)) = any isOptionalUsedSelection sel
+isOptionalUsedDefinition (_, _, Selection sel) = any isOptionalUsedSelection sel
+isOptionalUsedDefinition (_, _, PlainSelection sel) =
+	any isOptionalUsedPlainSelection sel
 
 isOptionalUsedSelection :: Expression -> Bool
 isOptionalUsedSelection (Expression ex _) = any isOptionalUsedLeafName ex
 isOptionalUsedSelection (ExpressionSugar _) = False
-isOptionalUsedSelection (PlainExpression rfs) =
-	any (isOptionalUsedReadFrom . snd) rfs
+
+isOptionalUsedPlainSelection :: PlainExpression -> Bool
+isOptionalUsedPlainSelection rfs = any (isOptionalUsedReadFrom . snd) rfs
 
 isOptionalUsedLeafName :: (HA, NameLeaf) -> Bool
 isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
@@ -62,7 +65,7 @@ isOptionalUsedLeafName' (NameLeaf _ rf _) = isOptionalUsedReadFrom rf
 
 isOptionalUsedReadFrom :: ReadFrom -> Bool
 isOptionalUsedReadFrom (FromOptional _) = True
-isOptionalUsedReadFrom (FromSelection (Normal, sel)) =
+isOptionalUsedReadFrom (FromSelection (Selection sel)) =
 	any isOptionalUsedSelection sel
 isOptionalUsedReadFrom _ = False
 
@@ -70,12 +73,15 @@ isListUsed :: Peg -> Bool
 isListUsed = any isListUsedDefinition
 
 isListUsedDefinition :: Definition -> Bool
-isListUsedDefinition (_, _, (_, sel)) = any isListUsedSelection sel
+isListUsedDefinition (_, _, Selection sel) = any isListUsedSelection sel
+isListUsedDefinition (_, _, PlainSelection sel) = any isListUsedPlainSelection sel
 
 isListUsedSelection :: Expression -> Bool
 isListUsedSelection (Expression ex _) = any isListUsedLeafName ex
 isListUsedSelection (ExpressionSugar _) = False
-isListUsedSelection (PlainExpression rfs) = any (isListUsedReadFrom . snd) rfs
+
+isListUsedPlainSelection :: PlainExpression -> Bool
+isListUsedPlainSelection rfs = any (isListUsedReadFrom . snd) rfs
 
 isListUsedLeafName :: (HA, NameLeaf) -> Bool
 isListUsedLeafName (_, nl) = isListUsedLeafName' nl
@@ -321,14 +327,14 @@ pSomes1 g th lst lst1 opt pname (_, _, sel) =
 	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel g th lst lst1 opt sel
 
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
-pSomes1Sel g th lst lst1 opt (Normal, sel) =
+pSomes1Sel g th lst lst1 opt (Selection sel) =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 		listE (map (processExpressionHs g th lst lst1 opt) sel)
-pSomes1Sel g th lst lst1 opt (Plain, sel) =
+pSomes1Sel g th lst lst1 opt (PlainSelection sel) =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 		listE (zipWith
 			(flip (putLeftRight $ length sel) .
-				processExpressionHs g th lst lst1 opt)
+				processPlainExpressionHs g th lst lst1 opt)
 			sel [0..])
 
 putLeftRight :: Int -> Int -> ExpQ -> ExpQ
@@ -357,7 +363,10 @@ processExpressionHs g th lst lst1 opt (ExpressionSugar ex) = do
 	where
 	expr x = (Here ,) $ NameLeaf (varP x, "") (FromVariable Nothing) $
 		Just $ (, "") $ ex `appE` varE x
-processExpressionHs g th lst lst1 opt (PlainExpression rfs) =
+
+processPlainExpressionHs ::
+	IORef Int -> Bool -> Name -> Name -> Name -> PlainExpression -> ExpQ
+processPlainExpressionHs g th lst lst1 opt rfs =
 	foldl (\x y -> infixApp x appApply y)
 		(returnEQ `appE` mkTupleE g (map fst rfs)) $
 			map (transHAReadFrom g th lst lst1 opt) $ rfs

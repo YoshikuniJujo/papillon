@@ -3,11 +3,12 @@
 **************************
 
 * SyntaxTree のリファクタリング
-	Selection は (Normal, [Expression _ _, ... ] または
-		(Plain, [PlainExpression _, ...]) のみしかない
-		ということは、むしろ、
-		NormalSelection [Expression]
-		PlainSelection [PlainExpression] のような感じのほうが良くないか。
+	Definition の Maybe TypeQ が Nothing になるのは PlainSelection のときのみ
+		よって、PlainSelection と Selection とを分けて、
+		Definition のところでまとめてもいいが、
+		しかし、Selection は ReadFrom の FromSelection で使われているので、
+		分けないほうが良いと考えることもできる。
+		どうするか。
 	NameLeaf の見直し、境界がまちがっているかもしれない。
 		NameLeaf は data ではなく tuple でもいいが ...
 	NameLeaf の名前の見直し過去の遺物だ。もっと良い名があるはずだ。

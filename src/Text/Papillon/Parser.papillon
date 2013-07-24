@@ -3,8 +3,9 @@
 module Text.Papillon.Parser (
 	Peg,
 	Definition,
-	NP(..), Selection,
+	Selection(..),
 	Expression(..),
+	PlainExpression,
 	NameLeaf(..),
 	HA(..),
 	ReadFrom(..),
@@ -134,18 +135,18 @@ definition :: Definition
 		_:spaces sel:selection _:spaces ';'
 						{ (v, Just t, sel) }
 	/ v:variable _:spaces '<' '-' _:spaces
-		sel:plainSelection _:spaces ';'	{ (v, Nothing, (Plain, sel)) }
+		sel:plainSelection _:spaces ';'	{ (v, Nothing, PlainSelection sel) }
 ;
 selection :: Selection
-	= s:normalSelection			{ (Normal, s) }
-	/ s:plainSelection			{ (Plain, s) }
+	= s:normalSelection			{ Selection s }
+	/ s:plainSelection			{ PlainSelection s }
 ;
 normalSelection :: [Expression]
 	= ex:expressionHs _:spaces '/' _:spaces sel:normalSelection
 						{ ex : sel }
 	/ ex:expressionHs			{ [ex] }
 ;
-plainSelection :: [Expression]
+plainSelection :: [PlainExpression]
 	= ex:plainExpressionHs _:spaces '/' _:spaces sel:plainSelection
 						{ ex : sel }
 	/ ex:plainExpressionHs			{ [ex] }
@@ -158,9 +159,9 @@ expressionHs :: Expression
 expressionHsSugar :: Expression
 	= '<' _:spaces h:hsExpLam _:spaces '>'	{ ExpressionSugar h }
 ;
-plainExpressionHs :: Expression
+plainExpressionHs :: PlainExpression
 	= rfs:(rf:plainHAReadFromLs _:spaces { rf })*
-						{ PlainExpression rfs }
+						{ rfs }
 ;
 plainHAReadFromLs :: (HA, ReadFrom)
 	= rf:plainReadFromLs			{ (Here, rf) }
@@ -262,7 +263,7 @@ readFromLs :: ReadFrom
 readFrom :: ReadFrom
 	= v:variable				{ FromVariable $ Just v }
 	/ '(' s:selection ')'			{ FromSelection s }
-	/ e:expressionHsSugar			{ FromSelection $ (Normal, [e]) }
+	/ e:expressionHsSugar			{ FromSelection $ Selection [e] }
 ;
 selectCharsLs :: ReadFrom
 	= rf:selectChars '*'			{ FromList rf }

@@ -2,8 +2,9 @@
 module Text.Papillon.Parser (
 	Peg,
 	Definition,
-	NP(..), Selection,
+	Selection(..),
 	Expression(..),
+	PlainExpression,
 	NameLeaf(..),
 	HA(..),
 	ReadFrom(..),
@@ -89,13 +90,13 @@ data Derivs
               normalSelection :: (Either (ParseError (Pos String) Derivs)
                                          (([Expression], Derivs))),
               plainSelection :: (Either (ParseError (Pos String) Derivs)
-                                        (([Expression], Derivs))),
+                                        (([PlainExpression], Derivs))),
               expressionHs :: (Either (ParseError (Pos String) Derivs)
                                       ((Expression, Derivs))),
               expressionHsSugar :: (Either (ParseError (Pos String) Derivs)
                                            ((Expression, Derivs))),
               plainExpressionHs :: (Either (ParseError (Pos String) Derivs)
-                                           ((Expression, Derivs))),
+                                           ((PlainExpression, Derivs))),
               plainHAReadFromLs :: (Either (ParseError (Pos String) Derivs)
                                            (((HA, ReadFrom), Derivs))),
               plainReadFromLs :: (Either (ParseError (Pos String) Derivs)
@@ -990,11 +991,11 @@ parse = parse0_0 initialPos
                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d494_310 ["char"])
                                                    let ';' = xx493_311
                                                    return ()
-                                                   return (v, Nothing, (Plain, sel))]
+                                                   return (v, Nothing, PlainSelection sel)]
                 selection25_100 = foldl1 mplus [do s <- StateT normalSelection
-                                                   return (Normal, s),
+                                                   return (Selection s),
                                                 do s <- StateT plainSelection
-                                                   return (Plain, s)]
+                                                   return (PlainSelection s)]
                 normalSelection26_101 = foldl1 mplus [do ex <- StateT expressionHs
                                                          _ <- StateT spaces
                                                          return ()
@@ -1076,7 +1077,7 @@ parse = parse0_0 initialPos
                                                                                               _ <- StateT spaces
                                                                                               return ()
                                                                                               return rf])
-                                                           return (PlainExpression rfs)]
+                                                           return rfs]
                 plainHAReadFromLs31_106 = foldl1 mplus [do rf <- StateT plainReadFromLs
                                                            return (Here, rf),
                                                         do d558_325 <- get
@@ -1532,7 +1533,7 @@ parse = parse0_0 initialPos
                                                   return ()
                                                   return (FromSelection s),
                                                do e <- StateT expressionHsSugar
-                                                  return (FromSelection $ (Normal, [e]))]
+                                                  return (FromSelection $ Selection [e])]
                 selectCharsLs50_125 = foldl1 mplus [do rf <- StateT selectChars
                                                        d804_414 <- get
                                                        xx803_415 <- StateT char
