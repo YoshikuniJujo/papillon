@@ -8,11 +8,11 @@ module Text.Papillon.Parser (
 	Selection,
 	Expression,
 	PlainExpression,
-	NameLeaf,
+	Check,
 	ReadFrom(..),
 
-	getSelectionType,
-	showNameLeaf,
+	selectionType,
+	showCheck,
 	nameFromRF,
 
 	parse,
@@ -25,9 +25,10 @@ module Text.Papillon.Parser (
 	Pos(..),
 	ListPos(..),
 
+	PegFile,
 	PPragma(..),
 	ModuleName,
-	ExportList,
+	Exports,
 	Code
 ) where
 
@@ -104,13 +105,13 @@ data Derivs
               plainReadFromLs :: (Either (ParseError (Pos String) Derivs)
                                          ((ReadFrom, Derivs))),
               expression :: (Either (ParseError (Pos String) Derivs)
-                                    (([(HA, NameLeaf)], Derivs))),
+                                    (([(HA, Check)], Derivs))),
               nameLeaf_ :: (Either (ParseError (Pos String) Derivs)
-                                   (((HA, NameLeaf), Derivs))),
+                                   (((HA, Check), Derivs))),
               nameLeaf :: (Either (ParseError (Pos String) Derivs)
-                                  ((NameLeaf, Derivs))),
+                                  ((Check, Derivs))),
               nameLeafNoCom :: (Either (ParseError (Pos String) Derivs)
-                                       ((NameLeaf, Derivs))),
+                                       ((Check, Derivs))),
               comForErr :: (Either (ParseError (Pos String) Derivs)
                                    ((String, Derivs))),
               leaf :: (Either (ParseError (Pos String) Derivs)

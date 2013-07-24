@@ -9,11 +9,11 @@ module Text.Papillon.Parser (
 	Selection,
 	Expression,
 	PlainExpression,
-	NameLeaf,
+	Check,
 	ReadFrom(..),
 
-	getSelectionType,
-	showNameLeaf,
+	selectionType,
+	showCheck,
 	nameFromRF,
 
 	parse,
@@ -26,9 +26,10 @@ module Text.Papillon.Parser (
 	Pos(..),
 	ListPos(..),
 
+	PegFile,
 	PPragma(..),
 	ModuleName,
-	ExportList,
+	Exports,
 	Code
 ) where
 
@@ -174,23 +175,23 @@ plainReadFromLs :: ReadFrom
 	= rf:readFromLs				{ rf }
 	/ rf:selectCharsLs			{ rf }
 ;
-expression :: [(HA, NameLeaf)]
+expression :: [(HA, Check)]
 	= l:nameLeaf_ _:spaces e:expression	{ l : e }
 	/ 					{ [] }
 ;
-nameLeaf_ :: (HA, NameLeaf)
+nameLeaf_ :: (HA, Check)
 	= '!' nl:nameLeafNoCom _:spaces com:comForErr?
 						{ (NotAfter $ maybe "" id com, nl) }
 	/ '&' nl:nameLeaf			{ (After, nl) }
 	/ nl:nameLeaf				{ (Here, nl) }
 ;
-nameLeaf :: NameLeaf
+nameLeaf :: Check
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces com:comForErr?
 		{ ((n, maybe "" id com), (FromVariable Nothing), Nothing) }
 ;
-nameLeafNoCom :: NameLeaf
+nameLeafNoCom :: Check
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces

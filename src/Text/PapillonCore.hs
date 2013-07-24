@@ -25,7 +25,7 @@ module Text.PapillonCore (
 	papillonFile,
 	PPragma(..),
 	ModuleName,
-	ExportList,
+	Exports,
 	Code,
 	(<*>)
 ) where
@@ -55,10 +55,10 @@ isOptionalUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
 isOptionalUsedPlainSelection :: PlainExpression -> Bool
 isOptionalUsedPlainSelection rfs = any (isOptionalUsedReadFrom . snd) rfs
 
-isOptionalUsedLeafName :: (HA, NameLeaf) -> Bool
+isOptionalUsedLeafName :: (HA, Check) -> Bool
 isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
 
-isOptionalUsedLeafName' :: NameLeaf -> Bool
+isOptionalUsedLeafName' :: Check -> Bool
 isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
 
 isOptionalUsedReadFrom :: ReadFrom -> Bool
@@ -81,10 +81,10 @@ isListUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
 isListUsedPlainSelection :: PlainExpression -> Bool
 isListUsedPlainSelection rfs = any (isListUsedReadFrom . snd) rfs
 
-isListUsedLeafName :: (HA, NameLeaf) -> Bool
+isListUsedLeafName :: (HA, Check) -> Bool
 isListUsedLeafName (_, nl) = isListUsedLeafName' nl
 
-isListUsedLeafName' :: NameLeaf -> Bool
+isListUsedLeafName' :: Check -> Bool
 isListUsedLeafName' (_, (FromL List _), _) = True
 isListUsedLeafName' (_, (FromL List1 _), _) = True
 isListUsedLeafName' _ = False
@@ -157,8 +157,7 @@ papillonCore str = case peg $ parse str of
 		decParsed True src (conT (mkName "Token") `appT` src) parsed
 	Left err -> error $ "parse error: " ++ showParseError err
 
-papillonFile :: String ->
-	([PPragma], ModuleName, Maybe ExportList, Code, DecsQ, Code)
+papillonFile :: String -> ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
 papillonFile str = case pegFile $ parse str of
 	Right ((prgm, mn, ppp, pp, (src, parsed), atp), _) ->
 		(prgm, mn, ppp, addApplicative parsed ++ pp,
@@ -231,7 +230,7 @@ derivs1 _ src _ (name, Just typ, _) =
 	varStrictType (mkName name) $ strictType notStrict $ resultT src typ
 derivs1 pg src tkn (name, _, sel) =
 	varStrictType (mkName name) $ strictType notStrict $ resultT src $
-		getSelectionType pg tkn sel
+		selectionType pg tkn sel
 
 throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
 throwErrorPackratMBody th code msg com d ns = infixApp
@@ -353,7 +352,7 @@ processExpressionHs g th lst lst1 opt (_, exhs) = do
 	let (expr, ret) = exhs c
 	fmap smartDoE $ do
 		x <- forM expr $ \(ha, nl@(_, rf, _)) -> do
-			nls <- showNameLeaf nl
+			nls <- showCheck nl
 			processHA g th ha nls (nameFromRF rf) $
 				transLeaf g th lst lst1 opt nl
 		r <- noBindS $ varE (returnN th) `appE` ret
@@ -436,7 +435,7 @@ mkTDNN g n = do
 	nn <- n
 	return (t, d, nn)
 
-transLeaf :: IORef Int -> Bool -> Name -> Name -> Name -> NameLeaf -> Q [Stmt]
+transLeaf :: IORef Int -> Bool -> Name -> Name -> Name -> Check -> Q [Stmt]
 transLeaf g th lst lst1 opt ((n, nc), rf, Just (p, pc)) = do
 	(t, d, nn) <- mkTDNN g n
 	case nn of

@@ -1,23 +1,22 @@
 {-# LANGUAGE TupleSections #-}
 
 module Text.Papillon.SyntaxTree (
-	HA(..),
-	Lists(..),
-
 	Peg,
 	Definition,
 	Selection,
-	PlainExpression,
 	Expression,
-	NameLeaf,
+	PlainExpression,
+	Check,
 	ReadFrom(..),
 	fromTokenChars,
 	expressionSugar,
 
+	HA(..),
+	Lists(..),
+
 	showSelection,
-	showNameLeaf,
-	getDefinitionType,
-	getSelectionType,
+	showCheck,
+	selectionType,
 	nameFromSelection,
 	nameFromRF,
 
@@ -25,7 +24,7 @@ module Text.Papillon.SyntaxTree (
 	mkPegFile,
 	PPragma(..),
 	ModuleName,
-	ExportList,
+	Exports,
 	Code
 ) where
 
@@ -33,7 +32,6 @@ import Language.Haskell.TH
 import Control.Applicative
 import Control.Arrow
 import Data.List
-import Data.Maybe
 
 data HA = Here | After | NotAfter String deriving (Show, Eq)
 data Lists = List | List1 | Optional deriving Show
@@ -41,9 +39,9 @@ data Lists = List | List1 | Optional deriving Show
 type Peg = [Definition]
 type Definition = (String, Maybe TypeQ, Selection)
 type Selection =  Either [Expression] [PlainExpression]
-type Expression = (Bool, (Name -> ([(HA, NameLeaf)], ExpQ)))
+type Expression = (Bool, (Name -> ([(HA, Check)], ExpQ)))
 type PlainExpression = [(HA, ReadFrom)]
-type NameLeaf = ((PatQ, String), ReadFrom, Maybe (ExpQ, String))
+type Check = ((PatQ, String), ReadFrom, Maybe (ExpQ, String))
 data ReadFrom
 	= FromVariable (Maybe String)
 	| FromSelection Selection
@@ -64,7 +62,7 @@ showSelection ehss = intercalate " / " <$>
 showExpression :: Expression -> Q String
 showExpression (_, exhs) = let (ex, hs) = exhs $ mkName "c" in
 	(\e h -> unwords e ++ " { " ++ show (ppr h) ++ " }")
-		<$> mapM (uncurry (<$>) . (((++) . showHA) *** showNameLeaf)) ex
+		<$> mapM (uncurry (<$>) . (((++) . showHA) *** showCheck)) ex
 		<*> hs
 
 showPlainExpression :: PlainExpression -> Q String
@@ -76,80 +74,66 @@ showHA Here = ""
 showHA After = "&"
 showHA (NotAfter _) = "!"
 
-showNameLeaf :: NameLeaf -> Q String
-showNameLeaf ((pat, _), rf, Just (p, _)) = do
+showCheck :: Check -> Q String
+showCheck ((pat, _), rf, Just (p, _)) = do
 	patt <- pat
 	rff <- showReadFrom rf
 	pp <- p
 	return $ show (ppr patt) ++ ":" ++ rff ++ "[" ++ show (ppr pp) ++ "]"
-showNameLeaf ((pat, _), rf, Nothing) = do
+showCheck ((pat, _), rf, Nothing) = do
 	patt <- pat
 	rff <- showReadFrom rf
 	return $ show (ppr patt) ++ ":" ++ rff
 
-showLists :: Lists -> String
-showLists List = "*"
-showLists List1 = "+"
-showLists Optional = "?"
-
 showReadFrom :: ReadFrom -> Q String
 showReadFrom (FromVariable (Just v)) = return v
 showReadFrom (FromVariable _) = return ""
-showReadFrom (FromL l rf) = (++ showLists l) <$> showReadFrom rf
+showReadFrom (FromL l rf) = (++ sl l) <$> showReadFrom rf
+	where	sl List = "*"
+		sl List1 = "+"
+		sl Optional = "?"
 showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
 
-getDefinitionType :: Peg -> TypeQ -> Definition -> TypeQ
-getDefinitionType _ _ (_, (Just typ), _) = typ
-getDefinitionType peg tknt (_, _, sel) = getSelectionType peg tknt sel
+definitionType :: Peg -> TypeQ -> Definition -> TypeQ
+definitionType _ _ (_, Just typ, _) = typ
+definitionType peg tk (_, _, sel) = selectionType peg tk sel
 
-getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
-getSelectionType peg tknt (Right ex) =
+selectionType :: Peg -> TypeQ -> Selection -> TypeQ
+selectionType peg tk (Right ex) =
 	foldr (\x y -> (eitherT `appT` x) `appT` y) (last types) (init types)
 	where
 	eitherT = conT $ mkName "Either"
-	types = map (getPlainExpressionType peg tknt) ex
-getSelectionType _ tknt (Left [(True, _)]) = tknt
-getSelectionType _ _ _ = error "getSelectionType: can't get type"
+	types = map (plainExpressionType peg tk) ex
+selectionType _ tk (Left [(True, _)]) = tk
+selectionType _ _ _ = error "selectionType: can't get type"
 
-getPlainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
-getPlainExpressionType peg tknt rfs =
-	foldl appT (tupleT $ length $ filter ((== Here) . fst) rfs) $ catMaybes $
-		map (getHAReadFromType peg tknt) rfs
+plainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
+plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
+	foldl appT (tupleT $ length fe) $ map (readFromType peg tk . snd) $ fe
 
-getHAReadFromType :: Peg -> TypeQ -> (HA, ReadFrom) -> Maybe TypeQ
-getHAReadFromType peg tknt (Here, rf) = Just $ getReadFromType peg tknt rf
-getHAReadFromType _ _ _ = Nothing
-
-getListsType :: Lists -> TypeQ
-getListsType Optional = conT $ mkName "Maybe"
-getListsType _ = listT
-
-getReadFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
-getReadFromType peg tknt (FromVariable (Just var)) =
-	getDefinitionType peg tknt $ searchDefinition peg var
-getReadFromType peg tknt (FromSelection sel) = getSelectionType peg tknt sel
-getReadFromType _ tknt (FromVariable _) = tknt
-getReadFromType peg tknt (FromL l rf) =
-	getListsType l `appT` getReadFromType peg tknt rf
-
-searchDefinition :: Peg -> String -> Definition
-searchDefinition peg var = case filter ((== var) . \(n, _, _) -> n) peg of
-	[d] -> d
-	_ -> error "searchDefinition: bad"
+readFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
+readFromType peg tk (FromVariable (Just v)) =
+	definitionType peg tk $ case filter ((== v) . \(n, _, _) -> n) peg of
+		[d] -> d
+		_ -> error "searchDefinition: bad"
+readFromType peg tk (FromSelection sel) = selectionType peg tk sel
+readFromType _ tk (FromVariable _) = tk
+readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
+	where	lt Optional = conT $ mkName "Maybe"
+		lt _ = listT
 
 nameFromSelection :: Selection -> [String]
-nameFromSelection (Left exs) = concatMap nameFromExpression exs
-nameFromSelection (Right exs) = concatMap nameFromPlainExpression exs
+nameFromSelection exs = concat $
+	either (map nameFromExpression) (map nameFromPlainExpression) exs
 
 nameFromExpression :: Expression -> [String]
-nameFromExpression (_, exhs) = let (ex, _) = exhs $ mkName "c" in
-	nameFromNameLeaf $ snd $ head ex
+nameFromExpression = nameFromCheck . snd . head . fst . ($ mkName "c") . snd
 
 nameFromPlainExpression :: PlainExpression -> [String]
-nameFromPlainExpression rfs = concatMap (nameFromRF . snd) rfs
+nameFromPlainExpression = concatMap (nameFromRF . snd)
 
-nameFromNameLeaf :: NameLeaf -> [String]
-nameFromNameLeaf (_, rf, _) = nameFromRF rf
+nameFromCheck :: Check -> [String]
+nameFromCheck (_, rf, _) = nameFromRF rf
 
 nameFromRF :: ReadFrom -> [String]
 nameFromRF (FromVariable (Just s)) = [s]
@@ -157,11 +141,10 @@ nameFromRF (FromVariable _) = ["char"]
 nameFromRF (FromL _ rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 
-type PegFile =
-	([PPragma], ModuleName, Maybe ExportList, Code, (TypeQ, Peg), Code)
+type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, (TypeQ, Peg), Code)
 data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
 type ModuleName = [String]
-type ExportList = String
+type Exports = String
 type Code = String
 
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->

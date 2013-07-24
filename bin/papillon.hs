@@ -26,7 +26,7 @@ papillonStr src = do
 		importConst ++ addModules ++
 		pp ++ "\n" ++ show (ppr decs) ++ "\n" ++ atp ++ "\n")
 
-showExportList :: Maybe ExportList -> String
+showExportList :: Maybe Exports -> String
 showExportList (Just el) = " (\n\t" ++ el ++ "\n) "
 showExportList Nothing = " "
 

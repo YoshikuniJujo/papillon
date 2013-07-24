@@ -3,7 +3,6 @@
 **************************
 
 * SyntaxTree のリファクタリング
-	NameLeaf の名前の見直し過去の遺物だ。もっと良い名があるはずだ。
 	selection :: Selection の部分を
 	selection <- normalSelection / plainSelection
 	とできるな
