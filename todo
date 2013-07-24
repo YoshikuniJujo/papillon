@@ -3,7 +3,11 @@
 **************************
 
 * SyntaxTree のリファクタリング
-	data NameLeaf -> type にできそうだ
+	NameLeaf の名前の見直し過去の遺物だ。もっと良い名があるはずだ。
+	Selection も Either でできるけど ...
+	selection :: Selection の部分を
+	selection <- normalSelection / plainSelection
+	とできるな
 	FromList, FromList1, FromOptional はたとえば、
 		FromL List, FromL List1, FromL Optional のようにしても良いと思う
 	Definition の Maybe TypeQ が Nothing になるのは PlainSelection のときのみ
@@ -12,9 +16,6 @@
 		しかし、Selection は ReadFrom の FromSelection で使われているので、
 		分けないほうが良いと考えることもできる。
 		どうするか。
-	NameLeaf の見直し、境界がまちがっているかもしれない。
-		NameLeaf は data ではなく tuple でもいいが ...
-	NameLeaf の名前の見直し過去の遺物だ。もっと良い名があるはずだ。
 	export list のリファクタリング
 	Peg の構造も変えよう
 	where 以下に入れられる関数は入れてしまう
