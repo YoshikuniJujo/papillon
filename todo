@@ -3,14 +3,7 @@
 **************************
 
 * SyntaxTree のリファクタリング
-	ExpressionSugar も IORef Int と newNewName が使えれば、
-		Expression にまとめられるのだが ...
-		名前の conflict が起きないようにしたいが ...
-		たとえば s を使っておくとか ...
-		しかし、newName を使おうとすると全体を Q Expression とする必要
-		があり、これはめんどくさい気もする ...。
-		今の感じが調度いい妥協点なのかも。
-		よく考えてみること。
+	data Expression を type Expression = (Bool, ...) とする
 	Definition の Maybe TypeQ が Nothing になるのは PlainSelection のときのみ
 		よって、PlainSelection と Selection とを分けて、
 		Definition のところでまとめてもいいが、

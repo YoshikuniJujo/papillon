@@ -9,6 +9,7 @@ module Text.Papillon.SyntaxTree (
 	HA(..), NameLeaf(..),
 	ReadFrom(..),
 	fromTokenChars,
+	expressionSugar,
 
 	showSelection,
 	showNameLeaf,
@@ -39,9 +40,13 @@ type Definition = (String, Maybe TypeQ, Selection)
 data Selection = Selection [Expression] | PlainSelection [PlainExpression]
 
 type PlainExpression = [(HA, ReadFrom)]
-data Expression
-	= Expression [(HA, NameLeaf)] ExpQ
-	| ExpressionSugar ExpQ
+data Expression = Expression Bool (Name -> ([(HA, NameLeaf)], ExpQ))
+
+expressionSugar :: ExpQ -> Expression
+expressionSugar p = Expression True $ \c -> ([expr c], varE c)
+	where
+	expr x = (Here ,) $ NameLeaf (varP x, "") (FromVariable Nothing) $
+		Just $ (, "") $ p `appE` varE x
 
 data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
 
@@ -54,7 +59,7 @@ data ReadFrom
 
 fromTokenChars :: String -> ReadFrom
 fromTokenChars cs =
-	FromSelection $ Selection $ (: []) $ ExpressionSugar $
+	FromSelection $ Selection $ (: []) $ expressionSugar $
 		infixE Nothing (varE $ mkName "elem") $ Just $ litE $ stringL cs
 
 showSelection :: Selection -> Q String
@@ -63,11 +68,10 @@ showSelection (PlainSelection ehss) =
 	intercalate " / " <$> mapM showPlainExpression ehss
 
 showExpression :: Expression -> Q String
-showExpression (Expression ex hs) =
+showExpression (Expression _ exhs) = let (ex, hs) = exhs $ mkName "c" in
 	(\e h -> unwords e ++ " { " ++ show (ppr h) ++ " }")
 		<$> mapM (uncurry (<$>) . (((++) . showHA) *** showNameLeaf)) ex
 		<*> hs
-showExpression (ExpressionSugar hs) = ('<' :) . (++ ">") . show . ppr <$> hs
 
 showPlainExpression :: PlainExpression -> Q String
 showPlainExpression rfs =
@@ -107,7 +111,7 @@ getSelectionType peg tknt (PlainSelection ex) =
 	where
 	eitherT = conT $ mkName "Either"
 	types = map (getPlainExpressionType peg tknt) ex
-getSelectionType _ tknt (Selection [ExpressionSugar _]) = tknt
+getSelectionType _ tknt (Selection [Expression True _]) = tknt
 getSelectionType _ _ _ = error "getSelectionType: can't get type"
 
 getPlainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
@@ -139,8 +143,8 @@ nameFromSelection (Selection exs) = concatMap nameFromExpression exs
 nameFromSelection (PlainSelection exs) = concatMap nameFromPlainExpression exs
 
 nameFromExpression :: Expression -> [String]
-nameFromExpression (Expression ex _) = nameFromNameLeaf $ snd $ head ex
-nameFromExpression (ExpressionSugar _) = []
+nameFromExpression (Expression _ exhs) = let (ex, _) = exhs $ mkName "c" in
+	nameFromNameLeaf $ snd $ head ex
 
 nameFromPlainExpression :: PlainExpression -> [String]
 nameFromPlainExpression rfs = concatMap (nameFromRF . snd) rfs

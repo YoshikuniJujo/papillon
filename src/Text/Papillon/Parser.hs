@@ -1050,7 +1050,7 @@ parse = parse0_0 initialPos
                                                           _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d536_318 ["char"])
                                                       let '}' = xx535_319
                                                       return ()
-                                                      return (Expression e h),
+                                                      return (Expression False $ const (e, h)),
                                                    do e <- StateT expressionHsSugar
                                                       return e]
                 expressionHsSugar29_104 = foldl1 mplus [do d540_320 <- get
@@ -1072,7 +1072,7 @@ parse = parse0_0 initialPos
                                                                _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d548_322 ["char"])
                                                            let '>' = xx547_323
                                                            return ()
-                                                           return (ExpressionSugar h)]
+                                                           return (expressionSugar h)]
                 plainExpressionHs30_105 = foldl1 mplus [do rfs <- list1_324 (foldl1 mplus [do rf <- StateT plainHAReadFromLs
                                                                                               _ <- StateT spaces
                                                                                               return ()

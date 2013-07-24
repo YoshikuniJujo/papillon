@@ -153,11 +153,11 @@ plainSelection :: [PlainExpression]
 ;
 expressionHs :: Expression
 	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
-						{ Expression e h }
+						{ Expression False $ const (e, h) }
 	/ e:expressionHsSugar			{ e }
 ;
 expressionHsSugar :: Expression
-	= '<' _:spaces h:hsExpLam _:spaces '>'	{ ExpressionSugar h }
+	= '<' _:spaces h:hsExpLam _:spaces '>'	{ expressionSugar h }
 ;
 plainExpressionHs :: PlainExpression
 	= rfs:(rf:plainHAReadFromLs _:spaces { rf })*

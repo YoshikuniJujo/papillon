@@ -38,7 +38,6 @@ import Control.Applicative
 
 import Text.Papillon.Parser
 import Data.IORef
--- import Data.List
 
 import Text.Papillon.List
 
@@ -51,8 +50,8 @@ isOptionalUsedDefinition (_, _, PlainSelection sel) =
 	any isOptionalUsedPlainSelection sel
 
 isOptionalUsedSelection :: Expression -> Bool
-isOptionalUsedSelection (Expression ex _) = any isOptionalUsedLeafName ex
-isOptionalUsedSelection (ExpressionSugar _) = False
+isOptionalUsedSelection (Expression _ exhs) = let (ex, _) = exhs $ mkName "c" in
+	any isOptionalUsedLeafName ex
 
 isOptionalUsedPlainSelection :: PlainExpression -> Bool
 isOptionalUsedPlainSelection rfs = any (isOptionalUsedReadFrom . snd) rfs
@@ -77,8 +76,8 @@ isListUsedDefinition (_, _, Selection sel) = any isListUsedSelection sel
 isListUsedDefinition (_, _, PlainSelection sel) = any isListUsedPlainSelection sel
 
 isListUsedSelection :: Expression -> Bool
-isListUsedSelection (Expression ex _) = any isListUsedLeafName ex
-isListUsedSelection (ExpressionSugar _) = False
+isListUsedSelection (Expression _ exhs) = let (ex, _) = exhs $ mkName "c" in
+	any isListUsedLeafName ex
 
 isListUsedPlainSelection :: PlainExpression -> Bool
 isListUsedPlainSelection rfs = any (isListUsedReadFrom . snd) rfs
@@ -173,7 +172,7 @@ papillonFile str = case pegFile $ parse str of
 	needApplicative pg = isListUsed pg || isOptionalUsed pg
 
 showParseError :: ParseError (Pos String) Derivs -> String
-showParseError pe = -- (ParseError c m _ d ns (ListPos (CharPos p))) =
+showParseError pe =
 	unwords (map (showReading d) ns) ++ (if null ns then "" else " ") ++
 	m ++ c ++ " at position: " ++ show p
 	where
@@ -350,19 +349,16 @@ leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
 
 processExpressionHs ::
 	IORef Int -> Bool -> Name -> Name -> Name -> Expression -> ExpQ
-processExpressionHs g th lst lst1 opt (Expression expr ret) = fmap smartDoE $ do
-	x <- forM expr $ \(ha, nl@(NameLeaf _ rf _)) -> do
-		nls <- showNameLeaf nl
-		processHA g th ha nls (nameFromRF rf) $
-			transLeaf g th lst lst1 opt nl
-	r <- noBindS $ varE (returnN th) `appE` ret
-	return $ concat x ++ [r]
-processExpressionHs g th lst lst1 opt (ExpressionSugar ex) = do
-	r <- newNewName g "r"
-	processExpressionHs g th lst lst1 opt (Expression [expr r] (varE r))
-	where
-	expr x = (Here ,) $ NameLeaf (varP x, "") (FromVariable Nothing) $
-		Just $ (, "") $ ex `appE` varE x
+processExpressionHs g th lst lst1 opt (Expression _ exhs) = do
+	c <- newNewName g "c"
+	let (expr, ret) = exhs c
+	fmap smartDoE $ do
+		x <- forM expr $ \(ha, nl@(NameLeaf _ rf _)) -> do
+			nls <- showNameLeaf nl
+			processHA g th ha nls (nameFromRF rf) $
+				transLeaf g th lst lst1 opt nl
+		r <- noBindS $ varE (returnN th) `appE` ret
+		return $ concat x ++ [r]
 
 processPlainExpressionHs ::
 	IORef Int -> Bool -> Name -> Name -> Name -> PlainExpression -> ExpQ
