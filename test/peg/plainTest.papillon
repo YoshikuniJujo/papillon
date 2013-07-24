@@ -8,7 +8,7 @@ main = do
 	case str $ parse "Hello, world" of
 		Right (r, _) -> print r
 		Left _ -> putStrLn "parse error"
-	case str $ parse "hellO, world" of
+	case str $ parse "hellOW, world" of
 		Right (r, _) -> print r
 		Left _ -> putStrLn "parse error"
 
@@ -20,6 +20,6 @@ uppers :: String
 	= s:(c:[isUpper c] { c })+	{ s }
 ;
 lowers <- [a-z]+;
-str <- uppers lowers ',' / lowers uppers;
+str <- uppers lowers &',' / lowers uppers !',' / lowers;
 
 |]

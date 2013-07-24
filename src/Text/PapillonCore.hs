@@ -359,15 +359,22 @@ processExpressionHs g th lst lst1 opt (ExpressionSugar ex) = do
 		Just $ (, "") $ ex `appE` varE x
 processExpressionHs g th lst lst1 opt (PlainExpression rfs) =
 	foldl (\x y -> infixApp x appApply y)
-		(returnEQ `appE` tupleE g (length rfs)) $
-			map (transHAReadFrom g th lst lst1 opt) rfs
+		(returnEQ `appE` mkTupleE g (map fst rfs)) $
+			map (transHAReadFrom g th lst lst1 opt) $ rfs
 
-tupleE :: IORef Int -> Int -> ExpQ
-tupleE _ 0 = conE $ mkName "()"
-tupleE _ 1 = varE $ mkName "id"
-tupleE g n = do
-	xs <- replicateM n $ newNewName g "x"
-	lamE (map varP xs) $ tupE (map varE xs)
+mkTupleE :: IORef Int -> [HA] -> ExpQ
+mkTupleE g has = do
+	names <- replicateM (length has) $ newNewName g "x"
+	lamE (mkPat names has) $ tupE $ mkExp names has
+	where
+	mkPat _ [] = []
+	mkPat (n : ns) (Here : hs) = varP n : mkPat ns hs
+	mkPat (_ : ns) (_ : hs) = wildP : mkPat ns hs
+	mkPat _ _ = error "bad"
+	mkExp _ [] = []
+	mkExp (n : ns) (Here : hs) = varE n : mkExp ns hs
+	mkExp (_ : ns) (_ : hs) = mkExp ns hs
+	mkExp _ _ = error "bad"
 
 appApply :: ExpQ
 appApply = varE $ mkName "<*>"
@@ -488,7 +495,7 @@ processHA g th After _ _ act = do
 	d <- getNewName g "ddd"
 	sequence [
 		bindS (varP d) $ varE (getN th),
-		noBindS $ smartDoE <$> act,
+		bindS wildP $ smartDoE <$> act,
 		noBindS $ varE (putN th) `appE` varE d]
 processHA g th (NotAfter com) nls names act = do
 	d <- getNewName g "ddd"

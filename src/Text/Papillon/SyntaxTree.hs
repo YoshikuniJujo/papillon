@@ -38,7 +38,7 @@ data Expression
 	 }
 	| ExpressionSugar ExpQ
 	| PlainExpression [(HA, ReadFrom)]
-data HA = Here | After | NotAfter String deriving Show
+data HA = Here | After | NotAfter String deriving (Show, Eq)
 data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
 data ReadFrom
 	= FromVariable (Maybe String)
@@ -100,7 +100,7 @@ getSelectionType _ _ _ = error "getSelectionType: can't get type"
 
 getExpressionType :: Peg -> TypeQ -> Expression -> TypeQ
 getExpressionType peg tknt (PlainExpression rfs) =
-	foldl appT (tupleT $ length rfs) $ catMaybes $
+	foldl appT (tupleT $ length $ filter ((== Here) . fst) rfs) $ catMaybes $
 		map (getHAReadFromType peg tknt) rfs
 getExpressionType _ _ _ = error "getExpressionType: can't get type"
 
