@@ -3,8 +3,29 @@
 **************************
 
 * SyntaxTree のリファクタリング
-	ReadFrom の FromToken を Maybe を使って、FromVariable にまとめる
+	PapillonCore で HA の部分の処理と NameLeaf の部分の処理を分けたい
+	PlainExpression はおそらくまちがっている
+		これは、newNewName を利用するべきかもしれないが、
+		newNewName はここにはない。
+		newNewName があれば、pattern のところに x, y, z ... を入れ、
+		return のところに (x, y, z, ...) を入れれば良いのだが。
+		むしろ、
+		data NameLeaf
+			= NameLeaf (PatQ, ...
+			| PlainNameLeaf ReadFrom
+		のようにするべきかもしれない。
+		それよりはむしろ、PlainExpression [(HA, ReadFrom)] のほうが良いか。
+		でもそれをやるより前に、HA の部分の処理と NameLeaf の部分の処理を
+		分けるリファクタリングが必要だろう。
+	FromTokenChars は多分まちがっている
+		おそらく NameLeaf あたりに入れるべきものが入ってきてしまっている
+		NameLeaf (wildP, "") (FromVariable Nothing)
+			(Just $ [| c `elem` .., "")
+		上のような感じにするべきなのだろう
+		あるいはむしろ、ExpressionSugar を使うべきか。
+		ExpressionSugar [| (`elem` ...) |] のほうが良さそうだ。
 	NameLeaf の見直し、境界がまちがっているかもしれない。
+	NameLeaf の名前の見直し過去の遺物だ。もっと良い名があるはずだ。
 	export list のリファクタリング
 	Peg の構造も変えよう
 	where 以下に入れられる関数は入れてしまう
@@ -164,6 +185,15 @@
 	また、ByteString や Text も扱うかどうかについても考えること
 	これを Papillon から export する必要はないのかもしれない
 	とすると、module 構造を変える必要があるな
+
+* 型で表限されないいろいろな制限について
+	実際のところ、できるだけ、ありえない型の値が無いようにしたほうが良いのだ
+	しかし、たとえば Maybe Char を使うよりも [Char] を使ったほうが、
+	後々、++ でつなげるのが楽といった例外もある。
+	そこらへんのトレードオフについても考える必要がある。
+	今回の場合は例えば {} のあるものと無いものをまぜられないことや、
+	{} のあるものの Definition は Maybe TypeQ を Nothing に出来ないこと等
+	がある。
 
 ******************************
 *  機能面における細かい修正  *
