@@ -3,6 +3,8 @@
 **************************
 
 * SyntaxTree のリファクタリング
+	FromList, FromList1, FromOptional はたとえば、
+		FromL List, FromL List1, FromL Optional のようにしても良いと思う
 	Definition の Maybe TypeQ が Nothing になるのは PlainSelection のときのみ
 		よって、PlainSelection と Selection とを分けて、
 		Definition のところでまとめてもいいが、
