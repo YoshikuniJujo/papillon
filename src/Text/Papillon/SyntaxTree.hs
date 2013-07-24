@@ -1,6 +1,6 @@
 module Text.Papillon.SyntaxTree (
 	Peg,
-	Definition(..),
+	Definition,
 	NP(..), Selection,
 	Expression(..),
 	HA(..), NameLeaf(..),
@@ -27,9 +27,7 @@ import Control.Arrow
 import Data.List
 
 type Peg = [Definition]
-data Definition
-	= Definition String TypeQ Selection
-	| PlainDefinition String Selection
+type Definition = (String, Maybe TypeQ, Selection)
 data NP = Normal | Plain deriving Show
 type Selection = (NP, [Expression])
 data Expression
@@ -88,8 +86,8 @@ showReadFrom (FromOptional rf) = (++ "?") <$> showReadFrom rf
 showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
 
 getDefinitionType :: Peg -> TypeQ -> Definition -> TypeQ
-getDefinitionType _ _ (Definition _ typ _) = typ
-getDefinitionType peg tknt (PlainDefinition _ sel) = getSelectionType peg tknt sel
+getDefinitionType _ _ (_, (Just typ), _) = typ
+getDefinitionType peg tknt (_, _, sel) = getSelectionType peg tknt sel
 
 getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
 getSelectionType peg tknt (Plain, ex) =
@@ -116,12 +114,9 @@ getReadFromType peg tknt (FromOptional rf) =
 	conT (mkName "Maybe") `appT` getReadFromType peg tknt rf
 
 searchDefinition :: Peg -> String -> Definition
-searchDefinition peg var = case filter ((== var) . getDefinitionName) peg of
+searchDefinition peg var = case filter ((== var) . \(n, _, _) -> n) peg of
 	[d] -> d
 	_ -> error "searchDefinition: bad"
-	where
-	getDefinitionName (Definition n _ _) = n
-	getDefinitionName (PlainDefinition n _) = n
 
 nameFromSelection :: Selection -> [String]
 nameFromSelection (Normal, exs) = concatMap nameFromExpression exs

@@ -102,3 +102,14 @@ unless (eq sep cSep) $ throwError ...
 これはいい考えだな。
 つまり leaf = ... / v:var ':' leaf '*' のようにする。
 Leaf を type から data にする必要があるな。
+
+2013.07.24 Wed.
+
+2013年  7月 24日 水曜日 09:42:14 JST
+Text/Papillon.hs                        9
+Text/PapillonCore.hs                    423
+Text/Papillon/Parser.hs                 2153
+Text/Papillon/Papillon.hs               40
+Text/Papillon/SyntaxTree.hs             112
+Text/Papillon/List.hs                   53
+total                                   2790

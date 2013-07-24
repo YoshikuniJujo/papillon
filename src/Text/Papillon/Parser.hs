@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, TemplateHaskell, UndecidableInstances, PackageImports, TypeFamilies, RankNTypes #-}
 module Text.Papillon.Parser (
 	Peg,
-	Definition(..),
+	Definition,
 	NP(..), Selection,
 	Expression(..),
 	NameLeaf(..),
@@ -957,7 +957,7 @@ parse = parse0_0 initialPos
                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d476_302 ["char"])
                                                    let ';' = xx475_303
                                                    return ()
-                                                   return (Definition v t sel),
+                                                   return (v, Just t, sel),
                                                 do v <- StateT variable
                                                    _ <- StateT spaces
                                                    return ()
@@ -987,7 +987,7 @@ parse = parse0_0 initialPos
                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d492_308 ["char"])
                                                    let ';' = xx491_309
                                                    return ()
-                                                   return (PlainDefinition v (Plain, sel))]
+                                                   return (v, Nothing, (Plain, sel))]
                 selection25_99 = foldl1 mplus [do s <- StateT normalSelection
                                                   return (Normal, s),
                                                do s <- StateT plainSelection

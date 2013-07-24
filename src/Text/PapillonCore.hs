@@ -46,14 +46,7 @@ isOptionalUsed :: Peg -> Bool
 isOptionalUsed = any isOptionalUsedDefinition
 
 isOptionalUsedDefinition :: Definition -> Bool
-isOptionalUsedDefinition (Definition _ _ (Normal, sel)) =
-	any isOptionalUsedSelection sel
-isOptionalUsedDefinition (Definition _ _ (Plain, sel)) =
-	any isOptionalUsedSelection sel
-isOptionalUsedDefinition (PlainDefinition _ (Normal, sel)) =
-	any isOptionalUsedSelection sel
-isOptionalUsedDefinition (PlainDefinition _ (Plain, sel)) =
-	any isOptionalUsedSelection sel
+isOptionalUsedDefinition (_, _, (_, sel)) = any isOptionalUsedSelection sel
 
 isOptionalUsedSelection :: Expression -> Bool
 isOptionalUsedSelection (Expression ex _) = any isOptionalUsedLeafName ex
@@ -78,14 +71,7 @@ isListUsed :: Peg -> Bool
 isListUsed = any isListUsedDefinition
 
 isListUsedDefinition :: Definition -> Bool
-isListUsedDefinition (Definition _ _ (Normal, sel)) =
-	any isListUsedSelection sel
-isListUsedDefinition (Definition _ _ (Plain, sel)) =
-	any isListUsedSelection sel
-isListUsedDefinition (PlainDefinition _ (Normal, sel)) =
-	any isListUsedSelection sel
-isListUsedDefinition (PlainDefinition _ (Plain, sel)) =
-	any isListUsedSelection sel
+isListUsedDefinition (_, _, (_, sel)) = any isListUsedSelection sel
 
 isListUsedSelection :: Expression -> Bool
 isListUsedSelection (Expression ex _) = any isListUsedLeafName ex
@@ -240,9 +226,9 @@ derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
  ] []
 
 derivs1 :: Peg -> TypeQ -> TypeQ -> Definition -> VarStrictTypeQ
-derivs1 _ src _ (Definition name typ _) =
+derivs1 _ src _ (name, Just typ, _) =
 	varStrictType (mkName name) $ strictType notStrict $ resultT src typ
-derivs1 pg src tkn (PlainDefinition name sel) =
+derivs1 pg src tkn (name, _, sel) =
 	varStrictType (mkName name) $ strictType notStrict $ resultT src $
 		getSelectionType pg tkn sel
 
@@ -286,8 +272,7 @@ parseE g th pgn pnames pegg = do
 	names = map getDefinitionName pegg
 
 getDefinitionName :: Definition -> String
-getDefinitionName (Definition n _ _) = n
-getDefinitionName (PlainDefinition n _) = n
+getDefinitionName (n, _, _) = n
 
 parseE' :: IORef Int -> Bool -> Name -> [Name] -> [Name] -> [Name] -> ClauseQ
 parseE' g th pgn tmps pnames names = do
@@ -335,9 +320,7 @@ pSomes :: IORef Int -> Bool -> Name -> Name -> Name -> [Name] -> Peg -> DecsQ
 pSomes g th lst lst1 opt = zipWithM $ pSomes1 g th lst lst1 opt
 
 pSomes1 :: IORef Int -> Bool -> Name -> Name -> Name -> Name -> Definition -> DecQ
-pSomes1 g th lst lst1 opt pname (Definition _ _ sel) =
-	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel g th lst lst1 opt sel
-pSomes1 g th lst lst1 opt pname (PlainDefinition _ sel) =
+pSomes1 g th lst lst1 opt pname (_, _, sel) =
 	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel g th lst lst1 opt sel
 
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
