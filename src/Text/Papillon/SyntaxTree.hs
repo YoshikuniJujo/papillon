@@ -1,10 +1,9 @@
 module Text.Papillon.SyntaxTree (
 	Peg,
 	Definition(..),
-	Selection(..),
+	NP(..), Selection,
 	Expression(..),
-	HA(..),
-	NameLeaf(..),
+	HA(..), NameLeaf(..),
 	ReadFrom(..),
 
 	showSelection,
@@ -31,9 +30,8 @@ type Peg = [Definition]
 data Definition
 	= Definition String TypeQ Selection
 	| PlainDefinition String Selection
-data Selection
-	= Selection { expressions :: [Expression] }
-	| PlainSelection { plainExpressions :: [Expression] }
+data NP = Normal | Plain deriving Show
+type Selection = (NP, [Expression])
 data Expression
 	= Expression {
 		expressionHsExpression :: [(HA, NameLeaf)],
@@ -53,9 +51,8 @@ data ReadFrom
 	| FromOptional ReadFrom
 
 showSelection :: Selection -> Q String
-showSelection (Selection ehss) = intercalate " / " <$> mapM showExpression ehss
-showSelection (PlainSelection ehss) =
-	intercalate " / " <$> mapM showExpression ehss
+showSelection (Normal, ehss) = intercalate " / " <$> mapM showExpression ehss
+showSelection (Plain, ehss) = intercalate " / " <$> mapM showExpression ehss
 
 showExpression :: Expression -> Q String
 showExpression (Expression ex hs) =
@@ -95,7 +92,7 @@ getDefinitionType _ _ (Definition _ typ _) = typ
 getDefinitionType peg tknt (PlainDefinition _ sel) = getSelectionType peg tknt sel
 
 getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
-getSelectionType peg tknt (PlainSelection ex) =
+getSelectionType peg tknt (Plain, ex) =
 	foldr (\x y -> (eitherT `appT` x) `appT` y) (last types) (init types)
 	where
 	eitherT = conT $ mkName "Either"
@@ -127,8 +124,8 @@ searchDefinition peg var = case filter ((== var) . getDefinitionName) peg of
 	getDefinitionName (PlainDefinition n _) = n
 
 nameFromSelection :: Selection -> [String]
-nameFromSelection (Selection exs) = concatMap nameFromExpression exs
-nameFromSelection (PlainSelection exs) = concatMap nameFromExpression exs
+nameFromSelection (Normal, exs) = concatMap nameFromExpression exs
+nameFromSelection (Plain, exs) = concatMap nameFromExpression exs
 
 nameFromExpression :: Expression -> [String]
 nameFromExpression (Expression ex _) = nameFromNameLeaf $ snd $ head ex

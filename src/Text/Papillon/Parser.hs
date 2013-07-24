@@ -2,11 +2,10 @@
 module Text.Papillon.Parser (
 	Peg,
 	Definition(..),
-	Selection(..),
+	NP(..), Selection,
 	Expression(..),
 	NameLeaf(..),
 	HA(..),
---	NameLeaf_,
 	ReadFrom(..),
 
 	getSelectionType,
@@ -988,11 +987,11 @@ parse = parse0_0 initialPos
                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d492_308 ["char"])
                                                    let ';' = xx491_309
                                                    return ()
-                                                   return (PlainDefinition v $ PlainSelection sel)]
+                                                   return (PlainDefinition v (Plain, sel))]
                 selection25_99 = foldl1 mplus [do s <- StateT normalSelection
-                                                  return (Selection s),
+                                                  return (Normal, s),
                                                do s <- StateT plainSelection
-                                                  return (PlainSelection s)]
+                                                  return (Plain, s)]
                 normalSelection26_100 = foldl1 mplus [do ex <- StateT expressionHs
                                                          _ <- StateT spaces
                                                          return ()
@@ -1509,7 +1508,7 @@ parse = parse0_0 initialPos
                                                   return ()
                                                   return (FromSelection s),
                                                do e <- StateT expressionHsSugar
-                                                  return (FromSelection $ Selection [e])]
+                                                  return (FromSelection $ (Normal, [e]))]
                 selectCharsLs49_123 = foldl1 mplus [do rf <- StateT selectChars
                                                        d792_408 <- get
                                                        xx791_409 <- StateT char

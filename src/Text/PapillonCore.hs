@@ -46,13 +46,13 @@ isOptionalUsed :: Peg -> Bool
 isOptionalUsed = any isOptionalUsedDefinition
 
 isOptionalUsedDefinition :: Definition -> Bool
-isOptionalUsedDefinition (Definition _ _ (Selection sel)) =
+isOptionalUsedDefinition (Definition _ _ (Normal, sel)) =
 	any isOptionalUsedSelection sel
-isOptionalUsedDefinition (Definition _ _ (PlainSelection sel)) =
+isOptionalUsedDefinition (Definition _ _ (Plain, sel)) =
 	any isOptionalUsedSelection sel
-isOptionalUsedDefinition (PlainDefinition _ (Selection sel)) =
+isOptionalUsedDefinition (PlainDefinition _ (Normal, sel)) =
 	any isOptionalUsedSelection sel
-isOptionalUsedDefinition (PlainDefinition _ (PlainSelection sel)) =
+isOptionalUsedDefinition (PlainDefinition _ (Plain, sel)) =
 	any isOptionalUsedSelection sel
 
 isOptionalUsedSelection :: Expression -> Bool
@@ -70,7 +70,7 @@ isOptionalUsedLeafName' (NameLeaf _ rf _) = isOptionalUsedReadFrom rf
 
 isOptionalUsedReadFrom :: ReadFrom -> Bool
 isOptionalUsedReadFrom (FromOptional _) = True
-isOptionalUsedReadFrom (FromSelection (Selection sel)) =
+isOptionalUsedReadFrom (FromSelection (Normal, sel)) =
 	any isOptionalUsedSelection sel
 isOptionalUsedReadFrom _ = False
 
@@ -78,13 +78,13 @@ isListUsed :: Peg -> Bool
 isListUsed = any isListUsedDefinition
 
 isListUsedDefinition :: Definition -> Bool
-isListUsedDefinition (Definition _ _ (Selection sel)) =
+isListUsedDefinition (Definition _ _ (Normal, sel)) =
 	any isListUsedSelection sel
-isListUsedDefinition (Definition _ _ (PlainSelection sel)) =
+isListUsedDefinition (Definition _ _ (Plain, sel)) =
 	any isListUsedSelection sel
-isListUsedDefinition (PlainDefinition _ (Selection sel)) =
+isListUsedDefinition (PlainDefinition _ (Normal, sel)) =
 	any isListUsedSelection sel
-isListUsedDefinition (PlainDefinition _ (PlainSelection sel)) =
+isListUsedDefinition (PlainDefinition _ (Plain, sel)) =
 	any isListUsedSelection sel
 
 isListUsedSelection :: Expression -> Bool
@@ -341,10 +341,10 @@ pSomes1 g th lst lst1 opt pname (PlainDefinition _ sel) =
 	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel g th lst lst1 opt sel
 
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
-pSomes1Sel g th lst lst1 opt (Selection sel) =
+pSomes1Sel g th lst lst1 opt (Normal, sel) =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 		listE (map (processExpressionHs g th lst lst1 opt) sel)
-pSomes1Sel g th lst lst1 opt (PlainSelection sel) =
+pSomes1Sel g th lst lst1 opt (Plain, sel) =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 		listE (zipWith
 			(flip (putLeftRight $ length sel) .
