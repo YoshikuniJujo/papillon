@@ -3,17 +3,8 @@
 **************************
 
 * SyntaxTree のリファクタリング
-	selection :: Selection の部分を
-	selection <- normalSelection / plainSelection
-	とできるな
-	FromList, FromList1, FromOptional はたとえば、
-		FromL List, FromL List1, FromL Optional のようにしても良いと思う
-	Definition の Maybe TypeQ が Nothing になるのは PlainSelection のときのみ
-		よって、PlainSelection と Selection とを分けて、
-		Definition のところでまとめてもいいが、
-		しかし、Selection は ReadFrom の FromSelection で使われているので、
-		分けないほうが良いと考えることもできる。
-		どうするか。
+	fromTokenChars の名前の変更
+	expressionSugar の名前の変更
 	export list のリファクタリング
 	Peg の構造も変えよう
 	where 以下に入れられる関数は入れてしまう
@@ -21,7 +12,12 @@
 
 * SyntaxTree の名前を適切なものに変える
 
+* "<-" を使うのか "=" を使うのか考えること
+
 * Parser.peg のリファクタリング
+	selection :: Selection の部分を
+	selection <- normalSelection / plainSelection
+	とできるな
 	まずは以前の papillon の制限によるトリッキーなコードを直す
 	getEx や applyEx 等々を直書きするようにする
 	u:[isUpper u] { u } 等を <isUpper> 等を使って書き換える
@@ -182,6 +178,14 @@
 	今回の場合は例えば {} のあるものと無いものをまぜられないことや、
 	{} のあるものの Definition は Maybe TypeQ を Nothing に出来ないこと等
 	がある。
+
+* SyntaxTree のリファクタリング
+	Definition の Maybe TypeQ が Nothing になるのは PlainSelection のときのみ
+		よって、PlainSelection と Selection とを分けて、
+		Definition のところでまとめてもいいが、
+		しかし、Selection は ReadFrom の FromSelection で使われているので、
+		分けないほうが良いと考えることもできる。
+		どうするか。
 
 ******************************
 *  機能面における細かい修正  *

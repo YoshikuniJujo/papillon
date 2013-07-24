@@ -55,7 +55,7 @@ isOptionalUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
 isOptionalUsedPlainSelection :: PlainExpression -> Bool
 isOptionalUsedPlainSelection rfs = any (isOptionalUsedReadFrom . snd) rfs
 
-isOptionalUsedLeafName :: (HA, Check) -> Bool
+isOptionalUsedLeafName :: (Lookahead, Check) -> Bool
 isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
 
 isOptionalUsedLeafName' :: Check -> Bool
@@ -81,7 +81,7 @@ isListUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
 isListUsedPlainSelection :: PlainExpression -> Bool
 isListUsedPlainSelection rfs = any (isListUsedReadFrom . snd) rfs
 
-isListUsedLeafName :: (HA, Check) -> Bool
+isListUsedLeafName :: (Lookahead, Check) -> Bool
 isListUsedLeafName (_, nl) = isListUsedLeafName' nl
 
 isListUsedLeafName' :: Check -> Bool
@@ -365,7 +365,7 @@ processPlainExpressionHs g th lst lst1 opt rfs =
 		(returnEQ `appE` mkTupleE g (map fst rfs)) $
 			map (transHAReadFrom g th lst lst1 opt) $ rfs
 
-mkTupleE :: IORef Int -> [HA] -> ExpQ
+mkTupleE :: IORef Int -> [Lookahead] -> ExpQ
 mkTupleE g has = do
 	names <- replicateM (length has) $ newNewName g "x"
 	lamE (mkPat names has) $ tupE $ mkExp names has
@@ -413,7 +413,7 @@ getNewName g n = do
 	newName $ n ++ show gn
 
 transHAReadFrom ::
-	IORef Int -> Bool -> Name -> Name -> Name -> (HA, ReadFrom) -> ExpQ
+	IORef Int -> Bool -> Name -> Name -> Name -> (Lookahead, ReadFrom) -> ExpQ
 transHAReadFrom g th lst lst1 opt (ha, rf) = smartDoE <$>
 	(processHA g th ha "" (nameFromRF rf) $ fmap (: []) $ noBindS $
 		transReadFrom g th lst lst1 opt rf)
@@ -481,15 +481,16 @@ transLeaf g th lst lst1 opt ((n, nc), rf, Nothing) = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 
-processHA :: IORef Int -> Bool -> HA -> String -> [String] -> Q [Stmt] -> Q [Stmt]
+processHA ::
+	IORef Int -> Bool -> Lookahead -> String -> [String] -> Q [Stmt] -> Q [Stmt]
 processHA _ _ Here _ _ act = act
-processHA g th After _ _ act = do
+processHA g th Ahead _ _ act = do
 	d <- getNewName g "ddd"
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		bindS wildP $ smartDoE <$> act,
 		noBindS $ varE (putN th) `appE` varE d]
-processHA g th (NotAfter com) nls names act = do
+processHA g th (NAhead com) nls names act = do
 	d <- getNewName g "ddd"
 	sequence [
 		bindS (varP d) $ varE (getN th),

@@ -11,7 +11,7 @@ module Text.Papillon.SyntaxTree (
 	fromTokenChars,
 	expressionSugar,
 
-	HA(..),
+	Lookahead(..),
 	Lists(..),
 
 	showSelection,
@@ -33,14 +33,14 @@ import Control.Applicative
 import Control.Arrow
 import Data.List
 
-data HA = Here | After | NotAfter String deriving (Show, Eq)
+data Lookahead = Here | Ahead | NAhead String deriving Eq
 data Lists = List | List1 | Optional deriving Show
 
 type Peg = [Definition]
 type Definition = (String, Maybe TypeQ, Selection)
 type Selection =  Either [Expression] [PlainExpression]
-type Expression = (Bool, (Name -> ([(HA, Check)], ExpQ)))
-type PlainExpression = [(HA, ReadFrom)]
+type Expression = (Bool, (Name -> ([(Lookahead, Check)], ExpQ)))
+type PlainExpression = [(Lookahead, ReadFrom)]
 type Check = ((PatQ, String), ReadFrom, Maybe (ExpQ, String))
 data ReadFrom
 	= FromVariable (Maybe String)
@@ -62,17 +62,17 @@ showSelection ehss = intercalate " / " <$>
 showExpression :: Expression -> Q String
 showExpression (_, exhs) = let (ex, hs) = exhs $ mkName "c" in
 	(\e h -> unwords e ++ " { " ++ show (ppr h) ++ " }")
-		<$> mapM (uncurry (<$>) . (((++) . showHA) *** showCheck)) ex
+		<$> mapM (uncurry (<$>) . (((++) . showLA) *** showCheck)) ex
 		<*> hs
 
 showPlainExpression :: PlainExpression -> Q String
 showPlainExpression rfs =
-	unwords <$> mapM (\(ha, rf) -> (showHA ha ++) <$> showReadFrom rf) rfs
+	unwords <$> mapM (\(ha, rf) -> (showLA ha ++) <$> showReadFrom rf) rfs
 
-showHA :: HA -> String
-showHA Here = ""
-showHA After = "&"
-showHA (NotAfter _) = "!"
+showLA :: Lookahead -> String
+showLA Here = ""
+showLA Ahead = "&"
+showLA (NAhead _) = "!"
 
 showCheck :: Check -> Q String
 showCheck ((pat, _), rf, Just (p, _)) = do

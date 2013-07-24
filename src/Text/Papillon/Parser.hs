@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, TemplateHaskell, UndecidableInstances, PackageImports, TypeFamilies, RankNTypes #-}
 module Text.Papillon.Parser (
-	HA(..),
+	Lookahead(..),
 	Lists(..),
 
 	Peg,
@@ -101,13 +101,13 @@ data Derivs
               plainExpressionHs :: (Either (ParseError (Pos String) Derivs)
                                            ((PlainExpression, Derivs))),
               plainHAReadFromLs :: (Either (ParseError (Pos String) Derivs)
-                                           (((HA, ReadFrom), Derivs))),
+                                           (((Lookahead, ReadFrom), Derivs))),
               plainReadFromLs :: (Either (ParseError (Pos String) Derivs)
                                          ((ReadFrom, Derivs))),
               expression :: (Either (ParseError (Pos String) Derivs)
-                                    (([(HA, Check)], Derivs))),
+                                    (([(Lookahead, Check)], Derivs))),
               nameLeaf_ :: (Either (ParseError (Pos String) Derivs)
-                                   (((HA, Check), Derivs))),
+                                   (((Lookahead, Check), Derivs))),
               nameLeaf :: (Either (ParseError (Pos String) Derivs)
                                   ((Check, Derivs))),
               nameLeafNoCom :: (Either (ParseError (Pos String) Derivs)
@@ -1091,7 +1091,7 @@ parse = parse0_0 initialPos
                                                            let '&' = xx557_326
                                                            return ()
                                                            rf <- StateT plainReadFromLs
-                                                           return (After, rf),
+                                                           return (Ahead, rf),
                                                         do d562_327 <- get
                                                            xx561_328 <- StateT char
                                                            case xx561_328 of
@@ -1100,7 +1100,7 @@ parse = parse0_0 initialPos
                                                            let '!' = xx561_328
                                                            return ()
                                                            rf <- StateT plainReadFromLs
-                                                           return (NotAfter "", rf)]
+                                                           return (NAhead "", rf)]
                 plainReadFromLs32_107 = foldl1 mplus [do rf <- StateT readFromLs
                                                          return rf,
                                                       do rf <- StateT selectCharsLs
@@ -1122,7 +1122,7 @@ parse = parse0_0 initialPos
                                                    _ <- StateT spaces
                                                    return ()
                                                    com <- optional3_331 (StateT comForErr)
-                                                   return (NotAfter $ maybe "" id com, nl),
+                                                   return (NAhead $ maybe "" id com, nl),
                                                 do d584_332 <- get
                                                    xx583_333 <- StateT char
                                                    case xx583_333 of
@@ -1131,7 +1131,7 @@ parse = parse0_0 initialPos
                                                    let '&' = xx583_333
                                                    return ()
                                                    nl <- StateT nameLeaf
-                                                   return (After, nl),
+                                                   return (Ahead, nl),
                                                 do nl <- StateT nameLeaf
                                                    return (Here, nl)]
                 nameLeaf35_110 = foldl1 mplus [do n <- StateT pat1

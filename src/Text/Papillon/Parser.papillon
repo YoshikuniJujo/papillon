@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, TemplateHaskell, UndecidableInstances #-}
 
 module Text.Papillon.Parser (
-	HA(..),
+	Lookahead(..),
 	Lists(..),
 
 	Peg,
@@ -166,23 +166,23 @@ plainExpressionHs :: PlainExpression
 	= rfs:(rf:plainHAReadFromLs _:spaces { rf })*
 						{ rfs }
 ;
-plainHAReadFromLs :: (HA, ReadFrom)
+plainHAReadFromLs :: (Lookahead, ReadFrom)
 	= rf:plainReadFromLs			{ (Here, rf) }
-	/ '&' rf:plainReadFromLs		{ (After, rf) }
-	/ '!' rf:plainReadFromLs		{ (NotAfter "", rf) }
+	/ '&' rf:plainReadFromLs		{ (Ahead, rf) }
+	/ '!' rf:plainReadFromLs		{ (NAhead "", rf) }
 ;
 plainReadFromLs :: ReadFrom
 	= rf:readFromLs				{ rf }
 	/ rf:selectCharsLs			{ rf }
 ;
-expression :: [(HA, Check)]
+expression :: [(Lookahead, Check)]
 	= l:nameLeaf_ _:spaces e:expression	{ l : e }
 	/ 					{ [] }
 ;
-nameLeaf_ :: (HA, Check)
+nameLeaf_ :: (Lookahead, Check)
 	= '!' nl:nameLeafNoCom _:spaces com:comForErr?
-						{ (NotAfter $ maybe "" id com, nl) }
-	/ '&' nl:nameLeaf			{ (After, nl) }
+						{ (NAhead $ maybe "" id com, nl) }
+	/ '&' nl:nameLeaf			{ (Ahead, nl) }
 	/ nl:nameLeaf				{ (Here, nl) }
 ;
 nameLeaf :: Check
