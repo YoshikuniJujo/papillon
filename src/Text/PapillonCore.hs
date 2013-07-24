@@ -63,7 +63,7 @@ isOptionalUsedLeafName' :: NameLeaf -> Bool
 isOptionalUsedLeafName' (NameLeaf _ rf _) = isOptionalUsedReadFrom rf
 
 isOptionalUsedReadFrom :: ReadFrom -> Bool
-isOptionalUsedReadFrom (FromOptional _) = True
+isOptionalUsedReadFrom (FromL Optional _) = True
 isOptionalUsedReadFrom (FromSelection (Selection sel)) =
 	any isOptionalUsedSelection sel
 isOptionalUsedReadFrom _ = False
@@ -86,13 +86,13 @@ isListUsedLeafName :: (HA, NameLeaf) -> Bool
 isListUsedLeafName (_, nl) = isListUsedLeafName' nl
 
 isListUsedLeafName' :: NameLeaf -> Bool
-isListUsedLeafName' (NameLeaf _ (FromList _) _) = True
-isListUsedLeafName' (NameLeaf _ (FromList1 _) _) = True
+isListUsedLeafName' (NameLeaf _ (FromL List _) _) = True
+isListUsedLeafName' (NameLeaf _ (FromL List1 _) _) = True
 isListUsedLeafName' _ = False
 
 isListUsedReadFrom :: ReadFrom -> Bool
-isListUsedReadFrom (FromList _) = True
-isListUsedReadFrom (FromList1 _) = True
+isListUsedReadFrom (FromL List _) = True
+isListUsedReadFrom (FromL List1 _) = True
 isListUsedReadFrom _ = False
 
 catchErrorN, unlessN :: Bool -> Name
@@ -426,9 +426,9 @@ transReadFrom _ th _ _ _ (FromVariable Nothing) =
 transReadFrom _ th _ _ _ (FromVariable (Just var)) =
 	conE (stateTN' th) `appE` varE (mkName var)
 transReadFrom g th l l1 o (FromSelection sel) = pSomes1Sel g th l l1 o sel
-transReadFrom g th l l1 o (FromList rf) = varE l `appE` transReadFrom g th l l1 o rf
-transReadFrom g th l l1 o (FromList1 rf) = varE l1 `appE` transReadFrom g th l l1 o rf
-transReadFrom g th l l1 o (FromOptional rf) = varE o `appE` transReadFrom g th l l1 o rf
+transReadFrom g th l l1 o (FromL List rf) = varE l `appE` transReadFrom g th l l1 o rf
+transReadFrom g th l l1 o (FromL List1 rf) = varE l1 `appE` transReadFrom g th l l1 o rf
+transReadFrom g th l l1 o (FromL Optional rf) = varE o `appE` transReadFrom g th l l1 o rf
 
 mkTDNN :: IORef Int -> PatQ -> Q (Name, Name, Pat)
 mkTDNN g n = do

@@ -1,12 +1,14 @@
 {-# LANGUAGE FlexibleContexts, TemplateHaskell, UndecidableInstances, PackageImports, TypeFamilies, RankNTypes #-}
 module Text.Papillon.Parser (
+	HA(..),
+	Lists(..),
+
 	Peg,
 	Definition,
 	Selection(..),
 	Expression,
 	PlainExpression,
 	NameLeaf(..),
-	HA(..),
 	ReadFrom(..),
 
 	getSelectionType,
@@ -1493,7 +1495,7 @@ parse = parse0_0 initialPos
                                                         _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d780_404 ["char"])
                                                     let '*' = xx779_405
                                                     return ()
-                                                    return (FromList rf),
+                                                    return (FromL List rf),
                                                  do rf <- StateT readFrom
                                                     d784_406 <- get
                                                     xx783_407 <- StateT char
@@ -1502,7 +1504,7 @@ parse = parse0_0 initialPos
                                                         _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d784_406 ["char"])
                                                     let '+' = xx783_407
                                                     return ()
-                                                    return (FromList1 rf),
+                                                    return (FromL List1 rf),
                                                  do rf <- StateT readFrom
                                                     d788_408 <- get
                                                     xx787_409 <- StateT char
@@ -1511,7 +1513,7 @@ parse = parse0_0 initialPos
                                                         _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d788_408 ["char"])
                                                     let '?' = xx787_409
                                                     return ()
-                                                    return (FromOptional rf),
+                                                    return (FromL Optional rf),
                                                  do rf <- StateT readFrom
                                                     return rf]
                 readFrom49_124 = foldl1 mplus [do v <- StateT variable
@@ -1542,7 +1544,7 @@ parse = parse0_0 initialPos
                                                            _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d804_414 ["char"])
                                                        let '*' = xx803_415
                                                        return ()
-                                                       return (FromList rf),
+                                                       return (FromL List rf),
                                                     do rf <- StateT selectChars
                                                        d808_416 <- get
                                                        xx807_417 <- StateT char
@@ -1551,7 +1553,7 @@ parse = parse0_0 initialPos
                                                            _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d808_416 ["char"])
                                                        let '+' = xx807_417
                                                        return ()
-                                                       return (FromList1 rf),
+                                                       return (FromL List1 rf),
                                                     do rf <- StateT selectChars
                                                        d812_418 <- get
                                                        xx811_419 <- StateT char
@@ -1560,7 +1562,7 @@ parse = parse0_0 initialPos
                                                            _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d812_418 ["char"])
                                                        let '?' = xx811_419
                                                        return ()
-                                                       return (FromOptional rf),
+                                                       return (FromL Optional rf),
                                                     do rf <- StateT selectChars
                                                        return rf]
                 selectChars51_126 = foldl1 mplus [do d816_420 <- get

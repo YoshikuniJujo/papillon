@@ -1,12 +1,15 @@
 {-# LANGUAGE TupleSections #-}
 
 module Text.Papillon.SyntaxTree (
+	HA(..),
+	Lists(..),
+
 	Peg,
 	Definition,
 	Selection(..),
 	PlainExpression,
 	Expression,
-	HA(..), NameLeaf(..),
+	NameLeaf(..),
 	ReadFrom(..),
 	fromTokenChars,
 	expressionSugar,
@@ -33,6 +36,7 @@ import Data.List
 import Data.Maybe
 
 data HA = Here | After | NotAfter String deriving (Show, Eq)
+data Lists = List | List1 | Optional deriving Show
 
 type Peg = [Definition]
 type Definition = (String, Maybe TypeQ, Selection)
@@ -45,9 +49,7 @@ data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
 data ReadFrom
 	= FromVariable (Maybe String)
 	| FromSelection Selection
-	| FromList ReadFrom
-	| FromList1 ReadFrom
-	| FromOptional ReadFrom
+	| FromL Lists ReadFrom
 
 expressionSugar :: ExpQ -> Expression
 expressionSugar p = (True ,) $ \c -> ([expr c], varE c)
@@ -91,12 +93,15 @@ showNameLeaf (NameLeaf (pat, _) rf Nothing) = do
 	rff <- showReadFrom rf
 	return $ show (ppr patt) ++ ":" ++ rff
 
+showLists :: Lists -> String
+showLists List = "*"
+showLists List1 = "+"
+showLists Optional = "?"
+
 showReadFrom :: ReadFrom -> Q String
 showReadFrom (FromVariable (Just v)) = return v
 showReadFrom (FromVariable _) = return ""
-showReadFrom (FromList rf) = (++ "*") <$> showReadFrom rf
-showReadFrom (FromList1 rf) = (++ "+") <$> showReadFrom rf
-showReadFrom (FromOptional rf) = (++ "?") <$> showReadFrom rf
+showReadFrom (FromL l rf) = (++ showLists l) <$> showReadFrom rf
 showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
 
 getDefinitionType :: Peg -> TypeQ -> Definition -> TypeQ
@@ -121,15 +126,17 @@ getHAReadFromType :: Peg -> TypeQ -> (HA, ReadFrom) -> Maybe TypeQ
 getHAReadFromType peg tknt (Here, rf) = Just $ getReadFromType peg tknt rf
 getHAReadFromType _ _ _ = Nothing
 
+getListsType :: Lists -> TypeQ
+getListsType Optional = conT $ mkName "Maybe"
+getListsType _ = listT
+
 getReadFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
 getReadFromType peg tknt (FromVariable (Just var)) =
 	getDefinitionType peg tknt $ searchDefinition peg var
 getReadFromType peg tknt (FromSelection sel) = getSelectionType peg tknt sel
 getReadFromType _ tknt (FromVariable _) = tknt
-getReadFromType peg tknt (FromList rf) = listT `appT` getReadFromType peg tknt rf
-getReadFromType peg tknt (FromList1 rf) = listT `appT` getReadFromType peg tknt rf
-getReadFromType peg tknt (FromOptional rf) =
-	conT (mkName "Maybe") `appT` getReadFromType peg tknt rf
+getReadFromType peg tknt (FromL l rf) =
+	getListsType l `appT` getReadFromType peg tknt rf
 
 searchDefinition :: Peg -> String -> Definition
 searchDefinition peg var = case filter ((== var) . \(n, _, _) -> n) peg of
@@ -153,9 +160,7 @@ nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf
 nameFromRF :: ReadFrom -> [String]
 nameFromRF (FromVariable (Just s)) = [s]
 nameFromRF (FromVariable _) = ["char"]
-nameFromRF (FromList rf) = nameFromRF rf
-nameFromRF (FromList1 rf) = nameFromRF rf
-nameFromRF (FromOptional rf) = nameFromRF rf
+nameFromRF (FromL _ rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 
 type PegFile =

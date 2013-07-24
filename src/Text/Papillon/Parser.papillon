@@ -1,13 +1,15 @@
 {-# LANGUAGE FlexibleContexts, TemplateHaskell, UndecidableInstances #-}
 
 module Text.Papillon.Parser (
+	HA(..),
+	Lists(..),
+
 	Peg,
 	Definition,
 	Selection(..),
 	Expression,
 	PlainExpression,
 	NameLeaf(..),
-	HA(..),
 	ReadFrom(..),
 
 	getSelectionType,
@@ -255,9 +257,9 @@ pats :: [PatQ]
 	/					{ [] }
 ;
 readFromLs :: ReadFrom
-	= rf:readFrom '*'			{ FromList rf }
-	/ rf:readFrom '+'			{ FromList1 rf }
-	/ rf:readFrom '?'			{ FromOptional rf }
+	= rf:readFrom '*'			{ FromL List rf }
+	/ rf:readFrom '+'			{ FromL List1 rf }
+	/ rf:readFrom '?'			{ FromL Optional rf }
 	/ rf:readFrom				{ rf }
 ;
 readFrom :: ReadFrom
@@ -266,9 +268,9 @@ readFrom :: ReadFrom
 	/ e:expressionHsSugar			{ FromSelection $ Selection [e] }
 ;
 selectCharsLs :: ReadFrom
-	= rf:selectChars '*'			{ FromList rf }
-	/ rf:selectChars '+'			{ FromList1 rf }
-	/ rf:selectChars '?'			{ FromOptional rf }
+	= rf:selectChars '*'			{ FromL List rf }
+	/ rf:selectChars '+'			{ FromL List1 rf }
+	/ rf:selectChars '?'			{ FromL Optional rf }
 	/ rf:selectChars			{ rf }
 ;
 selectChars :: ReadFrom
