@@ -45,9 +45,8 @@ isOptionalUsed :: Peg -> Bool
 isOptionalUsed = any isOptionalUsedDefinition
 
 isOptionalUsedDefinition :: Definition -> Bool
-isOptionalUsedDefinition (_, _, Selection sel) = any isOptionalUsedSelection sel
-isOptionalUsedDefinition (_, _, PlainSelection sel) =
-	any isOptionalUsedPlainSelection sel
+isOptionalUsedDefinition (_, _, Left sel) = any isOptionalUsedSelection sel
+isOptionalUsedDefinition (_, _, Right sel) = any isOptionalUsedPlainSelection sel
 
 isOptionalUsedSelection :: Expression -> Bool
 isOptionalUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
@@ -64,7 +63,7 @@ isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
 
 isOptionalUsedReadFrom :: ReadFrom -> Bool
 isOptionalUsedReadFrom (FromL Optional _) = True
-isOptionalUsedReadFrom (FromSelection (Selection sel)) =
+isOptionalUsedReadFrom (FromSelection (Left sel)) =
 	any isOptionalUsedSelection sel
 isOptionalUsedReadFrom _ = False
 
@@ -72,8 +71,8 @@ isListUsed :: Peg -> Bool
 isListUsed = any isListUsedDefinition
 
 isListUsedDefinition :: Definition -> Bool
-isListUsedDefinition (_, _, Selection sel) = any isListUsedSelection sel
-isListUsedDefinition (_, _, PlainSelection sel) = any isListUsedPlainSelection sel
+isListUsedDefinition (_, _, Left sel) = any isListUsedSelection sel
+isListUsedDefinition (_, _, Right sel) = any isListUsedPlainSelection sel
 
 isListUsedSelection :: Expression -> Bool
 isListUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
@@ -326,10 +325,10 @@ pSomes1 g th lst lst1 opt pname (_, _, sel) =
 	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel g th lst lst1 opt sel
 
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
-pSomes1Sel g th lst lst1 opt (Selection sel) =
+pSomes1Sel g th lst lst1 opt (Left sel) =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 		listE (map (processExpressionHs g th lst lst1 opt) sel)
-pSomes1Sel g th lst lst1 opt (PlainSelection sel) =
+pSomes1Sel g th lst lst1 opt (Right sel) =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 		listE (zipWith
 			(flip (putLeftRight $ length sel) .

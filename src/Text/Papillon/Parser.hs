@@ -5,7 +5,7 @@ module Text.Papillon.Parser (
 
 	Peg,
 	Definition,
-	Selection(..),
+	Selection,
 	Expression,
 	PlainExpression,
 	NameLeaf,
@@ -993,11 +993,11 @@ parse = parse0_0 initialPos
                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d494_310 ["char"])
                                                    let ';' = xx493_311
                                                    return ()
-                                                   return (v, Nothing, PlainSelection sel)]
+                                                   return (v, Nothing, Right sel)]
                 selection25_100 = foldl1 mplus [do s <- StateT normalSelection
-                                                   return (Selection s),
+                                                   return (Left s),
                                                 do s <- StateT plainSelection
-                                                   return (PlainSelection s)]
+                                                   return (Right s)]
                 normalSelection26_101 = foldl1 mplus [do ex <- StateT expressionHs
                                                          _ <- StateT spaces
                                                          return ()
@@ -1537,7 +1537,7 @@ parse = parse0_0 initialPos
                                                   return ()
                                                   return (FromSelection s),
                                                do e <- StateT expressionHsSugar
-                                                  return (FromSelection $ Selection [e])]
+                                                  return (FromSelection $ Left [e])]
                 selectCharsLs50_125 = foldl1 mplus [do rf <- StateT selectChars
                                                        d804_414 <- get
                                                        xx803_415 <- StateT char

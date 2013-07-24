@@ -6,7 +6,7 @@ module Text.Papillon.Parser (
 
 	Peg,
 	Definition,
-	Selection(..),
+	Selection,
 	Expression,
 	PlainExpression,
 	NameLeaf,
@@ -137,11 +137,11 @@ definition :: Definition
 		_:spaces sel:selection _:spaces ';'
 						{ (v, Just t, sel) }
 	/ v:variable _:spaces '<' '-' _:spaces
-		sel:plainSelection _:spaces ';'	{ (v, Nothing, PlainSelection sel) }
+		sel:plainSelection _:spaces ';'	{ (v, Nothing, Right sel) }
 ;
 selection :: Selection
-	= s:normalSelection			{ Selection s }
-	/ s:plainSelection			{ PlainSelection s }
+	= s:normalSelection			{ Left s }
+	/ s:plainSelection			{ Right s }
 ;
 normalSelection :: [Expression]
 	= ex:expressionHs _:spaces '/' _:spaces sel:normalSelection
@@ -265,7 +265,7 @@ readFromLs :: ReadFrom
 readFrom :: ReadFrom
 	= v:variable				{ FromVariable $ Just v }
 	/ '(' s:selection ')'			{ FromSelection s }
-	/ e:expressionHsSugar			{ FromSelection $ Selection [e] }
+	/ e:expressionHsSugar			{ FromSelection $ Left [e] }
 ;
 selectCharsLs :: ReadFrom
 	= rf:selectChars '*'			{ FromL List rf }

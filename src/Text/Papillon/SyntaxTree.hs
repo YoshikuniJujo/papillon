@@ -6,7 +6,7 @@ module Text.Papillon.SyntaxTree (
 
 	Peg,
 	Definition,
-	Selection(..),
+	Selection,
 	PlainExpression,
 	Expression,
 	NameLeaf,
@@ -40,9 +40,7 @@ data Lists = List | List1 | Optional deriving Show
 
 type Peg = [Definition]
 type Definition = (String, Maybe TypeQ, Selection)
-data Selection
-	= Selection [Expression]
-	| PlainSelection [PlainExpression]
+type Selection =  Either [Expression] [PlainExpression]
 type Expression = (Bool, (Name -> ([(HA, NameLeaf)], ExpQ)))
 type PlainExpression = [(HA, ReadFrom)]
 type NameLeaf = ((PatQ, String), ReadFrom, Maybe (ExpQ, String))
@@ -52,20 +50,16 @@ data ReadFrom
 	| FromL Lists ReadFrom
 
 expressionSugar :: ExpQ -> Expression
-expressionSugar p = (True ,) $ \c -> ([expr c], varE c)
-	where
-	expr x = (Here ,) $ ((varP x, ""), (FromVariable Nothing),
-		Just $ (, "") $ p `appE` varE x)
+expressionSugar p = (True ,) $ \c -> (, varE c) $ (: []) $ (Here ,) $
+	((varP c, ""), (FromVariable Nothing), Just $ (, "") $ p `appE` varE c)
 
 fromTokenChars :: String -> ReadFrom
-fromTokenChars cs =
-	FromSelection $ Selection $ (: []) $ expressionSugar $
-		infixE Nothing (varE $ mkName "elem") $ Just $ litE $ stringL cs
+fromTokenChars cs = FromSelection $ Left $ (: []) $ expressionSugar $
+	infixE Nothing (varE $ mkName "elem") $ Just $ litE $ stringL cs
 
 showSelection :: Selection -> Q String
-showSelection (Selection ehss) = intercalate " / " <$> mapM showExpression ehss
-showSelection (PlainSelection ehss) =
-	intercalate " / " <$> mapM showPlainExpression ehss
+showSelection ehss = intercalate " / " <$>
+	either (mapM showExpression) (mapM showPlainExpression) ehss
 
 showExpression :: Expression -> Q String
 showExpression (_, exhs) = let (ex, hs) = exhs $ mkName "c" in
@@ -109,12 +103,12 @@ getDefinitionType _ _ (_, (Just typ), _) = typ
 getDefinitionType peg tknt (_, _, sel) = getSelectionType peg tknt sel
 
 getSelectionType :: Peg -> TypeQ -> Selection -> TypeQ
-getSelectionType peg tknt (PlainSelection ex) =
+getSelectionType peg tknt (Right ex) =
 	foldr (\x y -> (eitherT `appT` x) `appT` y) (last types) (init types)
 	where
 	eitherT = conT $ mkName "Either"
 	types = map (getPlainExpressionType peg tknt) ex
-getSelectionType _ tknt (Selection [(True, _)]) = tknt
+getSelectionType _ tknt (Left [(True, _)]) = tknt
 getSelectionType _ _ _ = error "getSelectionType: can't get type"
 
 getPlainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
@@ -144,8 +138,8 @@ searchDefinition peg var = case filter ((== var) . \(n, _, _) -> n) peg of
 	_ -> error "searchDefinition: bad"
 
 nameFromSelection :: Selection -> [String]
-nameFromSelection (Selection exs) = concatMap nameFromExpression exs
-nameFromSelection (PlainSelection exs) = concatMap nameFromPlainExpression exs
+nameFromSelection (Left exs) = concatMap nameFromExpression exs
+nameFromSelection (Right exs) = concatMap nameFromPlainExpression exs
 
 nameFromExpression :: Expression -> [String]
 nameFromExpression (_, exhs) = let (ex, _) = exhs $ mkName "c" in

@@ -4,7 +4,6 @@
 
 * SyntaxTree のリファクタリング
 	NameLeaf の名前の見直し過去の遺物だ。もっと良い名があるはずだ。
-	Selection も Either でできるけど ...
 	selection :: Selection の部分を
 	selection <- normalSelection / plainSelection
 	とできるな
