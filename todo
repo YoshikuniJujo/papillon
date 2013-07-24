@@ -3,7 +3,13 @@
 **************************
 
 * SyntaxTree のリファクタリング
+	Selection は (Normal, [Expression _ _, ... ] または
+		(Plain, [PlainExpression _, ...]) のみしかない
+		ということは、むしろ、
+		NormalSelection [Expression]
+		PlainSelection [PlainExpression] のような感じのほうが良くないか。
 	NameLeaf の見直し、境界がまちがっているかもしれない。
+		NameLeaf は data ではなく tuple でもいいが ...
 	NameLeaf の名前の見直し過去の遺物だ。もっと良い名があるはずだ。
 	export list のリファクタリング
 	Peg の構造も変えよう
