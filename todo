@@ -3,26 +3,6 @@
 **************************
 
 * SyntaxTree のリファクタリング
-	PlainExpression はおそらくまちがっている
-		これは、newNewName を利用するべきかもしれないが、
-		newNewName はここにはない。
-		newNewName があれば、pattern のところに x, y, z ... を入れ、
-		return のところに (x, y, z, ...) を入れれば良いのだが。
-		むしろ、
-		data NameLeaf
-			= NameLeaf (PatQ, ...
-			| PlainNameLeaf ReadFrom
-		のようにするべきかもしれない。
-		それよりはむしろ、PlainExpression [(HA, ReadFrom)] のほうが良いか。
-		でもそれをやるより前に、HA の部分の処理と NameLeaf の部分の処理を
-		分けるリファクタリングが必要だろう。
-	FromTokenChars は多分まちがっている
-		おそらく NameLeaf あたりに入れるべきものが入ってきてしまっている
-		NameLeaf (wildP, "") (FromVariable Nothing)
-			(Just $ [| c `elem` .., "")
-		上のような感じにするべきなのだろう
-		あるいはむしろ、ExpressionSugar を使うべきか。
-		ExpressionSugar [| (`elem` ...) |] のほうが良さそうだ。
 	NameLeaf の見直し、境界がまちがっているかもしれない。
 	NameLeaf の名前の見直し過去の遺物だ。もっと良い名があるはずだ。
 	export list のリファクタリング

@@ -1581,7 +1581,7 @@ parse = parse0_0 initialPos
                                                          _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d822_425 ["char"])
                                                      let ']' = xx821_426
                                                      return ()
-                                                     return (FromTokenChars cs),
+                                                     return (fromTokenChars cs),
                                                   do d824_427 <- get
                                                      xx823_428 <- StateT char
                                                      case xx823_428 of
@@ -1611,7 +1611,7 @@ parse = parse0_0 initialPos
                                                          _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d832_435 ["char"])
                                                      let ']' = xx831_436
                                                      return ()
-                                                     return (FromTokenChars [cb .. ce]),
+                                                     return (fromTokenChars [cb .. ce]),
                                                   do d834_437 <- get
                                                      xx833_438 <- StateT char
                                                      case xx833_438 of
@@ -1630,7 +1630,7 @@ parse = parse0_0 initialPos
                                                          _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d838_441 ["char"])
                                                      let '\'' = xx837_442
                                                      return ()
-                                                     return (FromTokenChars [c])]
+                                                     return (fromTokenChars [c])]
                 test52_127 = foldl1 mplus [do d840_443 <- get
                                               xx839_444 <- StateT char
                                               case xx839_444 of

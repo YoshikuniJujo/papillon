@@ -418,17 +418,6 @@ transHAReadFrom g th lst lst1 opt (ha, rf) = smartDoE <$>
 transReadFrom :: IORef Int -> Bool -> Name -> Name -> Name -> ReadFrom -> ExpQ
 transReadFrom _ th _ _ _ (FromVariable Nothing) =
 	conE (stateTN' th) `appE` varE dvCharsN
-transReadFrom g th _ _ _ rf@(FromTokenChars cs) = do
-	d <- newNewName g "d"
-	r <- newNewName g "r"
-	doE [
-		bindS (varP d) $ varE $ getN th,
-		bindS (varP r) $ conE (stateTN' th) `appE` varE dvCharsN,
-		afterCheck th (test r) d (nameFromRF rf) "",
-		noBindS $ varE (mkName "return") `appE` varE r
-	 ]
-	where
-	test d' = infixApp (varE d') (varE $ mkName "elem") (litE $ stringL cs)
 transReadFrom _ th _ _ _ (FromVariable (Just var)) =
 	conE (stateTN' th) `appE` varE (mkName var)
 transReadFrom g th l l1 o (FromSelection sel) = pSomes1Sel g th l l1 o sel

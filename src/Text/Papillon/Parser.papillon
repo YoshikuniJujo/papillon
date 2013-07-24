@@ -271,10 +271,10 @@ selectCharsLs :: ReadFrom
 	/ rf:selectChars			{ rf }
 ;
 selectChars :: ReadFrom
-	= '[' cs:(c:[isLower c] { c })+ ']'	{ FromTokenChars cs }
+	= '[' cs:(c:[isLower c] { c })+ ']'	{ fromTokenChars cs }
 	/ '[' cb:[cb `notElem` "\\-"] '-'
-		ce:[ce `notElem` "\\-"] ']'	{ FromTokenChars [cb .. ce] }
-	/ '\'' c:[c `notElem` "\\'"] '\''	{ FromTokenChars [c] }
+		ce:[ce `notElem` "\\-"] ']'	{ fromTokenChars [cb .. ce] }
+	/ '\'' c:[c `notElem` "\\'"] '\''	{ fromTokenChars [c] }
 ;
 test :: (ExpQ, String)
 	= '[' h:hsExpLam _:spaces com:comForErr? ']'

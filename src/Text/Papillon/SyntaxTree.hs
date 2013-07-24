@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module Text.Papillon.SyntaxTree (
 	Peg,
 	Definition,
@@ -5,6 +7,7 @@ module Text.Papillon.SyntaxTree (
 	Expression(..),
 	HA(..), NameLeaf(..),
 	ReadFrom(..),
+	fromTokenChars,
 
 	showSelection,
 	showNameLeaf,
@@ -43,10 +46,13 @@ data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
 data ReadFrom
 	= FromVariable (Maybe String)
 	| FromSelection Selection
-	| FromTokenChars String
 	| FromList ReadFrom
 	| FromList1 ReadFrom
 	| FromOptional ReadFrom
+fromTokenChars :: String -> ReadFrom
+fromTokenChars cs =
+	FromSelection $ (Normal ,) $ (: []) $ ExpressionSugar $
+		infixE Nothing (varE $ mkName "elem") $ Just $ litE $ stringL cs
 
 showSelection :: Selection -> Q String
 showSelection (Normal, ehss) = intercalate " / " <$> mapM showExpression ehss
@@ -78,7 +84,6 @@ showNameLeaf (NameLeaf (pat, _) rf Nothing) = do
 	return $ show (ppr patt) ++ ":" ++ rff
 
 showReadFrom :: ReadFrom -> Q String
-showReadFrom (FromTokenChars cs) = return $ '[' : cs ++ "]"
 showReadFrom (FromVariable (Just v)) = return v
 showReadFrom (FromVariable _) = return ""
 showReadFrom (FromList rf) = (++ "*") <$> showReadFrom rf
@@ -96,6 +101,7 @@ getSelectionType peg tknt (Plain, ex) =
 	where
 	eitherT = conT $ mkName "Either"
 	types = map (getExpressionType peg tknt) ex
+getSelectionType _ tknt (Normal, [ExpressionSugar _]) = tknt
 getSelectionType _ _ _ = error "getSelectionType: can't get type"
 
 getExpressionType :: Peg -> TypeQ -> Expression -> TypeQ
@@ -113,7 +119,6 @@ getReadFromType peg tknt (FromVariable (Just var)) =
 	getDefinitionType peg tknt $ searchDefinition peg var
 getReadFromType peg tknt (FromSelection sel) = getSelectionType peg tknt sel
 getReadFromType _ tknt (FromVariable _) = tknt
-getReadFromType _ tknt (FromTokenChars _) = tknt
 getReadFromType peg tknt (FromList rf) = listT `appT` getReadFromType peg tknt rf
 getReadFromType peg tknt (FromList1 rf) = listT `appT` getReadFromType peg tknt rf
 getReadFromType peg tknt (FromOptional rf) =
@@ -139,7 +144,6 @@ nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf
 nameFromRF :: ReadFrom -> [String]
 nameFromRF (FromVariable (Just s)) = [s]
 nameFromRF (FromVariable _) = ["char"]
-nameFromRF (FromTokenChars _) = ["char"]
 nameFromRF (FromList rf) = nameFromRF rf
 nameFromRF (FromList1 rf) = nameFromRF rf
 nameFromRF (FromOptional rf) = nameFromRF rf
