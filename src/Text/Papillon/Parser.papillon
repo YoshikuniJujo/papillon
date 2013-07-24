@@ -180,13 +180,13 @@ nameLeaf :: NameLeaf
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ NameLeaf (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces com:comForErr?
-		{ NameLeaf (n, maybe "" id com) FromToken Nothing }
+		{ NameLeaf (n, maybe "" id com) (FromVariable Nothing) Nothing }
 ;
 nameLeafNoCom :: NameLeaf
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ NameLeaf (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces
-		{ NameLeaf (n, "") FromToken Nothing }
+		{ NameLeaf (n, "") (FromVariable Nothing) Nothing }
 ;
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
@@ -195,7 +195,7 @@ comForErr :: String
 leaf :: (ReadFrom, Maybe (ExpQ, String))
 	= rf:readFromLs t:test			{ (rf, Just t) }
 	/ rf:readFromLs				{ (rf, Nothing) }
-	/ t:test				{ (FromToken, Just t) }
+	/ t:test				{ (FromVariable Nothing, Just t) }
 ;
 patOp :: PatQ
 	= p:pat o:opConName po:patOp		{ uInfixP p o po }
@@ -255,7 +255,7 @@ readFromLs :: ReadFrom
 	/ rf:readFrom				{ rf }
 ;
 readFrom :: ReadFrom
-	= v:variable				{ FromVariable v }
+	= v:variable				{ FromVariable $ Just v }
 	/ '(' s:selection ')'			{ FromSelection s }
 	/ e:expressionHsSugar			{ FromSelection $ (Normal, [e]) }
 ;

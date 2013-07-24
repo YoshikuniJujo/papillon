@@ -353,8 +353,8 @@ processExpressionHs g th lst lst1 opt (ExpressionSugar ex) = do
 	r <- newNewName g "r"
 	pSome_ g th lst lst1 opt [expr r] (varE r)
 	where
-	expr x = (Here ,) $ NameLeaf (varP x, "") FromToken $ Just $ (, "") $
-		ex `appE` varE x
+	expr x = (Here ,) $ NameLeaf (varP x, "") (FromVariable Nothing) $
+		Just $ (, "") $ ex `appE` varE x
 processExpressionHs g th lst lst1 opt (PlainExpression rfs) =
 	foldl (\x y -> infixApp x appApply y)
 		(returnEQ `appE` tupleE g (length rfs)) $
@@ -418,7 +418,8 @@ showNameLeaf (NameLeafList pat sel) =
 -}
 
 transReadFrom :: IORef Int -> Bool -> Name -> Name -> Name -> ReadFrom -> ExpQ
-transReadFrom _ th _ _ _ FromToken = conE (stateTN' th) `appE` varE dvCharsN
+transReadFrom _ th _ _ _ (FromVariable Nothing) =
+	conE (stateTN' th) `appE` varE dvCharsN
 transReadFrom g th _ _ _ rf@(FromTokenChars cs) = do
 	d <- newNewName g "d"
 	r <- newNewName g "r"
@@ -430,7 +431,8 @@ transReadFrom g th _ _ _ rf@(FromTokenChars cs) = do
 	 ]
 	where
 	test d' = infixApp (varE d') (varE $ mkName "elem") (litE $ stringL cs)
-transReadFrom _ th _ _ _ (FromVariable var) = conE (stateTN' th) `appE` varE (mkName var)
+transReadFrom _ th _ _ _ (FromVariable (Just var)) =
+	conE (stateTN' th) `appE` varE (mkName var)
 transReadFrom g th l l1 o (FromSelection sel) = pSomes1Sel g th l l1 o sel
 transReadFrom g th l l1 o (FromList rf) = varE l `appE` transReadFrom g th l l1 o rf
 transReadFrom g th l l1 o (FromList1 rf) = varE l1 `appE` transReadFrom g th l l1 o rf

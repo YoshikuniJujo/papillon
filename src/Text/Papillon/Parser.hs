@@ -1125,7 +1125,7 @@ parse = parse0_0 initialPos
                                                   return ()
                                                   com <- optional3_325 (StateT comForErr)
                                                   return (NameLeaf (n,
-                                                                    maybe "" id com) FromToken Nothing)]
+                                                                    maybe "" id com) (FromVariable Nothing) Nothing)]
                 nameLeafNoCom35_109 = foldl1 mplus [do n <- StateT pat1
                                                        _ <- StateT spaces
                                                        return ()
@@ -1142,7 +1142,8 @@ parse = parse0_0 initialPos
                                                     do n <- StateT pat1
                                                        _ <- StateT spaces
                                                        return ()
-                                                       return (NameLeaf (n, "") FromToken Nothing)]
+                                                       return (NameLeaf (n,
+                                                                         "") (FromVariable Nothing) Nothing)]
                 comForErr36_110 = foldl1 mplus [do d608_332 <- get
                                                    xx607_333 <- StateT char
                                                    case xx607_333 of
@@ -1213,7 +1214,7 @@ parse = parse0_0 initialPos
                                            do rf <- StateT readFromLs
                                               return (rf, Nothing),
                                            do t <- StateT test
-                                              return (FromToken, Just t)]
+                                              return (FromVariable Nothing, Just t)]
                 patOp38_112 = foldl1 mplus [do p <- StateT pat
                                                o <- StateT opConName
                                                po <- StateT patOp
@@ -1490,7 +1491,7 @@ parse = parse0_0 initialPos
                                                  do rf <- StateT readFrom
                                                     return rf]
                 readFrom48_122 = foldl1 mplus [do v <- StateT variable
-                                                  return (FromVariable v),
+                                                  return (FromVariable $ Just v),
                                                do d782_404 <- get
                                                   xx781_405 <- StateT char
                                                   case xx781_405 of

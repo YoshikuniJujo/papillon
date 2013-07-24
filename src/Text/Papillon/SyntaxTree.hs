@@ -40,9 +40,8 @@ data Expression
 data HA = Here | After | NotAfter String deriving Show
 data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
 data ReadFrom
-	= FromVariable String
+	= FromVariable (Maybe String)
 	| FromSelection Selection
-	| FromToken
 	| FromTokenChars String
 	| FromList ReadFrom
 	| FromList1 ReadFrom
@@ -77,9 +76,9 @@ showNameLeaf (NameLeaf (pat, _) rf Nothing) = do
 	return $ show (ppr patt) ++ ":" ++ rff
 
 showReadFrom :: ReadFrom -> Q String
-showReadFrom FromToken = return ""
 showReadFrom (FromTokenChars cs) = return $ '[' : cs ++ "]"
-showReadFrom (FromVariable v) = return v
+showReadFrom (FromVariable (Just v)) = return v
+showReadFrom (FromVariable _) = return ""
 showReadFrom (FromList rf) = (++ "*") <$> showReadFrom rf
 showReadFrom (FromList1 rf) = (++ "+") <$> showReadFrom rf
 showReadFrom (FromOptional rf) = (++ "?") <$> showReadFrom rf
@@ -103,10 +102,10 @@ getExpressionType peg tknt (PlainExpression rfs) =
 getExpressionType _ _ _ = error "getExpressionType: can't get type"
 
 getReadFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
-getReadFromType peg tknt (FromVariable var) =
+getReadFromType peg tknt (FromVariable (Just var)) =
 	getDefinitionType peg tknt $ searchDefinition peg var
 getReadFromType peg tknt (FromSelection sel) = getSelectionType peg tknt sel
-getReadFromType _ tknt FromToken = tknt
+getReadFromType _ tknt (FromVariable _) = tknt
 getReadFromType _ tknt (FromTokenChars _) = tknt
 getReadFromType peg tknt (FromList rf) = listT `appT` getReadFromType peg tknt rf
 getReadFromType peg tknt (FromList1 rf) = listT `appT` getReadFromType peg tknt rf
@@ -131,8 +130,8 @@ nameFromNameLeaf :: NameLeaf -> [String]
 nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf
 
 nameFromRF :: ReadFrom -> [String]
-nameFromRF (FromVariable s) = [s]
-nameFromRF FromToken = ["char"]
+nameFromRF (FromVariable (Just s)) = [s]
+nameFromRF (FromVariable _) = ["char"]
 nameFromRF (FromTokenChars _) = ["char"]
 nameFromRF (FromList rf) = nameFromRF rf
 nameFromRF (FromList1 rf) = nameFromRF rf
