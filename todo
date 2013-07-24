@@ -4,6 +4,9 @@
 
 * SyntaxTree のリファクタリング
 	fromTokenChars の名前の変更
+		むしろ、fromTokenChars は消してもいいのかもしれない
+		Parser.pappy のほうに直書き、とか
+		あるいはもっと一般夜した関数にするとか
 	expressionSugar の名前の変更
 	export list のリファクタリング
 	Peg の構造も変えよう
