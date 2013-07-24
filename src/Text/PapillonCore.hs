@@ -50,7 +50,7 @@ isOptionalUsedDefinition (_, _, PlainSelection sel) =
 	any isOptionalUsedPlainSelection sel
 
 isOptionalUsedSelection :: Expression -> Bool
-isOptionalUsedSelection (Expression _ exhs) = let (ex, _) = exhs $ mkName "c" in
+isOptionalUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
 	any isOptionalUsedLeafName ex
 
 isOptionalUsedPlainSelection :: PlainExpression -> Bool
@@ -76,7 +76,7 @@ isListUsedDefinition (_, _, Selection sel) = any isListUsedSelection sel
 isListUsedDefinition (_, _, PlainSelection sel) = any isListUsedPlainSelection sel
 
 isListUsedSelection :: Expression -> Bool
-isListUsedSelection (Expression _ exhs) = let (ex, _) = exhs $ mkName "c" in
+isListUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
 	any isListUsedLeafName ex
 
 isListUsedPlainSelection :: PlainExpression -> Bool
@@ -349,7 +349,7 @@ leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
 
 processExpressionHs ::
 	IORef Int -> Bool -> Name -> Name -> Name -> Expression -> ExpQ
-processExpressionHs g th lst lst1 opt (Expression _ exhs) = do
+processExpressionHs g th lst lst1 opt (_, exhs) = do
 	c <- newNewName g "c"
 	let (expr, ret) = exhs c
 	fmap smartDoE $ do

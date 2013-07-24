@@ -3,7 +3,6 @@
 **************************
 
 * SyntaxTree のリファクタリング
-	data Expression を type Expression = (Bool, ...) とする
 	Definition の Maybe TypeQ が Nothing になるのは PlainSelection のときのみ
 		よって、PlainSelection と Selection とを分けて、
 		Definition のところでまとめてもいいが、

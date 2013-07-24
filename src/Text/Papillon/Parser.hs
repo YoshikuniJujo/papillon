@@ -3,7 +3,7 @@ module Text.Papillon.Parser (
 	Peg,
 	Definition,
 	Selection(..),
-	Expression(..),
+	Expression,
 	PlainExpression,
 	NameLeaf(..),
 	HA(..),
@@ -1050,7 +1050,7 @@ parse = parse0_0 initialPos
                                                           _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d536_318 ["char"])
                                                       let '}' = xx535_319
                                                       return ()
-                                                      return (Expression False $ const (e, h)),
+                                                      return (False, const (e, h)),
                                                    do e <- StateT expressionHsSugar
                                                       return e]
                 expressionHsSugar29_104 = foldl1 mplus [do d540_320 <- get

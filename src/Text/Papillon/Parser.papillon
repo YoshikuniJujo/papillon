@@ -4,7 +4,7 @@ module Text.Papillon.Parser (
 	Peg,
 	Definition,
 	Selection(..),
-	Expression(..),
+	Expression,
 	PlainExpression,
 	NameLeaf(..),
 	HA(..),
@@ -153,7 +153,7 @@ plainSelection :: [PlainExpression]
 ;
 expressionHs :: Expression
 	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
-						{ Expression False $ const (e, h) }
+						{ (False, const (e, h)) }
 	/ e:expressionHsSugar			{ e }
 ;
 expressionHsSugar :: Expression
