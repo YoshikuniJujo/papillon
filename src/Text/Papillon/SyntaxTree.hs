@@ -9,7 +9,7 @@ module Text.Papillon.SyntaxTree (
 	Selection(..),
 	PlainExpression,
 	Expression,
-	NameLeaf(..),
+	NameLeaf,
 	ReadFrom(..),
 	fromTokenChars,
 	expressionSugar,
@@ -45,7 +45,7 @@ data Selection
 	| PlainSelection [PlainExpression]
 type Expression = (Bool, (Name -> ([(HA, NameLeaf)], ExpQ)))
 type PlainExpression = [(HA, ReadFrom)]
-data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
+type NameLeaf = ((PatQ, String), ReadFrom, Maybe (ExpQ, String))
 data ReadFrom
 	= FromVariable (Maybe String)
 	| FromSelection Selection
@@ -54,8 +54,8 @@ data ReadFrom
 expressionSugar :: ExpQ -> Expression
 expressionSugar p = (True ,) $ \c -> ([expr c], varE c)
 	where
-	expr x = (Here ,) $ NameLeaf (varP x, "") (FromVariable Nothing) $
-		Just $ (, "") $ p `appE` varE x
+	expr x = (Here ,) $ ((varP x, ""), (FromVariable Nothing),
+		Just $ (, "") $ p `appE` varE x)
 
 fromTokenChars :: String -> ReadFrom
 fromTokenChars cs =
@@ -83,12 +83,12 @@ showHA After = "&"
 showHA (NotAfter _) = "!"
 
 showNameLeaf :: NameLeaf -> Q String
-showNameLeaf (NameLeaf (pat, _) rf (Just (p, _))) = do
+showNameLeaf ((pat, _), rf, Just (p, _)) = do
 	patt <- pat
 	rff <- showReadFrom rf
 	pp <- p
 	return $ show (ppr patt) ++ ":" ++ rff ++ "[" ++ show (ppr pp) ++ "]"
-showNameLeaf (NameLeaf (pat, _) rf Nothing) = do
+showNameLeaf ((pat, _), rf, Nothing) = do
 	patt <- pat
 	rff <- showReadFrom rf
 	return $ show (ppr patt) ++ ":" ++ rff
@@ -155,7 +155,7 @@ nameFromPlainExpression :: PlainExpression -> [String]
 nameFromPlainExpression rfs = concatMap (nameFromRF . snd) rfs
 
 nameFromNameLeaf :: NameLeaf -> [String]
-nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf
+nameFromNameLeaf (_, rf, _) = nameFromRF rf
 
 nameFromRF :: ReadFrom -> [String]
 nameFromRF (FromVariable (Just s)) = [s]

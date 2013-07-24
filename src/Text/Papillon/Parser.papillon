@@ -9,7 +9,7 @@ module Text.Papillon.Parser (
 	Selection(..),
 	Expression,
 	PlainExpression,
-	NameLeaf(..),
+	NameLeaf,
 	ReadFrom(..),
 
 	getSelectionType,
@@ -186,15 +186,15 @@ nameLeaf_ :: (HA, NameLeaf)
 ;
 nameLeaf :: NameLeaf
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
-		{ NameLeaf (n, maybe "" id com) rf p }
+		{ ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces com:comForErr?
-		{ NameLeaf (n, maybe "" id com) (FromVariable Nothing) Nothing }
+		{ ((n, maybe "" id com), (FromVariable Nothing), Nothing) }
 ;
 nameLeafNoCom :: NameLeaf
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
-		{ NameLeaf (n, maybe "" id com) rf p }
+		{ ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces
-		{ NameLeaf (n, "") (FromVariable Nothing) Nothing }
+		{ ((n, ""), (FromVariable Nothing), Nothing) }
 ;
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces

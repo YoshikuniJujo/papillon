@@ -60,7 +60,7 @@ isOptionalUsedLeafName :: (HA, NameLeaf) -> Bool
 isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
 
 isOptionalUsedLeafName' :: NameLeaf -> Bool
-isOptionalUsedLeafName' (NameLeaf _ rf _) = isOptionalUsedReadFrom rf
+isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
 
 isOptionalUsedReadFrom :: ReadFrom -> Bool
 isOptionalUsedReadFrom (FromL Optional _) = True
@@ -86,8 +86,8 @@ isListUsedLeafName :: (HA, NameLeaf) -> Bool
 isListUsedLeafName (_, nl) = isListUsedLeafName' nl
 
 isListUsedLeafName' :: NameLeaf -> Bool
-isListUsedLeafName' (NameLeaf _ (FromL List _) _) = True
-isListUsedLeafName' (NameLeaf _ (FromL List1 _) _) = True
+isListUsedLeafName' (_, (FromL List _), _) = True
+isListUsedLeafName' (_, (FromL List1 _), _) = True
 isListUsedLeafName' _ = False
 
 isListUsedReadFrom :: ReadFrom -> Bool
@@ -353,7 +353,7 @@ processExpressionHs g th lst lst1 opt (_, exhs) = do
 	c <- newNewName g "c"
 	let (expr, ret) = exhs c
 	fmap smartDoE $ do
-		x <- forM expr $ \(ha, nl@(NameLeaf _ rf _)) -> do
+		x <- forM expr $ \(ha, nl@(_, rf, _)) -> do
 			nls <- showNameLeaf nl
 			processHA g th ha nls (nameFromRF rf) $
 				transLeaf g th lst lst1 opt nl
@@ -438,7 +438,7 @@ mkTDNN g n = do
 	return (t, d, nn)
 
 transLeaf :: IORef Int -> Bool -> Name -> Name -> Name -> NameLeaf -> Q [Stmt]
-transLeaf g th lst lst1 opt (NameLeaf (n, nc) rf (Just (p, pc))) = do
+transLeaf g th lst lst1 opt ((n, nc), rf, Just (p, pc)) = do
 	(t, d, nn) <- mkTDNN g n
 	case nn of
 		WildP -> sequence [
@@ -463,7 +463,7 @@ transLeaf g th lst lst1 opt (NameLeaf (n, nc) rf (Just (p, pc))) = do
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
-transLeaf g th lst lst1 opt (NameLeaf (n, nc) rf Nothing) = do
+transLeaf g th lst lst1 opt ((n, nc), rf, Nothing) = do
 	(t, d, nn) <- mkTDNN g n
 	case nn of
 		WildP -> sequence [
