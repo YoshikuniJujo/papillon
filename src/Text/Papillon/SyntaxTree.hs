@@ -8,16 +8,15 @@ module Text.Papillon.SyntaxTree (
 	PlainExpression,
 	Check,
 	ReadFrom(..),
-	fromTokenChars,
-	expressionSugar,
 
 	Lookahead(..),
 	Lists(..),
 
-	showSelection,
-	showCheck,
+	fromTokenChars,
+	expressionSugar,
+
 	selectionType,
-	nameFromSelection,
+	showCheck,
 	nameFromRF,
 
 	PegFile,
