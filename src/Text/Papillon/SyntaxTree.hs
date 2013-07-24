@@ -25,6 +25,7 @@ import Language.Haskell.TH
 import Control.Applicative
 import Control.Arrow
 import Data.List
+import Data.Maybe
 
 type Peg = [Definition]
 type Definition = (String, Maybe TypeQ, Selection)
@@ -36,7 +37,7 @@ data Expression
 		expressionHsExR :: ExpQ
 	 }
 	| ExpressionSugar ExpQ
-	| PlainExpression [ReadFrom]
+	| PlainExpression [(HA, ReadFrom)]
 data HA = Here | After | NotAfter String deriving Show
 data NameLeaf = NameLeaf (PatQ, String) ReadFrom (Maybe (ExpQ, String))
 data ReadFrom
@@ -57,7 +58,8 @@ showExpression (Expression ex hs) =
 		<$> mapM (uncurry (<$>) . (((++) . showHA) *** showNameLeaf)) ex
 		<*> hs
 showExpression (ExpressionSugar hs) = ('<' :) . (++ ">") . show . ppr <$> hs
-showExpression (PlainExpression rfs) = unwords <$> mapM showReadFrom rfs
+showExpression (PlainExpression rfs) =
+	unwords <$> mapM (\(ha, rf) -> (showHA ha ++) <$> showReadFrom rf) rfs
 
 showHA :: HA -> String
 showHA Here = ""
@@ -98,8 +100,13 @@ getSelectionType _ _ _ = error "getSelectionType: can't get type"
 
 getExpressionType :: Peg -> TypeQ -> Expression -> TypeQ
 getExpressionType peg tknt (PlainExpression rfs) =
-	foldl appT (tupleT $ length rfs) $ map (getReadFromType peg tknt) rfs
+	foldl appT (tupleT $ length rfs) $ catMaybes $
+		map (getHAReadFromType peg tknt) rfs
 getExpressionType _ _ _ = error "getExpressionType: can't get type"
+
+getHAReadFromType :: Peg -> TypeQ -> (HA, ReadFrom) -> Maybe TypeQ
+getHAReadFromType peg tknt (Here, rf) = Just $ getReadFromType peg tknt rf
+getHAReadFromType _ _ _ = Nothing
 
 getReadFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
 getReadFromType peg tknt (FromVariable (Just var)) =
@@ -124,7 +131,7 @@ nameFromSelection (Plain, exs) = concatMap nameFromExpression exs
 nameFromExpression :: Expression -> [String]
 nameFromExpression (Expression ex _) = nameFromNameLeaf $ snd $ head ex
 nameFromExpression (ExpressionSugar _) = []
-nameFromExpression (PlainExpression rfs) = concatMap nameFromRF rfs
+nameFromExpression (PlainExpression rfs) = concatMap (nameFromRF . snd) rfs
 
 nameFromNameLeaf :: NameLeaf -> [String]
 nameFromNameLeaf (NameLeaf _ rf _) = nameFromRF rf

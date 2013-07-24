@@ -159,8 +159,13 @@ expressionHsSugar :: Expression
 	= '<' _:spaces h:hsExpLam _:spaces '>'	{ ExpressionSugar h }
 ;
 plainExpressionHs :: Expression
-	= rfs:(rf:plainReadFromLs _:spaces { rf })*
+	= rfs:(rf:plainHAReadFromLs _:spaces { rf })*
 						{ PlainExpression rfs }
+;
+plainHAReadFromLs :: (HA, ReadFrom)
+	= rf:plainReadFromLs			{ (Here, rf) }
+	/ '&' rf:plainReadFromLs		{ (After, rf) }
+	/ '!' rf:plainReadFromLs		{ (NotAfter "", rf) }
 ;
 plainReadFromLs :: ReadFrom
 	= rf:readFromLs				{ rf }

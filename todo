@@ -2,10 +2,6 @@
 * 次にやること           *
 **************************
 
-* PlainExpression [(HA, ReadFrom)] としてみようかな
-	これは本当に正しいのかな?
-	でも、とりあえずやってみよう
-
 * SyntaxTree のリファクタリング
 	PlainExpression はおそらくまちがっている
 		これは、newNewName を利用するべきかもしれないが、

@@ -51,7 +51,8 @@ isOptionalUsedDefinition (_, _, (_, sel)) = any isOptionalUsedSelection sel
 isOptionalUsedSelection :: Expression -> Bool
 isOptionalUsedSelection (Expression ex _) = any isOptionalUsedLeafName ex
 isOptionalUsedSelection (ExpressionSugar _) = False
-isOptionalUsedSelection (PlainExpression rfs) = any isOptionalUsedReadFrom rfs
+isOptionalUsedSelection (PlainExpression rfs) =
+	any (isOptionalUsedReadFrom . snd) rfs
 
 isOptionalUsedLeafName :: (HA, NameLeaf) -> Bool
 isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
@@ -74,7 +75,7 @@ isListUsedDefinition (_, _, (_, sel)) = any isListUsedSelection sel
 isListUsedSelection :: Expression -> Bool
 isListUsedSelection (Expression ex _) = any isListUsedLeafName ex
 isListUsedSelection (ExpressionSugar _) = False
-isListUsedSelection (PlainExpression rfs) = any isListUsedReadFrom rfs
+isListUsedSelection (PlainExpression rfs) = any (isListUsedReadFrom . snd) rfs
 
 isListUsedLeafName :: (HA, NameLeaf) -> Bool
 isListUsedLeafName (_, nl) = isListUsedLeafName' nl
@@ -359,7 +360,7 @@ processExpressionHs g th lst lst1 opt (ExpressionSugar ex) = do
 processExpressionHs g th lst lst1 opt (PlainExpression rfs) =
 	foldl (\x y -> infixApp x appApply y)
 		(returnEQ `appE` tupleE g (length rfs)) $
-			map (transReadFrom g th lst lst1 opt) rfs
+			map (transHAReadFrom g th lst lst1 opt) rfs
 
 tupleE :: IORef Int -> Int -> ExpQ
 tupleE _ 0 = conE $ mkName "()"
@@ -401,16 +402,11 @@ getNewName g n = do
 	runIO $ modifyIORef g succ
 	newName $ n ++ show gn
 
-{-
-
-showSelection :: Selection -> Q String = mapM showExpression
-
-showNameLeaf :: NameLeaf -> Q String
-showNameLeaf (NameLeafList pat sel) =
-	(\ps ss -> sho (ppr ps) ++ ":(" ++ selS ++ ")*")
-		<$> pat <*> showSelection sel
-
--}
+transHAReadFrom ::
+	IORef Int -> Bool -> Name -> Name -> Name -> (HA, ReadFrom) -> ExpQ
+transHAReadFrom g th lst lst1 opt (ha, rf) = smartDoE <$>
+	(processHA g th ha "" (nameFromRF rf) $ fmap (: []) $ noBindS $
+		transReadFrom g th lst lst1 opt rf)
 
 transReadFrom :: IORef Int -> Bool -> Name -> Name -> Name -> ReadFrom -> ExpQ
 transReadFrom _ th _ _ _ (FromVariable Nothing) =
