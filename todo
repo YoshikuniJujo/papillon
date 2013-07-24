@@ -3,6 +3,7 @@
 **************************
 
 * SyntaxTree のリファクタリング
+	data NameLeaf -> type にできそうだ
 	FromList, FromList1, FromOptional はたとえば、
 		FromL List, FromL List1, FromL Optional のようにしても良いと思う
 	Definition の Maybe TypeQ が Nothing になるのは PlainSelection のときのみ
