@@ -49,20 +49,19 @@ isOptionalUsedDefinition :: Definition -> Q Bool
 isOptionalUsedDefinition (_, _, Left sel) = or <$> mapM isOptionalUsedSelection sel
 isOptionalUsedDefinition (_, _, Right sel) = or <$> mapM isOptionalUsedPlainSelection sel
 
-isOptionalUsedSelection :: Expression -> Q Bool
-isOptionalUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
+isOptionalUsedSelection :: ExpressionQ -> Q Bool
+isOptionalUsedSelection exhs = do
+	(_, (ex, _)) <- exhs $ mkName "c"
 	or <$> mapM isOptionalUsedLeafName ex
 
 isOptionalUsedPlainSelection :: PlainExpression -> Q Bool
 isOptionalUsedPlainSelection rfs = or <$> mapM (isOptionalUsedReadFrom . snd) rfs
 
-isOptionalUsedLeafName :: (Lookahead, CheckQ) -> Q Bool
+isOptionalUsedLeafName :: (Lookahead, Check) -> Q Bool
 isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
 
-isOptionalUsedLeafName' :: CheckQ -> Q Bool
-isOptionalUsedLeafName' ck = do
-	(_, rf, _) <- ck
-	isOptionalUsedReadFrom rf
+isOptionalUsedLeafName' :: Check -> Q Bool
+isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
 
 isOptionalUsedReadFrom :: ReadFrom -> Q Bool
 isOptionalUsedReadFrom (FromL Optional _) = return True
@@ -77,11 +76,10 @@ isListUsedDefinition :: Definition -> Q Bool
 isListUsedDefinition (_, _, Left sel) = or <$> mapM isListUsedSelection sel
 isListUsedDefinition (_, _, Right sel) = return $ any isListUsedPlainSelection sel
 
-isListUsedSelection :: Expression -> Q Bool
-isListUsedSelection (_, exhs) = do
-	let (ex, _) = exhs $ mkName "c"
-	e <- mapM (\(x, y) -> (x ,) <$> y) ex
-	return $ any isListUsedLeafName e
+isListUsedSelection :: ExpressionQ -> Q Bool
+isListUsedSelection exhs = do
+	(_, (ex, _)) <- exhs $ mkName "c"
+	return $ any isListUsedLeafName ex
 
 isListUsedPlainSelection :: PlainExpression -> Bool
 isListUsedPlainSelection rfs = any (isListUsedReadFrom . snd) rfs
@@ -351,17 +349,17 @@ rightE = varE (mkName "fmap") `appE` conE (mkName "Right")
 leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
 
 processExpressionHs ::
-	IORef Int -> Bool -> Name -> Name -> Name -> Expression -> ExpQ
-processExpressionHs g th lst lst1 opt (_, exhs) = do
+	IORef Int -> Bool -> Name -> Name -> Name -> ExpressionQ -> ExpQ
+processExpressionHs g th lst lst1 opt exhs = do
 	c <- newNewName g "c"
-	let (expr, ret) = exhs c
+	(_, (expr, ret)) <- exhs c
 	fmap smartDoE $ do
 		x <- forM expr $ \(ha, nl) -> do
-			nls <- showCheckQ nl
-			(_, rf, _) <- nl
+			let	nls = showCheck nl
+				(_, rf, _) = nl
 			processHA g th ha nls (nameFromRF rf) $
-				transLeafQ g th lst lst1 opt nl
-		r <- noBindS $ varE (returnN th) `appE` ret
+				transLeaf g th lst lst1 opt nl
+		r <- noBindS $ varE (returnN th) `appE` (return ret)
 		return $ concat x ++ [r]
 
 processPlainExpressionHs ::
@@ -423,7 +421,7 @@ getNewName g n = do
 transHAReadFrom ::
 	IORef Int -> Bool -> Name -> Name -> Name -> (Lookahead, ReadFrom) -> ExpQ
 transHAReadFrom g th lst lst1 opt (ha, rf) = smartDoE <$>
-	(processHA g th ha "" (nameFromRF rf) $ fmap (: []) $ noBindS $
+	(processHA g th ha (return "") (nameFromRF rf) $ fmap (: []) $ noBindS $
 		transReadFrom g th lst lst1 opt rf)
 
 transReadFrom :: IORef Int -> Bool -> Name -> Name -> Name -> ReadFrom -> ExpQ
@@ -497,7 +495,7 @@ transLeaf g th lst lst1 opt ((n, nc), rf, Nothing) = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 
-processHA :: IORef Int -> Bool -> Lookahead -> String -> Q [String] ->
+processHA :: IORef Int -> Bool -> Lookahead -> Q String -> Q [String] ->
 	Q [Stmt] -> Q [Stmt]
 processHA _ _ Here _ _ act = act
 processHA g th Ahead _ _ act = do
@@ -506,9 +504,10 @@ processHA g th Ahead _ _ act = do
 		bindS (varP d) $ varE (getN th),
 		bindS wildP $ smartDoE <$> act,
 		noBindS $ varE (putN th) `appE` varE d]
-processHA g th (NAhead com) nls names act = do
+processHA g th (NAhead com) nlss names act = do
 	d <- getNewName g "ddd"
 	ns <- names
+	nls <- nlss
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ flipMaybeBody th

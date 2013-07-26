@@ -9,8 +9,10 @@ module Text.Papillon.Parser (
 	Expression,
 	PlainExpression,
 	Check,
-	CheckQ,
 	ReadFrom(..),
+
+	ExpressionQ,
+	CheckQ,
 
 	selectionType,
 	showCheck,
@@ -93,13 +95,13 @@ data Derivs
               selection :: (Either (ParseError (Pos String) Derivs)
                                    ((Selection, Derivs))),
               normalSelection :: (Either (ParseError (Pos String) Derivs)
-                                         (([Expression], Derivs))),
+                                         (([ExpressionQ], Derivs))),
               plainSelection :: (Either (ParseError (Pos String) Derivs)
                                         (([PlainExpression], Derivs))),
               expressionHs :: (Either (ParseError (Pos String) Derivs)
-                                      ((Expression, Derivs))),
+                                      ((ExpressionQ, Derivs))),
               expressionHsSugar :: (Either (ParseError (Pos String) Derivs)
-                                           ((Expression, Derivs))),
+                                           ((ExpressionQ, Derivs))),
               plainExpressionHs :: (Either (ParseError (Pos String) Derivs)
                                            ((PlainExpression, Derivs))),
               plainHAReadFromLs :: (Either (ParseError (Pos String) Derivs)
@@ -1055,7 +1057,7 @@ parse = parse0_0 initialPos
                                                           _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d536_318 ["char"])
                                                       let '}' = xx535_319
                                                       return ()
-                                                      return (False, const (e, h)),
+                                                      return (expressionQ False (e, h)),
                                                    do e <- StateT expressionHsSugar
                                                       return e]
                 expressionHsSugar29_104 = foldl1 mplus [do d540_320 <- get

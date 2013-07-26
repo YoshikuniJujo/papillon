@@ -7,9 +7,12 @@ module Text.Papillon.SyntaxTree (
 	Expression,
 	PlainExpression,
 	Check,
-	CheckQ,
 	ReadFrom(..),
 
+	ExpressionQ,
+	CheckQ,
+
+	expressionQ,
 	check,
 
 	Lookahead(..),
@@ -41,15 +44,23 @@ data Lists = List | List1 | Optional deriving Show
 
 type Peg = [Definition]
 type Definition = (String, Maybe TypeQ, Selection)
-type Selection =  Either [Expression] [PlainExpression]
-type Expression = (Bool, (Name -> ([(Lookahead, CheckQ)], ExpQ)))
+type Selection =  Either [ExpressionQ] [PlainExpression]
+type Expression = (Bool, ([(Lookahead, Check)], Exp))
 type PlainExpression = [(Lookahead, ReadFrom)]
 type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
-type CheckQ = Q Check
 data ReadFrom
 	= FromVariable (Maybe String)
 	| FromSelection Selection
 	| FromL Lists ReadFrom
+
+type ExpressionQ = Name -> Q Expression
+type CheckQ = Q Check
+
+expressionQ :: Bool -> ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
+expressionQ b (ls, ex) = const $ do
+	e <- ex
+	l <- mapM (\(la, c) -> (la ,) <$> c) ls
+	return (b, (l, e))
 
 check :: (PatQ, String) -> ReadFrom -> Maybe (ExpQ, String) -> CheckQ
 check (pat, pcom) rf (Just (test, tcom)) = do
@@ -60,9 +71,11 @@ check (pat, pcom) rf Nothing = do
 	p <- pat
 	return $ ((p, pcom), rf, Nothing)
 
-expressionSugar :: ExpQ -> Expression
-expressionSugar p = (True ,) $ \c -> (, varE c) $ (: []) $ (Here ,) $ check
-	(varP c, "") (FromVariable Nothing) (Just $ (, "") $ p `appE` varE c)
+expressionSugar :: ExpQ -> ExpressionQ
+expressionSugar pm c = do
+	p <- pm
+	return $ (True ,) $ (, VarE c) $ (: []) $ (Here ,) $ (,,)
+		(VarP c, "") (FromVariable Nothing) (Just $ (, "") $ p `AppE` VarE c)
 
 fromTokenChars :: String -> ReadFrom
 fromTokenChars cs = FromSelection $ Left $ (: []) $ expressionSugar $
@@ -70,13 +83,16 @@ fromTokenChars cs = FromSelection $ Left $ (: []) $ expressionSugar $
 
 showSelection :: Selection -> Q String
 showSelection ehss = intercalate " / " <$>
-	either (mapM showExpression) (mapM showPlainExpression) ehss
+	either (mapM showExpressionQ) (mapM showPlainExpression) ehss
+
+showExpressionQ :: ExpressionQ -> Q String
+showExpressionQ e = e (mkName "c") >>= showExpression
 
 showExpression :: Expression -> Q String
-showExpression (_, exhs) = let (ex, hs) = exhs $ mkName "c" in
-	(\e h -> unwords e ++ " { " ++ show (ppr h) ++ " }")
-		<$> mapM (uncurry (<$>) . (((++) . showLA) *** showCheckQ)) ex
-		<*> hs
+showExpression (_, exhs) = let (ex, hs) = exhs in
+	(\e -> unwords e ++ " { " ++ show (ppr hs) ++ " }")
+		<$> mapM (uncurry (<$>) . (((++) . showLA) *** showCheck)) ex
+--		<*> hs
 
 showPlainExpression :: PlainExpression -> Q String
 showPlainExpression rfs =
@@ -117,7 +133,11 @@ selectionType peg tk (Right ex) =
 	where
 	eitherT = conT $ mkName "Either"
 	types = map (plainExpressionType peg tk) ex
-selectionType _ tk (Left [(True, _)]) = tk
+selectionType _ tk (Left [em]) = do
+	e <- em $ mkName "c"
+	case e of
+		(True, _) ->  tk
+		_ -> error "selectionType: can't get type"
 selectionType _ _ _ = error "selectionType: can't get type"
 
 plainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
@@ -137,16 +157,16 @@ readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
 
 nameFromSelection :: Selection -> Q [String]
 nameFromSelection exs = concat <$>
-	either (mapM nameFromExpression) (mapM nameFromPlainExpression) exs
+	either (mapM nameFromExpressionQ) (mapM nameFromPlainExpression) exs
+
+nameFromExpressionQ :: ExpressionQ -> Q [String]
+nameFromExpressionQ e = e (mkName "c") >>= nameFromExpression
 
 nameFromExpression :: Expression -> Q [String]
-nameFromExpression = nameFromCheckQ . snd . head . fst . ($ mkName "c") . snd
+nameFromExpression = nameFromCheck . snd . head . fst . snd
 
 nameFromPlainExpression :: PlainExpression -> Q [String]
 nameFromPlainExpression = (concat <$>) . mapM (nameFromRF . snd)
-
-nameFromCheckQ :: CheckQ -> Q [String]
-nameFromCheckQ = (>>= nameFromCheck)
 
 nameFromCheck :: Check -> Q [String]
 nameFromCheck (_, rf, _) = nameFromRF rf

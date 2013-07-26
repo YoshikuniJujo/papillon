@@ -85,6 +85,12 @@
 * str :: Either (String, String) (Either (String, String) ()) がパースエラーになる
 	上記を解決すること
 
+* monadic parser とする
+	何も指定しなければ、Identity monad とし、
+	test と return のところに return を追加する。
+	monad が指定されればそのモナドを lift するような StateT や ErrorT を作り、
+	return とかは足さない
+
 **************************
 *  warning 関係          *
 **************************

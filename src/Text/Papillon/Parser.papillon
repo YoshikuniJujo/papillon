@@ -10,8 +10,10 @@ module Text.Papillon.Parser (
 	Expression,
 	PlainExpression,
 	Check,
-	CheckQ,
 	ReadFrom(..),
+
+	ExpressionQ,
+	CheckQ,
 
 	selectionType,
 	showCheck,
@@ -146,7 +148,7 @@ selection :: Selection
 	= s:normalSelection			{ Left s }
 	/ s:plainSelection			{ Right s }
 ;
-normalSelection :: [Expression]
+normalSelection :: [ExpressionQ]
 	= ex:expressionHs _:spaces '/' _:spaces sel:normalSelection
 						{ ex : sel }
 	/ ex:expressionHs			{ [ex] }
@@ -156,12 +158,12 @@ plainSelection :: [PlainExpression]
 						{ ex : sel }
 	/ ex:plainExpressionHs			{ [ex] }
 ;
-expressionHs :: Expression
+expressionHs :: ExpressionQ
 	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
-						{ (False, const (e, h)) }
+						{ expressionQ False (e, h) }
 	/ e:expressionHsSugar			{ e }
 ;
-expressionHsSugar :: Expression
+expressionHsSugar :: ExpressionQ
 	= '<' _:spaces h:hsExpLam _:spaces '>'	{ expressionSugar h }
 ;
 plainExpressionHs :: PlainExpression
