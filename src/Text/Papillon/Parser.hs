@@ -11,6 +11,7 @@ module Text.Papillon.Parser (
 	Check,
 	ReadFrom(..),
 
+	PegQ,
 	DefinitionQ,
 	SelectionQ,
 	ExpressionQ,
@@ -88,10 +89,10 @@ data Derivs
                                   ((String, Derivs))),
               pap :: (Either (ParseError (Pos String) Derivs) (((), Derivs))),
               peg :: (Either (ParseError (Pos String) Derivs)
-                             (((TypeQ, Peg), Derivs))),
+                             (((TypeQ, PegQ), Derivs))),
               sourceType :: (Either (ParseError (Pos String) Derivs)
                                     ((String, Derivs))),
-              peg_ :: (Either (ParseError (Pos String) Derivs) ((Peg, Derivs))),
+              peg_ :: (Either (ParseError (Pos String) Derivs) ((PegQ, Derivs))),
               definition :: (Either (ParseError (Pos String) Derivs)
                                     ((DefinitionQ, Derivs))),
               selection :: (Either (ParseError (Pos String) Derivs)
@@ -927,8 +928,8 @@ parse = parse0_0 initialPos
                                              return ()
                                              d <- StateT definition
                                              p <- StateT peg_
-                                             return (d : p),
-                                          return []]
+                                             return (\g -> (:) <$> d g <*> p g),
+                                          return (const $ return [])]
                 definition24_99 = foldl1 mplus [do v <- StateT variable
                                                    _ <- StateT spaces
                                                    return ()

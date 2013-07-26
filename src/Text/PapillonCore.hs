@@ -42,8 +42,10 @@ import Data.IORef
 
 import Text.Papillon.List
 
-isOptionalUsed :: Peg -> Q Bool
-isOptionalUsed = (or <$>) . mapM isOptionalUsedDefinition
+isOptionalUsed :: PegQ -> Q Bool
+isOptionalUsed pegq = do
+	peg <- pegq =<< runIO (newIORef 0)
+	or <$> mapM isOptionalUsedDefinition (map (const . return) peg)
 
 isOptionalUsedDefinition :: DefinitionQ -> Q Bool
 isOptionalUsedDefinition def = do
@@ -76,8 +78,10 @@ isOptionalUsedReadFrom (FromSelection selq) = do
 		Right _ -> return False
 isOptionalUsedReadFrom _ = return False
 
-isListUsed :: Peg -> Q Bool
-isListUsed = (or <$>) . mapM isListUsedDefinition
+isListUsed :: PegQ -> Q Bool
+isListUsed pegq = do
+	peg <- pegq =<< runIO (newIORef 0)
+	or <$> mapM isListUsedDefinition (map (const . return) peg)
 
 isListUsedDefinition :: DefinitionQ -> Q Bool
 isListUsedDefinition def = do
@@ -200,7 +204,7 @@ showReading d "char" = case char d of
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
 
-decParsed :: Bool -> TypeQ -> TypeQ -> Peg -> DecsQ
+decParsed :: Bool -> TypeQ -> TypeQ -> PegQ -> DecsQ
 decParsed th src tkn parsed = do
 	glb <- runIO $ newIORef 0
 	d <- derivs th src tkn parsed
@@ -208,8 +212,10 @@ decParsed th src tkn parsed = do
 	p <- funD (mkName "parse") [parseEE glb th parsed]
 	return $ d : pt : [p]
 
-parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
-parseEE glb th pg = do
+parseEE :: IORef Int -> Bool -> PegQ -> ClauseQ
+parseEE glb th pgq = do
+	pgg <- pgq glb
+	let pg = map (const .return) pgg
 	pgn <- newNewName glb "parse"
 	listN <- newNewName glb "list"
 	list1N <- newNewName glb "list1"
@@ -218,8 +224,8 @@ parseEE glb th pg = do
 
 	pgenE <- varE pgn `appE` varE (mkName "initialPos")
 	decs <- (:)
-		<$> funD pgn [parseE glb th pgn pNames pg]
-		<*> pSomes glb th listN list1N optionalN pNames pg
+		<$> funD pgn [parseE glb th pgn pNames pgq]
+		<*> pSomes glb th listN list1N optionalN pNames pgq
 	ld <- listDec listN list1N th
 	od <- optionalDec optionalN th
 	return $ Clause [] (NormalB pgenE) $ decs ++ ld ++ od
@@ -230,17 +236,20 @@ dvCharsN, dvPosN :: Name
 dvCharsN = mkName "char"
 dvPosN = mkName "position"
 
-derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
-derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
-	recC (mkName "Derivs") $ map (derivs1 pegg src tkn) pegg ++ [
-		varStrictType dvCharsN $ strictType notStrict $
-			resultT src tkn,
-		varStrictType dvPosN $ strictType notStrict $
-			conT (mkName "Pos") `appT` src
-	 ]
- ] []
+derivs :: Bool -> TypeQ -> TypeQ -> PegQ -> DecQ
+derivs _ src tkn peggq = do
+	peg <- peggq =<< runIO (newIORef 0)
+	let pegg = map (const . return) peg
+	dataD (cxt []) (mkName "Derivs") [] [
+		recC (mkName "Derivs") $ map (derivs1 peggq src tkn) pegg ++ [
+			varStrictType dvCharsN $ strictType notStrict $
+				resultT src tkn,
+			varStrictType dvPosN $ strictType notStrict $
+				conT (mkName "Pos") `appT` src
+		 ]
+	 ] []
 
-derivs1 :: Peg -> TypeQ -> TypeQ -> DefinitionQ -> VarStrictTypeQ
+derivs1 :: PegQ -> TypeQ -> TypeQ -> DefinitionQ -> VarStrictTypeQ
 derivs1 pg src tkn defq = do
 	(name, mtyp, sel) <- defq =<< runIO (newIORef 0)
 	case mtyp of
@@ -288,12 +297,14 @@ newNewName g base = do
 	n <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
 	newName (base ++ show n)
-parseE :: IORef Int -> Bool -> Name -> [Name] -> Peg -> ClauseQ
-parseE g th pgn pnames pegg = do
-	tmps <- mapM (newNewName g) =<< names
-	parseE' g th pgn tmps pnames . map mkName =<< names
+parseE :: IORef Int -> Bool -> Name -> [Name] -> PegQ -> ClauseQ
+parseE g th pgn pnames peggq = do
+	peg <- peggq g
+	let pegg = map (const . return) peg
+	tmps <- mapM (newNewName g) =<< names pegg
+	parseE' g th pgn tmps pnames . map mkName =<< names pegg
 	where
-	names = mapM getDefinitionName pegg
+	names p = mapM getDefinitionName p
 
 getDefinitionName :: DefinitionQ -> Q String
 getDefinitionName def = do
@@ -342,8 +353,10 @@ parseE1 :: Bool -> Name -> Name -> Name -> DecQ
 parseE1 th tmp name _ = flip (valD $ varP tmp) [] $ normalB $
 	varE (runStateTN th) `appE` varE name `appE` varE (mkName "d")
 
-pSomes :: IORef Int -> Bool -> Name -> Name -> Name -> [Name] -> Peg -> DecsQ
-pSomes g th lst lst1 opt = zipWithM $ pSomes1 g th lst lst1 opt
+pSomes :: IORef Int -> Bool -> Name -> Name -> Name -> [Name] -> PegQ -> DecsQ
+pSomes g th lst lst1 opt names pegq = do
+	peg <- pegq g
+	zipWithM (pSomes1 g th lst lst1 opt) names (map (const . return) peg)
 
 pSomes1 :: IORef Int -> Bool -> Name -> Name -> Name -> Name -> DefinitionQ -> DecQ
 pSomes1 g th lst lst1 opt pname def = do

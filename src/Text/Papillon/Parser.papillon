@@ -12,6 +12,7 @@ module Text.Papillon.Parser (
 	Check,
 	ReadFrom(..),
 
+	PegQ,
 	DefinitionQ,
 	SelectionQ,
 	ExpressionQ,
@@ -126,7 +127,7 @@ typToken :: String
 pap :: ()
 	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ () }
 ;
-peg :: (TypeQ, Peg)
+peg :: (TypeQ, PegQ)
 	= _:spaces s:sourceType p:peg_		{ (conT $ mkName s, p) }
 	/ p:peg_				{ (conT $ mkName "String", p) }
 ;
@@ -134,9 +135,9 @@ sourceType :: String
 	= "source":varToken ':' _:spaces v:typToken
 						{ v }
 ;
-peg_ :: Peg
-	= _:spaces d:definition p:peg_		{ d : p }
-	/ 					{ [] }
+peg_ :: PegQ
+	= _:spaces d:definition p:peg_		{ \g -> (:) <$> d g <*> p g }
+	/ 					{ const $ return [] }
 ;
 definition :: DefinitionQ
 	= v:variable _:spaces ':' ':'

@@ -2,8 +2,8 @@
 * 次にやること           *
 **************************
 
-* Peg を PegQ にする
 * ReadFrom も ReadFromQ のようにできるかな
+* PegFile も PegFileQ のようにできるかな
 
 * Peg を PegQ のようにしようかな
 	そうすると ppr が作りやすいのと、deriving Show ができる。
