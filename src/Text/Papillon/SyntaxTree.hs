@@ -52,7 +52,6 @@ data Lists = List | List1 | Optional deriving Show
 
 type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
-
 type Selection =  Either [Expression] [PlainExpression]
 type Expression = (Bool, ([(Lookahead, Check)], Exp))
 type PlainExpression = [(Lookahead, ReadFrom)]
