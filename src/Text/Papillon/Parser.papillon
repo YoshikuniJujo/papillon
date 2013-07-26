@@ -17,6 +17,7 @@ module Text.Papillon.Parser (
 	SelectionQ,
 	ExpressionQ,
 	CheckQ,
+	ReadFromQ,
 
 	selectionType,
 	showCheck,
@@ -174,12 +175,12 @@ plainExpressionHs :: PlainExpression
 	= rfs:(rf:plainHAReadFromLs _:spaces { rf })*
 						{ rfs }
 ;
-plainHAReadFromLs :: (Lookahead, ReadFrom)
+plainHAReadFromLs :: (Lookahead, ReadFromQ)
 	= rf:plainReadFromLs			{ (Here, rf) }
 	/ '&' rf:plainReadFromLs		{ (Ahead, rf) }
 	/ '!' rf:plainReadFromLs		{ (NAhead "", rf) }
 ;
-plainReadFromLs :: ReadFrom
+plainReadFromLs :: ReadFromQ
 	= rf:readFromLs				{ rf }
 	/ rf:selectCharsLs			{ rf }
 ;
@@ -197,22 +198,24 @@ nameLeaf :: CheckQ
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ check (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces com:comForErr?
-		{ check (n, maybe "" id com) (FromVariable Nothing) Nothing }
+		{ check (n, maybe "" id com)
+			(const $ return $ FromVariable Nothing) Nothing }
 ;
 nameLeafNoCom :: CheckQ
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ check (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces
-		{ check (n, "") (FromVariable Nothing) Nothing }
+		{ check (n, "") (const $ return $ FromVariable Nothing) Nothing }
 ;
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
 						{ s }
 ;
-leaf :: (ReadFrom, Maybe (ExpQ, String))
+leaf :: (ReadFromQ, Maybe (ExpQ, String))
 	= rf:readFromLs t:test			{ (rf, Just t) }
 	/ rf:readFromLs				{ (rf, Nothing) }
-	/ t:test				{ (FromVariable Nothing, Just t) }
+	/ t:test			{ (const $ return $ FromVariable Nothing,
+						Just t) }
 ;
 patOp :: PatQ
 	= p:pat o:opConName po:patOp		{ uInfixP p o po }
@@ -265,25 +268,26 @@ pats :: [PatQ]
 	= p:pat _:spaces ps:pats		{ p : ps }
 	/					{ [] }
 ;
-readFromLs :: ReadFrom
-	= rf:readFrom '*'			{ FromL List rf }
-	/ rf:readFrom '+'			{ FromL List1 rf }
-	/ rf:readFrom '?'			{ FromL Optional rf }
+readFromLs :: ReadFromQ
+	= rf:readFrom '*'			{ (FromL List <$>) . rf }
+	/ rf:readFrom '+'			{ (FromL List1 <$>) . rf }
+	/ rf:readFrom '?'			{ (FromL Optional <$>) . rf }
 	/ rf:readFrom				{ rf }
 ;
-readFrom :: ReadFrom
-	= v:variable				{ FromVariable $ Just v }
-	/ '(' s:selection ')'			{ FromSelection s }
-	/ e:expressionHsSugar			{ FromSelection $
+readFrom :: ReadFromQ
+	= v:variable				{ const $ return $
+							FromVariable $ Just v }
+	/ '(' s:selection ')'			{ fromSelectionQ s }
+	/ e:expressionHsSugar			{ fromSelectionQ $
 							normalSelectionQ [e] }
 ;
-selectCharsLs :: ReadFrom
-	= rf:selectChars '*'			{ FromL List rf }
-	/ rf:selectChars '+'			{ FromL List1 rf }
-	/ rf:selectChars '?'			{ FromL Optional rf }
+selectCharsLs :: ReadFromQ
+	= rf:selectChars '*'			{ (FromL List <$>) . rf }
+	/ rf:selectChars '+'			{ (FromL List1 <$>) . rf }
+	/ rf:selectChars '?'			{ (FromL Optional <$>) . rf }
 	/ rf:selectChars			{ rf }
 ;
-selectChars :: ReadFrom
+selectChars :: ReadFromQ
 	= '[' cs:(c:[isLower c] { c })+ ']'	{ fromTokenChars cs }
 	/ '[' cb:[cb `notElem` "\\-"] '-'
 		ce:[ce `notElem` "\\-"] ']'	{ fromTokenChars [cb .. ce] }

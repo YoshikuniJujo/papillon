@@ -16,6 +16,7 @@ module Text.Papillon.Parser (
 	SelectionQ,
 	ExpressionQ,
 	CheckQ,
+	ReadFromQ,
 
 	selectionType,
 	showCheck,
@@ -108,9 +109,9 @@ data Derivs
               plainExpressionHs :: (Either (ParseError (Pos String) Derivs)
                                            ((PlainExpression, Derivs))),
               plainHAReadFromLs :: (Either (ParseError (Pos String) Derivs)
-                                           (((Lookahead, ReadFrom), Derivs))),
+                                           (((Lookahead, ReadFromQ), Derivs))),
               plainReadFromLs :: (Either (ParseError (Pos String) Derivs)
-                                         ((ReadFrom, Derivs))),
+                                         ((ReadFromQ, Derivs))),
               expression :: (Either (ParseError (Pos String) Derivs)
                                     (([(Lookahead, CheckQ)], Derivs))),
               nameLeaf_ :: (Either (ParseError (Pos String) Derivs)
@@ -122,7 +123,7 @@ data Derivs
               comForErr :: (Either (ParseError (Pos String) Derivs)
                                    ((String, Derivs))),
               leaf :: (Either (ParseError (Pos String) Derivs)
-                              (((ReadFrom, Maybe ((ExpQ, String))), Derivs))),
+                              (((ReadFromQ, Maybe ((ExpQ, String))), Derivs))),
               patOp :: (Either (ParseError (Pos String) Derivs)
                                ((PatQ, Derivs))),
               pat :: (Either (ParseError (Pos String) Derivs) ((PatQ, Derivs))),
@@ -140,13 +141,13 @@ data Derivs
               pats :: (Either (ParseError (Pos String) Derivs)
                               (([PatQ], Derivs))),
               readFromLs :: (Either (ParseError (Pos String) Derivs)
-                                    ((ReadFrom, Derivs))),
+                                    ((ReadFromQ, Derivs))),
               readFrom :: (Either (ParseError (Pos String) Derivs)
-                                  ((ReadFrom, Derivs))),
+                                  ((ReadFromQ, Derivs))),
               selectCharsLs :: (Either (ParseError (Pos String) Derivs)
-                                       ((ReadFrom, Derivs))),
+                                       ((ReadFromQ, Derivs))),
               selectChars :: (Either (ParseError (Pos String) Derivs)
-                                     ((ReadFrom, Derivs))),
+                                     ((ReadFromQ, Derivs))),
               test :: (Either (ParseError (Pos String) Derivs)
                               (((ExpQ, String), Derivs))),
               hsExpLam :: (Either (ParseError (Pos String) Derivs)
@@ -1159,7 +1160,7 @@ parse = parse0_0 initialPos
                                                   return ()
                                                   com <- optional3_331 (StateT comForErr)
                                                   return (check (n,
-                                                                 maybe "" id com) (FromVariable Nothing) Nothing)]
+                                                                 maybe "" id com) (const $ return $ FromVariable Nothing) Nothing)]
                 nameLeafNoCom36_111 = foldl1 mplus [do n <- StateT pat1
                                                        _ <- StateT spaces
                                                        return ()
@@ -1177,7 +1178,7 @@ parse = parse0_0 initialPos
                                                        _ <- StateT spaces
                                                        return ()
                                                        return (check (n,
-                                                                      "") (FromVariable Nothing) Nothing)]
+                                                                      "") (const $ return $ FromVariable Nothing) Nothing)]
                 comForErr37_112 = foldl1 mplus [do d620_338 <- get
                                                    xx619_339 <- StateT char
                                                    case xx619_339 of
@@ -1248,7 +1249,8 @@ parse = parse0_0 initialPos
                                            do rf <- StateT readFromLs
                                               return (rf, Nothing),
                                            do t <- StateT test
-                                              return (FromVariable Nothing, Just t)]
+                                              return (const $ return $ FromVariable Nothing,
+                                                      Just t)]
                 patOp39_114 = foldl1 mplus [do p <- StateT pat
                                                o <- StateT opConName
                                                po <- StateT patOp
@@ -1503,7 +1505,7 @@ parse = parse0_0 initialPos
                                                         _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d780_404 ["char"])
                                                     let '*' = xx779_405
                                                     return ()
-                                                    return (FromL List rf),
+                                                    return ((FromL List <$>) . rf),
                                                  do rf <- StateT readFrom
                                                     d784_406 <- get
                                                     xx783_407 <- StateT char
@@ -1512,7 +1514,7 @@ parse = parse0_0 initialPos
                                                         _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d784_406 ["char"])
                                                     let '+' = xx783_407
                                                     return ()
-                                                    return (FromL List1 rf),
+                                                    return ((FromL List1 <$>) . rf),
                                                  do rf <- StateT readFrom
                                                     d788_408 <- get
                                                     xx787_409 <- StateT char
@@ -1521,11 +1523,11 @@ parse = parse0_0 initialPos
                                                         _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d788_408 ["char"])
                                                     let '?' = xx787_409
                                                     return ()
-                                                    return (FromL Optional rf),
+                                                    return ((FromL Optional <$>) . rf),
                                                  do rf <- StateT readFrom
                                                     return rf]
                 readFrom49_124 = foldl1 mplus [do v <- StateT variable
-                                                  return (FromVariable $ Just v),
+                                                  return (const $ return $ FromVariable $ Just v),
                                                do d794_410 <- get
                                                   xx793_411 <- StateT char
                                                   case xx793_411 of
@@ -1541,9 +1543,9 @@ parse = parse0_0 initialPos
                                                       _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d798_412 ["char"])
                                                   let ')' = xx797_413
                                                   return ()
-                                                  return (FromSelection s),
+                                                  return (fromSelectionQ s),
                                                do e <- StateT expressionHsSugar
-                                                  return (FromSelection $ normalSelectionQ [e])]
+                                                  return (fromSelectionQ $ normalSelectionQ [e])]
                 selectCharsLs50_125 = foldl1 mplus [do rf <- StateT selectChars
                                                        d804_414 <- get
                                                        xx803_415 <- StateT char
@@ -1552,7 +1554,7 @@ parse = parse0_0 initialPos
                                                            _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d804_414 ["char"])
                                                        let '*' = xx803_415
                                                        return ()
-                                                       return (FromL List rf),
+                                                       return ((FromL List <$>) . rf),
                                                     do rf <- StateT selectChars
                                                        d808_416 <- get
                                                        xx807_417 <- StateT char
@@ -1561,7 +1563,7 @@ parse = parse0_0 initialPos
                                                            _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d808_416 ["char"])
                                                        let '+' = xx807_417
                                                        return ()
-                                                       return (FromL List1 rf),
+                                                       return ((FromL List1 <$>) . rf),
                                                     do rf <- StateT selectChars
                                                        d812_418 <- get
                                                        xx811_419 <- StateT char
@@ -1570,7 +1572,7 @@ parse = parse0_0 initialPos
                                                            _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d812_418 ["char"])
                                                        let '?' = xx811_419
                                                        return ()
-                                                       return (FromL Optional rf),
+                                                       return ((FromL Optional <$>) . rf),
                                                     do rf <- StateT selectChars
                                                        return rf]
                 selectChars51_126 = foldl1 mplus [do d816_420 <- get

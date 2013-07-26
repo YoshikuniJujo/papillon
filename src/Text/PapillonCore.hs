@@ -61,7 +61,7 @@ isOptionalUsedSelection exhs = do
 	or <$> mapM isOptionalUsedLeafName ex
 
 isOptionalUsedPlainSelection :: PlainExpression -> Q Bool
-isOptionalUsedPlainSelection rfs = or <$> mapM (isOptionalUsedReadFrom . snd) rfs
+isOptionalUsedPlainSelection rfs = or <$> mapM (isOptionalUsedReadFromQ . snd) rfs
 
 isOptionalUsedLeafName :: (Lookahead, Check) -> Q Bool
 isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
@@ -69,10 +69,12 @@ isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
 isOptionalUsedLeafName' :: Check -> Q Bool
 isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
 
+isOptionalUsedReadFromQ :: ReadFromQ -> Q Bool
+isOptionalUsedReadFromQ rfq = isOptionalUsedReadFrom =<< rfq =<< runIO (newIORef 0)
+
 isOptionalUsedReadFrom :: ReadFrom -> Q Bool
 isOptionalUsedReadFrom (FromL Optional _) = return True
-isOptionalUsedReadFrom (FromSelection selq) = do
-	esel <- selq =<< runIO (newIORef 0)
+isOptionalUsedReadFrom (FromSelection esel) = do
 	case esel of
 		Left sel -> or <$> mapM isOptionalUsedSelection sel
 		Right _ -> return False
@@ -89,7 +91,7 @@ isListUsedDefinition def = do
 --	esel <- selq =<< runIO (newIORef 0)
 	case esel of
 		Left sel -> or <$> mapM isListUsedSelection sel
-		Right sel -> return $ any isListUsedPlainSelection sel
+		Right sel -> or <$> mapM isListUsedPlainSelection sel
 -- isListUsedDefinition (_, _, Right sel) = return $ any isListUsedPlainSelection sel
 
 isListUsedSelection :: Expression -> Q Bool
@@ -97,8 +99,8 @@ isListUsedSelection exhs = do
 	let (_, (ex, _)) = exhs
 	return $ any isListUsedLeafName ex
 
-isListUsedPlainSelection :: PlainExpression -> Bool
-isListUsedPlainSelection rfs = any (isListUsedReadFrom . snd) rfs
+isListUsedPlainSelection :: PlainExpression -> Q Bool
+isListUsedPlainSelection rfs = or <$> mapM (isListUsedReadFromQ . snd) rfs
 
 isListUsedLeafName :: (Lookahead, Check) -> Bool
 isListUsedLeafName (_, nl) = isListUsedLeafName' nl
@@ -107,6 +109,9 @@ isListUsedLeafName' :: Check -> Bool
 isListUsedLeafName' (_, (FromL List _), _) = True
 isListUsedLeafName' (_, (FromL List1 _), _) = True
 isListUsedLeafName' _ = False
+
+isListUsedReadFromQ :: ReadFromQ -> Q Bool
+isListUsedReadFromQ rfq = isListUsedReadFrom <$> (rfq =<< runIO (newIORef 0))
 
 isListUsedReadFrom :: ReadFrom -> Bool
 isListUsedReadFrom (FromL List _) = True
@@ -418,7 +423,7 @@ processPlainExpressionHs ::
 processPlainExpressionHs g th lst lst1 opt rfs =
 	foldl (\x y -> infixApp x appApply y)
 		(returnEQ `appE` mkTupleE g (map fst rfs)) $
-			map (transHAReadFrom g th lst lst1 opt) $ rfs
+			map (transHAReadFromQ g th lst lst1 opt) $ rfs
 
 mkTupleE :: IORef Int -> [Lookahead] -> ExpQ
 mkTupleE g has = do
@@ -469,6 +474,11 @@ getNewName g n = do
 	runIO $ modifyIORef g succ
 	newName $ n ++ show gn
 
+transHAReadFromQ ::
+	IORef Int -> Bool -> Name -> Name -> Name -> (Lookahead, ReadFromQ) -> ExpQ
+transHAReadFromQ g th lst lst1 opt (ha, rfq) =
+	transHAReadFrom g th lst lst1 opt . (ha ,) =<< rfq g
+
 transHAReadFrom ::
 	IORef Int -> Bool -> Name -> Name -> Name -> (Lookahead, ReadFrom) -> ExpQ
 transHAReadFrom g th lst lst1 opt (ha, rf) = smartDoE <$>
@@ -480,7 +490,7 @@ transReadFrom _ th _ _ _ (FromVariable Nothing) =
 	conE (stateTN' th) `appE` varE dvCharsN
 transReadFrom _ th _ _ _ (FromVariable (Just var)) =
 	conE (stateTN' th) `appE` varE (mkName var)
-transReadFrom g th l l1 o (FromSelection sel) = pSomes1SelQ g th l l1 o sel
+transReadFrom g th l l1 o (FromSelection sel) = pSomes1Sel g th l l1 o sel
 transReadFrom g th l l1 o (FromL List rf) = varE l `appE` transReadFrom g th l l1 o rf
 transReadFrom g th l l1 o (FromL List1 rf) = varE l1 `appE` transReadFrom g th l l1 o rf
 transReadFrom g th l l1 o (FromL Optional rf) = varE o `appE` transReadFrom g th l l1 o rf
@@ -492,7 +502,7 @@ mkTD g = do
 	return (t, d)
 
 transLeafQ :: IORef Int -> Bool -> Name -> Name -> Name -> CheckQ -> Q [Stmt]
-transLeafQ g th lst lst1 opt = (>>= transLeaf g th lst lst1 opt)
+transLeafQ g th lst lst1 opt ckq = transLeaf g th lst lst1 opt =<< ckq g
 
 transLeaf :: IORef Int -> Bool -> Name -> Name -> Name -> Check -> Q [Stmt]
 transLeaf g th lst lst1 opt ((n, nc), rf, Just (p, pc)) = do

@@ -2,7 +2,7 @@
 * 次にやること           *
 **************************
 
-* ReadFrom も ReadFromQ のようにできるかな
+* PlainExpression も PlainExpressionQ のようにする
 * PegFile も PegFileQ のようにできるかな
 
 * Peg を PegQ のようにしようかな
@@ -96,6 +96,8 @@
 	test と return のところに return を追加する。
 	monad が指定されればそのモナドを lift するような StateT や ErrorT を作り、
 	return とかは足さない
+
+* { ... } や [ ... ] 等のなかで do が使えるか試すこと
 
 **************************
 *  warning 関係          *

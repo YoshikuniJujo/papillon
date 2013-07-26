@@ -14,11 +14,13 @@ module Text.Papillon.SyntaxTree (
 	SelectionQ,
 	ExpressionQ,
 	CheckQ,
+	ReadFromQ,
 
 	definitionQ,
 	normalSelectionQ,
 	expressionQ,
 	check,
+	fromSelectionQ,
 
 	Lookahead(..),
 	Lists(..),
@@ -27,9 +29,11 @@ module Text.Papillon.SyntaxTree (
 	expressionSugar,
 
 	selectionType,
+	selectionTypeQ,
 	showCheck,
 	showCheckQ,
 	nameFromRF,
+	nameFromRFQ,
 
 	PegFile,
 	mkPegFile,
@@ -54,18 +58,22 @@ type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
 type Selection =  Either [Expression] [PlainExpression]
 type Expression = (Bool, ([(Lookahead, Check)], Exp))
-type PlainExpression = [(Lookahead, ReadFrom)]
+type PlainExpression = [(Lookahead, ReadFromQ)]
 type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
 data ReadFrom
 	= FromVariable (Maybe String)
-	| FromSelection SelectionQ
+	| FromSelection Selection
 	| FromL Lists ReadFrom
 
 type PegQ = IORef Int -> Q Peg
 type DefinitionQ = IORef Int -> Q Definition
 type SelectionQ = IORef Int -> Q Selection
-type ExpressionQ = Name -> Q Expression
-type CheckQ = Q Check
+type ExpressionQ = IORef Int -> Q Expression
+type CheckQ = IORef Int -> Q Check
+type ReadFromQ = IORef Int -> Q ReadFrom
+
+fromSelectionQ :: SelectionQ -> ReadFromQ
+fromSelectionQ sel = (FromSelection <$>) . sel
 
 definitionQ :: String -> Maybe TypeQ -> SelectionQ -> DefinitionQ
 definitionQ name typq selq = \g -> do
@@ -76,64 +84,60 @@ definitionQ name typq selq = \g -> do
 	return $ (name, typ, sel)
 
 normalSelectionQ :: [ExpressionQ] -> SelectionQ
-normalSelectionQ expqs = \g -> (Left <$>) $ forM expqs $ \e -> do
-	c <- newNewName g "c"
-	e c
+normalSelectionQ expqs = \g -> (Left <$>) $ forM expqs ($ g)
 
+{-
 newNewName :: IORef Int -> String -> Q Name
 newNewName g n = do
 	s <- runIO $ readIORef g
 	newName $ n ++ show s
+-}
 
 expressionQ :: Bool -> ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
-expressionQ b (ls, ex) = const $ do
+expressionQ b (ls, ex) g = do
 	e <- ex
-	l <- mapM (\(la, c) -> (la ,) <$> c) ls
+	l <- mapM (\(la, c) -> (la ,) <$> c g) ls
 	return (b, (l, e))
 
-check :: (PatQ, String) -> ReadFrom -> Maybe (ExpQ, String) -> CheckQ
-check (pat, pcom) rf (Just (test, tcom)) = do
+check :: (PatQ, String) -> ReadFromQ -> Maybe (ExpQ, String) -> CheckQ
+check (pat, pcom) rfq (Just (test, tcom)) g = do
+	rf <- rfq g
 	p <- pat
 	t <- test
 	return $ ((p, pcom), rf, Just (t, tcom))
-check (pat, pcom) rf Nothing = do
+check (pat, pcom) rfq Nothing g = do
+	rf <- rfq g
 	p <- pat
 	return $ ((p, pcom), rf, Nothing)
 
 expressionSugar :: ExpQ -> ExpressionQ
-expressionSugar pm c = do
+expressionSugar pm g = do
 	p <- pm
+	s <- runIO $ readIORef g
+	c <- newName $ "c" ++ show s
 	return $ (True ,) $ (, VarE c) $ (: []) $ (Here ,) $ (,,)
 		(VarP c, "") (FromVariable Nothing) (Just $ (, "") $ p `AppE` VarE c)
 
-fromTokenChars :: String -> ReadFrom
-fromTokenChars cs = FromSelection $ \g -> do
-	s <- runIO $ readIORef g
-	c <- newName $ "c" ++ show s
-	ex <- (expressionSugar $
-		infixE Nothing (varE $ mkName "elem") $ Just $ litE $ stringL cs) c
-	return $ Left [ex]
-showSelection :: SelectionQ -> Q String
-showSelection ehss = do
-	g <- runIO $ newIORef 0
-	ehs <- ehss g
-	intercalate " / " <$>
-		either (mapM showExpression) (mapM showPlainExpression) ehs
+fromTokenChars :: String -> ReadFromQ
+fromTokenChars cs = \g -> do
+--	s <- runIO $ readIORef g
+--	c <- newName $ "c" ++ show s
+	ex <- flip expressionSugar g $ infixE Nothing (varE $ mkName "elem") $
+		Just $ litE $ stringL cs
+	return $ FromSelection $ Left [ex]
 
-{-
-showExpressionQ :: ExpressionQ -> Q String
-showExpressionQ e = e (mkName "c") >>= showExpression
--}
+showSelection :: Selection -> Q String
+showSelection ehs = intercalate " / " <$>
+	either (mapM showExpression) (mapM showPlainExpression) ehs
 
 showExpression :: Expression -> Q String
 showExpression (_, exhs) = let (ex, hs) = exhs in
 	(\e -> unwords e ++ " { " ++ show (ppr hs) ++ " }")
 		<$> mapM (uncurry (<$>) . (((++) . showLA) *** showCheck)) ex
---		<*> hs
 
 showPlainExpression :: PlainExpression -> Q String
 showPlainExpression rfs =
-	unwords <$> mapM (\(ha, rf) -> (showLA ha ++) <$> showReadFrom rf) rfs
+	unwords <$> mapM (\(ha, rf) -> (showLA ha ++) <$> showReadFromQ rf) rfs
 
 showLA :: Lookahead -> String
 showLA Here = ""
@@ -141,7 +145,7 @@ showLA Ahead = "&"
 showLA (NAhead _) = "!"
 
 showCheckQ :: CheckQ -> Q String
-showCheckQ = (>>= showCheck)
+showCheckQ ckq = showCheck =<< ckq =<< runIO (newIORef 0)
 
 showCheck :: Check -> Q String
 showCheck ((pat, _), rf, Just (p, _)) = do
@@ -150,6 +154,9 @@ showCheck ((pat, _), rf, Just (p, _)) = do
 showCheck ((pat, _), rf, Nothing) = do
 	rff <- showReadFrom rf
 	return $ show (ppr pat) ++ ":" ++ rff
+
+showReadFromQ :: ReadFromQ -> Q String
+showReadFromQ rfq = showReadFrom =<< rfq =<< runIO (newIORef 0)
 
 showReadFrom :: ReadFrom -> Q String
 showReadFrom (FromVariable (Just v)) = return v
@@ -185,12 +192,15 @@ selectionType peg tk e = do
 
 plainExpressionType :: PegQ -> TypeQ -> PlainExpression -> TypeQ
 plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
-	foldl appT (tupleT $ length fe) $ map (readFromType peg tk . snd) $ fe
+	foldl appT (tupleT $ length fe) $ map (readFromTypeQ peg tk . snd) $ fe
+
+readFromTypeQ :: PegQ -> TypeQ -> ReadFromQ -> TypeQ
+readFromTypeQ peg tk rfq = readFromType peg tk =<< rfq =<< runIO (newIORef 0)
 
 readFromType :: PegQ -> TypeQ -> ReadFrom -> TypeQ
 readFromType peg tk (FromVariable (Just v)) =
 	definitionType peg tk $ searchDefinition peg v
-readFromType pegq tk (FromSelection sel) = selectionTypeQ pegq tk sel
+readFromType pegq tk (FromSelection sel) = selectionType pegq tk sel
 readFromType _ tk (FromVariable _) = tk
 readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
 	where	lt Optional = conT $ mkName "Maybe"
@@ -204,10 +214,9 @@ searchDefinition pegq name = \g -> do
 		[d] -> d
 		_ -> error "searchDefinition: bad"
 
-nameFromSelection :: SelectionQ -> Q [String]
+nameFromSelection :: Selection -> Q [String]
 nameFromSelection exs = concat <$>
-	(either (mapM nameFromExpression) (mapM nameFromPlainExpression)
-		=<< exs =<< runIO (newIORef 0))
+	(either (mapM nameFromExpression) (mapM nameFromPlainExpression) exs)
 
 {-
 nameFromExpressionQ :: ExpressionQ -> Q [String]
@@ -218,10 +227,13 @@ nameFromExpression :: Expression -> Q [String]
 nameFromExpression = nameFromCheck . snd . head . fst . snd
 
 nameFromPlainExpression :: PlainExpression -> Q [String]
-nameFromPlainExpression = (concat <$>) . mapM (nameFromRF . snd)
+nameFromPlainExpression = (concat <$>) . mapM (nameFromRFQ . snd)
 
 nameFromCheck :: Check -> Q [String]
 nameFromCheck (_, rf, _) = nameFromRF rf
+
+nameFromRFQ :: ReadFromQ -> Q [String]
+nameFromRFQ rfq = nameFromRF =<< rfq =<< runIO (newIORef 0)
 
 nameFromRF :: ReadFrom -> Q [String]
 nameFromRF (FromVariable (Just s)) = return [s]
