@@ -7,7 +7,10 @@ module Text.Papillon.SyntaxTree (
 	Expression,
 	PlainExpression,
 	Check,
+	CheckQ,
 	ReadFrom(..),
+
+	check,
 
 	Lookahead(..),
 	Lists(..),
@@ -17,6 +20,7 @@ module Text.Papillon.SyntaxTree (
 
 	selectionType,
 	showCheck,
+	showCheckQ,
 	nameFromRF,
 
 	PegFile,
@@ -38,17 +42,27 @@ data Lists = List | List1 | Optional deriving Show
 type Peg = [Definition]
 type Definition = (String, Maybe TypeQ, Selection)
 type Selection =  Either [Expression] [PlainExpression]
-type Expression = (Bool, (Name -> ([(Lookahead, Check)], ExpQ)))
+type Expression = (Bool, (Name -> ([(Lookahead, CheckQ)], ExpQ)))
 type PlainExpression = [(Lookahead, ReadFrom)]
-type Check = ((PatQ, String), ReadFrom, Maybe (ExpQ, String))
+type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
+type CheckQ = Q Check
 data ReadFrom
 	= FromVariable (Maybe String)
 	| FromSelection Selection
 	| FromL Lists ReadFrom
 
+check :: (PatQ, String) -> ReadFrom -> Maybe (ExpQ, String) -> CheckQ
+check (pat, pcom) rf (Just (test, tcom)) = do
+	p <- pat
+	t <- test
+	return $ ((p, pcom), rf, Just (t, tcom))
+check (pat, pcom) rf Nothing = do
+	p <- pat
+	return $ ((p, pcom), rf, Nothing)
+
 expressionSugar :: ExpQ -> Expression
-expressionSugar p = (True ,) $ \c -> (, varE c) $ (: []) $ (Here ,) $
-	((varP c, ""), (FromVariable Nothing), Just $ (, "") $ p `appE` varE c)
+expressionSugar p = (True ,) $ \c -> (, varE c) $ (: []) $ (Here ,) $ check
+	(varP c, "") (FromVariable Nothing) (Just $ (, "") $ p `appE` varE c)
 
 fromTokenChars :: String -> ReadFrom
 fromTokenChars cs = FromSelection $ Left $ (: []) $ expressionSugar $
@@ -61,7 +75,7 @@ showSelection ehss = intercalate " / " <$>
 showExpression :: Expression -> Q String
 showExpression (_, exhs) = let (ex, hs) = exhs $ mkName "c" in
 	(\e h -> unwords e ++ " { " ++ show (ppr h) ++ " }")
-		<$> mapM (uncurry (<$>) . (((++) . showLA) *** showCheck)) ex
+		<$> mapM (uncurry (<$>) . (((++) . showLA) *** showCheckQ)) ex
 		<*> hs
 
 showPlainExpression :: PlainExpression -> Q String
@@ -73,16 +87,16 @@ showLA Here = ""
 showLA Ahead = "&"
 showLA (NAhead _) = "!"
 
+showCheckQ :: CheckQ -> Q String
+showCheckQ = (>>= showCheck)
+
 showCheck :: Check -> Q String
 showCheck ((pat, _), rf, Just (p, _)) = do
-	patt <- pat
 	rff <- showReadFrom rf
-	pp <- p
-	return $ show (ppr patt) ++ ":" ++ rff ++ "[" ++ show (ppr pp) ++ "]"
+	return $ show (ppr pat) ++ ":" ++ rff ++ "[" ++ show (ppr p) ++ "]"
 showCheck ((pat, _), rf, Nothing) = do
-	patt <- pat
 	rff <- showReadFrom rf
-	return $ show (ppr patt) ++ ":" ++ rff
+	return $ show (ppr pat) ++ ":" ++ rff
 
 showReadFrom :: ReadFrom -> Q String
 showReadFrom (FromVariable (Just v)) = return v
@@ -121,22 +135,25 @@ readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
 	where	lt Optional = conT $ mkName "Maybe"
 		lt _ = listT
 
-nameFromSelection :: Selection -> [String]
-nameFromSelection exs = concat $
-	either (map nameFromExpression) (map nameFromPlainExpression) exs
+nameFromSelection :: Selection -> Q [String]
+nameFromSelection exs = concat <$>
+	either (mapM nameFromExpression) (mapM nameFromPlainExpression) exs
 
-nameFromExpression :: Expression -> [String]
-nameFromExpression = nameFromCheck . snd . head . fst . ($ mkName "c") . snd
+nameFromExpression :: Expression -> Q [String]
+nameFromExpression = nameFromCheckQ . snd . head . fst . ($ mkName "c") . snd
 
-nameFromPlainExpression :: PlainExpression -> [String]
-nameFromPlainExpression = concatMap (nameFromRF . snd)
+nameFromPlainExpression :: PlainExpression -> Q [String]
+nameFromPlainExpression = (concat <$>) . mapM (nameFromRF . snd)
 
-nameFromCheck :: Check -> [String]
+nameFromCheckQ :: CheckQ -> Q [String]
+nameFromCheckQ = (>>= nameFromCheck)
+
+nameFromCheck :: Check -> Q [String]
 nameFromCheck (_, rf, _) = nameFromRF rf
 
-nameFromRF :: ReadFrom -> [String]
-nameFromRF (FromVariable (Just s)) = [s]
-nameFromRF (FromVariable _) = ["char"]
+nameFromRF :: ReadFrom -> Q [String]
+nameFromRF (FromVariable (Just s)) = return [s]
+nameFromRF (FromVariable _) = return ["char"]
 nameFromRF (FromL _ rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 

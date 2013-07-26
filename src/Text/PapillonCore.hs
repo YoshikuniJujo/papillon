@@ -35,48 +35,53 @@ import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
 
 import Control.Applicative
+import Control.Arrow
 
 import Text.Papillon.Parser
 import Data.IORef
 
 import Text.Papillon.List
 
-isOptionalUsed :: Peg -> Bool
-isOptionalUsed = any isOptionalUsedDefinition
+isOptionalUsed :: Peg -> Q Bool
+isOptionalUsed = (or <$>) . mapM isOptionalUsedDefinition
 
-isOptionalUsedDefinition :: Definition -> Bool
-isOptionalUsedDefinition (_, _, Left sel) = any isOptionalUsedSelection sel
-isOptionalUsedDefinition (_, _, Right sel) = any isOptionalUsedPlainSelection sel
+isOptionalUsedDefinition :: Definition -> Q Bool
+isOptionalUsedDefinition (_, _, Left sel) = or <$> mapM isOptionalUsedSelection sel
+isOptionalUsedDefinition (_, _, Right sel) = or <$> mapM isOptionalUsedPlainSelection sel
 
-isOptionalUsedSelection :: Expression -> Bool
+isOptionalUsedSelection :: Expression -> Q Bool
 isOptionalUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
-	any isOptionalUsedLeafName ex
+	or <$> mapM isOptionalUsedLeafName ex
 
-isOptionalUsedPlainSelection :: PlainExpression -> Bool
-isOptionalUsedPlainSelection rfs = any (isOptionalUsedReadFrom . snd) rfs
+isOptionalUsedPlainSelection :: PlainExpression -> Q Bool
+isOptionalUsedPlainSelection rfs = or <$> mapM (isOptionalUsedReadFrom . snd) rfs
 
-isOptionalUsedLeafName :: (Lookahead, Check) -> Bool
+isOptionalUsedLeafName :: (Lookahead, CheckQ) -> Q Bool
 isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
 
-isOptionalUsedLeafName' :: Check -> Bool
-isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
+isOptionalUsedLeafName' :: CheckQ -> Q Bool
+isOptionalUsedLeafName' ck = do
+	(_, rf, _) <- ck
+	isOptionalUsedReadFrom rf
 
-isOptionalUsedReadFrom :: ReadFrom -> Bool
-isOptionalUsedReadFrom (FromL Optional _) = True
+isOptionalUsedReadFrom :: ReadFrom -> Q Bool
+isOptionalUsedReadFrom (FromL Optional _) = return True
 isOptionalUsedReadFrom (FromSelection (Left sel)) =
-	any isOptionalUsedSelection sel
-isOptionalUsedReadFrom _ = False
+	or <$> mapM isOptionalUsedSelection sel
+isOptionalUsedReadFrom _ = return False
 
-isListUsed :: Peg -> Bool
-isListUsed = any isListUsedDefinition
+isListUsed :: Peg -> Q Bool
+isListUsed = (or <$>) . mapM isListUsedDefinition
 
-isListUsedDefinition :: Definition -> Bool
-isListUsedDefinition (_, _, Left sel) = any isListUsedSelection sel
-isListUsedDefinition (_, _, Right sel) = any isListUsedPlainSelection sel
+isListUsedDefinition :: Definition -> Q Bool
+isListUsedDefinition (_, _, Left sel) = or <$> mapM isListUsedSelection sel
+isListUsedDefinition (_, _, Right sel) = return $ any isListUsedPlainSelection sel
 
-isListUsedSelection :: Expression -> Bool
-isListUsedSelection (_, exhs) = let (ex, _) = exhs $ mkName "c" in
-	any isListUsedLeafName ex
+isListUsedSelection :: Expression -> Q Bool
+isListUsedSelection (_, exhs) = do
+	let (ex, _) = exhs $ mkName "c"
+	e <- mapM (\(x, y) -> (x ,) <$> y) ex
+	return $ any isListUsedLeafName e
 
 isListUsedPlainSelection :: PlainExpression -> Bool
 isListUsedPlainSelection rfs = any (isListUsedReadFrom . snd) rfs
@@ -167,7 +172,7 @@ papillonFile str = case pegFile $ parse str of
 	addApplicative pg = if needApplicative pg
 		then "import Control.Applicative\n"
 		else ""
-	needApplicative pg = isListUsed pg || isOptionalUsed pg
+	needApplicative _pg = True -- isListUsed pg || isOptionalUsed pg
 
 showParseError :: ParseError (Pos String) Derivs -> String
 showParseError pe =
@@ -207,9 +212,9 @@ parseEE glb th pg = do
 		<*> pSomes glb th listN list1N optionalN pNames pg
 	ld <- listDec listN list1N th
 	od <- optionalDec optionalN th
-	return $ Clause [] (NormalB pgenE) $ decs ++
-		(if isListUsed pg then ld else []) ++
-		(if isOptionalUsed pg then od else [])
+	return $ Clause [] (NormalB pgenE) $ decs ++ ld ++ od
+--		(if isListUsed pg then ld else []) ++
+--		(if isOptionalUsed pg then od else [])
 
 dvCharsN, dvPosN :: Name
 dvCharsN = mkName "char"
@@ -351,10 +356,11 @@ processExpressionHs g th lst lst1 opt (_, exhs) = do
 	c <- newNewName g "c"
 	let (expr, ret) = exhs c
 	fmap smartDoE $ do
-		x <- forM expr $ \(ha, nl@(_, rf, _)) -> do
-			nls <- showCheck nl
+		x <- forM expr $ \(ha, nl) -> do
+			nls <- showCheckQ nl
+			(_, rf, _) <- nl
 			processHA g th ha nls (nameFromRF rf) $
-				transLeaf g th lst lst1 opt nl
+				transLeafQ g th lst lst1 opt nl
 		r <- noBindS $ varE (returnN th) `appE` ret
 		return $ concat x ++ [r]
 
@@ -385,15 +391,17 @@ appApply = varE $ mkName "<*>"
 returnEQ :: ExpQ
 returnEQ = varE $ mkName "return"
 
-afterCheck :: Bool -> ExpQ -> Name -> [String] -> String -> StmtQ
-afterCheck th p d ns pc = do
+afterCheck :: Bool -> ExpQ -> Name -> Q [String] -> String -> StmtQ
+afterCheck th p d names pc = do
 	pp <- p
+	ns <- names
 	noBindS $ varE (unlessN th) `appE` p `appE`
 		newThrowQ th (show $ ppr pp) "not match: " d ns pc
 
-beforeMatch :: Bool -> Name -> PatQ -> Name -> [String] -> String -> Q [Stmt]
-beforeMatch th t n d ns nc = do
+beforeMatch :: Bool -> Name -> PatQ -> Name -> Q [String] -> String -> Q [Stmt]
+beforeMatch th t n d names nc = do
 	nn <- n
+	ns <- names
 	sequence [
 		noBindS $ caseE (varE t) [
 			flip (match $ varPToWild n) [] $ normalB $
@@ -428,61 +436,69 @@ transReadFrom g th l l1 o (FromL List rf) = varE l `appE` transReadFrom g th l l
 transReadFrom g th l l1 o (FromL List1 rf) = varE l1 `appE` transReadFrom g th l l1 o rf
 transReadFrom g th l l1 o (FromL Optional rf) = varE o `appE` transReadFrom g th l l1 o rf
 
-mkTDNN :: IORef Int -> PatQ -> Q (Name, Name, Pat)
-mkTDNN g n = do
+mkTD :: IORef Int -> Q (Name, Name)
+mkTD g = do
 	t <- getNewName g "xx"
 	d <- getNewName g "d"
-	nn <- n
-	return (t, d, nn)
+	return (t, d)
+
+transLeafQ :: IORef Int -> Bool -> Name -> Name -> Name -> CheckQ -> Q [Stmt]
+transLeafQ g th lst lst1 opt = (>>= transLeaf g th lst lst1 opt)
 
 transLeaf :: IORef Int -> Bool -> Name -> Name -> Name -> Check -> Q [Stmt]
 transLeaf g th lst lst1 opt ((n, nc), rf, Just (p, pc)) = do
-	(t, d, nn) <- mkTDNN g n
+	(t, d) <- mkTD g
+	let nn = n
 	case nn of
 		WildP -> sequence [
 			bindS (varP d) $ varE $ getN th,
 			bindS wildP $ transReadFrom g th lst lst1 opt rf,
-			afterCheck th p d (nameFromRF rf) pc
+			afterCheck th (return p) d (nameFromRF rf) pc
 		 ]
 		_	| notHaveOthers nn -> do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $ transReadFrom g th lst lst1 opt rf
-				m <- letS [flip (valD n) [] $ normalB $ varE t]
-				c <- afterCheck th p d (nameFromRF rf) pc
+				m <- letS [flip (valD $ return n) [] $
+					normalB $ varE t]
+				c <- afterCheck th (return p) d (nameFromRF rf) pc
 				return $ bd : s : m : [c]
 			| otherwise -> do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $
-						transReadFrom g th lst lst1 opt rf
-				m <- beforeMatch th t n d (nameFromRF rf) nc
-				c <- afterCheck th p d (nameFromRF rf) pc
+					transReadFrom g th lst lst1 opt rf
+				m <- beforeMatch th t (return n) d
+					(nameFromRF rf) nc
+				c <- afterCheck th (return p) d (nameFromRF rf) pc
 				return $ bd : s : m ++ [c]
 	where
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 transLeaf g th lst lst1 opt ((n, nc), rf, Nothing) = do
-	(t, d, nn) <- mkTDNN g n
+	(t, d) <- mkTD g
+	let nn = n
 	case nn of
 		WildP -> sequence [
 			bindS wildP $ transReadFrom g th lst lst1 opt rf,
 			noBindS $ varE (returnN th) `appE` tupE []
 		 ]
 		_	| notHaveOthers nn -> (: []) <$>
-				bindS n (transReadFrom g th lst lst1 opt rf)
+				bindS (return n)
+					(transReadFrom g th lst lst1 opt rf)
 			| otherwise -> do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $
 					transReadFrom g th lst lst1 opt rf
-				m <- beforeMatch th t n d (nameFromRF rf) nc
+				m <- beforeMatch th t (return n) d
+					(nameFromRF rf) nc
 				return $ bd : s : m
 	where
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 
-processHA ::
-	IORef Int -> Bool -> Lookahead -> String -> [String] -> Q [Stmt] -> Q [Stmt]
+processHA :: IORef Int -> Bool -> Lookahead -> String -> Q [String] ->
+	Q [Stmt] -> Q [Stmt]
 processHA _ _ Here _ _ act = act
 processHA g th Ahead _ _ act = do
 	d <- getNewName g "ddd"
@@ -492,13 +508,14 @@ processHA g th Ahead _ _ act = do
 		noBindS $ varE (putN th) `appE` varE d]
 processHA g th (NAhead com) nls names act = do
 	d <- getNewName g "ddd"
+	ns <- names
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ flipMaybeBody th
 			(stringE nls)
 			(stringE com)
 			(varE d)
-			(listE $ map stringE names)
+			(listE $ map stringE ns)
 			(smartDoE <$> act),
 		noBindS $ varE (putN th) `appE` varE d]
 

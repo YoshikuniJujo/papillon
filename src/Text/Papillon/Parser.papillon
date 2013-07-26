@@ -10,10 +10,12 @@ module Text.Papillon.Parser (
 	Expression,
 	PlainExpression,
 	Check,
+	CheckQ,
 	ReadFrom(..),
 
 	selectionType,
 	showCheck,
+	showCheckQ,
 	nameFromRF,
 
 	parse,
@@ -175,27 +177,27 @@ plainReadFromLs :: ReadFrom
 	= rf:readFromLs				{ rf }
 	/ rf:selectCharsLs			{ rf }
 ;
-expression :: [(Lookahead, Check)]
+expression :: [(Lookahead, CheckQ)]
 	= l:nameLeaf_ _:spaces e:expression	{ l : e }
 	/ 					{ [] }
 ;
-nameLeaf_ :: (Lookahead, Check)
+nameLeaf_ :: (Lookahead, CheckQ)
 	= '!' nl:nameLeafNoCom _:spaces com:comForErr?
 						{ (NAhead $ maybe "" id com, nl) }
 	/ '&' nl:nameLeaf			{ (Ahead, nl) }
 	/ nl:nameLeaf				{ (Here, nl) }
 ;
-nameLeaf :: Check
+nameLeaf :: CheckQ
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
-		{ ((n, maybe "" id com), rf, p) }
+		{ check (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces com:comForErr?
-		{ ((n, maybe "" id com), (FromVariable Nothing), Nothing) }
+		{ check (n, maybe "" id com) (FromVariable Nothing) Nothing }
 ;
-nameLeafNoCom :: Check
+nameLeafNoCom :: CheckQ
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
-		{ ((n, maybe "" id com), rf, p) }
+		{ check (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces
-		{ ((n, ""), (FromVariable Nothing), Nothing) }
+		{ check (n, "") (FromVariable Nothing) Nothing }
 ;
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces

@@ -9,10 +9,12 @@ module Text.Papillon.Parser (
 	Expression,
 	PlainExpression,
 	Check,
+	CheckQ,
 	ReadFrom(..),
 
 	selectionType,
 	showCheck,
+	showCheckQ,
 	nameFromRF,
 
 	parse,
@@ -105,13 +107,13 @@ data Derivs
               plainReadFromLs :: (Either (ParseError (Pos String) Derivs)
                                          ((ReadFrom, Derivs))),
               expression :: (Either (ParseError (Pos String) Derivs)
-                                    (([(Lookahead, Check)], Derivs))),
+                                    (([(Lookahead, CheckQ)], Derivs))),
               nameLeaf_ :: (Either (ParseError (Pos String) Derivs)
-                                   (((Lookahead, Check), Derivs))),
+                                   (((Lookahead, CheckQ), Derivs))),
               nameLeaf :: (Either (ParseError (Pos String) Derivs)
-                                  ((Check, Derivs))),
+                                  ((CheckQ, Derivs))),
               nameLeafNoCom :: (Either (ParseError (Pos String) Derivs)
-                                       ((Check, Derivs))),
+                                       ((CheckQ, Derivs))),
               comForErr :: (Either (ParseError (Pos String) Derivs)
                                    ((String, Derivs))),
               leaf :: (Either (ParseError (Pos String) Derivs)
@@ -1146,14 +1148,13 @@ parse = parse0_0 initialPos
                                                   let ':' = xx595_335
                                                   return ()
                                                   (rf, p) <- StateT leaf
-                                                  return ((n, maybe "" id com), rf, p),
+                                                  return (check (n, maybe "" id com) rf p),
                                                do n <- StateT pat1
                                                   _ <- StateT spaces
                                                   return ()
                                                   com <- optional3_331 (StateT comForErr)
-                                                  return ((n, maybe "" id com),
-                                                          (FromVariable Nothing),
-                                                          Nothing)]
+                                                  return (check (n,
+                                                                 maybe "" id com) (FromVariable Nothing) Nothing)]
                 nameLeafNoCom36_111 = foldl1 mplus [do n <- StateT pat1
                                                        _ <- StateT spaces
                                                        return ()
@@ -1166,13 +1167,12 @@ parse = parse0_0 initialPos
                                                        let ':' = xx611_337
                                                        return ()
                                                        (rf, p) <- StateT leaf
-                                                       return ((n, maybe "" id com), rf, p),
+                                                       return (check (n, maybe "" id com) rf p),
                                                     do n <- StateT pat1
                                                        _ <- StateT spaces
                                                        return ()
-                                                       return ((n, ""),
-                                                               (FromVariable Nothing),
-                                                               Nothing)]
+                                                       return (check (n,
+                                                                      "") (FromVariable Nothing) Nothing)]
                 comForErr37_112 = foldl1 mplus [do d620_338 <- get
                                                    xx619_339 <- StateT char
                                                    case xx619_339 of
