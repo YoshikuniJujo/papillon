@@ -9,9 +9,11 @@ module Text.Papillon.SyntaxTree (
 	Check,
 	ReadFrom(..),
 
+	SelectionQ,
 	ExpressionQ,
 	CheckQ,
 
+	normalSelectionQ,
 	expressionQ,
 	check,
 
@@ -43,18 +45,22 @@ data Lookahead = Here | Ahead | NAhead String deriving Eq
 data Lists = List | List1 | Optional deriving Show
 
 type Peg = [Definition]
-type Definition = (String, Maybe TypeQ, Selection)
-type Selection =  Either [ExpressionQ] [PlainExpression]
+type Definition = (String, Maybe TypeQ, SelectionQ)
+type Selection =  Either [Expression] [PlainExpression]
 type Expression = (Bool, ([(Lookahead, Check)], Exp))
 type PlainExpression = [(Lookahead, ReadFrom)]
 type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
 data ReadFrom
 	= FromVariable (Maybe String)
-	| FromSelection Selection
+	| FromSelection SelectionQ
 	| FromL Lists ReadFrom
 
+type SelectionQ = Name -> Q Selection
 type ExpressionQ = Name -> Q Expression
 type CheckQ = Q Check
+
+normalSelectionQ :: [ExpressionQ] -> SelectionQ
+normalSelectionQ expqs = \c -> Left <$> mapM ($ c) expqs
 
 expressionQ :: Bool -> ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
 expressionQ b (ls, ex) = const $ do
@@ -78,15 +84,20 @@ expressionSugar pm c = do
 		(VarP c, "") (FromVariable Nothing) (Just $ (, "") $ p `AppE` VarE c)
 
 fromTokenChars :: String -> ReadFrom
-fromTokenChars cs = FromSelection $ Left $ (: []) $ expressionSugar $
-	infixE Nothing (varE $ mkName "elem") $ Just $ litE $ stringL cs
+fromTokenChars cs = FromSelection $ \c -> do
+	ex <- (expressionSugar $
+		infixE Nothing (varE $ mkName "elem") $ Just $ litE $ stringL cs) c
+	return $ Left [ex]
+showSelection :: SelectionQ -> Q String
+showSelection ehss = do
+	ehs <- ehss $ mkName "c"
+	intercalate " / " <$>
+		either (mapM showExpression) (mapM showPlainExpression) ehs
 
-showSelection :: Selection -> Q String
-showSelection ehss = intercalate " / " <$>
-	either (mapM showExpressionQ) (mapM showPlainExpression) ehss
-
+{-
 showExpressionQ :: ExpressionQ -> Q String
 showExpressionQ e = e (mkName "c") >>= showExpression
+-}
 
 showExpression :: Expression -> Q String
 showExpression (_, exhs) = let (ex, hs) = exhs in
@@ -127,18 +138,27 @@ definitionType :: Peg -> TypeQ -> Definition -> TypeQ
 definitionType _ _ (_, Just typ, _) = typ
 definitionType peg tk (_, _, sel) = selectionType peg tk sel
 
-selectionType :: Peg -> TypeQ -> Selection -> TypeQ
-selectionType peg tk (Right ex) =
-	foldr (\x y -> (eitherT `appT` x) `appT` y) (last types) (init types)
+selectionType :: Peg -> TypeQ -> SelectionQ -> TypeQ
+{-
+selectionType peg tk sel = do
+	Right ex <- sel $ mkName "c"
+	foldr (\x y -> (eitherT `appT` x) `appT` y)
+		(last $ types ex) (init $ types ex)
 	where
 	eitherT = conT $ mkName "Either"
-	types = map (plainExpressionType peg tk) ex
-selectionType _ tk (Left [em]) = do
-	e <- em $ mkName "c"
+	types e = map (plainExpressionType peg tk) e
+-}
+selectionType peg tk sel = do
+	e <- sel $ mkName "c"
 	case e of
-		(True, _) ->  tk
+		Right ex -> foldr (\x y -> (eitherT `appT` x) `appT` y)
+			(last $ types ex) (init $ types ex)
+		Left [(True, _)] ->  tk
 		_ -> error "selectionType: can't get type"
-selectionType _ _ _ = error "selectionType: can't get type"
+	where
+	eitherT = conT $ mkName "Either"
+	types e = map (plainExpressionType peg tk) e
+-- selectionType _ _ _ = error "selectionType: can't get type"
 
 plainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
 plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
@@ -155,12 +175,15 @@ readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
 	where	lt Optional = conT $ mkName "Maybe"
 		lt _ = listT
 
-nameFromSelection :: Selection -> Q [String]
+nameFromSelection :: SelectionQ -> Q [String]
 nameFromSelection exs = concat <$>
-	either (mapM nameFromExpressionQ) (mapM nameFromPlainExpression) exs
+	(either (mapM nameFromExpression) (mapM nameFromPlainExpression)
+		=<< exs (mkName "c"))
 
+{-
 nameFromExpressionQ :: ExpressionQ -> Q [String]
 nameFromExpressionQ e = e (mkName "c") >>= nameFromExpression
+-}
 
 nameFromExpression :: Expression -> Q [String]
 nameFromExpression = nameFromCheck . snd . head . fst . snd

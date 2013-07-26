@@ -46,12 +46,15 @@ isOptionalUsed :: Peg -> Q Bool
 isOptionalUsed = (or <$>) . mapM isOptionalUsedDefinition
 
 isOptionalUsedDefinition :: Definition -> Q Bool
-isOptionalUsedDefinition (_, _, Left sel) = or <$> mapM isOptionalUsedSelection sel
-isOptionalUsedDefinition (_, _, Right sel) = or <$> mapM isOptionalUsedPlainSelection sel
+isOptionalUsedDefinition (_, _, selq) = do
+	esel <- selq $ mkName "c"
+	case esel of
+		Left sel -> or <$> mapM isOptionalUsedSelection sel
+		Right sel -> or <$> mapM isOptionalUsedPlainSelection sel
 
-isOptionalUsedSelection :: ExpressionQ -> Q Bool
+isOptionalUsedSelection :: Expression -> Q Bool
 isOptionalUsedSelection exhs = do
-	(_, (ex, _)) <- exhs $ mkName "c"
+	let (_, (ex, _)) = exhs
 	or <$> mapM isOptionalUsedLeafName ex
 
 isOptionalUsedPlainSelection :: PlainExpression -> Q Bool
@@ -65,20 +68,27 @@ isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
 
 isOptionalUsedReadFrom :: ReadFrom -> Q Bool
 isOptionalUsedReadFrom (FromL Optional _) = return True
-isOptionalUsedReadFrom (FromSelection (Left sel)) =
-	or <$> mapM isOptionalUsedSelection sel
+isOptionalUsedReadFrom (FromSelection selq) = do
+	esel <- selq $ mkName "c"
+	case esel of
+		Left sel -> or <$> mapM isOptionalUsedSelection sel
+		Right _ -> return False
 isOptionalUsedReadFrom _ = return False
 
 isListUsed :: Peg -> Q Bool
 isListUsed = (or <$>) . mapM isListUsedDefinition
 
 isListUsedDefinition :: Definition -> Q Bool
-isListUsedDefinition (_, _, Left sel) = or <$> mapM isListUsedSelection sel
-isListUsedDefinition (_, _, Right sel) = return $ any isListUsedPlainSelection sel
+isListUsedDefinition (_, _, selq) = do
+	esel <- selq $ mkName "c"
+	case esel of
+		Left sel -> or <$> mapM isListUsedSelection sel
+		Right sel -> return $ any isListUsedPlainSelection sel
+-- isListUsedDefinition (_, _, Right sel) = return $ any isListUsedPlainSelection sel
 
-isListUsedSelection :: ExpressionQ -> Q Bool
+isListUsedSelection :: Expression -> Q Bool
 isListUsedSelection exhs = do
-	(_, (ex, _)) <- exhs $ mkName "c"
+	let (_, (ex, _)) = exhs
 	return $ any isListUsedLeafName ex
 
 isListUsedPlainSelection :: PlainExpression -> Bool
@@ -326,16 +336,26 @@ pSomes1 :: IORef Int -> Bool -> Name -> Name -> Name -> Name -> Definition -> De
 pSomes1 g th lst lst1 opt pname (_, _, sel) =
 	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel g th lst lst1 opt sel
 
-pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
-pSomes1Sel g th lst lst1 opt (Left sel) =
-	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
-		listE (map (processExpressionHs g th lst lst1 opt) sel)
+pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> SelectionQ -> ExpQ
+pSomes1Sel g th lst lst1 opt selq = do
+	c <- newNewName g "c"
+	esel <- selq c
+	case esel of
+		Left sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
+			listE (map (processExpressionHs g th lst lst1 opt) sel)
+		Right sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
+			listE (zipWith
+				(flip (putLeftRight $ length sel) .
+					processPlainExpressionHs g th lst lst1 opt)
+				sel [0..])
+{-
 pSomes1Sel g th lst lst1 opt (Right sel) =
 	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 		listE (zipWith
 			(flip (putLeftRight $ length sel) .
 				processPlainExpressionHs g th lst lst1 opt)
 			sel [0..])
+-}
 
 putLeftRight :: Int -> Int -> ExpQ -> ExpQ
 putLeftRight 1 0 ex = ex
@@ -349,10 +369,9 @@ rightE = varE (mkName "fmap") `appE` conE (mkName "Right")
 leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
 
 processExpressionHs ::
-	IORef Int -> Bool -> Name -> Name -> Name -> ExpressionQ -> ExpQ
+	IORef Int -> Bool -> Name -> Name -> Name -> Expression -> ExpQ
 processExpressionHs g th lst lst1 opt exhs = do
-	c <- newNewName g "c"
-	(_, (expr, ret)) <- exhs c
+	let (_, (expr, ret)) = exhs
 	fmap smartDoE $ do
 		x <- forM expr $ \(ha, nl) -> do
 			let	nls = showCheck nl

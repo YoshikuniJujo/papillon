@@ -12,6 +12,7 @@ module Text.Papillon.Parser (
 	Check,
 	ReadFrom(..),
 
+	SelectionQ,
 	ExpressionQ,
 	CheckQ,
 
@@ -142,11 +143,12 @@ definition :: Definition
 		_:spaces sel:selection _:spaces ';'
 						{ (v, Just t, sel) }
 	/ v:variable _:spaces '<' '-' _:spaces
-		sel:plainSelection _:spaces ';'	{ (v, Nothing, Right sel) }
+		sel:plainSelection _:spaces ';'	{ (v, Nothing,
+							const $ return $ Right sel) }
 ;
-selection :: Selection
-	= s:normalSelection			{ Left s }
-	/ s:plainSelection			{ Right s }
+selection :: SelectionQ
+	= s:normalSelection			{ normalSelectionQ s }
+	/ s:plainSelection			{ const $ return $ Right s }
 ;
 normalSelection :: [ExpressionQ]
 	= ex:expressionHs _:spaces '/' _:spaces sel:normalSelection
@@ -270,7 +272,8 @@ readFromLs :: ReadFrom
 readFrom :: ReadFrom
 	= v:variable				{ FromVariable $ Just v }
 	/ '(' s:selection ')'			{ FromSelection s }
-	/ e:expressionHsSugar			{ FromSelection $ Left [e] }
+	/ e:expressionHsSugar			{ FromSelection $
+							normalSelectionQ [e] }
 ;
 selectCharsLs :: ReadFrom
 	= rf:selectChars '*'			{ FromL List rf }

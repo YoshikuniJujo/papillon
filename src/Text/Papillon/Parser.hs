@@ -11,6 +11,7 @@ module Text.Papillon.Parser (
 	Check,
 	ReadFrom(..),
 
+	SelectionQ,
 	ExpressionQ,
 	CheckQ,
 
@@ -93,7 +94,7 @@ data Derivs
               definition :: (Either (ParseError (Pos String) Derivs)
                                     ((Definition, Derivs))),
               selection :: (Either (ParseError (Pos String) Derivs)
-                                   ((Selection, Derivs))),
+                                   ((SelectionQ, Derivs))),
               normalSelection :: (Either (ParseError (Pos String) Derivs)
                                          (([ExpressionQ], Derivs))),
               plainSelection :: (Either (ParseError (Pos String) Derivs)
@@ -998,11 +999,11 @@ parse = parse0_0 initialPos
                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d494_310 ["char"])
                                                    let ';' = xx493_311
                                                    return ()
-                                                   return (v, Nothing, Right sel)]
+                                                   return (v, Nothing, const $ return $ Right sel)]
                 selection25_100 = foldl1 mplus [do s <- StateT normalSelection
-                                                   return (Left s),
+                                                   return (normalSelectionQ s),
                                                 do s <- StateT plainSelection
-                                                   return (Right s)]
+                                                   return (const $ return $ Right s)]
                 normalSelection26_101 = foldl1 mplus [do ex <- StateT expressionHs
                                                          _ <- StateT spaces
                                                          return ()
@@ -1540,7 +1541,7 @@ parse = parse0_0 initialPos
                                                   return ()
                                                   return (FromSelection s),
                                                do e <- StateT expressionHsSugar
-                                                  return (FromSelection $ Left [e])]
+                                                  return (FromSelection $ normalSelectionQ [e])]
                 selectCharsLs50_125 = foldl1 mplus [do rf <- StateT selectChars
                                                        d804_414 <- get
                                                        xx803_415 <- StateT char
