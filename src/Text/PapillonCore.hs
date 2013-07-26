@@ -47,7 +47,7 @@ isOptionalUsed = (or <$>) . mapM isOptionalUsedDefinition
 
 isOptionalUsedDefinition :: Definition -> Q Bool
 isOptionalUsedDefinition (_, _, selq) = do
-	esel <- selq $ mkName "c"
+	esel <- selq =<< runIO (newIORef 0)
 	case esel of
 		Left sel -> or <$> mapM isOptionalUsedSelection sel
 		Right sel -> or <$> mapM isOptionalUsedPlainSelection sel
@@ -69,7 +69,7 @@ isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
 isOptionalUsedReadFrom :: ReadFrom -> Q Bool
 isOptionalUsedReadFrom (FromL Optional _) = return True
 isOptionalUsedReadFrom (FromSelection selq) = do
-	esel <- selq $ mkName "c"
+	esel <- selq =<< runIO (newIORef 0)
 	case esel of
 		Left sel -> or <$> mapM isOptionalUsedSelection sel
 		Right _ -> return False
@@ -80,7 +80,7 @@ isListUsed = (or <$>) . mapM isListUsedDefinition
 
 isListUsedDefinition :: Definition -> Q Bool
 isListUsedDefinition (_, _, selq) = do
-	esel <- selq $ mkName "c"
+	esel <- selq =<< runIO (newIORef 0)
 	case esel of
 		Left sel -> or <$> mapM isListUsedSelection sel
 		Right sel -> return $ any isListUsedPlainSelection sel
@@ -338,8 +338,7 @@ pSomes1 g th lst lst1 opt pname (_, _, sel) =
 
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> SelectionQ -> ExpQ
 pSomes1Sel g th lst lst1 opt selq = do
-	c <- newNewName g "c"
-	esel <- selq c
+	esel <- selq g
 	case esel of
 		Left sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 			listE (map (processExpressionHs g th lst lst1 opt) sel)

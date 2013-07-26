@@ -37,9 +37,11 @@ module Text.Papillon.SyntaxTree (
 ) where
 
 import Language.Haskell.TH
+import Control.Monad
 import Control.Applicative
 import Control.Arrow
 import Data.List
+import Data.IORef
 
 data Lookahead = Here | Ahead | NAhead String deriving Eq
 data Lists = List | List1 | Optional deriving Show
@@ -55,12 +57,19 @@ data ReadFrom
 	| FromSelection SelectionQ
 	| FromL Lists ReadFrom
 
-type SelectionQ = Name -> Q Selection
+type SelectionQ = IORef Int -> Q Selection
 type ExpressionQ = Name -> Q Expression
 type CheckQ = Q Check
 
 normalSelectionQ :: [ExpressionQ] -> SelectionQ
-normalSelectionQ expqs = \c -> Left <$> mapM ($ c) expqs
+normalSelectionQ expqs = \g -> (Left <$>) $ forM expqs $ \e -> do
+	c <- newNewName g "c"
+	e c
+
+newNewName :: IORef Int -> String -> Q Name
+newNewName g n = do
+	s <- runIO $ readIORef g
+	newName $ n ++ show s
 
 expressionQ :: Bool -> ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
 expressionQ b (ls, ex) = const $ do
@@ -84,13 +93,16 @@ expressionSugar pm c = do
 		(VarP c, "") (FromVariable Nothing) (Just $ (, "") $ p `AppE` VarE c)
 
 fromTokenChars :: String -> ReadFrom
-fromTokenChars cs = FromSelection $ \c -> do
+fromTokenChars cs = FromSelection $ \g -> do
+	s <- runIO $ readIORef g
+	c <- newName $ "c" ++ show s
 	ex <- (expressionSugar $
 		infixE Nothing (varE $ mkName "elem") $ Just $ litE $ stringL cs) c
 	return $ Left [ex]
 showSelection :: SelectionQ -> Q String
 showSelection ehss = do
-	ehs <- ehss $ mkName "c"
+	g <- runIO $ newIORef 0
+	ehs <- ehss g
 	intercalate " / " <$>
 		either (mapM showExpression) (mapM showPlainExpression) ehs
 
@@ -149,7 +161,7 @@ selectionType peg tk sel = do
 	types e = map (plainExpressionType peg tk) e
 -}
 selectionType peg tk sel = do
-	e <- sel $ mkName "c"
+	e <- sel =<< runIO (newIORef 0)
 	case e of
 		Right ex -> foldr (\x y -> (eitherT `appT` x) `appT` y)
 			(last $ types ex) (init $ types ex)
@@ -178,7 +190,7 @@ readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
 nameFromSelection :: SelectionQ -> Q [String]
 nameFromSelection exs = concat <$>
 	(either (mapM nameFromExpression) (mapM nameFromPlainExpression)
-		=<< exs (mkName "c"))
+		=<< exs =<< runIO (newIORef 0))
 
 {-
 nameFromExpressionQ :: ExpressionQ -> Q [String]
