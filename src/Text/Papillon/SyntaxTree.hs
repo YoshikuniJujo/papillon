@@ -9,10 +9,12 @@ module Text.Papillon.SyntaxTree (
 	Check,
 	ReadFrom(..),
 
+	DefinitionQ,
 	SelectionQ,
 	ExpressionQ,
 	CheckQ,
 
+	definitionQ,
 	normalSelectionQ,
 	expressionQ,
 	check,
@@ -41,13 +43,23 @@ import Control.Monad
 import Control.Applicative
 import Control.Arrow
 import Data.List
+-- import Data.Maybe
 import Data.IORef
 
 data Lookahead = Here | Ahead | NAhead String deriving Eq
 data Lists = List | List1 | Optional deriving Show
 
-type Peg = [Definition]
-type Definition = (String, Maybe TypeQ, SelectionQ)
+type Peg = [DefinitionQ]
+type Definition = (String, Maybe Type, Selection)
+
+definitionQ :: String -> Maybe TypeQ -> SelectionQ -> DefinitionQ
+definitionQ name typq selq = \g -> do
+	sel <- selq g
+	typ <- case typq of
+		Just t -> Just <$> t
+		_ -> return Nothing
+	return $ (name, typ, sel)
+
 type Selection =  Either [Expression] [PlainExpression]
 type Expression = (Bool, ([(Lookahead, Check)], Exp))
 type PlainExpression = [(Lookahead, ReadFrom)]
@@ -57,6 +69,7 @@ data ReadFrom
 	| FromSelection SelectionQ
 	| FromL Lists ReadFrom
 
+type DefinitionQ = IORef Int -> Q Definition
 type SelectionQ = IORef Int -> Q Selection
 type ExpressionQ = Name -> Q Expression
 type CheckQ = Q Check
@@ -146,11 +159,19 @@ showReadFrom (FromL l rf) = (++ sl l) <$> showReadFrom rf
 		sl Optional = "?"
 showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
 
-definitionType :: Peg -> TypeQ -> Definition -> TypeQ
-definitionType _ _ (_, Just typ, _) = typ
-definitionType peg tk (_, _, sel) = selectionType peg tk sel
+definitionType :: Peg -> TypeQ -> DefinitionQ -> TypeQ
+definitionType peg tk defq = do
+	def <- defq =<< runIO (newIORef 0)
+	case def of
+		(_, Just typ, _) -> return typ
+		(_, _, sel) -> selectionType peg tk sel
 
-selectionType :: Peg -> TypeQ -> SelectionQ -> TypeQ
+selectionTypeQ :: Peg -> TypeQ -> SelectionQ -> TypeQ
+selectionTypeQ peg tk sel = do
+	e <- sel =<< runIO (newIORef 0)
+	selectionType peg tk e
+
+selectionType :: Peg -> TypeQ -> Selection -> TypeQ
 {-
 selectionType peg tk sel = do
 	Right ex <- sel $ mkName "c"
@@ -160,8 +181,8 @@ selectionType peg tk sel = do
 	eitherT = conT $ mkName "Either"
 	types e = map (plainExpressionType peg tk) e
 -}
-selectionType peg tk sel = do
-	e <- sel =<< runIO (newIORef 0)
+selectionType peg tk e = do
+--	e <- sel =<< runIO (newIORef 0)
 	case e of
 		Right ex -> foldr (\x y -> (eitherT `appT` x) `appT` y)
 			(last $ types ex) (init $ types ex)
@@ -169,7 +190,7 @@ selectionType peg tk sel = do
 		_ -> error "selectionType: can't get type"
 	where
 	eitherT = conT $ mkName "Either"
-	types e = map (plainExpressionType peg tk) e
+	types e' = map (plainExpressionType peg tk) e'
 -- selectionType _ _ _ = error "selectionType: can't get type"
 
 plainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
@@ -178,14 +199,20 @@ plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
 
 readFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
 readFromType peg tk (FromVariable (Just v)) =
-	definitionType peg tk $ case filter ((== v) . \(n, _, _) -> n) peg of
-		[d] -> d
-		_ -> error "searchDefinition: bad"
-readFromType peg tk (FromSelection sel) = selectionType peg tk sel
+	definitionType peg tk $ searchDefinition peg v
+readFromType peg tk (FromSelection sel) = selectionTypeQ peg tk sel
 readFromType _ tk (FromVariable _) = tk
 readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
 	where	lt Optional = conT $ mkName "Maybe"
 		lt _ = listT
+
+searchDefinition :: Peg -> String -> DefinitionQ
+searchDefinition peg name = \g -> do
+	ds <- flip filterM peg $
+		((== name) . (\(n, _, _) -> n) <$>) . ($ g)
+	case ds of
+		[d] -> d g
+		_ -> error "searchDefinition: bad"
 
 nameFromSelection :: SelectionQ -> Q [String]
 nameFromSelection exs = concat <$>

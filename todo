@@ -2,6 +2,9 @@
 * 次にやること           *
 **************************
 
+* Peg を PegQ にする
+* ReadFrom も ReadFromQ のようにできるかな
+
 * Peg を PegQ のようにしようかな
 	そうすると ppr が作りやすいのと、deriving Show ができる。
 	ただし、その場合、パターンマッチの問題 (つまり do と case 文が必要になる)
@@ -22,6 +25,9 @@
 	type ExpressionQ = IORef Int -> Q Expression
 	expression :: Bool -> [LeafQ] -> ExpressionQ
 	のほうがいいか。
+
+* list や optional 関係の warning を消す
+	isListUsed 等をちゃんと動くようにする
 
 * SyntaxTree のリファクタリング
 	fromTokenChars の名前の変更
@@ -216,6 +222,9 @@
 		しかし、Selection は ReadFrom の FromSelection で使われているので、
 		分けないほうが良いと考えることもできる。
 		どうするか。
+
+* Traversable の sequence を使えるところがある
+	definitionQ の fromMaybe を使っているところ
 
 ******************************
 *  機能面における細かい修正  *

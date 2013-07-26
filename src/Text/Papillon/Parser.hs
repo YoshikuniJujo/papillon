@@ -11,6 +11,7 @@ module Text.Papillon.Parser (
 	Check,
 	ReadFrom(..),
 
+	DefinitionQ,
 	SelectionQ,
 	ExpressionQ,
 	CheckQ,
@@ -92,7 +93,7 @@ data Derivs
                                     ((String, Derivs))),
               peg_ :: (Either (ParseError (Pos String) Derivs) ((Peg, Derivs))),
               definition :: (Either (ParseError (Pos String) Derivs)
-                                    ((Definition, Derivs))),
+                                    ((DefinitionQ, Derivs))),
               selection :: (Either (ParseError (Pos String) Derivs)
                                    ((SelectionQ, Derivs))),
               normalSelection :: (Either (ParseError (Pos String) Derivs)
@@ -969,7 +970,7 @@ parse = parse0_0 initialPos
                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d478_304 ["char"])
                                                    let ';' = xx477_305
                                                    return ()
-                                                   return (v, Just t, sel),
+                                                   return (definitionQ v (Just t) sel),
                                                 do v <- StateT variable
                                                    _ <- StateT spaces
                                                    return ()
@@ -999,7 +1000,7 @@ parse = parse0_0 initialPos
                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d494_310 ["char"])
                                                    let ';' = xx493_311
                                                    return ()
-                                                   return (v, Nothing, const $ return $ Right sel)]
+                                                   return (definitionQ v Nothing $ const $ return $ Right sel)]
                 selection25_100 = foldl1 mplus [do s <- StateT normalSelection
                                                    return (normalSelectionQ s),
                                                 do s <- StateT plainSelection

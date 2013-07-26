@@ -12,6 +12,7 @@ module Text.Papillon.Parser (
 	Check,
 	ReadFrom(..),
 
+	DefinitionQ,
 	SelectionQ,
 	ExpressionQ,
 	CheckQ,
@@ -137,14 +138,14 @@ peg_ :: Peg
 	= _:spaces d:definition p:peg_		{ d : p }
 	/ 					{ [] }
 ;
-definition :: Definition
+definition :: DefinitionQ
 	= v:variable _:spaces ':' ':'
 		_:spaces t:hsTypeArr _:spaces '='
 		_:spaces sel:selection _:spaces ';'
-						{ (v, Just t, sel) }
+						{ definitionQ v (Just t) sel }
 	/ v:variable _:spaces '<' '-' _:spaces
-		sel:plainSelection _:spaces ';'	{ (v, Nothing,
-							const $ return $ Right sel) }
+		sel:plainSelection _:spaces ';'	{ definitionQ v Nothing $
+							const $ return $ Right sel }
 ;
 selection :: SelectionQ
 	= s:normalSelection			{ normalSelectionQ s }

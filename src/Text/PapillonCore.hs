@@ -45,9 +45,10 @@ import Text.Papillon.List
 isOptionalUsed :: Peg -> Q Bool
 isOptionalUsed = (or <$>) . mapM isOptionalUsedDefinition
 
-isOptionalUsedDefinition :: Definition -> Q Bool
-isOptionalUsedDefinition (_, _, selq) = do
-	esel <- selq =<< runIO (newIORef 0)
+isOptionalUsedDefinition :: DefinitionQ -> Q Bool
+isOptionalUsedDefinition def = do
+	(_, _, esel) <- def =<< runIO (newIORef 0)
+--	esel <- selq =<< runIO (newIORef 0)
 	case esel of
 		Left sel -> or <$> mapM isOptionalUsedSelection sel
 		Right sel -> or <$> mapM isOptionalUsedPlainSelection sel
@@ -78,9 +79,10 @@ isOptionalUsedReadFrom _ = return False
 isListUsed :: Peg -> Q Bool
 isListUsed = (or <$>) . mapM isListUsedDefinition
 
-isListUsedDefinition :: Definition -> Q Bool
-isListUsedDefinition (_, _, selq) = do
-	esel <- selq =<< runIO (newIORef 0)
+isListUsedDefinition :: DefinitionQ -> Q Bool
+isListUsedDefinition def = do
+	(_, _, esel) <- def =<< runIO (newIORef 0)
+--	esel <- selq =<< runIO (newIORef 0)
 	case esel of
 		Left sel -> or <$> mapM isListUsedSelection sel
 		Right sel -> return $ any isListUsedPlainSelection sel
@@ -212,7 +214,7 @@ parseEE glb th pg = do
 	listN <- newNewName glb "list"
 	list1N <- newNewName glb "list1"
 	optionalN <- newNewName glb "optional"
-	pNames <- mapM (newNewName glb . getDefinitionName) pg
+	pNames <- mapM ((newNewName glb =<<) . getDefinitionName) pg
 
 	pgenE <- varE pgn `appE` varE (mkName "initialPos")
 	decs <- (:)
@@ -238,12 +240,21 @@ derivs _ src tkn pegg = dataD (cxt []) (mkName "Derivs") [] [
 	 ]
  ] []
 
-derivs1 :: Peg -> TypeQ -> TypeQ -> Definition -> VarStrictTypeQ
+derivs1 :: Peg -> TypeQ -> TypeQ -> DefinitionQ -> VarStrictTypeQ
+derivs1 pg src tkn defq = do
+	(name, mtyp, sel) <- defq =<< runIO (newIORef 0)
+	case mtyp of
+		Just typ -> varStrictType (mkName name) $
+			strictType notStrict $ resultT src (return typ)
+		_ -> varStrictType (mkName name) $ strictType notStrict $
+			resultT src $ selectionType pg tkn sel
+{-
 derivs1 _ src _ (name, Just typ, _) =
 	varStrictType (mkName name) $ strictType notStrict $ resultT src typ
 derivs1 pg src tkn (name, _, sel) =
 	varStrictType (mkName name) $ strictType notStrict $ resultT src $
 		selectionType pg tkn sel
+-}
 
 throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
 throwErrorPackratMBody th code msg com d ns = infixApp
@@ -279,13 +290,15 @@ newNewName g base = do
 	newName (base ++ show n)
 parseE :: IORef Int -> Bool -> Name -> [Name] -> Peg -> ClauseQ
 parseE g th pgn pnames pegg = do
-	tmps <- mapM (newNewName g) names
-	parseE' g th pgn tmps pnames $ map mkName names
+	tmps <- mapM (newNewName g) =<< names
+	parseE' g th pgn tmps pnames . map mkName =<< names
 	where
-	names = map getDefinitionName pegg
+	names = mapM getDefinitionName pegg
 
-getDefinitionName :: Definition -> String
-getDefinitionName (n, _, _) = n
+getDefinitionName :: DefinitionQ -> Q String
+getDefinitionName def = do
+	(n, _, _) <- def =<< runIO (newIORef 0)
+	return n
 
 parseE' :: IORef Int -> Bool -> Name -> [Name] -> [Name] -> [Name] -> ClauseQ
 parseE' g th pgn tmps pnames names = do
@@ -332,13 +345,20 @@ parseE1 th tmp name _ = flip (valD $ varP tmp) [] $ normalB $
 pSomes :: IORef Int -> Bool -> Name -> Name -> Name -> [Name] -> Peg -> DecsQ
 pSomes g th lst lst1 opt = zipWithM $ pSomes1 g th lst lst1 opt
 
-pSomes1 :: IORef Int -> Bool -> Name -> Name -> Name -> Name -> Definition -> DecQ
-pSomes1 g th lst lst1 opt pname (_, _, sel) =
-	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel g th lst lst1 opt sel
+pSomes1 :: IORef Int -> Bool -> Name -> Name -> Name -> Name -> DefinitionQ -> DecQ
+pSomes1 g th lst lst1 opt pname def = do
+	(_, _, sel) <- def g
+	flip (valD $ varP pname) [] $ normalB $
+		pSomes1Sel g th lst lst1 opt sel
 
-pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> SelectionQ -> ExpQ
-pSomes1Sel g th lst lst1 opt selq = do
+pSomes1SelQ :: IORef Int -> Bool -> Name -> Name -> Name -> SelectionQ -> ExpQ
+pSomes1SelQ g th lst lst1 opt selq = do
 	esel <- selq g
+	pSomes1Sel g th lst lst1 opt esel
+
+pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
+pSomes1Sel g th lst lst1 opt esel = do
+--	esel <- selq g
 	case esel of
 		Left sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 			listE (map (processExpressionHs g th lst lst1 opt) sel)
@@ -447,7 +467,7 @@ transReadFrom _ th _ _ _ (FromVariable Nothing) =
 	conE (stateTN' th) `appE` varE dvCharsN
 transReadFrom _ th _ _ _ (FromVariable (Just var)) =
 	conE (stateTN' th) `appE` varE (mkName var)
-transReadFrom g th l l1 o (FromSelection sel) = pSomes1Sel g th l l1 o sel
+transReadFrom g th l l1 o (FromSelection sel) = pSomes1SelQ g th l l1 o sel
 transReadFrom g th l l1 o (FromL List rf) = varE l `appE` transReadFrom g th l l1 o rf
 transReadFrom g th l l1 o (FromL List1 rf) = varE l1 `appE` transReadFrom g th l l1 o rf
 transReadFrom g th l l1 o (FromL Optional rf) = varE o `appE` transReadFrom g th l l1 o rf
