@@ -2,31 +2,12 @@
 * 次にやること           *
 **************************
 
-* Peg を PegQ のようにしようかな
-	そうすると ppr が作りやすいのと、deriving Show ができる。
-	ただし、その場合、パターンマッチの問題 (つまり do と case 文が必要になる)
-	と、組み立て時の問題があるか。
-	type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
-	type CheckQ = Q Check
-	check :: (PatQ, String) -> ReadFrom -> Maybe (ExpQ, String) -> CheckQ
-	といった感じか。また、
-	type Expression = (Bool, (Name -> ([(Lookahead, Check)], Exp)))
-	type ExpressionQ = Q Expression
-	となるか。これは、
-	type Expression = Q (Bool, (IORef Int -> ([(Lookahead, Check)], Exp)))
-	ともできるな。さらには、
-	type Leaf = (Lookahead, Check)
-	type LeafQ = IORef Int -> Q (Lookahead, Check)
-	leaf :: Lookahead -> CheckQ -> LeafQ
-	type Expression = (Bool, ([Leaf], Exp)))
-	type ExpressionQ = IORef Int -> Q Expression
-	expression :: Bool -> [LeafQ] -> ExpressionQ
-	のほうがいいか。
-
 * list や optional 関係の warning を消す
 	isListUsed 等をちゃんと動くようにする
 
 * そしたら separateQ を master に merge して消す
+
+* show... の代わりに ppr を使うようにする
 
 * SyntaxTree のリファクタリング
 	fromTokenChars の名前の変更
