@@ -35,7 +35,6 @@ import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
 
 import Control.Applicative
--- import Control.Arrow
 
 import Text.Papillon.Parser
 import Data.IORef
@@ -50,7 +49,6 @@ isOptionalUsed pegq = do
 isOptionalUsedDefinition :: DefinitionQ -> Q Bool
 isOptionalUsedDefinition def = do
 	(_, _, esel) <- def =<< runIO (newIORef 0)
---	esel <- selq =<< runIO (newIORef 0)
 	case esel of
 		Left sel -> or <$> mapM isOptionalUsedSelection sel
 		Right sel -> or <$> mapM isOptionalUsedPlainSelection sel
@@ -69,9 +67,6 @@ isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
 isOptionalUsedLeafName' :: Check -> Q Bool
 isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
 
-isOptionalUsedReadFromQ :: ReadFromQ -> Q Bool
-isOptionalUsedReadFromQ rfq = isOptionalUsedReadFrom =<< rfq =<< runIO (newIORef 0)
-
 isOptionalUsedReadFrom :: ReadFrom -> Q Bool
 isOptionalUsedReadFrom (FromL Optional _) = return True
 isOptionalUsedReadFrom (FromSelection esel) = do
@@ -88,11 +83,9 @@ isListUsed pegq = do
 isListUsedDefinition :: DefinitionQ -> Q Bool
 isListUsedDefinition def = do
 	(_, _, esel) <- def =<< runIO (newIORef 0)
---	esel <- selq =<< runIO (newIORef 0)
 	case esel of
 		Left sel -> or <$> mapM isListUsedSelection sel
 		Right sel -> or <$> mapM isListUsedPlainSelection sel
--- isListUsedDefinition (_, _, Right sel) = return $ any isListUsedPlainSelection sel
 
 isListUsedSelection :: Expression -> Q Bool
 isListUsedSelection exhs = do
@@ -109,9 +102,6 @@ isListUsedLeafName' :: Check -> Bool
 isListUsedLeafName' (_, (FromL List _), _) = True
 isListUsedLeafName' (_, (FromL List1 _), _) = True
 isListUsedLeafName' _ = False
-
-isListUsedReadFromQ :: ReadFromQ -> Q Bool
-isListUsedReadFromQ rfq = isListUsedReadFrom <$> (rfq =<< runIO (newIORef 0))
 
 isListUsedReadFrom :: ReadFrom -> Bool
 isListUsedReadFrom (FromL List _) = True
@@ -187,25 +177,20 @@ papillonCore str = case peg $ parse str of
 
 papillonFile :: String -> Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
 papillonFile str = case pegFile $ parse str of
---	Right ((prgm, mn, ppp, pp, stpegq, atp), _) ->
 	Right (pegfileq, _) -> do
 		g <- runIO $ newIORef 0
 		(prgm, mn, ppp, pp, (src, parsed), atp) <- pegfileq g
-		return (prgm, mn, ppp, "import Control.Applicative\n" ++ pp,
-			decs src parsed, atp)
+		lu <- isListUsed (const $ return parsed)
+		ou <- isOptionalUsed (const $ return parsed)
+		let addApplicative =
+			if lu || ou then "import Control.Applicative\n" else ""
+		return (prgm, mn, ppp, addApplicative ++ pp, decs src parsed, atp)
 		where
 		decs src parsed = do
---			g <- runIO $ newIORef 0
---			(src, parsed) <- stpegq g
 			decParsed False (return src)
 				(conT (mkName "Token") `appT` return src)
 				(const $ return parsed)
 	Left err -> error $ "parse error: " ++ showParseError err
-	where
-	addApplicative pg = if needApplicative pg
-		then "import Control.Applicative\n"
-		else ""
-	needApplicative _pg = True -- isListUsed pg || isOptionalUsed pg
 
 showParseError :: ParseError (Pos String) Derivs -> String
 showParseError pe =
@@ -247,9 +232,11 @@ parseEE glb th pgq = do
 		<*> pSomes glb th listN list1N optionalN pNames pgq
 	ld <- listDec listN list1N th
 	od <- optionalDec optionalN th
-	return $ Clause [] (NormalB pgenE) $ decs ++ ld ++ od
---		(if isListUsed pg then ld else []) ++
---		(if isOptionalUsed pg then od else [])
+	lu <- isListUsed pgq
+	ou <- isOptionalUsed pgq
+	return $ Clause [] (NormalB pgenE) $ decs ++
+		(if lu then ld else []) ++
+		(if ou then od else [])
 
 dvCharsN, dvPosN :: Name
 dvCharsN = mkName "char"
@@ -276,13 +263,6 @@ derivs1 pg src tkn defq = do
 			strictType notStrict $ resultT src (return typ)
 		_ -> varStrictType (mkName name) $ strictType notStrict $
 			resultT src $ selectionType pg tkn sel
-{-
-derivs1 _ src _ (name, Just typ, _) =
-	varStrictType (mkName name) $ strictType notStrict $ resultT src typ
-derivs1 pg src tkn (name, _, sel) =
-	varStrictType (mkName name) $ strictType notStrict $ resultT src $
-		selectionType pg tkn sel
--}
 
 throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
 throwErrorPackratMBody th code msg com d ns = infixApp
@@ -383,14 +363,8 @@ pSomes1 g th lst lst1 opt pname def = do
 	flip (valD $ varP pname) [] $ normalB $
 		pSomes1Sel g th lst lst1 opt sel
 
-pSomes1SelQ :: IORef Int -> Bool -> Name -> Name -> Name -> SelectionQ -> ExpQ
-pSomes1SelQ g th lst lst1 opt selq = do
-	esel <- selq g
-	pSomes1Sel g th lst lst1 opt esel
-
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
 pSomes1Sel g th lst lst1 opt esel = do
---	esel <- selq g
 	case esel of
 		Left sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
 			listE (map (processExpressionHs g th lst lst1 opt) sel)
@@ -399,14 +373,6 @@ pSomes1Sel g th lst lst1 opt esel = do
 				(flip (putLeftRight $ length sel) .
 					processPlainExpressionHs g th lst lst1 opt)
 				sel [0..])
-{-
-pSomes1Sel g th lst lst1 opt (Right sel) =
-	varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
-		listE (zipWith
-			(flip (putLeftRight $ length sel) .
-				processPlainExpressionHs g th lst lst1 opt)
-			sel [0..])
--}
 
 putLeftRight :: Int -> Int -> ExpQ -> ExpQ
 putLeftRight 1 0 ex = ex
@@ -488,11 +454,6 @@ getNewName g n = do
 	runIO $ modifyIORef g succ
 	newName $ n ++ show gn
 
-transHAReadFromQ ::
-	IORef Int -> Bool -> Name -> Name -> Name -> (Lookahead, ReadFromQ) -> ExpQ
-transHAReadFromQ g th lst lst1 opt (ha, rfq) =
-	transHAReadFrom g th lst lst1 opt . (ha ,) =<< rfq g
-
 transHAReadFrom ::
 	IORef Int -> Bool -> Name -> Name -> Name -> (Lookahead, ReadFrom) -> ExpQ
 transHAReadFrom g th lst lst1 opt (ha, rf) = smartDoE <$>
@@ -514,9 +475,6 @@ mkTD g = do
 	t <- getNewName g "xx"
 	d <- getNewName g "d"
 	return (t, d)
-
-transLeafQ :: IORef Int -> Bool -> Name -> Name -> Name -> CheckQ -> Q [Stmt]
-transLeafQ g th lst lst1 opt ckq = transLeaf g th lst lst1 opt =<< ckq g
 
 transLeaf :: IORef Int -> Bool -> Name -> Name -> Name -> Check -> Q [Stmt]
 transLeaf g th lst lst1 opt ((n, nc), rf, Just (p, pc)) = do
