@@ -391,7 +391,7 @@ processExpressionHs g th lst lst1 opt exhs = do
 	let (expr, ret) = exhs
 	fmap smartDoE $ do
 		x <- forM expr $ \(ha, nl) -> do
-			let	nls = showCheck nl
+			let	nls = show $ pprCheck nl
 				(_, rf, _) = nl
 			processHA g th ha (return nls) (nameFromRF rf) $
 				transLeaf g th lst lst1 opt nl

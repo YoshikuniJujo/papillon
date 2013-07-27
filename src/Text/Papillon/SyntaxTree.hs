@@ -35,7 +35,7 @@ module Text.Papillon.SyntaxTree (
 	expressionSugar,
 
 	selectionType,
-	showCheck,
+	pprCheck,
 	nameFromRF,
 
 	PegFileQ,
@@ -47,9 +47,10 @@ module Text.Papillon.SyntaxTree (
 ) where
 
 import Language.Haskell.TH
+import Language.Haskell.TH.PprLib
 import Control.Monad
-import Control.Applicative
-import Control.Arrow
+import Control.Applicative ((<$>), (<*>))
+import Control.Arrow ((***))
 import Data.List
 import Data.IORef
 
@@ -134,38 +135,31 @@ fromTokenChars cs = \g -> do
 		Just $ litE $ stringL cs
 	return $ FromSelection $ Left [ex]
 
-showSelection :: Selection -> String
-showSelection =
-	intercalate " / " . either (map showExpression) (map showPlainExpression)
+pprCheck :: Check -> Doc
+pprCheck ((pat, _), rf, test) =
+	ppr pat <> colon <> ppr rf <> maybe empty (brackets . ppr . fst) test
 
-showExpression :: Expression -> String
-showExpression exhs = let (ex, hs) = exhs in
-	(\e -> unwords e ++ " { " ++ show (ppr hs) ++ " }")
-		$ map (uncurry ($) . (((++) . showLA) *** showCheck)) ex
+instance Ppr ReadFrom where
+	ppr (FromVariable (Just v)) = text v
+	ppr (FromVariable _) = empty
+	ppr (FromL l rf) = ppr rf <> ppr l
+	ppr (FromSelection sel) = parens $ ps sel
+		where
+		ps = hsep . intersperse (char '/') . either (map pe) (map ppe)
+		pe (ex, hs) = (<+> braces (ppr hs)) $ hsep $
+			map (uncurry ($) . (((<>) . ppr) *** pprCheck)) ex
+		ppe = hsep . map (uncurry (<>) . (ppr *** ppr))
 
-showPlainExpression :: PlainExpression -> String
-showPlainExpression rfs =
-	unwords $ map (\(ha, rf) -> (showLA ha ++) $ showReadFrom rf) rfs
 
-showLA :: Lookahead -> String
-showLA Here = ""
-showLA Ahead = "&"
-showLA (NAhead _) = "!"
+instance Ppr Lookahead where
+	ppr Here = empty
+	ppr Ahead = char '&'
+	ppr (NAhead _) = char '!'
 
-showCheck :: Check -> String
-showCheck ((pat, _), rf, Just (p, _)) = let rff = showReadFrom rf in
-	show (ppr pat) ++ ":" ++ rff ++ "[" ++ show (ppr p) ++ "]"
-showCheck ((pat, _), rf, Nothing) = let rff = showReadFrom rf in
-	show (ppr pat) ++ ":" ++ rff
-
-showReadFrom :: ReadFrom -> String
-showReadFrom (FromVariable (Just v)) = v
-showReadFrom (FromVariable _) = ""
-showReadFrom (FromL l rf) = (++ sl l) $ showReadFrom rf
-	where	sl List = "*"
-		sl List1 = "+"
-		sl Optional = "?"
-showReadFrom (FromSelection sel) = ('(' :) $ (++ ")") $ showSelection sel
+instance Ppr Lists where
+	ppr List = char '*'
+	ppr List1 = char '+'
+	ppr Optional = char '?'
 
 definitionType :: PegQ -> TypeQ -> DefinitionQ -> TypeQ
 definitionType pegq tk defq = do

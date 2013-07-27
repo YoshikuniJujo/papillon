@@ -1,6 +1,7 @@
 {-# LANGUAGE QuasiQuotes, TypeFamilies #-}
 
 import Text.Papillon
+import Data.Char
 
 main :: IO ()
 main = do
@@ -11,6 +12,9 @@ main = do
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
 	case other $ parse "parse hoge" of
+		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
+		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
+	case digits $ parse "parse hoge" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
 
@@ -31,6 +35,9 @@ showReading d "string" = case string d of
 	Right (s, _) -> show s
 	Left _ -> error "bad"
 showReading d "other" = case other d of
+	Right (s, _) -> show s
+	Left _ -> error "bad"
+showReading d "char" = case char d of
 	Right (s, _) -> show s
 	Left _ -> error "bad"
 showReading _ n = "showReading: yet: " ++ n
@@ -54,6 +61,8 @@ other :: Nil = "parse fail" {-# "it's parse fail" #-} :string	{ nil }
 string :: String
 	= c s:string						{ cons c s }
 	/							{ emp }
+;
+digits :: String = ds:<isDigit>+				{ ds }
 ;
 
 |]

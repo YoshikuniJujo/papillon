@@ -15,7 +15,7 @@ module Text.Papillon.Parser (
 	DefinitionQ,
 
 	selectionType,
-	showCheck,
+	pprCheck,
 --	showCheckQ,
 	nameFromRF,
 
