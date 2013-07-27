@@ -13,14 +13,10 @@ module Text.Papillon.Parser (
 
 	PegQ,
 	DefinitionQ,
-	SelectionQ,
-	ExpressionQ,
-	CheckQ,
-	ReadFromQ,
 
 	selectionType,
 	showCheck,
-	showCheckQ,
+--	showCheckQ,
 	nameFromRF,
 
 	parse,
@@ -33,8 +29,6 @@ module Text.Papillon.Parser (
 	Pos(..),
 	ListPos(..),
 
-	PegFile,
-	PegFileQ,
 	PPragma(..),
 	ModuleName,
 	Exports,

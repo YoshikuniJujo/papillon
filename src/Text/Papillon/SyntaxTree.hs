@@ -1,7 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 
 module Text.Papillon.SyntaxTree (
-	STPeg,
 	Peg,
 	Definition,
 	Selection,
@@ -36,13 +35,9 @@ module Text.Papillon.SyntaxTree (
 	expressionSugar,
 
 	selectionType,
-	selectionTypeQ,
 	showCheck,
-	showCheckQ,
 	nameFromRF,
-	nameFromRFQ,
 
-	PegFile,
 	PegFileQ,
 	mkPegFile,
 	PPragma(..),
@@ -56,7 +51,6 @@ import Control.Monad
 import Control.Applicative
 import Control.Arrow
 import Data.List
--- import Data.Maybe
 import Data.IORef
 
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
@@ -104,13 +98,6 @@ normalSelectionQ expqs = \g -> (Left <$>) $ forM expqs ($ g)
 plainSelectionQ :: [PlainExpressionQ] -> SelectionQ
 plainSelectionQ expqs = \g -> (Right <$>) $ forM expqs ($ g)
 
-{-
-newNewName :: IORef Int -> String -> Q Name
-newNewName g n = do
-	s <- runIO $ readIORef g
-	newName $ n ++ show s
--}
-
 expressionQ :: Bool -> ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
 expressionQ b (ls, ex) g = do
 	e <- ex
@@ -143,8 +130,6 @@ expressionSugar pm g = do
 
 fromTokenChars :: String -> ReadFromQ
 fromTokenChars cs = \g -> do
---	s <- runIO $ readIORef g
---	c <- newName $ "c" ++ show s
 	ex <- flip expressionSugar g $ infixE Nothing (varE $ mkName "elem") $
 		Just $ litE $ stringL cs
 	return $ FromSelection $ Left [ex]
@@ -167,9 +152,6 @@ showLA Here = ""
 showLA Ahead = "&"
 showLA (NAhead _) = "!"
 
-showCheckQ :: CheckQ -> Q String
-showCheckQ ckq = showCheck =<< ckq =<< runIO (newIORef 0)
-
 showCheck :: Check -> Q String
 showCheck ((pat, _), rf, Just (p, _)) = do
 	rff <- showReadFrom rf
@@ -177,11 +159,6 @@ showCheck ((pat, _), rf, Just (p, _)) = do
 showCheck ((pat, _), rf, Nothing) = do
 	rff <- showReadFrom rf
 	return $ show (ppr pat) ++ ":" ++ rff
-
-{-
-showReadFromQ :: ReadFromQ -> Q String
-showReadFromQ rfq = showReadFrom =<< rfq =<< runIO (newIORef 0)
--}
 
 showReadFrom :: ReadFrom -> Q String
 showReadFrom (FromVariable (Just v)) = return v
@@ -199,11 +176,6 @@ definitionType pegq tk defq = do
 		(_, Just typ, _) -> return typ
 		(_, _, sel) -> selectionType pegq tk sel
 
-selectionTypeQ :: PegQ -> TypeQ -> SelectionQ -> TypeQ
-selectionTypeQ peg tk sel = do
-	e <- sel =<< runIO (newIORef 0)
-	selectionType peg tk e
-
 selectionType :: PegQ -> TypeQ -> Selection -> TypeQ
 selectionType peg tk e = do
 	case e of
@@ -218,11 +190,6 @@ selectionType peg tk e = do
 plainExpressionType :: PegQ -> TypeQ -> PlainExpression -> TypeQ
 plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
 	foldl appT (tupleT $ length fe) $ map (readFromType peg tk . snd) $ fe
-
-{-
-readFromTypeQ :: PegQ -> TypeQ -> ReadFromQ -> TypeQ
-readFromTypeQ peg tk rfq = readFromType peg tk =<< rfq =<< runIO (newIORef 0)
--}
 
 readFromType :: PegQ -> TypeQ -> ReadFrom -> TypeQ
 readFromType peg tk (FromVariable (Just v)) =
@@ -245,11 +212,6 @@ nameFromSelection :: Selection -> Q [String]
 nameFromSelection exs = concat <$>
 	(either (mapM nameFromExpression) (mapM nameFromPlainExpression) exs)
 
-{-
-nameFromExpressionQ :: ExpressionQ -> Q [String]
-nameFromExpressionQ e = e (mkName "c") >>= nameFromExpression
--}
-
 nameFromExpression :: Expression -> Q [String]
 nameFromExpression = nameFromCheck . snd . head . fst . snd
 
@@ -258,9 +220,6 @@ nameFromPlainExpression = (concat <$>) . mapM (nameFromRF . snd)
 
 nameFromCheck :: Check -> Q [String]
 nameFromCheck (_, rf, _) = nameFromRF rf
-
-nameFromRFQ :: ReadFromQ -> Q [String]
-nameFromRFQ rfq = nameFromRF =<< rfq =<< runIO (newIORef 0)
 
 nameFromRF :: ReadFrom -> Q [String]
 nameFromRF (FromVariable (Just s)) = return [s]
