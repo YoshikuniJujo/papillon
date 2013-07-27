@@ -2,6 +2,21 @@
 * 次にやること           *
 **************************
 
+* PapillonCore のリファクタリング
+	以下の monadic な parser にするための準備として
+
+* リファクタリングができたら branch を切る
+	git checkout -b monadic でいいだろう
+
+* 以下をするために、まずは、何も指定しないときには、Identity monad とする
+	test と return のところには return を追加すれば良いだろうと思う
+
+* monadic parser とする
+	何も指定しなければ、Identity monad とし、
+	test と return のところに return を追加する。
+	monad が指定されればそのモナドを lift するような StateT や ErrorT を作り、
+	return とかは足さない
+
 * SyntaxTree のリファクタリング
 	fromTokenChars の名前の変更
 		むしろ、fromTokenChars は消してもいいのかもしれない
@@ -63,12 +78,6 @@
 
 * str :: Either (String, String) (Either (String, String) ()) がパースエラーになる
 	上記を解決すること
-
-* monadic parser とする
-	何も指定しなければ、Identity monad とし、
-	test と return のところに return を追加する。
-	monad が指定されればそのモナドを lift するような StateT や ErrorT を作り、
-	return とかは足さない
 
 * { ... } や [ ... ] 等のなかで do が使えるか試すこと
 
