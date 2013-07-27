@@ -2,7 +2,6 @@
 * 次にやること           *
 **************************
 
-* PlainExpression も PlainExpressionQ のようにする
 * PegFile も PegFileQ のようにできるかな
 
 * Peg を PegQ のようにしようかな

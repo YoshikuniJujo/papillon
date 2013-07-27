@@ -147,18 +147,18 @@ definition :: DefinitionQ
 						{ definitionQ v (Just t) sel }
 	/ v:variable _:spaces '<' '-' _:spaces
 		sel:plainSelection _:spaces ';'	{ definitionQ v Nothing $
-							const $ return $ Right sel }
+							plainSelectionQ sel }
 ;
 selection :: SelectionQ
 	= s:normalSelection			{ normalSelectionQ s }
-	/ s:plainSelection			{ const $ return $ Right s }
+	/ s:plainSelection			{ plainSelectionQ s }
 ;
 normalSelection :: [ExpressionQ]
 	= ex:expressionHs _:spaces '/' _:spaces sel:normalSelection
 						{ ex : sel }
 	/ ex:expressionHs			{ [ex] }
 ;
-plainSelection :: [PlainExpression]
+plainSelection :: [PlainExpressionQ]
 	= ex:plainExpressionHs _:spaces '/' _:spaces sel:plainSelection
 						{ ex : sel }
 	/ ex:plainExpressionHs			{ [ex] }
@@ -171,9 +171,9 @@ expressionHs :: ExpressionQ
 expressionHsSugar :: ExpressionQ
 	= '<' _:spaces h:hsExpLam _:spaces '>'	{ expressionSugar h }
 ;
-plainExpressionHs :: PlainExpression
+plainExpressionHs :: PlainExpressionQ
 	= rfs:(rf:plainHAReadFromLs _:spaces { rf })*
-						{ rfs }
+						{ plainExpressionQ rfs }
 ;
 plainHAReadFromLs :: (Lookahead, ReadFromQ)
 	= rf:plainReadFromLs			{ (Here, rf) }

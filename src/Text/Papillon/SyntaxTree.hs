@@ -9,16 +9,20 @@ module Text.Papillon.SyntaxTree (
 	Check,
 	ReadFrom(..),
 
+	Q,
 	PegQ,
 	DefinitionQ,
 	SelectionQ,
 	ExpressionQ,
+	PlainExpressionQ,
 	CheckQ,
 	ReadFromQ,
 
 	definitionQ,
 	normalSelectionQ,
+	plainSelectionQ,
 	expressionQ,
+	plainExpressionQ,
 	check,
 	fromSelectionQ,
 
@@ -51,24 +55,26 @@ import Data.List
 -- import Data.Maybe
 import Data.IORef
 
-data Lookahead = Here | Ahead | NAhead String deriving Eq
+data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
 data Lists = List | List1 | Optional deriving Show
 
 type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
 type Selection =  Either [Expression] [PlainExpression]
 type Expression = (Bool, ([(Lookahead, Check)], Exp))
-type PlainExpression = [(Lookahead, ReadFromQ)]
+type PlainExpression = [(Lookahead, ReadFrom)]
 type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
 data ReadFrom
 	= FromVariable (Maybe String)
 	| FromSelection Selection
 	| FromL Lists ReadFrom
+	deriving Show
 
 type PegQ = IORef Int -> Q Peg
 type DefinitionQ = IORef Int -> Q Definition
 type SelectionQ = IORef Int -> Q Selection
 type ExpressionQ = IORef Int -> Q Expression
+type PlainExpressionQ = IORef Int -> Q PlainExpression
 type CheckQ = IORef Int -> Q Check
 type ReadFromQ = IORef Int -> Q ReadFrom
 
@@ -86,6 +92,9 @@ definitionQ name typq selq = \g -> do
 normalSelectionQ :: [ExpressionQ] -> SelectionQ
 normalSelectionQ expqs = \g -> (Left <$>) $ forM expqs ($ g)
 
+plainSelectionQ :: [PlainExpressionQ] -> SelectionQ
+plainSelectionQ expqs = \g -> (Right <$>) $ forM expqs ($ g)
+
 {-
 newNewName :: IORef Int -> String -> Q Name
 newNewName g n = do
@@ -98,6 +107,11 @@ expressionQ b (ls, ex) g = do
 	e <- ex
 	l <- mapM (\(la, c) -> (la ,) <$> c g) ls
 	return (b, (l, e))
+
+plainExpressionQ :: [(Lookahead, ReadFromQ)] -> PlainExpressionQ
+plainExpressionQ ls g = do
+	l <- mapM (\(la, c) -> (la ,) <$> c g) ls
+	return l
 
 check :: (PatQ, String) -> ReadFromQ -> Maybe (ExpQ, String) -> CheckQ
 check (pat, pcom) rfq (Just (test, tcom)) g = do
@@ -137,7 +151,7 @@ showExpression (_, exhs) = let (ex, hs) = exhs in
 
 showPlainExpression :: PlainExpression -> Q String
 showPlainExpression rfs =
-	unwords <$> mapM (\(ha, rf) -> (showLA ha ++) <$> showReadFromQ rf) rfs
+	unwords <$> mapM (\(ha, rf) -> (showLA ha ++) <$> showReadFrom rf) rfs
 
 showLA :: Lookahead -> String
 showLA Here = ""
@@ -155,8 +169,10 @@ showCheck ((pat, _), rf, Nothing) = do
 	rff <- showReadFrom rf
 	return $ show (ppr pat) ++ ":" ++ rff
 
+{-
 showReadFromQ :: ReadFromQ -> Q String
 showReadFromQ rfq = showReadFrom =<< rfq =<< runIO (newIORef 0)
+-}
 
 showReadFrom :: ReadFrom -> Q String
 showReadFrom (FromVariable (Just v)) = return v
@@ -192,10 +208,12 @@ selectionType peg tk e = do
 
 plainExpressionType :: PegQ -> TypeQ -> PlainExpression -> TypeQ
 plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
-	foldl appT (tupleT $ length fe) $ map (readFromTypeQ peg tk . snd) $ fe
+	foldl appT (tupleT $ length fe) $ map (readFromType peg tk . snd) $ fe
 
+{-
 readFromTypeQ :: PegQ -> TypeQ -> ReadFromQ -> TypeQ
 readFromTypeQ peg tk rfq = readFromType peg tk =<< rfq =<< runIO (newIORef 0)
+-}
 
 readFromType :: PegQ -> TypeQ -> ReadFrom -> TypeQ
 readFromType peg tk (FromVariable (Just v)) =
@@ -227,7 +245,7 @@ nameFromExpression :: Expression -> Q [String]
 nameFromExpression = nameFromCheck . snd . head . fst . snd
 
 nameFromPlainExpression :: PlainExpression -> Q [String]
-nameFromPlainExpression = (concat <$>) . mapM (nameFromRFQ . snd)
+nameFromPlainExpression = (concat <$>) . mapM (nameFromRF . snd)
 
 nameFromCheck :: Check -> Q [String]
 nameFromCheck (_, rf, _) = nameFromRF rf

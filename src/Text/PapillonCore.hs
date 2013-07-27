@@ -61,7 +61,7 @@ isOptionalUsedSelection exhs = do
 	or <$> mapM isOptionalUsedLeafName ex
 
 isOptionalUsedPlainSelection :: PlainExpression -> Q Bool
-isOptionalUsedPlainSelection rfs = or <$> mapM (isOptionalUsedReadFromQ . snd) rfs
+isOptionalUsedPlainSelection rfs = or <$> mapM (isOptionalUsedReadFrom . snd) rfs
 
 isOptionalUsedLeafName :: (Lookahead, Check) -> Q Bool
 isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
@@ -100,7 +100,7 @@ isListUsedSelection exhs = do
 	return $ any isListUsedLeafName ex
 
 isListUsedPlainSelection :: PlainExpression -> Q Bool
-isListUsedPlainSelection rfs = or <$> mapM (isListUsedReadFromQ . snd) rfs
+isListUsedPlainSelection rfs = or <$> mapM (return . isListUsedReadFrom . snd) rfs
 
 isListUsedLeafName :: (Lookahead, Check) -> Bool
 isListUsedLeafName (_, nl) = isListUsedLeafName' nl
@@ -423,7 +423,7 @@ processPlainExpressionHs ::
 processPlainExpressionHs g th lst lst1 opt rfs =
 	foldl (\x y -> infixApp x appApply y)
 		(returnEQ `appE` mkTupleE g (map fst rfs)) $
-			map (transHAReadFromQ g th lst lst1 opt) $ rfs
+			map (transHAReadFrom g th lst lst1 opt) $ rfs
 
 mkTupleE :: IORef Int -> [Lookahead] -> ExpQ
 mkTupleE g has = do

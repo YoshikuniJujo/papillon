@@ -101,13 +101,13 @@ data Derivs
               normalSelection :: (Either (ParseError (Pos String) Derivs)
                                          (([ExpressionQ], Derivs))),
               plainSelection :: (Either (ParseError (Pos String) Derivs)
-                                        (([PlainExpression], Derivs))),
+                                        (([PlainExpressionQ], Derivs))),
               expressionHs :: (Either (ParseError (Pos String) Derivs)
                                       ((ExpressionQ, Derivs))),
               expressionHsSugar :: (Either (ParseError (Pos String) Derivs)
                                            ((ExpressionQ, Derivs))),
               plainExpressionHs :: (Either (ParseError (Pos String) Derivs)
-                                           ((PlainExpression, Derivs))),
+                                           ((PlainExpressionQ, Derivs))),
               plainHAReadFromLs :: (Either (ParseError (Pos String) Derivs)
                                            (((Lookahead, ReadFromQ), Derivs))),
               plainReadFromLs :: (Either (ParseError (Pos String) Derivs)
@@ -1002,11 +1002,11 @@ parse = parse0_0 initialPos
                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d494_310 ["char"])
                                                    let ';' = xx493_311
                                                    return ()
-                                                   return (definitionQ v Nothing $ const $ return $ Right sel)]
+                                                   return (definitionQ v Nothing $ plainSelectionQ sel)]
                 selection25_100 = foldl1 mplus [do s <- StateT normalSelection
                                                    return (normalSelectionQ s),
                                                 do s <- StateT plainSelection
-                                                   return (const $ return $ Right s)]
+                                                   return (plainSelectionQ s)]
                 normalSelection26_101 = foldl1 mplus [do ex <- StateT expressionHs
                                                          _ <- StateT spaces
                                                          return ()
@@ -1088,7 +1088,7 @@ parse = parse0_0 initialPos
                                                                                               _ <- StateT spaces
                                                                                               return ()
                                                                                               return rf])
-                                                           return rfs]
+                                                           return (plainExpressionQ rfs)]
                 plainHAReadFromLs31_106 = foldl1 mplus [do rf <- StateT plainReadFromLs
                                                            return (Here, rf),
                                                         do d558_325 <- get
