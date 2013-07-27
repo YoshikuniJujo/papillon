@@ -2,12 +2,6 @@
 * 次にやること           *
 **************************
 
-* show... の代わりに ppr を使うようにする
-	下から順に ppr に変えていこう
-	と思ったが、data ではなく type なので難しいな
-
-* List, List1, Optional の部分も ppr とすること
-
 * SyntaxTree のリファクタリング
 	fromTokenChars の名前の変更
 		むしろ、fromTokenChars は消してもいいのかもしれない
