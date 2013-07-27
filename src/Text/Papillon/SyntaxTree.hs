@@ -135,8 +135,8 @@ fromTokenChars cs = \g -> do
 	return $ FromSelection $ Left [ex]
 
 showSelection :: Selection -> String
-showSelection ehs = intercalate " / " $
-	either (map showExpression) (map showPlainExpression) ehs
+showSelection =
+	intercalate " / " . either (map showExpression) (map showPlainExpression)
 
 showExpression :: Expression -> String
 showExpression (_, exhs) = let (ex, hs) = exhs in
@@ -179,11 +179,16 @@ selectionType peg tk e = do
 	case e of
 		Right ex -> foldr (\x y -> (eitherT `appT` x) `appT` y)
 			(last $ types ex) (init $ types ex)
-		Left [(True, _)] ->  tk
+--		Left [(True, _)] ->  tk
+		Left [ex] | isTypeChar ex -> tk
 		_ -> error "selectionType: can't get type"
 	where
 	eitherT = conT $ mkName "Either"
 	types e' = map (plainExpressionType peg tk) e'
+
+isTypeChar :: Expression -> Bool
+isTypeChar (_, ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v)) = p == v
+isTypeChar _ = False
 
 plainExpressionType :: PegQ -> TypeQ -> PlainExpression -> TypeQ
 plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
