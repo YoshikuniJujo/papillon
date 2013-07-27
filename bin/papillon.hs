@@ -14,8 +14,8 @@ addModules =
 
 papillonStr :: String -> IO (String, String, String)
 papillonStr src = do
-	let 	(prgm, mn, ppp, pp, decsQ, atp) = papillonFile src
-		mName = intercalate "." $ myInit mn ++ ["Papillon"]
+	(prgm, mn, ppp, pp, decsQ, atp) <- runQ $ papillonFile src
+	let	mName = intercalate "." $ myInit mn ++ ["Papillon"]
 		importConst = "\nimport " ++ mName ++ "\n"
 		dir = joinPath $ myInit mn
 	decs <- runQ decsQ

@@ -185,15 +185,18 @@ papillonCore str = case peg $ parse str of
 			(const $ return parsed)
 	Left err -> error $ "parse error: " ++ showParseError err
 
-papillonFile :: String -> ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
+papillonFile :: String -> Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
 papillonFile str = case pegFile $ parse str of
-	Right ((prgm, mn, ppp, pp, stpegq, atp), _) ->
-		(prgm, mn, ppp, "import Control.Applicative\n" ++ pp, decs, atp)
---			decParsed False src (conT (mkName "Token") `appT` src) parsed, atp)
+--	Right ((prgm, mn, ppp, pp, stpegq, atp), _) ->
+	Right (pegfileq, _) -> do
+		g <- runIO $ newIORef 0
+		(prgm, mn, ppp, pp, (src, parsed), atp) <- pegfileq g
+		return (prgm, mn, ppp, "import Control.Applicative\n" ++ pp,
+			decs src parsed, atp)
 		where
-		decs = do
-			g <- runIO $ newIORef 0
-			(src, parsed) <- stpegq g
+		decs src parsed = do
+--			g <- runIO $ newIORef 0
+--			(src, parsed) <- stpegq g
 			decParsed False (return src)
 				(conT (mkName "Token") `appT` return src)
 				(const $ return parsed)

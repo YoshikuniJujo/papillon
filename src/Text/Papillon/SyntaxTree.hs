@@ -43,6 +43,7 @@ module Text.Papillon.SyntaxTree (
 	nameFromRFQ,
 
 	PegFile,
+	PegFileQ,
 	mkPegFile,
 	PPragma(..),
 	ModuleName,
@@ -267,13 +268,18 @@ nameFromRF (FromVariable _) = return ["char"]
 nameFromRF (FromL _ rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 
-type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, STPegQ, Code)
+type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, STPeg, Code)
+type PegFileQ = IORef Int -> Q PegFile
 data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
 type ModuleName = [String]
 type Exports = String
 type Code = String
 
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
-	STPegQ -> String -> PegFile
-mkPegFile ps (Just md) x y z w = (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
-mkPegFile ps Nothing x y z w = (ps, [], Nothing, x ++ "\n" ++ y, z, w)
+	STPegQ -> String -> PegFileQ
+mkPegFile ps (Just md) x y zq w g = do
+	z <- zq g
+	return (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
+mkPegFile ps Nothing x y zq w g = do
+	z <- zq g
+	return (ps, [], Nothing, x ++ "\n" ++ y, z, w)

@@ -34,6 +34,7 @@ module Text.Papillon.Parser (
 	ListPos(..),
 
 	PegFile,
+	PegFileQ,
 	PPragma(..),
 	ModuleName,
 	Exports,
@@ -58,7 +59,7 @@ import Data.Char (isSpace, isDigit, isUpper, isLower)
 
 data Derivs
     = Derivs {pegFile :: (Either (ParseError (Pos String) Derivs)
-                                 ((PegFile, Derivs))),
+                                 ((PegFileQ, Derivs))),
               pragmas :: (Either (ParseError (Pos String) Derivs)
                                  (([PPragma], Derivs))),
               pragma :: (Either (ParseError (Pos String) Derivs)

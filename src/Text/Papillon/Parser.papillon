@@ -35,6 +35,7 @@ module Text.Papillon.Parser (
 	ListPos(..),
 
 	PegFile,
+	PegFileQ,
 	PPragma(..),
 	ModuleName,
 	Exports,
@@ -52,7 +53,7 @@ import Data.Char (isSpace, isDigit, isUpper, isLower)
 
 [papillon|
 
-pegFile :: PegFile
+pegFile :: PegFileQ
 	= pr:pragmas md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
 		p:peg _:spaces '|' ']' '\n' atp:afterPeg
 			{ mkPegFile pr md pip pp p atp }
