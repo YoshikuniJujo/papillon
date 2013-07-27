@@ -393,7 +393,7 @@ processExpressionHs g th lst lst1 opt exhs = do
 		x <- forM expr $ \(ha, nl) -> do
 			let	nls = showCheck nl
 				(_, rf, _) = nl
-			processHA g th ha nls (nameFromRF rf) $
+			processHA g th ha (return nls) (nameFromRF rf) $
 				transLeaf g th lst lst1 opt nl
 		r <- noBindS $ varE (returnN th) `appE` (return ret)
 		return $ concat x ++ [r]

@@ -134,40 +134,38 @@ fromTokenChars cs = \g -> do
 		Just $ litE $ stringL cs
 	return $ FromSelection $ Left [ex]
 
-showSelection :: Selection -> Q String
-showSelection ehs = intercalate " / " <$>
-	either (mapM showExpression) (mapM showPlainExpression) ehs
+showSelection :: Selection -> String
+showSelection ehs = intercalate " / " $
+	either (map showExpression) (map showPlainExpression) ehs
 
-showExpression :: Expression -> Q String
+showExpression :: Expression -> String
 showExpression (_, exhs) = let (ex, hs) = exhs in
 	(\e -> unwords e ++ " { " ++ show (ppr hs) ++ " }")
-		<$> mapM (uncurry (<$>) . (((++) . showLA) *** showCheck)) ex
+		$ map (uncurry ($) . (((++) . showLA) *** showCheck)) ex
 
-showPlainExpression :: PlainExpression -> Q String
+showPlainExpression :: PlainExpression -> String
 showPlainExpression rfs =
-	unwords <$> mapM (\(ha, rf) -> (showLA ha ++) <$> showReadFrom rf) rfs
+	unwords $ map (\(ha, rf) -> (showLA ha ++) $ showReadFrom rf) rfs
 
 showLA :: Lookahead -> String
 showLA Here = ""
 showLA Ahead = "&"
 showLA (NAhead _) = "!"
 
-showCheck :: Check -> Q String
-showCheck ((pat, _), rf, Just (p, _)) = do
-	rff <- showReadFrom rf
-	return $ show (ppr pat) ++ ":" ++ rff ++ "[" ++ show (ppr p) ++ "]"
-showCheck ((pat, _), rf, Nothing) = do
-	rff <- showReadFrom rf
-	return $ show (ppr pat) ++ ":" ++ rff
+showCheck :: Check -> String
+showCheck ((pat, _), rf, Just (p, _)) = let rff = showReadFrom rf in
+	show (ppr pat) ++ ":" ++ rff ++ "[" ++ show (ppr p) ++ "]"
+showCheck ((pat, _), rf, Nothing) = let rff = showReadFrom rf in
+	show (ppr pat) ++ ":" ++ rff
 
-showReadFrom :: ReadFrom -> Q String
-showReadFrom (FromVariable (Just v)) = return v
-showReadFrom (FromVariable _) = return ""
-showReadFrom (FromL l rf) = (++ sl l) <$> showReadFrom rf
+showReadFrom :: ReadFrom -> String
+showReadFrom (FromVariable (Just v)) = v
+showReadFrom (FromVariable _) = ""
+showReadFrom (FromL l rf) = (++ sl l) $ showReadFrom rf
 	where	sl List = "*"
 		sl List1 = "+"
 		sl Optional = "?"
-showReadFrom (FromSelection sel) = ('(' :) <$> (++ ")") <$> showSelection sel
+showReadFrom (FromSelection sel) = ('(' :) $ (++ ")") $ showSelection sel
 
 definitionType :: PegQ -> TypeQ -> DefinitionQ -> TypeQ
 definitionType pegq tk defq = do
