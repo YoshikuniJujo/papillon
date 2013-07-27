@@ -90,7 +90,7 @@ data Derivs
                                   ((String, Derivs))),
               pap :: (Either (ParseError (Pos String) Derivs) (((), Derivs))),
               peg :: (Either (ParseError (Pos String) Derivs)
-                             (((TypeQ, PegQ), Derivs))),
+                             ((STPegQ, Derivs))),
               sourceType :: (Either (ParseError (Pos String) Derivs)
                                     ((String, Derivs))),
               peg_ :: (Either (ParseError (Pos String) Derivs) ((PegQ, Derivs))),
@@ -904,9 +904,9 @@ parse = parse0_0 initialPos
                                             return ()
                                             s <- StateT sourceType
                                             p <- StateT peg_
-                                            return (conT $ mkName s, p),
+                                            return (stPegQ (conT $ mkName s) p),
                                          do p <- StateT peg_
-                                            return (conT $ mkName "String", p)]
+                                            return (stPegQ (conT $ mkName "String") p)]
                 sourceType22_97 = foldl1 mplus [do d442_294 <- get
                                                    xx441_295 <- StateT varToken
                                                    case xx441_295 of

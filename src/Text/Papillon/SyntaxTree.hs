@@ -1,6 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module Text.Papillon.SyntaxTree (
+	STPeg,
 	Peg,
 	Definition,
 	Selection,
@@ -10,6 +11,7 @@ module Text.Papillon.SyntaxTree (
 	ReadFrom(..),
 
 	Q,
+	STPegQ,
 	PegQ,
 	DefinitionQ,
 	SelectionQ,
@@ -18,6 +20,7 @@ module Text.Papillon.SyntaxTree (
 	CheckQ,
 	ReadFromQ,
 
+	stPegQ,
 	definitionQ,
 	normalSelectionQ,
 	plainSelectionQ,
@@ -58,6 +61,7 @@ import Data.IORef
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
 data Lists = List | List1 | Optional deriving Show
 
+type STPeg = (Type, Peg)
 type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
 type Selection =  Either [Expression] [PlainExpression]
@@ -70,6 +74,7 @@ data ReadFrom
 	| FromL Lists ReadFrom
 	deriving Show
 
+type STPegQ = IORef Int -> Q STPeg
 type PegQ = IORef Int -> Q Peg
 type DefinitionQ = IORef Int -> Q Definition
 type SelectionQ = IORef Int -> Q Selection
@@ -77,6 +82,9 @@ type ExpressionQ = IORef Int -> Q Expression
 type PlainExpressionQ = IORef Int -> Q PlainExpression
 type CheckQ = IORef Int -> Q Check
 type ReadFromQ = IORef Int -> Q ReadFrom
+
+stPegQ :: TypeQ -> PegQ -> STPegQ
+stPegQ stq pegq = ((,) <$> stq <*>) . pegq
 
 fromSelectionQ :: SelectionQ -> ReadFromQ
 fromSelectionQ sel = (FromSelection <$>) . sel
@@ -259,13 +267,13 @@ nameFromRF (FromVariable _) = return ["char"]
 nameFromRF (FromL _ rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 
-type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, (TypeQ, PegQ), Code)
+type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, STPegQ, Code)
 data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
 type ModuleName = [String]
 type Exports = String
 type Code = String
 
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
-	(TypeQ, PegQ) -> String -> PegFile
+	STPegQ -> String -> PegFile
 mkPegFile ps (Just md) x y z w = (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
 mkPegFile ps Nothing x y z w = (ps, [], Nothing, x ++ "\n" ++ y, z, w)

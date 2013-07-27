@@ -128,9 +128,9 @@ typToken :: String
 pap :: ()
 	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ () }
 ;
-peg :: (TypeQ, PegQ)
-	= _:spaces s:sourceType p:peg_		{ (conT $ mkName s, p) }
-	/ p:peg_				{ (conT $ mkName "String", p) }
+peg :: STPegQ
+	= _:spaces s:sourceType p:peg_		{ stPegQ (conT $ mkName s) p }
+	/ p:peg_				{ stPegQ (conT $ mkName "String") p }
 ;
 sourceType :: String
 	= "source":varToken ':' _:spaces v:typToken

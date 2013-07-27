@@ -177,15 +177,26 @@ eitherN = mkName "Either"
 
 papillonCore :: String -> DecsQ
 papillonCore str = case peg $ parse str of
-	Right ((src, parsed), _) ->
-		decParsed True src (conT (mkName "Token") `appT` src) parsed
+	Right (stpegq, _) -> do
+		g <- runIO $ newIORef 0
+		(src, parsed) <- stpegq g
+		decParsed True (return src)
+			(conT (mkName "Token") `appT` return src)
+			(const $ return parsed)
 	Left err -> error $ "parse error: " ++ showParseError err
 
 papillonFile :: String -> ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
 papillonFile str = case pegFile $ parse str of
-	Right ((prgm, mn, ppp, pp, (src, parsed), atp), _) ->
-		(prgm, mn, ppp, addApplicative parsed ++ pp,
-		decParsed False src (conT (mkName "Token") `appT` src) parsed, atp)
+	Right ((prgm, mn, ppp, pp, stpegq, atp), _) ->
+		(prgm, mn, ppp, "import Control.Applicative\n" ++ pp, decs, atp)
+--			decParsed False src (conT (mkName "Token") `appT` src) parsed, atp)
+		where
+		decs = do
+			g <- runIO $ newIORef 0
+			(src, parsed) <- stpegq g
+			decParsed False (return src)
+				(conT (mkName "Token") `appT` return src)
+				(const $ return parsed)
 	Left err -> error $ "parse error: " ++ showParseError err
 	where
 	addApplicative pg = if needApplicative pg
