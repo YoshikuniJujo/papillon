@@ -55,7 +55,7 @@ isOptionalUsedDefinition def = do
 
 isOptionalUsedSelection :: Expression -> Q Bool
 isOptionalUsedSelection exhs = do
-	let (_, (ex, _)) = exhs
+	let (ex, _) = exhs
 	or <$> mapM isOptionalUsedLeafName ex
 
 isOptionalUsedPlainSelection :: PlainExpression -> Q Bool
@@ -89,7 +89,7 @@ isListUsedDefinition def = do
 
 isListUsedSelection :: Expression -> Q Bool
 isListUsedSelection exhs = do
-	let (_, (ex, _)) = exhs
+	let (ex, _) = exhs
 	return $ any isListUsedLeafName ex
 
 isListUsedPlainSelection :: PlainExpression -> Q Bool
@@ -388,7 +388,7 @@ leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
 processExpressionHs ::
 	IORef Int -> Bool -> Name -> Name -> Name -> Expression -> ExpQ
 processExpressionHs g th lst lst1 opt exhs = do
-	let (_, (expr, ret)) = exhs
+	let (expr, ret) = exhs
 	fmap smartDoE $ do
 		x <- forM expr $ \(ha, nl) -> do
 			let	nls = showCheck nl

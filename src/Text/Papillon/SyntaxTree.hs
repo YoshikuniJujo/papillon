@@ -60,7 +60,7 @@ type STPeg = (Type, Peg)
 type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
 type Selection =  Either [Expression] [PlainExpression]
-type Expression = (Bool, ([(Lookahead, Check)], Exp))
+type Expression = ([(Lookahead, Check)], Exp)
 type PlainExpression = [(Lookahead, ReadFrom)]
 type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
 data ReadFrom
@@ -98,11 +98,11 @@ normalSelectionQ expqs = \g -> (Left <$>) $ forM expqs ($ g)
 plainSelectionQ :: [PlainExpressionQ] -> SelectionQ
 plainSelectionQ expqs = \g -> (Right <$>) $ forM expqs ($ g)
 
-expressionQ :: Bool -> ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
-expressionQ b (ls, ex) g = do
+expressionQ :: ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
+expressionQ (ls, ex) g = do
 	e <- ex
 	l <- mapM (\(la, c) -> (la ,) <$> c g) ls
-	return (b, (l, e))
+	return (l, e)
 
 plainExpressionQ :: [(Lookahead, ReadFromQ)] -> PlainExpressionQ
 plainExpressionQ ls g = do
@@ -125,7 +125,7 @@ expressionSugar pm g = do
 	p <- pm
 	s <- runIO $ readIORef g
 	c <- newName $ "c" ++ show s
-	return $ (True ,) $ (, VarE c) $ (: []) $ (Here ,) $ (,,)
+	return $ (, VarE c) $ (: []) $ (Here ,) $ (,,)
 		(VarP c, "") (FromVariable Nothing) (Just $ (, "") $ p `AppE` VarE c)
 
 fromTokenChars :: String -> ReadFromQ
@@ -139,7 +139,7 @@ showSelection =
 	intercalate " / " . either (map showExpression) (map showPlainExpression)
 
 showExpression :: Expression -> String
-showExpression (_, exhs) = let (ex, hs) = exhs in
+showExpression exhs = let (ex, hs) = exhs in
 	(\e -> unwords e ++ " { " ++ show (ppr hs) ++ " }")
 		$ map (uncurry ($) . (((++) . showLA) *** showCheck)) ex
 
@@ -179,7 +179,6 @@ selectionType peg tk e = do
 	case e of
 		Right ex -> foldr (\x y -> (eitherT `appT` x) `appT` y)
 			(last $ types ex) (init $ types ex)
---		Left [(True, _)] ->  tk
 		Left [ex] | isTypeChar ex -> tk
 		_ -> error "selectionType: can't get type"
 	where
@@ -187,7 +186,7 @@ selectionType peg tk e = do
 	types e' = map (plainExpressionType peg tk) e'
 
 isTypeChar :: Expression -> Bool
-isTypeChar (_, ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v)) = p == v
+isTypeChar ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v) = p == v
 isTypeChar _ = False
 
 plainExpressionType :: PegQ -> TypeQ -> PlainExpression -> TypeQ
@@ -216,7 +215,7 @@ nameFromSelection exs = concat <$>
 	(either (mapM nameFromExpression) (mapM nameFromPlainExpression) exs)
 
 nameFromExpression :: Expression -> Q [String]
-nameFromExpression = nameFromCheck . snd . head . fst . snd
+nameFromExpression = nameFromCheck . snd . head . fst
 
 nameFromPlainExpression :: PlainExpression -> Q [String]
 nameFromPlainExpression = (concat <$>) . mapM (nameFromRF . snd)

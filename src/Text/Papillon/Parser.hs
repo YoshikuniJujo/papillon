@@ -1056,7 +1056,7 @@ parse = parse0_0 initialPos
                                                           _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d536_318 ["char"])
                                                       let '}' = xx535_319
                                                       return ()
-                                                      return (expressionQ False (e, h)),
+                                                      return (expressionQ (e, h)),
                                                    do e <- StateT expressionHsSugar
                                                       return e]
                 expressionHsSugar29_104 = foldl1 mplus [do d540_320 <- get

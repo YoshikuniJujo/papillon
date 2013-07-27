@@ -160,7 +160,7 @@ plainSelection :: [PlainExpressionQ]
 ;
 expressionHs :: ExpressionQ
 	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
-						{ expressionQ False (e, h) }
+						{ expressionQ (e, h) }
 	/ e:expressionHsSugar			{ e }
 ;
 expressionHsSugar :: ExpressionQ
