@@ -31,7 +31,6 @@ module Text.PapillonCore (
 ) where
 
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
 
@@ -46,7 +45,7 @@ papillonCore :: String -> DecsQ
 papillonCore str = case peg $ parse str of
 	Right (stpegq, _) -> do
 		(src, parsed) <- stpegq =<< runIO (newIORef 0)
-		decParsed True src (ConT (mkName "Token") `AppT` src) parsed
+		decParsed True src parsed
 	Left err -> error $ "parse error: " ++ showParseError err
 
 papillonFile :: String -> Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
@@ -60,17 +59,34 @@ papillonFile str = case pegFile $ parse str of
 			if lu || ou then "import Control.Applicative\n" else ""
 		return (prgm, mn, ppp, addApplicative ++ pp, decs src parsed, atp)
 		where
-		decs src p =
-			decParsed False src (ConT (mkName "Token") `AppT` src) p
+		decs src p = decParsed False src p
 	Left err -> error $ "parse error: " ++ showParseError err
 
-decParsed :: Bool -> Type -> Type -> Peg -> DecsQ
-decParsed th src tkn parsed = do
-	let d = derivs src tkn parsed
+decParsed :: Bool -> Type -> Peg -> DecsQ
+decParsed th src parsed = do
+	let d = derivs src parsed
 	glb <- runIO $ newIORef 0
 	pt <- parseT (return src) th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
 	return $ d : pt : [p]
+
+derivs :: Type -> Peg -> Dec
+derivs src pg = DataD [] (mkName "Derivs") [] [
+	RecC (mkName "Derivs") $ map derivs1 pg ++ [
+		(dvCharsN, NotStrict, resultT tkn),
+		(dvPosN, NotStrict, ConT (mkName "Pos") `AppT` src)
+	 ]
+ ] []
+	where
+	tkn = ConT (mkName "Token") `AppT` src
+	derivs1 (name, Just t, _) = (mkName name, NotStrict, resultT t)
+	derivs1 (name, Nothing, sel) =
+		(mkName name, NotStrict, resultT $ selectionType pg tkn sel)
+	resultT typ = ConT (mkName "Either")
+		`AppT` (ConT (mkName "ParseError")
+			`AppT` (ConT (mkName "Pos") `AppT` src)
+			`AppT` ConT (mkName "Derivs"))
+		`AppT` (TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
 
 parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
 parseEE glb th pgg = do
@@ -88,33 +104,12 @@ parseEE glb th pgg = do
 		ou = optionalUsed pgg
 	ld <- listDec listN list1N th
 	od <- optionalDec optionalN th
-	return $ Clause [] (NormalB pgenE) $ decs ++ (if lu then ld else []) ++
-		(if ou then od else [])
+	return $ Clause [] (NormalB pgenE) $
+		decs ++ (if lu then ld else []) ++ (if ou then od else [])
 
 dvCharsN, dvPosN :: Name
 dvCharsN = mkName "char"
 dvPosN = mkName "position"
-
-derivs :: Type -> Type -> Peg -> Dec
-derivs src tkn pg = DataD [] (mkName "Derivs") [] [
-	RecC (mkName "Derivs") $ map (derivs1 pg src tkn) pg ++ [
-		(dvCharsN, NotStrict, resultT src tkn),
-		(dvPosN, NotStrict, ConT (mkName "Pos") `AppT` src)
-	 ]
- ] []
-
-derivs1 :: Peg -> Type -> Type -> Definition -> VarStrictType
-derivs1 _ src _ (name, Just typ, _) = (mkName name, NotStrict, resultT src typ)
-derivs1 pgg src tkn (name, Nothing, sel) =
-	(mkName name, NotStrict, resultT src $ selectionType pgg tkn sel)
-
-resultT :: Type -> Type -> Type
-resultT src typ = ConT eitherN `AppT` pe `AppT`
-	(TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
-	where
-	pe = ConT (mkName "ParseError")
-		`AppT` (ConT (mkName "Pos") `AppT` src)
-		`AppT` ConT (mkName "Derivs")
 
 throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
 throwErrorPackratMBody th code msg com d ns = infixApp
@@ -483,6 +478,3 @@ runStateTN True = 'runStateT
 runStateTN False = mkName "runStateT"
 justN True = 'Just
 justN False = mkName "Just"
-
-eitherN :: Name
-eitherN = mkName "Either"
