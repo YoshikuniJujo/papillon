@@ -170,15 +170,13 @@ selectionType peg tk e = do
 	case e of
 		Right ex -> foldr (\x y -> (eitherT `appT` x) `appT` y)
 			(last $ types ex) (init $ types ex)
-		Left [ex] | isTypeChar ex -> tk
+		Left [ex] | tc ex -> tk
 		_ -> error "selectionType: can't get type"
 	where
 	eitherT = conT $ mkName "Either"
 	types e' = map (plainExpressionType peg tk) e'
-
-isTypeChar :: Expression -> Bool
-isTypeChar ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v) = p == v
-isTypeChar _ = False
+	tc ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v) = p == v
+	tc _ = False
 
 plainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
 plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
