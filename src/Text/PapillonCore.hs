@@ -59,7 +59,7 @@ papillonFile str = case pegFile $ parse str of
 			if lu || ou then "import Control.Applicative\n" else ""
 		return (prgm, mn, ppp, addApplicative ++ pp, decs src parsed, atp)
 		where
-		decs src p = decParsed False src p
+		decs = decParsed False
 	Left err -> error $ "parse error: " ++ showParseError err
 
 decParsed :: Bool -> Type -> Peg -> DecsQ
@@ -75,8 +75,7 @@ derivs src pg = DataD [] (mkName "Derivs") [] [
 	RecC (mkName "Derivs") $ map derivs1 pg ++ [
 		(dvCharsN, NotStrict, resultT tkn),
 		(dvPosN, NotStrict, ConT (mkName "Pos") `AppT` src)
-	 ]
- ] []
+	 ]] []
 	where
 	tkn = ConT (mkName "Token") `AppT` src
 	derivs1 (name, Just t, _) = (mkName name, NotStrict, resultT t)
@@ -131,7 +130,7 @@ newNewName g base = do
 	newName (base ++ show n)
 parseE :: IORef Int -> Bool -> Name -> [Name] -> Peg -> ClauseQ
 parseE g th pgn pnames pg = do
-	tmps <- mapM (newNewName g) (map getDefinitionName pg)
+	tmps <- mapM (newNewName g . getDefinitionName) pg
 	parseE' g th pgn tmps pnames $ map (mkName . getDefinitionName) pg
 
 getDefinitionName :: Definition -> String
@@ -180,22 +179,21 @@ parseE1 th tmp name _ = flip (valD $ varP tmp) [] $ normalB $
 	varE (runStateTN th) `appE` varE name `appE` varE (mkName "d")
 
 pSomes :: IORef Int -> Bool -> Name -> Name -> Name -> [Name] -> Peg -> DecsQ
-pSomes g th lst lst1 opt names pg = zipWithM (pSomes1 g th lst lst1 opt) names pg
+pSomes g th lst lst1 opt = zipWithM (pSomes1 g th lst lst1 opt)
 
 pSomes1 :: IORef Int -> Bool -> Name -> Name -> Name -> Name -> Definition -> DecQ
 pSomes1 g th lst lst1 opt pname (_, _, sel) =
 	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel g th lst lst1 opt sel
 
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
-pSomes1Sel g th lst lst1 opt esel = do
-	case esel of
-		Left sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
-			listE (map (processExpressionHs g th lst lst1 opt) sel)
-		Right sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
-			listE (zipWith
-				(flip (putLeftRight $ length sel) .
-					processPlainExpressionHs g th lst lst1 opt)
-				sel [0..])
+pSomes1Sel g th lst lst1 opt esel = case esel of
+	Left sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
+		listE (map (processExpressionHs g th lst lst1 opt) sel)
+	Right sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
+		listE (zipWith
+			(flip (putLeftRight $ length sel) .
+				processPlainExpressionHs g th lst lst1 opt)
+			sel [0..])
 
 putLeftRight :: Int -> Int -> ExpQ -> ExpQ
 putLeftRight 1 0 ex = ex
@@ -218,7 +216,7 @@ processExpressionHs g th lst lst1 opt exhs = do
 				(_, rf, _) = nl
 			processHA g th ha (return nls) (nameFromRF rf) $
 				transLeaf g th lst lst1 opt nl
-		r <- noBindS $ varE (returnN th) `appE` (return ret)
+		r <- noBindS $ varE (returnN th) `appE` return ret
 		return $ concat x ++ [r]
 
 processPlainExpressionHs ::
@@ -226,7 +224,7 @@ processPlainExpressionHs ::
 processPlainExpressionHs g th lst lst1 opt rfs =
 	foldl (\x y -> infixApp x appApply y)
 		(returnEQ `appE` mkTupleE g (map fst rfs)) $
-			map (transHAReadFrom g th lst lst1 opt) $ rfs
+			map (transHAReadFrom g th lst lst1 opt) rfs
 
 mkTupleE :: IORef Int -> [Lookahead] -> ExpQ
 mkTupleE g has = do
@@ -280,8 +278,8 @@ getNewName g n = do
 transHAReadFrom ::
 	IORef Int -> Bool -> Name -> Name -> Name -> (Lookahead, ReadFrom) -> ExpQ
 transHAReadFrom g th lst lst1 opt (ha, rf) = smartDoE <$>
-	(processHA g th ha (return "") (nameFromRF rf) $ fmap (: []) $ noBindS $
-		transReadFrom g th lst lst1 opt rf)
+	processHA g th ha (return "") (nameFromRF rf)
+		(fmap (: []) $ noBindS $ transReadFrom g th lst lst1 opt rf)
 
 transReadFrom :: IORef Int -> Bool -> Name -> Name -> Name -> ReadFrom -> ExpQ
 transReadFrom _ th _ _ _ (FromVariable Nothing) =
