@@ -41,130 +41,6 @@ import Data.IORef
 
 import Text.Papillon.List
 
-isOptionalUsed :: PegQ -> Q Bool
-isOptionalUsed pegq = do
-	pg <- pegq =<< runIO (newIORef 0)
-	or <$> mapM isOptionalUsedDefinition (map (const . return) pg)
-
-isOptionalUsedDefinition :: DefinitionQ -> Q Bool
-isOptionalUsedDefinition def = do
-	(_, _, esel) <- def =<< runIO (newIORef 0)
-	case esel of
-		Left sel -> or <$> mapM isOptionalUsedSelection sel
-		Right sel -> or <$> mapM isOptionalUsedPlainSelection sel
-
-isOptionalUsedSelection :: Expression -> Q Bool
-isOptionalUsedSelection exhs = do
-	let (ex, _) = exhs
-	or <$> mapM isOptionalUsedLeafName ex
-
-isOptionalUsedPlainSelection :: PlainExpression -> Q Bool
-isOptionalUsedPlainSelection rfs = or <$> mapM (isOptionalUsedReadFrom . snd) rfs
-
-isOptionalUsedLeafName :: (Lookahead, Check) -> Q Bool
-isOptionalUsedLeafName (_, nl) = isOptionalUsedLeafName' nl
-
-isOptionalUsedLeafName' :: Check -> Q Bool
-isOptionalUsedLeafName' (_, rf, _) = isOptionalUsedReadFrom rf
-
-isOptionalUsedReadFrom :: ReadFrom -> Q Bool
-isOptionalUsedReadFrom (FromL Optional _) = return True
-isOptionalUsedReadFrom (FromSelection esel) = do
-	case esel of
-		Left sel -> or <$> mapM isOptionalUsedSelection sel
-		Right _ -> return False
-isOptionalUsedReadFrom _ = return False
-
-isListUsed :: PegQ -> Q Bool
-isListUsed pegq = do
-	pg <- pegq =<< runIO (newIORef 0)
-	or <$> mapM isListUsedDefinition (map (const . return) pg)
-
-isListUsedDefinition :: DefinitionQ -> Q Bool
-isListUsedDefinition def = do
-	(_, _, esel) <- def =<< runIO (newIORef 0)
-	case esel of
-		Left sel -> or <$> mapM isListUsedSelection sel
-		Right sel -> or <$> mapM isListUsedPlainSelection sel
-
-isListUsedSelection :: Expression -> Q Bool
-isListUsedSelection exhs = do
-	let (ex, _) = exhs
-	return $ any isListUsedLeafName ex
-
-isListUsedPlainSelection :: PlainExpression -> Q Bool
-isListUsedPlainSelection rfs = or <$> mapM (return . isListUsedReadFrom . snd) rfs
-
-isListUsedLeafName :: (Lookahead, Check) -> Bool
-isListUsedLeafName (_, nl) = isListUsedLeafName' nl
-
-isListUsedLeafName' :: Check -> Bool
-isListUsedLeafName' (_, (FromL List _), _) = True
-isListUsedLeafName' (_, (FromL List1 _), _) = True
-isListUsedLeafName' _ = False
-
-isListUsedReadFrom :: ReadFrom -> Bool
-isListUsedReadFrom (FromL List _) = True
-isListUsedReadFrom (FromL List1 _) = True
-isListUsedReadFrom _ = False
-
-catchErrorN, unlessN :: Bool -> Name
-catchErrorN True = 'catchError
-catchErrorN False = mkName "catchError"
-unlessN True = 'unless
-unlessN False = mkName "unless"
-
-smartDoE :: [Stmt] -> Exp
-smartDoE [NoBindS ex] = ex
-smartDoE stmts = DoE stmts
-
-flipMaybeBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
-flipMaybeBody th code com d ns act = doE [
-	bindS (varP $ mkName "err") $ infixApp
-		actionReturnFalse
-		(varE $ catchErrorN th)
-		constReturnTrue,
-	noBindS $ varE (unlessN th)
-		`appE` varE (mkName "err")
-		`appE` throwErrorPackratMBody th
-			(infixApp (litE $ charL '!') (conE $ mkName ":") code)
-			(stringE "not match: ") com d ns
- ]	where
-	actionReturnFalse = infixApp act (varE $ mkName ">>")
-		(varE (mkName "return") `appE` conE (mkName "False"))
-	constReturnTrue = varE (mkName "const") `appE` 
-		(varE (mkName "return") `appE` conE (mkName "True"))
-
-newThrowQ :: Bool -> String -> String -> Name -> [String] -> String -> ExpQ
-newThrowQ th code msg d ns com =
-	throwErrorPackratMBody th (stringE code) (stringE msg) (stringE com)
-		(varE d) (listE $ map stringE ns)
-
-returnN, putN, stateTN', getN,
-	throwErrorN, runStateTN, justN, mplusN,
-	getsN :: Bool -> Name
-returnN True = 'return
-returnN False = mkName "return"
-throwErrorN True = 'throwError
-throwErrorN False = mkName "throwError"
-putN True = 'put
-putN False = mkName "put"
-getsN True = 'gets
-getsN False = mkName "gets"
-stateTN' True = 'StateT
-stateTN' False = mkName "StateT"
-mplusN True = 'mplus
-mplusN False = mkName "mplus"
-getN True = 'get
-getN False = mkName "get"
-runStateTN True = 'runStateT
-runStateTN False = mkName "runStateT"
-justN True = 'Just
-justN False = mkName "Just"
-
-eitherN :: Name
-eitherN = mkName "Either"
-
 papillonCore :: String -> DecsQ
 papillonCore str = case peg $ parse str of
 	Right (stpegq, _) -> do
@@ -180,8 +56,8 @@ papillonFile str = case pegFile $ parse str of
 	Right (pegfileq, _) -> do
 		g <- runIO $ newIORef 0
 		(prgm, mn, ppp, pp, (src, parsed), atp) <- pegfileq g
-		lu <- isListUsed (const $ return parsed)
-		ou <- isOptionalUsed (const $ return parsed)
+		lu <- listUsed (const $ return parsed)
+		ou <- optionalUsed (const $ return parsed)
 		let addApplicative =
 			if lu || ou then "import Control.Applicative\n" else ""
 		return (prgm, mn, ppp, addApplicative ++ pp, decs src parsed, atp)
@@ -232,8 +108,8 @@ parseEE glb th pgq = do
 		<*> pSomes glb th listN list1N optionalN pNames pgq
 	ld <- listDec listN list1N th
 	od <- optionalDec optionalN th
-	lu <- isListUsed pgq
-	ou <- isOptionalUsed pgq
+	lu <- listUsed pgq
+	ou <- optionalUsed pgq
 	return $ Clause [] (NormalB pgenE) $ decs ++
 		(if lu then ld else []) ++
 		(if ou then od else [])
@@ -563,3 +439,79 @@ varPToWild p = do
 	vpw (ListP ps) = ListP $ vpw `map` ps
 	vpw (TupP ps) = TupP $ vpw `map` ps
 	vpw o = o
+
+optionalUsed :: PegQ -> Q Bool
+optionalUsed pg = any (sel . \(_, _, s) -> s) <$> (pg =<< runIO (newIORef 0))
+	where
+	sel = either	(any $ any (rf . (\(_, r, _) -> r) . snd) . fst)
+			(any $ any $ rf . snd)
+	rf (FromL Optional _) = True
+	rf (FromSelection s) = sel s
+	rf _ = False
+
+listUsed :: PegQ -> Q Bool
+listUsed pg = any (sel . \(_, _, s) -> s) <$> (pg =<< runIO (newIORef 0))
+	where
+	sel = either	(any $ any (rf . (\(_, r, _) -> r) . snd) . fst)
+			(any $ any $ rf . snd)
+	rf (FromL List _) = True
+	rf (FromL List1 _) = True
+	rf (FromSelection s) = sel s
+	rf _ = False
+
+catchErrorN, unlessN :: Bool -> Name
+catchErrorN True = 'catchError
+catchErrorN False = mkName "catchError"
+unlessN True = 'unless
+unlessN False = mkName "unless"
+
+smartDoE :: [Stmt] -> Exp
+smartDoE [NoBindS ex] = ex
+smartDoE stmts = DoE stmts
+
+flipMaybeBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
+flipMaybeBody th code com d ns act = doE [
+	bindS (varP $ mkName "err") $ infixApp
+		actionReturnFalse
+		(varE $ catchErrorN th)
+		constReturnTrue,
+	noBindS $ varE (unlessN th)
+		`appE` varE (mkName "err")
+		`appE` throwErrorPackratMBody th
+			(infixApp (litE $ charL '!') (conE $ mkName ":") code)
+			(stringE "not match: ") com d ns
+ ]	where
+	actionReturnFalse = infixApp act (varE $ mkName ">>")
+		(varE (mkName "return") `appE` conE (mkName "False"))
+	constReturnTrue = varE (mkName "const") `appE` 
+		(varE (mkName "return") `appE` conE (mkName "True"))
+
+newThrowQ :: Bool -> String -> String -> Name -> [String] -> String -> ExpQ
+newThrowQ th code msg d ns com =
+	throwErrorPackratMBody th (stringE code) (stringE msg) (stringE com)
+		(varE d) (listE $ map stringE ns)
+
+returnN, putN, stateTN', getN,
+	throwErrorN, runStateTN, justN, mplusN,
+	getsN :: Bool -> Name
+returnN True = 'return
+returnN False = mkName "return"
+throwErrorN True = 'throwError
+throwErrorN False = mkName "throwError"
+putN True = 'put
+putN False = mkName "put"
+getsN True = 'gets
+getsN False = mkName "gets"
+stateTN' True = 'StateT
+stateTN' False = mkName "StateT"
+mplusN True = 'mplus
+mplusN False = mkName "mplus"
+getN True = 'get
+getN False = mkName "get"
+runStateTN True = 'runStateT
+runStateTN False = mkName "runStateT"
+justN True = 'Just
+justN False = mkName "Just"
+
+eitherN :: Name
+eitherN = mkName "Either"

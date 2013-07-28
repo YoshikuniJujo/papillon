@@ -113,3 +113,14 @@ Text/Papillon/Papillon.hs               40
 Text/Papillon/SyntaxTree.hs             112
 Text/Papillon/List.hs                   53
 total                                   2790
+
+2013.07.28 Sun.
+
+2013年  7月 28日 日曜日 09:00:16 JST
+Text/Papillon.hs                        9
+Text/PapillonCore.hs                    456
+Text/Papillon/Parser.hs                 2178
+Text/Papillon/Papillon.hs               40
+Text/Papillon/SyntaxTree.hs             161
+Text/Papillon/List.hs                   53
+total                                   2897
