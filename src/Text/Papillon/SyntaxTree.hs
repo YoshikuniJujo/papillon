@@ -161,12 +161,9 @@ instance Ppr Lists where
 	ppr List1 = char '+'
 	ppr Optional = char '?'
 
-definitionType :: Peg -> TypeQ -> DefinitionQ -> TypeQ
-definitionType peg tk defq = do
-	def <- defq =<< runIO (newIORef 0)
-	case def of
-		(_, Just typ, _) -> return typ
-		(_, _, sel) -> selectionType peg tk sel
+definitionType :: Peg -> TypeQ -> Definition -> TypeQ
+definitionType _ _ (_, Just typ, _) = return typ
+definitionType peg tk (_, _, sel) = selectionType peg tk sel
 
 selectionType :: Peg -> TypeQ -> Selection -> TypeQ
 selectionType peg tk e = do
@@ -189,20 +186,17 @@ plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
 
 readFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
 readFromType peg tk (FromVariable (Just v)) =
-	definitionType peg tk $ searchDefinition (const $ return peg) v
+	definitionType peg tk $ searchDefinition peg v
 readFromType peg tk (FromSelection sel) = selectionType peg tk sel
 readFromType _ tk (FromVariable _) = tk
 readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
 	where	lt Optional = conT $ mkName "Maybe"
 		lt _ = listT
 
-searchDefinition :: PegQ -> String -> DefinitionQ
-searchDefinition pegq name = \g -> do
-	peg <- pegq g
-	let ds = flip filter peg $ (== name) . (\(n, _, _) -> n)
-	return $ case ds of
-		[d] -> d
-		_ -> error "searchDefinition: bad"
+searchDefinition :: Peg -> String -> Definition
+searchDefinition peg name = case flip filter peg $ (== name) . \(n, _, _) -> n of
+	[d] -> d
+	_ -> error "searchDefinitionQ: bad"
 
 nameFromSelection :: Selection -> Q [String]
 nameFromSelection exs = concat <$>
