@@ -64,11 +64,11 @@ papillonFile str = case pegFile $ parse str of
 
 decParsed :: Bool -> Type -> Peg -> DecsQ
 decParsed th src parsed = do
-	let d = derivs src parsed
+	let	d = derivs src parsed
+		pt = SigD (mkName "parse") $ src `arrT` ConT (mkName "Derivs")
 	glb <- runIO $ newIORef 0
-	pt <- parseT (return src) th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
-	return $ d : pt : [p]
+	return [d, pt, p]
 
 derivs :: Type -> Peg -> Dec
 derivs src pg = DataD [] (mkName "Derivs") [] [
@@ -123,11 +123,6 @@ throwErrorPackratMBody th code msg com d ns = infixApp
 			`appE` com
 			`appE` d
 			`appE` ns))
-
-parseT :: TypeQ -> Bool -> DecQ
-parseT src _ = sigD (mkName "parse") $ arrowT
-	`appT` src
-	`appT` conT (mkName "Derivs")
 
 newNewName :: IORef Int -> String -> Q Name
 newNewName g base = do
@@ -408,6 +403,9 @@ optionalUsed = any $ sel . \(_, _, s) -> s
 	rf (FromL Optional _) = True
 	rf (FromSelection s) = sel s
 	rf _ = False
+
+arrT :: Type -> Type -> Type
+arrT a r = ArrowT `AppT` a `AppT` r
 
 showParseError :: ParseError (Pos String) Derivs -> String
 showParseError pe =
