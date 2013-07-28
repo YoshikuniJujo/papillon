@@ -73,12 +73,11 @@ decParsed th src tkn parsed = do
 
 parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
 parseEE glb th pgg = do
-	let pg = map (const .return) pgg
 	pgn <- newNewName glb "parse"
 	listN <- newNewName glb "list"
 	list1N <- newNewName glb "list1"
 	optionalN <- newNewName glb "optional"
-	pNames <- mapM ((newNewName glb =<<) . getDefinitionName) pg
+	pNames <- mapM (newNewName glb . getDefinitionName) pgg
 
 	pgenE <- varE pgn `appE` varE (mkName "initialPos")
 	decs <- (:)
@@ -97,9 +96,8 @@ dvPosN = mkName "position"
 
 derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
 derivs _ src tkn pg = do
-	let pegg = map (const . return) pg
 	dataD (cxt []) (mkName "Derivs") [] [
-		recC (mkName "Derivs") $ map (derivs1 pg src tkn) pegg ++ [
+		recC (mkName "Derivs") $ map (derivs1 pg src tkn) pg ++ [
 			varStrictType dvCharsN $ strictType notStrict $
 				resultT src tkn,
 			varStrictType dvPosN $ strictType notStrict $
@@ -107,10 +105,9 @@ derivs _ src tkn pg = do
 		 ]
 	 ] []
 
-derivs1 :: Peg -> TypeQ -> TypeQ -> DefinitionQ -> VarStrictTypeQ
-derivs1 pgg src tknq defq = do
+derivs1 :: Peg -> TypeQ -> TypeQ -> Definition -> VarStrictTypeQ
+derivs1 pgg src tknq (name, mtyp, sel) = do
 	tkn <- tknq
-	(name, mtyp, sel) <- defq =<< runIO (newIORef 0)
 	case mtyp of
 		Just typ -> varStrictType (mkName name) $
 			strictType notStrict $ resultT src (return typ)
@@ -151,17 +148,11 @@ newNewName g base = do
 	newName (base ++ show n)
 parseE :: IORef Int -> Bool -> Name -> [Name] -> Peg -> ClauseQ
 parseE g th pgn pnames pg = do
---	pg <- peggq g
-	let pegg = map (const . return) pg
-	tmps <- mapM (newNewName g) =<< names pegg
-	parseE' g th pgn tmps pnames . map mkName =<< names pegg
-	where
-	names p = mapM getDefinitionName p
+	tmps <- mapM (newNewName g) (map getDefinitionName pg)
+	parseE' g th pgn tmps pnames $ map (mkName . getDefinitionName) pg
 
-getDefinitionName :: DefinitionQ -> Q String
-getDefinitionName def = do
-	(n, _, _) <- def =<< runIO (newIORef 0)
-	return n
+getDefinitionName :: Definition -> String
+getDefinitionName (n, _, _) = n
 
 parseE' :: IORef Int -> Bool -> Name -> [Name] -> [Name] -> [Name] -> ClauseQ
 parseE' g th pgn tmps pnames names = do
@@ -206,15 +197,11 @@ parseE1 th tmp name _ = flip (valD $ varP tmp) [] $ normalB $
 	varE (runStateTN th) `appE` varE name `appE` varE (mkName "d")
 
 pSomes :: IORef Int -> Bool -> Name -> Name -> Name -> [Name] -> Peg -> DecsQ
-pSomes g th lst lst1 opt names pg = do
---	pg <- pegq g
-	zipWithM (pSomes1 g th lst lst1 opt) names (map (const . return) pg)
+pSomes g th lst lst1 opt names pg = zipWithM (pSomes1 g th lst lst1 opt) names pg
 
-pSomes1 :: IORef Int -> Bool -> Name -> Name -> Name -> Name -> DefinitionQ -> DecQ
-pSomes1 g th lst lst1 opt pname def = do
-	(_, _, sel) <- def g
-	flip (valD $ varP pname) [] $ normalB $
-		pSomes1Sel g th lst lst1 opt sel
+pSomes1 :: IORef Int -> Bool -> Name -> Name -> Name -> Name -> Definition -> DecQ
+pSomes1 g th lst lst1 opt pname (_, _, sel) =
+	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel g th lst lst1 opt sel
 
 pSomes1Sel :: IORef Int -> Bool -> Name -> Name -> Name -> Selection -> ExpQ
 pSomes1Sel g th lst lst1 opt esel = do

@@ -2,8 +2,6 @@
 * 次にやること           *
 **************************
 
-* selectionType を TypeQ から Type へ
-
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 

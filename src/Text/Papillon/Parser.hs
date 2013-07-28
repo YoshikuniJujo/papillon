@@ -12,7 +12,6 @@ module Text.Papillon.Parser (
 	ReadFrom(..),
 
 	PegQ,
-	DefinitionQ,
 
 	selectionType,
 	pprCheck,
