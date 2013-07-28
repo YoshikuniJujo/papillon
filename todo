@@ -5,6 +5,20 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
+	引き回される list, list1, optional を Lists を利用してひとつにまとめよう
+
+* 生成されるコードをもっとすっきりさせる
+	今は、
+	somexx_xx = runStateT someyy_yy d
+	someyy_yy = do ...
+	のような感じだが、これを
+	somexx_xx = flip runStateT d $ do ...
+	のような感じにしてしまったらどうだろうか
+	ただ、そうするとコードのネストが深くなって見にくくなるということもある
+	今のままのほうが良いのかもしれない
+
+* version up して install
+
 * リファクタリングができたら branch を切る
 	git checkout -b monadic でいいだろう
 

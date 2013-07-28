@@ -66,8 +66,7 @@ decParsed :: Bool -> Type -> Peg -> DecsQ
 decParsed th src parsed = do
 	let	d = derivs src parsed
 		pt = SigD (mkName "parse") $ src `arrT` ConT (mkName "Derivs")
-	glb <- runIO $ newIORef 0
-	p <- funD (mkName "parse") [parseEE glb th parsed]
+	p <- funD (mkName "parse") [mkParseBody th parsed]
 	return [d, pt, p]
 
 derivs :: Type -> Peg -> Dec
@@ -87,8 +86,9 @@ derivs src pg = DataD [] (mkName "Derivs") [] [
 			`AppT` ConT (mkName "Derivs"))
 		`AppT` (TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
 
-parseEE :: IORef Int -> Bool -> Peg -> ClauseQ
-parseEE glb th pgg = do
+mkParseBody :: Bool -> Peg -> ClauseQ
+mkParseBody th pgg = do
+	glb <- runIO $ newIORef 0
 	pgn <- newNewName glb "parse"
 	listN <- newNewName glb "list"
 	list1N <- newNewName glb "list1"
