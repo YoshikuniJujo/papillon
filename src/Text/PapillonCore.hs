@@ -31,6 +31,7 @@ module Text.PapillonCore (
 ) where
 
 import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error
 
@@ -65,8 +66,8 @@ papillonFile str = case pegFile $ parse str of
 
 decParsed :: Bool -> Type -> Type -> Peg -> DecsQ
 decParsed th src tkn parsed = do
+	let d = derivs src tkn parsed
 	glb <- runIO $ newIORef 0
-	d <- derivs th (return src) (return tkn) parsed
 	pt <- parseT (return src) th
 	p <- funD (mkName "parse") [parseEE glb th parsed]
 	return $ d : pt : [p]
@@ -94,25 +95,26 @@ dvCharsN, dvPosN :: Name
 dvCharsN = mkName "char"
 dvPosN = mkName "position"
 
-derivs :: Bool -> TypeQ -> TypeQ -> Peg -> DecQ
-derivs _ src tkn pg = do
-	dataD (cxt []) (mkName "Derivs") [] [
-		recC (mkName "Derivs") $ map (derivs1 pg src tkn) pg ++ [
-			varStrictType dvCharsN $ strictType notStrict $
-				resultT src tkn,
-			varStrictType dvPosN $ strictType notStrict $
-				conT (mkName "Pos") `appT` src
-		 ]
-	 ] []
+derivs :: Type -> Type -> Peg -> Dec
+derivs src tkn pg = DataD [] (mkName "Derivs") [] [
+	RecC (mkName "Derivs") $ map (derivs1 pg src tkn) pg ++ [
+		(dvCharsN, NotStrict, resultT src tkn),
+		(dvPosN, NotStrict, ConT (mkName "Pos") `AppT` src)
+	 ]
+ ] []
 
-derivs1 :: Peg -> TypeQ -> TypeQ -> Definition -> VarStrictTypeQ
-derivs1 pgg src tknq (name, mtyp, sel) = do
-	tkn <- tknq
-	case mtyp of
-		Just typ -> varStrictType (mkName name) $
-			strictType notStrict $ resultT src (return typ)
-		_ -> varStrictType (mkName name) $ strictType notStrict $
-			resultT src $ return $ selectionType pgg tkn sel
+derivs1 :: Peg -> Type -> Type -> Definition -> VarStrictType
+derivs1 _ src _ (name, Just typ, _) = (mkName name, NotStrict, resultT src typ)
+derivs1 pgg src tkn (name, Nothing, sel) =
+	(mkName name, NotStrict, resultT src $ selectionType pgg tkn sel)
+
+resultT :: Type -> Type -> Type
+resultT src typ = ConT eitherN `AppT` pe `AppT`
+	(TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
+	where
+	pe = ConT (mkName "ParseError")
+		`AppT` (ConT (mkName "Pos") `AppT` src)
+		`AppT` ConT (mkName "Derivs")
 
 throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
 throwErrorPackratMBody th code msg com d ns = infixApp
@@ -126,15 +128,6 @@ throwErrorPackratMBody th code msg com d ns = infixApp
 			`appE` com
 			`appE` d
 			`appE` ns))
-
-resultT :: TypeQ -> TypeQ -> TypeQ
-resultT src typ =
-	conT eitherN `appT` pe `appT`
-		(tupleT 2 `appT` typ `appT` conT (mkName "Derivs"))
-	where
-	pe = conT (mkName "ParseError")
-		`appT` (conT (mkName "Pos") `appT` src)
-		`appT` conT (mkName "Derivs")
 
 parseT :: TypeQ -> Bool -> DecQ
 parseT src _ = sigD (mkName "parse") $ arrowT
