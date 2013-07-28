@@ -161,35 +161,35 @@ instance Ppr Lists where
 	ppr List1 = char '+'
 	ppr Optional = char '?'
 
-definitionType :: Peg -> TypeQ -> Definition -> TypeQ
-definitionType _ _ (_, Just typ, _) = return typ
+definitionType :: Peg -> Type -> Definition -> Type
+definitionType _ _ (_, Just typ, _) = typ
 definitionType peg tk (_, _, sel) = selectionType peg tk sel
 
-selectionType :: Peg -> TypeQ -> Selection -> TypeQ
+selectionType :: Peg -> Type -> Selection -> Type
 selectionType peg tk e = do
 	case e of
-		Right ex -> foldr (\x y -> (eitherT `appT` x) `appT` y)
+		Right ex -> foldr (\x y -> (eitherT `AppT` x) `AppT` y)
 			(last $ types ex) (init $ types ex)
 		Left [ex] | tc ex -> tk
 		_ -> error "selectionType: can't get type"
 	where
-	eitherT = conT $ mkName "Either"
+	eitherT = ConT $ mkName "Either"
 	types e' = map (plainExpressionType peg tk) e'
 	tc ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v) = p == v
 	tc _ = False
 
-plainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
+plainExpressionType :: Peg -> Type -> PlainExpression -> Type
 plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
-	foldl appT (tupleT $ length fe) $ map (readFromType peg tk . snd) $ fe
+	foldl AppT (TupleT $ length fe) $ map (readFromType peg tk . snd) $ fe
 
-readFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
+readFromType :: Peg -> Type -> ReadFrom -> Type
 readFromType peg tk (FromVariable (Just v)) =
 	definitionType peg tk $ searchDefinition peg v
 readFromType peg tk (FromSelection sel) = selectionType peg tk sel
 readFromType _ tk (FromVariable _) = tk
-readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
-	where	lt Optional = conT $ mkName "Maybe"
-		lt _ = listT
+readFromType peg tk (FromL l rf) = lt l `AppT` readFromType peg tk rf
+	where	lt Optional = ConT $ mkName "Maybe"
+		lt _ = ListT
 
 searchDefinition :: Peg -> String -> Definition
 searchDefinition peg name = case flip filter peg $ (== name) . \(n, _, _) -> n of
