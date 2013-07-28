@@ -161,14 +161,14 @@ instance Ppr Lists where
 	ppr List1 = char '+'
 	ppr Optional = char '?'
 
-definitionType :: PegQ -> TypeQ -> DefinitionQ -> TypeQ
-definitionType pegq tk defq = do
+definitionType :: Peg -> TypeQ -> DefinitionQ -> TypeQ
+definitionType peg tk defq = do
 	def <- defq =<< runIO (newIORef 0)
 	case def of
 		(_, Just typ, _) -> return typ
-		(_, _, sel) -> selectionType pegq tk sel
+		(_, _, sel) -> selectionType peg tk sel
 
-selectionType :: PegQ -> TypeQ -> Selection -> TypeQ
+selectionType :: Peg -> TypeQ -> Selection -> TypeQ
 selectionType peg tk e = do
 	case e of
 		Right ex -> foldr (\x y -> (eitherT `appT` x) `appT` y)
@@ -183,14 +183,14 @@ isTypeChar :: Expression -> Bool
 isTypeChar ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v) = p == v
 isTypeChar _ = False
 
-plainExpressionType :: PegQ -> TypeQ -> PlainExpression -> TypeQ
+plainExpressionType :: Peg -> TypeQ -> PlainExpression -> TypeQ
 plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
 	foldl appT (tupleT $ length fe) $ map (readFromType peg tk . snd) $ fe
 
-readFromType :: PegQ -> TypeQ -> ReadFrom -> TypeQ
+readFromType :: Peg -> TypeQ -> ReadFrom -> TypeQ
 readFromType peg tk (FromVariable (Just v)) =
-	definitionType peg tk $ searchDefinition peg v
-readFromType pegq tk (FromSelection sel) = selectionType pegq tk sel
+	definitionType peg tk $ searchDefinition (const $ return peg) v
+readFromType peg tk (FromSelection sel) = selectionType peg tk sel
 readFromType _ tk (FromVariable _) = tk
 readFromType peg tk (FromL l rf) = lt l `appT` readFromType peg tk rf
 	where	lt Optional = conT $ mkName "Maybe"

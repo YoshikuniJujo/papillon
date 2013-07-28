@@ -109,13 +109,12 @@ derivs _ src tkn pg = do
 
 derivs1 :: Peg -> TypeQ -> TypeQ -> DefinitionQ -> VarStrictTypeQ
 derivs1 pgg src tkn defq = do
-	let pg = const $ return pgg
 	(name, mtyp, sel) <- defq =<< runIO (newIORef 0)
 	case mtyp of
 		Just typ -> varStrictType (mkName name) $
 			strictType notStrict $ resultT src (return typ)
 		_ -> varStrictType (mkName name) $ strictType notStrict $
-			resultT src $ selectionType pg tkn sel
+			resultT src $ selectionType pgg tkn sel
 
 throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
 throwErrorPackratMBody th code msg com d ns = infixApp

@@ -16,7 +16,6 @@ module Text.Papillon.Parser (
 
 	selectionType,
 	pprCheck,
---	showCheckQ,
 	nameFromRF,
 
 	parse,
