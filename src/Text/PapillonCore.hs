@@ -96,34 +96,33 @@ mkParseBody th pgg = do
 	ln <- (fromJust .) . flip lookup . zip [List, List1, Optional] <$>
 		mapM (newNewName glb) ["list", "list1", "optional"]
 	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pgg
+	tmps <- mapM (newNewName glb . \(n, _, _) -> n) pgg
+	chars <- newNewName glb "chars"
 	decs <- (:)
-		<$> funD pgn [parseE glb th pgn pNames pgg]
+		<$> funD pgn [return $ parseE th pgn tmps chars pNames]
 		<*> pSomes glb th ln pNames pgg
 	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
 		decs ++
 		(if listUsed pgg then listDec (ln List) (ln List1) th else []) ++
 		(if optionalUsed pgg then optionalDec (ln Optional) th else [])
 
-parseE :: IORef Int -> Bool -> Name -> [Name] -> Peg -> ClauseQ
-parseE g th pgn pnames pg = do
-	tmps <- mapM (newNewName g . \(n, _, _) -> n) pg
-	chars <- newNewName g "chars"
-	parseE' th pgn chars tmps pnames $ map (mkName . \(n, _, _) -> n) pg
+parseE :: Bool -> Name -> [Name] -> Name -> [Name] -> Clause
+parseE th pgn tmps chars pnames =
+	Clause [VarP pos, VarP s] (NormalB $ VarE d) $ [
+		flip (ValD $ VarP d) [] $ NormalB $ foldl1 AppE $
+			ConE (mkName "Derivs") :
+				map VarE tmps ++ [VarE chars, VarE pos]
+	 ] ++ zipWith (parseE1 th) tmps pnames ++
+		[parseChar th pgn chars pos s d]
+	where
+	pos = mkName "p"
+	s = mkName "s"
+	d = mkName "d"
 
-parseE' :: Bool -> Name -> Name -> [Name] -> [Name] -> [Name] -> ClauseQ
-parseE' th pgn chars tmps pnames names =
-	clause [varP $ mkName "pos", varP $ mkName "s"]
-					(normalB $ varE $ mkName "d") $ [
-		flip (valD $ varP $ mkName "d") [] $ normalB $ appsE $
-			conE (mkName "Derivs") :
-				map varE tmps ++ [varE chars, varE $ mkName "pos"]
-	 ] ++ zipWith3 (parseE1 th) tmps pnames names ++
-		[return $ parseChar th pgn chars]
-
-parseChar :: Bool -> Name -> Name -> Dec
-parseChar th pgn chars = flip (ValD $ VarP chars) [] $ NormalB $
+parseChar :: Bool -> Name -> Name -> Name -> Name -> Name -> Dec
+parseChar th pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	VarE (runStateTN th) `AppE`
-		(CaseE (VarE (mkName "getToken") `AppE` VarE s) [
+		CaseE (VarE (mkName "getToken") `AppE` VarE s) [
 			Match (justN th `ConP` [TupP [VarP c, VarP s']])
 				(NormalB $ DoE [
 					NoBindS $ VarE (putN th) `AppE`
@@ -134,22 +133,20 @@ parseChar th pgn chars = flip (ValD $ VarP chars) [] $ NormalB $
 				[],
 			flip (Match WildP) [] $ NormalB $
 				newThrow th "" emsg (mkName "undefined") [] ""
-		 ]) `AppE` (VarE $ mkName "d")
+		 ] `AppE` VarE d
 	where
 	emsg = "end of input"
 	newPos = VarE (mkName "updatePos")
 		`AppE` VarE (mkName "c")
 		`AppE` VarE pos
-	pos = mkName "pos"
 	c = mkName "c"
-	s = mkName "s"
 	s' = mkName "s'"
 	returnE = VarE $ returnN th
 	parseGenE = VarE pgn
 
-parseE1 :: Bool -> Name -> Name -> Name -> DecQ
-parseE1 th tmp name _ = flip (valD $ varP tmp) [] $ normalB $
-	varE (runStateTN th) `appE` varE name `appE` varE (mkName "d")
+parseE1 :: Bool -> Name -> Name -> Dec
+parseE1 th tmp name = flip (ValD $ VarP tmp) [] $ NormalB $
+	VarE (runStateTN th) `AppE` VarE name `AppE` VarE (mkName "d")
 
 pSomes :: IORef Int -> Bool -> ListNames -> [Name] -> Peg -> DecsQ
 pSomes g th ln = zipWithM $ pSomes1 g th ln
@@ -242,12 +239,6 @@ beforeMatch th t n d names nc = do
 		noBindS $ varE (returnN th) `appE` tupE []
 	 ]
 
-getNewName :: IORef Int -> String -> Q Name
-getNewName g n = do
-	gn <- runIO $ readIORef g
-	runIO $ modifyIORef g succ
-	newName $ n ++ show gn
-
 transHAReadFrom ::
 	IORef Int -> Bool -> ListNames -> (Lookahead, ReadFrom) -> ExpQ
 transHAReadFrom g th ln (ha, rf) =
@@ -267,23 +258,17 @@ transReadFrom g th ln (FromL List1 rf) =
 transReadFrom g th ln (FromL Optional rf) =
 	varE (ln Optional) `appE` transReadFrom g th ln rf
 
-mkTD :: IORef Int -> Q (Name, Name)
-mkTD g = do
-	t <- getNewName g "xx"
-	d <- getNewName g "d"
-	return (t, d)
-
 transLeaf :: IORef Int -> Bool -> ListNames -> Check -> Q [Stmt]
 transLeaf g th ln ((n, nc), rf, Just (p, pc)) = do
-	(t, d) <- mkTD g
-	let nn = n
-	case nn of
+	t <- newNewName g "xx"
+	d <- newNewName g "d"
+	case n of
 		WildP -> sequence [
 			bindS (varP d) $ varE $ getN th,
 			bindS wildP $ transReadFrom g th ln rf,
 			afterCheck th (return p) d (nameFromRF rf) pc
 		 ]
-		_	| notHaveOthers nn -> do
+		_	| notHaveOthers n -> do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $ transReadFrom g th ln rf
 				m <- letS [flip (valD $ return n) [] $
@@ -303,14 +288,14 @@ transLeaf g th ln ((n, nc), rf, Just (p, pc)) = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 transLeaf g th ln ((n, nc), rf, Nothing) = do
-	(t, d) <- mkTD g
-	let nn = n
-	case nn of
+	t <- newNewName g "xx"
+	d <- newNewName g "d"
+	case n of
 		WildP -> sequence [
 			bindS wildP $ transReadFrom g th ln rf,
 			noBindS $ varE (returnN th) `appE` tupE []
 		 ]
-		_	| notHaveOthers nn -> (: []) <$>
+		_	| notHaveOthers n -> (: []) <$>
 				bindS (return n)
 					(transReadFrom g th ln rf)
 			| otherwise -> do
@@ -329,13 +314,13 @@ processHA :: IORef Int -> Bool -> Lookahead -> Q String -> Q [String] ->
 	Q [Stmt] -> Q [Stmt]
 processHA _ _ Here _ _ act = act
 processHA g th Ahead _ _ act = do
-	d <- getNewName g "ddd"
+	d <- newNewName g "ddd"
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		bindS wildP $ smartDoE <$> act,
 		noBindS $ varE (putN th) `appE` varE d]
 processHA g th (NAhead com) nlss names act = do
-	d <- getNewName g "ddd"
+	d <- newNewName g "ddd"
 	ns <- names
 	nls <- nlss
 	sequence [
@@ -403,7 +388,7 @@ newNewName :: IORef Int -> String -> Q Name
 newNewName g base = do
 	n <- runIO $ readIORef g
 	runIO $ modifyIORef g succ
-	newName (base ++ show n)
+	newName $ base ++ show n
 
 showParseError :: ParseError (Pos String) Derivs -> String
 showParseError pe =
