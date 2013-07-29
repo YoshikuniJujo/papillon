@@ -5,6 +5,12 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
+	throwErrorPackratMBody を ExpQ から Exp にする
+	newThrowQ を newThrow から作る
+	parseChar を DecQ から Dec にする
+	おそらく、全体的に、...Q を返す大きな関数を作るよりも、
+	newName を分けて、Name -> ... を返す関数を作ったほうが良いと思われる。
+
 * version up して install
 
 * リファクタリングができたら branch を切る
