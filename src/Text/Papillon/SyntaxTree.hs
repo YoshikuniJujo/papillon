@@ -55,7 +55,7 @@ import Data.List
 import Data.IORef
 
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
-data Lists = List | List1 | Optional deriving Show
+data Lists = List | List1 | Optional deriving (Show, Eq)
 
 type STPeg = (Type, Peg)
 type Peg = [Definition]

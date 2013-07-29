@@ -5,15 +5,6 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
-	引き回される list, list1, optional を Lists を利用してひとつにまとめよう
-	いつもなやむところだが、data Lists をどこに置き、
-	どのような module の階層を作るべきか、だ。
-	list 関数の定義自体は Parser から独立しているので、独立した module にしたい。
-	しかし、data Lists は Parser でも使いたいし、List でも使いたい。
-	まあ、今のところは大がかりなことはしないでおいても良いが ...。
-	この問題はつまり、module A と module B の interface となる data X を、
-	module B に置くべきか、あるいは独立した module に置くべきかという問題に近い。
-
 * 生成されるコードをもっとすっきりさせる
 	今は、
 	somexx_xx = runStateT someyy_yy d
