@@ -109,8 +109,9 @@ nextVariable vs n = (n, tail $ fromJust $ lookup n vs) : vs
 mkParseBody :: Bool -> Peg -> ClauseQ
 mkParseBody th pgg = do
 	glb <- runIO $ newIORef 0
-	vars <- foldM (newVariable glb) []
-		["parse", "chars", "pos", "d", "c", "s", "s'", "x", "d'"]
+	vars <- foldM (newVariable glb) [] [
+		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t",
+		"ddd"]
 	let	pgn = getVariable vars "parse"
 		vars' = nextVariable vars "d"
 	ln <- (fromJust .) . flip lookup . zip [List, List1, Optional] <$>
@@ -198,10 +199,8 @@ processExpressionHs g th ln exhs vars = (, nextVariable vars "d") $ do
 		x <- forM expr $ \(ha, nl) -> do
 			let	nls = show $ pprCheck nl
 				(_, rf, _) = nl
-			v <- get
-			modify $ flip nextVariable "d"
-			lift $ processHA g th ha (return nls) (nameFromRF rf) $
-				transLeaf g th ln nl v
+			processHAS th ha (return nls) (nameFromRF rf) $
+				transLeafS g th ln nl
 		r <- lift $ noBindS $ varE (returnN th) `appE` return ret
 		return $ concat x ++ [r]
 
@@ -250,8 +249,9 @@ beforeMatch th t n d names nc = do
 	 ]
 
 transHAReadFrom :: IORef Int -> Bool -> Variables -> ListNames -> (Lookahead, ReadFrom) -> ExpQ
-transHAReadFrom g th vars ln (ha, rf) =
-	smartDoE <$> processHA g th ha (return "") (nameFromRF rf)
+transHAReadFrom g th vars ln (ha, rf) = do
+	d <- newNewName g "d"
+	smartDoE <$> processHA th ha (return "") (nameFromRF rf) d
 		(fmap (: []) $ noBindS $ transReadFrom g th vars ln rf)
 
 transReadFrom :: IORef Int -> Bool -> Variables -> ListNames -> ReadFrom -> ExpQ
@@ -267,10 +267,17 @@ transReadFrom g th vars ln (FromL List1 rf) =
 transReadFrom g th vars ln (FromL Optional rf) =
 	varE (ln Optional) `appE` transReadFrom g th vars ln rf
 
+transLeafS :: IORef Int -> Bool -> ListNames -> Check -> StateT Variables Q [Stmt]
+transLeafS g th ln ck = do
+	vars <- get
+	modify $ flip nextVariable "d"
+	modify $ flip nextVariable "t"
+	lift $ transLeaf g th ln ck vars
+
 transLeaf :: IORef Int -> Bool -> ListNames -> Check -> Variables -> Q [Stmt]
 transLeaf g th ln ((n, nc), rf, Just (p, pc)) vars = do
-	t <- newNewName g "xx"
-	let	d = getVariable vars "d"
+	let	t = getVariable vars "t"
+		d = getVariable vars "d"
 		vars' = nextVariable vars "d"
 	case n of
 		WildP -> sequence [
@@ -298,8 +305,8 @@ transLeaf g th ln ((n, nc), rf, Just (p, pc)) vars = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 transLeaf g th ln ((n, nc), rf, Nothing) vars = do
-	t <- newNewName g "xx"
-	d <- newNewName g "d"
+	let	t = getVariable vars "t"
+		d = getVariable vars "d"
 	case n of
 		WildP -> sequence [
 			bindS wildP $ transReadFrom g th vars ln rf,
@@ -320,17 +327,26 @@ transLeaf g th ln ((n, nc), rf, Nothing) vars = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 
-processHA :: IORef Int -> Bool -> Lookahead -> Q String -> Q [String] ->
-	Q [Stmt] -> Q [Stmt]
-processHA _ _ Here _ _ act = act
-processHA g th Ahead _ _ act = do
-	d <- newNewName g "ddd"
+processHAS :: Bool -> Lookahead -> Q String -> Q [String] ->
+	StateT Variables Q [Stmt] -> StateT Variables Q [Stmt]
+processHAS th ha nlss names act = do
+	ret <- StateT $ \s -> do
+		(r, s') <- runStateT act s
+		let 	d = getVariable s' "ddd"
+			s'' = nextVariable s' "ddd"
+		r' <- processHA th ha nlss names d $ return r
+		return (r', s'')
+	return ret
+
+processHA :: Bool -> Lookahead -> Q String -> Q [String] -> Name -> Q [Stmt] ->
+	Q [Stmt]
+processHA _ Here _ _ _ act = act
+processHA th Ahead _ _ d act = do
 	sequence [
 		bindS (varP d) $ varE (getN th),
 		bindS wildP $ smartDoE <$> act,
 		noBindS $ varE (putN th) `appE` varE d]
-processHA g th (NAhead com) nlss names act = do
-	d <- newNewName g "d"
+processHA th (NAhead com) nlss names d act = do
 	ns <- names
 	nls <- nlss
 	sequence [
