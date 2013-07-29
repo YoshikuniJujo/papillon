@@ -8,6 +8,16 @@
 	おそらく、全体的に、...Q を返す大きな関数を作るよりも、
 	newName を分けて、Name -> ... を返す関数を作ったほうが良いと思われる。
 
+	[(String, Name)] を作って渡す。
+	渡された先では Q monad を使う必要は無い。
+	あるいは String -> Name 関数を渡す方が使いやすいかもしれない。
+	使いやすいが作りにくいので [(String, Name)] のほうがいいかな。
+	fromJust を使っちゃおうかな。
+	type Variables = [(String, Name)]
+	newVariable :: Variables -> String -> Q Variables
+	getVariable :: Variables -> String -> Name
+	としようかな。
+
 	一文字変数は global には存在しないという仮定がある。
 	そうでないならば、d や p や s も newNewName で作る必要がある。
 	また、c と s' についても同様だ。
