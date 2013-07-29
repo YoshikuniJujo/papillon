@@ -177,16 +177,9 @@ pSomes1Sel th vars ln esel = case esel of
 		listE (flip evalState vars $
 			mapM (StateT . (Identity .) . processExpressionHs th ln) sel)
 	Right sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
-		(ListE <$> (flip evalStateT vars $ zipWithM
-			(flip (putLeftRightS $ length sel) .
-				processPlainExpressionHsS th ln)
-			sel [0..]))
-{-
-		listE (zipWith
-			(flip (putLeftRight $ length sel) . fmap fst .
-				flip (processPlainExpressionHs g th ln) vars)
-			sel [0..])
--}
+		(ListE <$> evalStateT
+			(zipWithM (flip (putLeftRightS $ length sel) .
+				processPlainExpressionHsS th ln) sel [0..]) vars)
 	where
 	putLeftRightS a h exs = StateT $ \s -> do
 		(ex, s') <- runStateT exs s
@@ -222,7 +215,7 @@ processPlainExpressionHs :: Bool -> ListNames -> PlainExpression ->
 processPlainExpressionHs th ln rfs vars = do
 	(exps, vars') <- flip runStateT vars $ mapM (transHAReadFromS th ln) rfs
 	return (foldl (\x y -> InfixE (Just x) appApply (Just y))
-		(returnEQ `AppE` mkTuple2 (map fst rfs)) $ exps, vars')
+		(returnEQ `AppE` mkTuple2 (map fst rfs)) exps, vars')
 	where
 	mkTuple2 has = let names = take (length has) $ fromJust $ lookup "x" vars in
 		LamE (mkPat names has) $ TupE $ mkExp names has
@@ -350,23 +343,20 @@ transLeaf th ln ((n, nc), rf, Nothing) vars = do
 
 processHAS :: Bool -> Lookahead -> Q String -> Q [String] ->
 	StateT Variables Q [Stmt] -> StateT Variables Q [Stmt]
-processHAS th ha nlss names act = do
-	ret <- StateT $ \s -> do
-		(r, s') <- runStateT act s
-		let 	d = getVariable s' "ddd"
-			s'' = nextVariable s' "ddd"
-		r' <- processHA th ha nlss names d $ return r
-		return (r', s'')
-	return ret
+processHAS th ha nlss names act = StateT $ \s -> do
+	(r, s') <- runStateT act s
+	let 	d = getVariable s' "ddd"
+		s'' = nextVariable s' "ddd"
+	r' <- processHA th ha nlss names d $ return r
+	return (r', s'')
 
 processHA :: Bool -> Lookahead -> Q String -> Q [String] -> Name -> Q [Stmt] ->
 	Q [Stmt]
 processHA _ Here _ _ _ act = act
-processHA th Ahead _ _ d act = do
-	sequence [
-		bindS (varP d) $ varE (getN th),
-		bindS wildP $ smartDoE <$> act,
-		noBindS $ varE (putN th) `appE` varE d]
+processHA th Ahead _ _ d act = sequence [
+	bindS (varP d) $ varE (getN th),
+	bindS wildP $ smartDoE <$> act,
+	noBindS $ varE (putN th) `appE` varE d]
 processHA th (NAhead com) nlss names d act = do
 	ns <- names
 	nls <- nlss
