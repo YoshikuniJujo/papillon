@@ -167,6 +167,8 @@ parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	returnE = VarE $ returnN th
 	parseGenE = VarE pgn
 
+type VarMonad = StateT Variables Q
+
 pSomesQ :: Bool -> Variables -> ListNames -> Name -> Definition -> DecQ
 pSomesQ th vars ln pname (_, _, sel) =
 	flip (ValD $ VarP pname) [] . NormalB <$> pSomes1Sel th vars ln sel
@@ -180,7 +182,7 @@ pSomes1Sel th vars ln esel =
 					sel)
 			Right sel -> evalStateT
 				(zipWithM (flip (putLeftRightS $ length sel) .
-					processPlainExpressionHsS th ln) sel [0..])
+					processPlainExpressionHs th ln) sel [0..])
 						vars
 	where
 	putLeftRightS a h exs = StateT $ \s -> do
@@ -203,23 +205,20 @@ processExpressionHs th ln exhs vars = (, nextVariable vars "d") $ do
 		x <- forM expr $ \(ha, nl) -> do
 			let	nls = show $ pprCheck nl
 				(_, rf, _) = nl
-			processHAS th ha (return nls) (nameFromRF rf) $
+			processHA th ha (return nls) (nameFromRF rf) $
 				transLeafS th ln nl
 		r <- lift $ noBindS $ varE (returnN th) `appE` return ret
 		return $ concat x ++ [r]
 
-processPlainExpressionHsS :: Bool -> ListNames -> PlainExpression ->
-	StateT Variables Q Exp
-processPlainExpressionHsS th ln = StateT . processPlainExpressionHs th ln
-
-processPlainExpressionHs :: Bool -> ListNames -> PlainExpression ->
-	Variables -> Q (Exp, Variables)
-processPlainExpressionHs th ln rfs vars = do
-	(exps, vars') <- flip runStateT vars $ mapM (transHAReadFromS th ln) rfs
-	return (foldl (\x y -> InfixE (Just x) appApply (Just y))
-		(returnEQ `AppE` mkTuple2 (map fst rfs)) exps, vars')
+processPlainExpressionHs :: Bool -> ListNames -> PlainExpression -> VarMonad Exp
+processPlainExpressionHs th ln rfs = do
+	vars <- get
+	exps <- mapM (transHAReadFromS th ln) rfs
+	return $ foldl (\x y -> InfixE (Just x) appApply (Just y))
+		(returnEQ `AppE` mkTuple2 (map fst rfs) vars) exps
 	where
-	mkTuple2 has = let names = take (length has) $ fromJust $ lookup "x" vars in
+	mkTuple2 has vars = let
+		names = take (length has) $ fromJust $ lookup "x" vars in
 		LamE (mkPat names has) $ TupE $ mkExp names has
 	mkPat _ [] = []
 	mkPat (n : ns) (Here : hs) = VarP n : mkPat ns hs
@@ -255,8 +254,7 @@ beforeMatch th t n d names nc = do
 		noBindS $ varE (returnN th) `appE` tupE []
 	 ]
 
-transHAReadFromS :: Bool -> ListNames -> (Lookahead, ReadFrom) ->
-	StateT Variables Q Exp
+transHAReadFromS :: Bool -> ListNames -> (Lookahead, ReadFrom) -> VarMonad Exp
 transHAReadFromS th ln harf = do
 	v <- get
 	modify $ flip nextVariable "d"
@@ -265,10 +263,9 @@ transHAReadFromS th ln harf = do
 transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) ->
 	Variables -> ExpQ
 transHAReadFrom th ln (ha, rf) vars = do
-	let 	d = getVariable vars "d"
-		vars' = nextVariable vars "d"
-	smartDoE <$> processHA th ha (return "") (nameFromRF rf) d
-		(fmap (: []) $ noBindS $ transReadFrom th vars' ln rf)
+	let 	vars' = nextVariable vars "d"
+	smartDoE . fst <$> runStateT (processHA th ha (return "") (nameFromRF rf)
+		(lift $ fmap (: []) $ noBindS $ transReadFrom th vars' ln rf)) vars'
 
 transReadFrom :: Bool -> Variables -> ListNames -> ReadFrom -> ExpQ
 transReadFrom th _ _ (FromVariable Nothing) =
@@ -283,7 +280,7 @@ transReadFrom th vars ln (FromL List1 rf) =
 transReadFrom th vars ln (FromL Optional rf) =
 	varE (ln Optional) `appE` transReadFrom th vars ln rf
 
-transLeafS :: Bool -> ListNames -> Check -> StateT Variables Q [Stmt]
+transLeafS :: Bool -> ListNames -> Check -> VarMonad [Stmt]
 transLeafS th ln ck = do
 	vars <- get
 	modify $ flip nextVariable "d"
@@ -343,33 +340,31 @@ transLeaf th ln ((n, nc), rf, Nothing) vars = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 
-processHAS :: Bool -> Lookahead -> Q String -> Q [String] ->
-	StateT Variables Q [Stmt] -> StateT Variables Q [Stmt]
-processHAS th ha nlss names act = StateT $ \s -> do
-	(r, s') <- runStateT act s
-	let 	d = getVariable s' "ddd"
-		s'' = nextVariable s' "ddd"
-	r' <- processHA th ha nlss names d $ return r
-	return (r', s'')
-
-processHA :: Bool -> Lookahead -> Q String -> Q [String] -> Name -> Q [Stmt] ->
-	Q [Stmt]
-processHA _ Here _ _ _ act = act
-processHA th Ahead _ _ d act = sequence [
-	bindS (varP d) $ varE (getN th),
-	bindS wildP $ smartDoE <$> act,
-	noBindS $ varE (putN th) `appE` varE d]
-processHA th (NAhead com) nlss names d act = do
-	ns <- names
-	nls <- nlss
-	sequence [
+processHA :: Bool -> Lookahead -> Q String -> Q [String] -> VarMonad [Stmt] ->
+	VarMonad [Stmt]
+processHA _ Here _ _ act = act
+processHA th Ahead _ _ act = do
+	d <- gets $ flip getVariable "ddd"
+	modify $ flip nextVariable "ddd"
+	r <- act
+	lift $ sequence [
+		bindS (varP d) $ varE (getN th),
+		bindS wildP $ return $ smartDoE r,
+		noBindS $ varE (putN th) `appE` varE d]
+processHA th (NAhead com) nlss names act = do
+	d <- gets $ flip getVariable "ddd"
+	modify $ flip nextVariable "ddd"
+	ns <- lift names
+	nls <- lift nlss
+	r <- act
+	lift $ sequence [
 		bindS (varP d) $ varE (getN th),
 		noBindS $ flipMaybeBody th
 			(stringE nls)
 			(stringE com)
 			(varE d)
 			(listE $ map stringE ns)
-			(smartDoE <$> act),
+			(return $ smartDoE r),
 		noBindS $ varE (putN th) `appE` varE d]
 
 varPToWild :: PatQ -> PatQ
