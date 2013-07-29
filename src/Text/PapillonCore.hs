@@ -89,39 +89,50 @@ derivs src pg = DataD [] (mkName "Derivs") [] [
 
 type ListNames = Lists -> Name
 
+type Variables = [(String, Name)]
+
+newVariable :: IORef Int -> Variables -> String -> Q Variables
+newVariable g vs n = (: vs) . (n ,) <$> newNewName g n
+
+getVariable :: Variables -> String -> Name
+getVariable = (fromJust .) . flip lookup
+
 mkParseBody :: Bool -> Peg -> ClauseQ
 mkParseBody th pgg = do
 	glb <- runIO $ newIORef 0
-	pgn <- newNewName glb "parse"
+	vars <- foldM (newVariable glb) []
+		["parse", "chars", "pos", "d", "c", "s", "s'"]
+	let	pgn = getVariable vars "parse"
 	ln <- (fromJust .) . flip lookup . zip [List, List1, Optional] <$>
 		mapM (newNewName glb) ["list", "list1", "optional"]
 	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pgg
 	tmps <- mapM (newNewName glb . \(n, _, _) -> n) pgg
-	chars <- newNewName glb "chars"
 	decs <- (:)
-		<$> funD pgn [return $ parseE th pgn tmps chars pNames]
+		<$> funD pgn [return $ mkParseCore th vars tmps pNames]
 		<*> zipWithM (pSomes glb th ln) pNames pgg
 	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
 		decs ++
 		(if listUsed pgg then listDec (ln List) (ln List1) th else []) ++
 		(if optionalUsed pgg then optionalDec (ln Optional) th else [])
 
-parseE :: Bool -> Name -> [Name] -> Name -> [Name] -> Clause
-parseE th pgn tmps chars pnames =
+mkParseCore :: Bool -> Variables -> [Name] -> [Name] -> Clause
+mkParseCore th vars tmps pnames =
 	Clause [VarP pos, VarP s] (NormalB $ VarE d) $ [
 		flip (ValD $ VarP d) [] $ NormalB $ foldl1 AppE $
 			ConE (mkName "Derivs") :
 				map VarE tmps ++ [VarE chars, VarE pos]
-	 ] ++ zipWith pe1 tmps pnames ++ [parseChar th pgn chars pos s d]
+	 ] ++ zipWith pe1 tmps pnames ++ [parseChar th vars pgn chars pos s d]
 	where
-	pos = mkName "p"
-	s = mkName "s"
-	d = mkName "d"
+	pgn = getVariable vars "parse"
+	chars = getVariable vars "chars"
+	pos = getVariable vars "pos"
+	s = getVariable vars "s"
+	d = getVariable vars "d"
 	pe1 tmp name = flip (ValD $ VarP tmp) [] $ NormalB $
-		VarE (runStateTN th) `AppE` VarE name `AppE` VarE (mkName "d")
+		VarE (runStateTN th) `AppE` VarE name `AppE` VarE d
 
-parseChar :: Bool -> Name -> Name -> Name -> Name -> Name -> Dec
-parseChar th pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
+parseChar :: Bool -> Variables -> Name -> Name -> Name -> Name -> Name -> Dec
+parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	VarE (runStateTN th) `AppE`
 		CaseE (VarE (mkName "getToken") `AppE` VarE s) [
 			Match (justN th `ConP` [TupP [VarP c, VarP s']])
@@ -138,10 +149,10 @@ parseChar th pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	where
 	emsg = "end of input"
 	newPos = VarE (mkName "updatePos")
-		`AppE` VarE (mkName "c")
+		`AppE` VarE c
 		`AppE` VarE pos
-	c = mkName "c"
-	s' = mkName "s'"
+	c = getVariable vars "c"
+	s' = getVariable vars "s'"
 	returnE = VarE $ returnN th
 	parseGenE = VarE pgn
 
