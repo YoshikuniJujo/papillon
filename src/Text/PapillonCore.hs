@@ -120,7 +120,7 @@ mkParseBody th pgg = do
 	tmps <- mapM (newNewName glb . \(n, _, _) -> n) pgg
 	decs <- (:)
 		<$> funD pgn [return $ mkParseCore th vars tmps pNames]
-		<*> zipWithM (pSomes th vars' ln) pNames pgg
+		<*> zipWithM (pSomesQ th vars' ln) pNames pgg
 	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
 		decs ++
 		(if listUsed pgg then listDec (ln List) (ln List1) th else []) ++
@@ -167,19 +167,21 @@ parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	returnE = VarE $ returnN th
 	parseGenE = VarE pgn
 
-pSomes :: Bool -> Variables -> ListNames -> Name -> Definition -> DecQ
-pSomes th vars ln pname (_, _, sel) =
-	flip (valD $ varP pname) [] $ normalB $ pSomes1Sel th vars ln sel
+pSomesQ :: Bool -> Variables -> ListNames -> Name -> Definition -> DecQ
+pSomesQ th vars ln pname (_, _, sel) =
+	flip (ValD $ VarP pname) [] . NormalB <$> pSomes1Sel th vars ln sel
 
 pSomes1Sel :: Bool -> Variables -> ListNames -> Selection -> ExpQ
-pSomes1Sel th vars ln esel = case esel of
-	Left sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
-		listE (flip evalState vars $
-			mapM (StateT . (Identity .) . processExpressionHs th ln) sel)
-	Right sel -> varE (mkName "foldl1") `appE` varE (mplusN th) `appE`
-		(ListE <$> evalStateT
-			(zipWithM (flip (putLeftRightS $ length sel) .
-				processPlainExpressionHsS th ln) sel [0..]) vars)
+pSomes1Sel th vars ln esel =
+	(VarE (mkName "foldl1") `AppE` VarE (mplusN th) `AppE`) . ListE <$>
+		case esel of
+			Left sel -> sequence (flip evalState vars $ mapM
+				(StateT . (Identity .) . processExpressionHs th ln)
+					sel)
+			Right sel -> evalStateT
+				(zipWithM (flip (putLeftRightS $ length sel) .
+					processPlainExpressionHsS th ln) sel [0..])
+						vars
 	where
 	putLeftRightS a h exs = StateT $ \s -> do
 		(ex, s') <- runStateT exs s

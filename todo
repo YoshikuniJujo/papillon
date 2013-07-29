@@ -2,6 +2,8 @@
 * 次にやること           *
 **************************
 
+* 全体的に StateT Variables Q ... とする
+
 * pSomes 等から Q を消す
 
 * vars :: Variables を、今 Q monad を使っているほとんどの関数に提供する
