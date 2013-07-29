@@ -34,26 +34,32 @@ m = mkName "m"
 a = mkName "a"
 p = mkName "p"
 
-listDec :: Name -> Name -> Bool -> DecsQ
-listDec list list1 th = sequence [
-	sigD list $ forallT [PlainTV m, PlainTV a]
-		(cxt [classP (monadPlusN th) [vm], classP (applicativeN th) [vm]]) $
-		arrowT	`appT` (varT m `appT` varT a)
-			`appT` (varT m `appT` (listT `appT` varT a)),
-	sigD list1 $ forallT [PlainTV m, PlainTV a]
-		(cxt [classP (monadPlusN th) [vm], classP (applicativeN th) [vm]]) $
-		arrowT	`appT` (varT m `appT` varT a)
-			`appT` (varT m `appT` (listT `appT` varT a)),
-	funD list $ (: []) $ flip (clause [varP p]) [] $ normalB $
-		infixApp (varE list1 `appE` varE p) (varE $ mplusN th) returnEmpty,
-	funD list1 $ (: []) $ flip (clause [varP p]) [] $ normalB $
-		infixApp (infixApp cons app (varE p)) next (varE list `appE` varE p)
+listDec :: Name -> Name -> Bool -> [Dec]
+listDec list list1 th = [
+	SigD list $ ForallT [PlainTV m, PlainTV a]
+		([ClassP (monadPlusN th) [vm],
+			ClassP (applicativeN th) [vm]]) $
+		ArrowT	`AppT` (VarT m `AppT` VarT a)
+			`AppT` (VarT m `AppT` (ListT `AppT` VarT a)),
+	SigD list1 $ ForallT [PlainTV m, PlainTV a]
+		([ClassP (monadPlusN th) [vm],
+			ClassP (applicativeN th) [vm]]) $
+		ArrowT	`AppT` (VarT m `AppT` VarT a)
+			`AppT` (VarT m `AppT` (ListT `AppT` VarT a)),
+	FunD list $ (: []) $ flip (Clause [VarP p]) [] $ NormalB $
+		InfixE (Just $ VarE list1 `AppE` VarE p)
+			(VarE $ mplusN th)
+			(Just returnEmpty),
+	FunD list1 $ (: []) $ flip (Clause [VarP p]) [] $ NormalB $
+		InfixE (Just $ InfixE (Just cons) app (Just $ VarE p))
+			next
+			(Just $ VarE list `AppE` VarE p)
  ] where
-	vm = varT m
-	returnEmpty = varE (mkName "return") `appE` listE []
-	cons = conE $ mkName ":"
-	app = varE $ applyN th
-	next = varE $ applyContN th
+	vm = VarT m
+	returnEmpty = VarE (mkName "return") `AppE` ListE []
+	cons = ConE $ mkName ":"
+	app = VarE $ applyN th
+	next = VarE $ applyContN th
 
 {-
 
@@ -62,18 +68,18 @@ optional p = (Just <$> p) `mplus` return Nothing
 
 -}
 
-optionalDec :: Name -> Bool -> DecsQ
-optionalDec optionalN th = sequence [
-	sigD optionalN $ mplusAndApp $ (varT m `appT` varT a) `arrT`
-		(varT m `appT` (conT (mkName "Maybe") `appT` varT a)),
-	funD optionalN $ (: []) $ flip (clause [varP p]) [] $ normalB $
-		conE (mkName "Just") `app` varE p `mplusE` returnNothing
+optionalDec :: Name -> Bool -> [Dec]
+optionalDec optionalN th = [
+	SigD optionalN $ mplusAndApp $ (VarT m `AppT` VarT a) `arrT`
+		(VarT m `AppT` (ConT (mkName "Maybe") `AppT` VarT a)),
+	FunD optionalN $ (: []) $ flip (Clause [VarP p]) [] $ NormalB $
+		ConE (mkName "Just") `app` VarE p `mplusE` returnNothing
  ] where
-	mplusAndApp = forallT [PlainTV m, PlainTV a] $ cxt [
-		classP (monadPlusN th) [varT m],
-		classP (applicativeN th) [varT m]
+	mplusAndApp = ForallT [PlainTV m, PlainTV a] [
+		ClassP (monadPlusN th) [VarT m],
+		ClassP (applicativeN th) [VarT m]
 	 ]
-	arrT f x = arrowT `appT` f `appT` x
-	mplusE x = infixApp x (varE $ mplusN th)
-	returnNothing = varE (mkName "return") `appE` conE (mkName "Nothing")
-	app x = infixApp x (varE $ applyN th)
+	arrT f x = ArrowT `AppT` f `AppT` x
+	mplusE x = InfixE (Just x) (VarE $ mplusN th) . Just
+	returnNothing = VarE (mkName "return") `AppE` ConE (mkName "Nothing")
+	app x = InfixE (Just x) (VarE $ applyN th) . Just

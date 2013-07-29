@@ -5,16 +5,6 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
-* 生成されるコードをもっとすっきりさせる
-	今は、
-	somexx_xx = runStateT someyy_yy d
-	someyy_yy = do ...
-	のような感じだが、これを
-	somexx_xx = flip runStateT d $ do ...
-	のような感じにしてしまったらどうだろうか
-	ただ、そうするとコードのネストが深くなって見にくくなるということもある
-	今のままのほうが良いのかもしれない
-
 * version up して install
 
 * リファクタリングができたら branch を切る
@@ -221,6 +211,16 @@
 
 * Traversable の sequence を使えるところがある
 	definitionQ の fromMaybe を使っているところ
+
+* 生成されるコードをもっとすっきりさせられるかどうか考える
+	今は、
+	somexx_xx = runStateT someyy_yy d
+	someyy_yy = do ...
+	のような感じだが、これを
+	somexx_xx = flip runStateT d $ do ...
+	のような感じにしてしまったらどうだろうか
+	ただ、そうするとコードのネストが深くなって見にくくなるということもある
+	今のままのほうが良いのかもしれない
 
 ******************************
 *  機能面における細かい修正  *

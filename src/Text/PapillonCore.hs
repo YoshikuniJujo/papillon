@@ -93,49 +93,21 @@ mkParseBody :: Bool -> Peg -> ClauseQ
 mkParseBody th pgg = do
 	glb <- runIO $ newIORef 0
 	pgn <- newNewName glb "parse"
-	listNames <- (fromJust .) . flip lookup . zip [List, List1, Optional] <$>
+	ln <- (fromJust .) . flip lookup . zip [List, List1, Optional] <$>
 		mapM (newNewName glb) ["list", "list1", "optional"]
-	pNames <- mapM (newNewName glb . getDefinitionName) pgg
-	pgenE <- varE pgn `appE` varE (mkName "initialPos")
+	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pgg
 	decs <- (:)
 		<$> funD pgn [parseE glb th pgn pNames pgg]
-		<*> pSomes glb th listNames pNames pgg
-	let	lu = listUsed pgg
-		ou = optionalUsed pgg
-	ld <- listDec (listNames List) (listNames List1) th
-	od <- optionalDec (listNames Optional) th
-	return $ Clause [] (NormalB pgenE) $
-		decs ++ (if lu then ld else []) ++ (if ou then od else [])
+		<*> pSomes glb th ln pNames pgg
+	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
+		decs ++
+		(if listUsed pgg then listDec (ln List) (ln List1) th else []) ++
+		(if optionalUsed pgg then optionalDec (ln Optional) th else [])
 
-dvCharsN, dvPosN :: Name
-dvCharsN = mkName "char"
-dvPosN = mkName "position"
-
-throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
-throwErrorPackratMBody th code msg com d ns = infixApp
-	(varE (getsN th) `appE` varE dvPosN)
-	(varE $ mkName ">>=") (infixApp
-		(varE $ throwErrorN th)
-		(varE $ mkName ".")
-		(varE (mkName "mkParseError")
-			`appE` code
-			`appE` msg
-			`appE` com
-			`appE` d
-			`appE` ns))
-
-newNewName :: IORef Int -> String -> Q Name
-newNewName g base = do
-	n <- runIO $ readIORef g
-	runIO $ modifyIORef g succ
-	newName (base ++ show n)
 parseE :: IORef Int -> Bool -> Name -> [Name] -> Peg -> ClauseQ
 parseE g th pgn pnames pg = do
-	tmps <- mapM (newNewName g . getDefinitionName) pg
-	parseE' g th pgn tmps pnames $ map (mkName . getDefinitionName) pg
-
-getDefinitionName :: Definition -> String
-getDefinitionName (n, _, _) = n
+	tmps <- mapM (newNewName g . \(n, _, _) -> n) pg
+	parseE' g th pgn tmps pnames $ map (mkName . \(n, _, _) -> n) pg
 
 parseE' :: IORef Int -> Bool -> Name -> [Name] -> [Name] -> [Name] -> ClauseQ
 parseE' g th pgn tmps pnames names = do
@@ -409,6 +381,29 @@ optionalUsed = any $ sel . \(_, _, s) -> s
 
 arrT :: Type -> Type -> Type
 arrT a r = ArrowT `AppT` a `AppT` r
+
+dvCharsN, dvPosN :: Name
+dvCharsN = mkName "char"
+dvPosN = mkName "position"
+
+throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
+throwErrorPackratMBody th code msg com d ns = infixApp
+	(varE (getsN th) `appE` varE dvPosN)
+	(varE $ mkName ">>=") (infixApp
+		(varE $ throwErrorN th)
+		(varE $ mkName ".")
+		(varE (mkName "mkParseError")
+			`appE` code
+			`appE` msg
+			`appE` com
+			`appE` d
+			`appE` ns))
+
+newNewName :: IORef Int -> String -> Q Name
+newNewName g base = do
+	n <- runIO $ readIORef g
+	runIO $ modifyIORef g succ
+	newName (base ++ show n)
 
 showParseError :: ParseError (Pos String) Derivs -> String
 showParseError pe =
