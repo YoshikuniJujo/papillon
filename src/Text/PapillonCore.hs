@@ -107,46 +107,45 @@ mkParseBody th pgg = do
 parseE :: IORef Int -> Bool -> Name -> [Name] -> Peg -> ClauseQ
 parseE g th pgn pnames pg = do
 	tmps <- mapM (newNewName g . \(n, _, _) -> n) pg
-	parseE' g th pgn tmps pnames $ map (mkName . \(n, _, _) -> n) pg
-
-parseE' :: IORef Int -> Bool -> Name -> [Name] -> [Name] -> [Name] -> ClauseQ
-parseE' g th pgn tmps pnames names = do
 	chars <- newNewName g "chars"
+	parseE' th pgn chars tmps pnames $ map (mkName . \(n, _, _) -> n) pg
+
+parseE' :: Bool -> Name -> Name -> [Name] -> [Name] -> [Name] -> ClauseQ
+parseE' th pgn chars tmps pnames names =
 	clause [varP $ mkName "pos", varP $ mkName "s"]
 					(normalB $ varE $ mkName "d") $ [
 		flip (valD $ varP $ mkName "d") [] $ normalB $ appsE $
 			conE (mkName "Derivs") :
 				map varE tmps ++ [varE chars, varE $ mkName "pos"]
-	 ] ++ zipWith3 (parseE1 th) tmps pnames names ++ [parseChar th pgn chars]
+	 ] ++ zipWith3 (parseE1 th) tmps pnames names ++
+		[return $ parseChar th pgn chars]
 
-parseChar :: Bool -> Name -> Name -> DecQ
-parseChar th pgn chars = flip (valD $ varP chars) [] $ normalB $
-	varE (runStateTN th) `appE`
-		caseE (varE (mkName "getToken") `appE` varE s) [
-			match (justN th `conP` [tupP [varP c, varP s']])
-				(normalB $ doE [
-					noBindS $ varE (putN th) `appE`
+parseChar :: Bool -> Name -> Name -> Dec
+parseChar th pgn chars = flip (ValD $ VarP chars) [] $ NormalB $
+	VarE (runStateTN th) `AppE`
+		(CaseE (VarE (mkName "getToken") `AppE` VarE s) [
+			Match (justN th `ConP` [TupP [VarP c, VarP s']])
+				(NormalB $ DoE [
+					NoBindS $ VarE (putN th) `AppE`
 						(parseGenE
-							`appE` newPos
-							`appE` varE s'),
-					noBindS $ returnE `appE` varE c])
+							`AppE` newPos
+							`AppE` VarE s'),
+					NoBindS $ returnE `AppE` VarE c])
 				[],
-			match wildP
-				(normalB $ newThrowQ th "" "end of input"
-					(mkName "undefined")
-					[] "")
-				[]
-		 ] `appE` varE (mkName "d")
+			flip (Match WildP) [] $ NormalB $
+				newThrow th "" emsg (mkName "undefined") [] ""
+		 ]) `AppE` (VarE $ mkName "d")
 	where
-	newPos = varE (mkName "updatePos")
-		`appE` varE (mkName "c")
-		`appE` varE pos
+	emsg = "end of input"
+	newPos = VarE (mkName "updatePos")
+		`AppE` VarE (mkName "c")
+		`AppE` VarE pos
 	pos = mkName "pos"
 	c = mkName "c"
 	s = mkName "s"
 	s' = mkName "s'"
-	returnE = varE $ returnN th
-	parseGenE = varE pgn
+	returnE = VarE $ returnN th
+	parseGenE = VarE pgn
 
 parseE1 :: Bool -> Name -> Name -> Name -> DecQ
 parseE1 th tmp name _ = flip (valD $ varP tmp) [] $ normalB $
@@ -225,7 +224,7 @@ afterCheck th p d names pc = do
 	pp <- p
 	ns <- names
 	noBindS $ varE (unlessN th) `appE` p `appE`
-		newThrowQ th (show $ ppr pp) "not match: " d ns pc
+		return (newThrow th (show $ ppr pp) "not match: " d ns pc)
 
 beforeMatch :: Bool -> Name -> PatQ -> Name -> Q [String] -> String -> Q [Stmt]
 beforeMatch th t n d names nc = do
@@ -235,8 +234,8 @@ beforeMatch th t n d names nc = do
 		noBindS $ caseE (varE t) [
 			flip (match $ varPToWild n) [] $ normalB $
 				varE (returnN th) `appE` tupE [],
-			flip (match wildP) [] $ normalB $
-				newThrowQ th (show $ ppr nn) "not match pattern: "
+			flip (match wildP) [] $ normalB $ return $
+				newThrow th (show $ ppr nn) "not match pattern: "
 					d ns nc
 		 ],
 		letS [flip (valD n) [] $ normalB $ varE t],
@@ -386,18 +385,19 @@ dvCharsN, dvPosN :: Name
 dvCharsN = mkName "char"
 dvPosN = mkName "position"
 
-throwErrorPackratMBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
-throwErrorPackratMBody th code msg com d ns = infixApp
-	(varE (getsN th) `appE` varE dvPosN)
-	(varE $ mkName ">>=") (infixApp
-		(varE $ throwErrorN th)
-		(varE $ mkName ".")
-		(varE (mkName "mkParseError")
-			`appE` code
-			`appE` msg
-			`appE` com
-			`appE` d
-			`appE` ns))
+throwErrorPackratMBody :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
+throwErrorPackratMBody th code msg com d ns = InfixE
+	(Just $ VarE (getsN th) `AppE` VarE dvPosN)
+	(VarE $ mkName ">>=")
+	(Just $ InfixE
+		(Just $ VarE $ throwErrorN th)
+		(VarE $ mkName ".")
+		(Just $ VarE (mkName "mkParseError")
+			`AppE` code
+			`AppE` msg
+			`AppE` com
+			`AppE` d
+			`AppE` ns))
 
 newNewName :: IORef Int -> String -> Q Name
 newNewName g base = do
@@ -439,19 +439,23 @@ flipMaybeBody th code com d ns act = doE [
 		constReturnTrue,
 	noBindS $ varE (unlessN th)
 		`appE` varE (mkName "err")
-		`appE` throwErrorPackratMBody th
-			(infixApp (litE $ charL '!') (conE $ mkName ":") code)
-			(stringE "not match: ") com d ns
+		`appE` (throwErrorPackratMBody th
+			<$> infixApp (litE $ charL '!') (conE $ mkName ":") code
+			<*> stringE "not match: " <*> com <*> d <*> ns)
  ]	where
 	actionReturnFalse = infixApp act (varE $ mkName ">>")
 		(varE (mkName "return") `appE` conE (mkName "False"))
 	constReturnTrue = varE (mkName "const") `appE` 
 		(varE (mkName "return") `appE` conE (mkName "True"))
 
-newThrowQ :: Bool -> String -> String -> Name -> [String] -> String -> ExpQ
-newThrowQ th code msg d ns com =
-	throwErrorPackratMBody th (stringE code) (stringE msg) (stringE com)
-		(varE d) (listE $ map stringE ns)
+newThrow :: Bool -> String -> String -> Name -> [String] -> String -> Exp
+newThrow th code msg d ns com =
+	throwErrorPackratMBody th
+		(LitE $ StringL code)
+		(LitE $ StringL msg)
+		(LitE $ StringL com)
+		(VarE d)
+		(ListE $ map (LitE . StringL) ns)
 
 returnN, putN, stateTN', getN,
 	throwErrorN, runStateTN, justN, mplusN,
