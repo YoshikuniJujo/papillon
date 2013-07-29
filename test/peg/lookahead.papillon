@@ -1,0 +1,16 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = do
+	case nahead $ parse "good boy" of
+		Right (r, _) -> print r
+		Left _ -> putStrLn "parse error"
+
+[papillon|
+
+nahead :: String
+	= s:(!'d' c { c })*	{ s };
+
+|]
