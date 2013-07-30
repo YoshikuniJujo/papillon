@@ -32,6 +32,7 @@ module Text.PapillonCore (
 
 import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
+-- import "monads-tf" Control.Monad.Identity
 import "monads-tf" Control.Monad.Error
 
 import Control.Applicative
@@ -118,57 +119,49 @@ mkParseBody th pg = do
 	rules <- mapM (newNewName glb . \(n, _, _) -> n) pg
 	let	decs = flip evalState vars $ (:)
 			<$> (FunD pgn <$> (: []) <$> mkParseCore th rets rules)
-			<*> zipWithM (pSomes th) rules pg
+			<*> zipWithM mkr rules pg
 		list = if not $ listUsed pg then [] else listDec
 			(getVariable "list" vars) (getVariable "list1" vars) th
 		opt = if not $ optionalUsed pg then [] else optionalDec
 			(getVariable "optional" vars) th
 	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
 		decs ++ list ++ opt
+	where
+	mkr rule (_, _, sel) =
+		flip (ValD $ VarP rule) [] . NormalB <$> mkRule th sel
 
 mkParseCore :: Bool -> [Name] -> [Name] -> State Variables Clause
 mkParseCore th rets rules = do
-	v <- get
-	[prs, c, p, s, d] <-
-		mapM (gets . getVariable) ["parse", "chars", "pos", "s", "d"]
+	[ch, p, s, d] <- mapM (gets . getVariable) ["chars", "pos", "s", "d"]
 	let def ret rule = flip (ValD $ VarP ret) [] $
 		NormalB $ VarE (runStateTN th) `AppE` VarE rule `AppE` VarE d
+	pc <- parseChar th
 	return $ Clause [VarP p, VarP s] (NormalB $ VarE d) $ [
 		flip (ValD $ VarP d) [] $ NormalB $ foldl1 AppE $
-			ConE (mkName "Derivs") : map VarE rets ++ [VarE c, VarE p]
-	 ] ++ zipWith def rets rules ++ [parseChar th prs c p s d v]
+			ConE (mkName "Derivs") : map VarE rets ++ [VarE ch, VarE p]
+	 ] ++ zipWith def rets rules ++ [pc]
 
-parseChar :: Bool -> Name -> Name -> Name -> Name -> Name -> Variables -> Dec
-parseChar th pgn chars pos s d vars = flip (ValD $ VarP chars) [] $ NormalB $
-	VarE (runStateTN th) `AppE`
+parseChar :: Bool -> State Variables Dec
+parseChar th = do
+	[prs, ch, p, c, s, s', d] <- mapM (gets . getVariable)
+		["parse", "chars", "pos", "c", "s", "s'", "d"]
+	let	emsg = "end of input"
+		np = VarE (mkName "updatePos") `AppE` VarE c `AppE` VarE p
+	return $ flip (ValD $ VarP ch) [] $ NormalB $ VarE (runStateTN th) `AppE`
 		CaseE (VarE (mkName "getToken") `AppE` VarE s) [
 			Match (mkName "Just" `ConP` [TupP [VarP c, VarP s']])
-				(NormalB $ DoE [
-					NoBindS $ VarE (putN th) `AppE`
-						(parseGenE
-							`AppE` newPos
+				(NormalB $ DoE $ map NoBindS [
+					VarE (putN th) `AppE`
+						(VarE prs `AppE` np
 							`AppE` VarE s'),
-					NoBindS $ returnE `AppE` VarE c])
+					VarE (mkName "return") `AppE` VarE c])
 				[],
 			flip (Match WildP) [] $ NormalB $
 				newThrow th "" emsg (mkName "undefined") [] ""
 		 ] `AppE` VarE d
-	where
-	emsg = "end of input"
-	newPos = VarE (mkName "updatePos")
-		`AppE` VarE c
-		`AppE` VarE pos
-	c = getVariable "c" vars
-	s' = getVariable "s'" vars
-	returnE = VarE $ mkName "return"
-	parseGenE = VarE pgn
 
-pSomes :: Bool -> Name -> Definition -> State Variables Dec
-pSomes th pname (_, _, sel) =
-	flip (ValD $ VarP pname) [] . NormalB <$> pSomes1Sel th sel
-
-pSomes1Sel :: Bool -> Selection -> State Variables Exp
-pSomes1Sel th esel = do
+mkRule :: Bool -> Selection -> State Variables Exp
+mkRule th esel = do
 	(VarE (mkName "foldl1") `AppE` VarE (mplusN th) `AppE`) . ListE <$>
 		case esel of
 			Left sel -> mapM (processExpressionHs th) sel
@@ -254,7 +247,7 @@ transReadFrom th (FromVariable Nothing) = return $
 	ConE (stateTN th) `AppE` VarE dvCharsN
 transReadFrom th (FromVariable (Just var)) = return $
 	ConE (stateTN th) `AppE` VarE (mkName var)
-transReadFrom th (FromSelection sel) = pSomes1Sel th sel
+transReadFrom th (FromSelection sel) = mkRule th sel
 transReadFrom th (FromL List rf) = do
 	list <- gets $ getVariable "list"
 	(VarE list `AppE`) <$> transReadFrom th rf
