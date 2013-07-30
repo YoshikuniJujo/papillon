@@ -32,7 +32,6 @@ module Text.PapillonCore (
 
 import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
--- import "monads-tf" Control.Monad.Identity
 import "monads-tf" Control.Monad.Error
 
 import Control.Applicative
@@ -44,6 +43,10 @@ import Data.IORef
 import Text.Papillon.List
 
 import System.IO.Unsafe
+
+dvCharsN, dvPosN :: Name
+dvCharsN = mkName "char"
+dvPosN = mkName "position"
 
 papillonCore :: String -> DecsQ
 papillonCore str = case peg $ parse str of
@@ -91,30 +94,14 @@ derivs src pg = DataD [] (mkName "Derivs") [] [
 			`AppT` ConT (mkName "Derivs"))
 		`AppT` (TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
 
-type ListNames = Lists -> Name
-
-type Variables = [(String, [Name])]
-
-newVariable :: IORef Int -> Variables -> String -> Q Variables
-newVariable g vs n = (: vs) . (n ,) <$> getVars
-	where
-	getVars = runIO $ unsafeInterleaveIO $ (:) <$>
-		runQ (newNewName g n) <*> runQ getVars
-
-getVariable :: Variables -> String -> Name
-getVariable = ((head . fromJust) .) . flip lookup
-
-nextVariable :: Variables -> String -> Variables
-nextVariable vs n = (n, tail $ fromJust $ lookup n vs) : vs
-
 mkParseBody :: Bool -> Peg -> ClauseQ
 mkParseBody th pgg = do
 	glb <- runIO $ newIORef 0
 	vars <- foldM (newVariable glb) [] [
 		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t",
 		"ddd"]
-	let	pgn = getVariable vars "parse"
-		vars' = nextVariable vars "d"
+	let	pgn = getVariable "parse" vars
+		vars' = nextVariable "d" vars
 	ln <- (fromJust .) . flip lookup . zip [List, List1, Optional] <$>
 		mapM (newNewName glb) ["list", "list1", "optional"]
 	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pgg
@@ -126,6 +113,21 @@ mkParseBody th pgg = do
 		(if listUsed pgg then listDec (ln List) (ln List1) th else []) ++
 		(if optionalUsed pgg then optionalDec (ln Optional) th else [])
 
+type ListNames = Lists -> Name
+type Variables = [(String, [Name])]
+
+newVariable :: IORef Int -> Variables -> String -> Q Variables
+newVariable g vs n = (: vs) . (n ,) <$> vars
+	where
+	vars = runIO $ unsafeInterleaveIO $ (:) <$>
+		runQ (newNewName g n) <*> runQ vars
+
+getVariable :: String -> Variables -> Name
+getVariable = ((head . fromJust) .) . lookup
+
+nextVariable :: String -> Variables -> Variables
+nextVariable n vs = (n, tail $ fromJust $ lookup n vs) : vs
+
 mkParseCore :: Bool -> Variables -> [Name] -> [Name] -> Clause
 mkParseCore th vars tmps pnames =
 	Clause [VarP pos, VarP s] (NormalB $ VarE d) $ [
@@ -134,11 +136,11 @@ mkParseCore th vars tmps pnames =
 				map VarE tmps ++ [VarE chars, VarE pos]
 	 ] ++ zipWith pe1 tmps pnames ++ [parseChar th vars pgn chars pos s d]
 	where
-	pgn = getVariable vars "parse"
-	chars = getVariable vars "chars"
-	pos = getVariable vars "pos"
-	s = getVariable vars "s"
-	d = getVariable vars "d"
+	pgn = getVariable "parse" vars
+	chars = getVariable "chars" vars
+	pos = getVariable "pos" vars
+	s = getVariable "s" vars
+	d = getVariable "d" vars
 	pe1 tmp name = flip (ValD $ VarP tmp) [] $ NormalB $
 		VarE (runStateTN th) `AppE` VarE name `AppE` VarE d
 
@@ -146,7 +148,7 @@ parseChar :: Bool -> Variables -> Name -> Name -> Name -> Name -> Name -> Dec
 parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	VarE (runStateTN th) `AppE`
 		CaseE (VarE (mkName "getToken") `AppE` VarE s) [
-			Match (justN th `ConP` [TupP [VarP c, VarP s']])
+			Match (mkName "Just" `ConP` [TupP [VarP c, VarP s']])
 				(NormalB $ DoE [
 					NoBindS $ VarE (putN th) `AppE`
 						(parseGenE
@@ -162,9 +164,9 @@ parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	newPos = VarE (mkName "updatePos")
 		`AppE` VarE c
 		`AppE` VarE pos
-	c = getVariable vars "c"
-	s' = getVariable vars "s'"
-	returnE = VarE $ returnN th
+	c = getVariable "c" vars
+	s' = getVariable "s'" vars
+	returnE = VarE $ mkName "return"
 	parseGenE = VarE pgn
 
 pSomes :: Bool -> ListNames -> Name -> Definition -> State Variables Dec
@@ -199,8 +201,8 @@ processExpressionHs th ln (expr, ret) = do
 				(_, rf, _) = nl
 			processHA th ha nls (nameFromRF rf) $
 				transLeaf th ln nl
-		r <- return $ NoBindS $ VarE (returnN th) `AppE` ret
-		modify $ flip nextVariable "d"
+		r <- return $ NoBindS $ VarE (mkName "return") `AppE` ret
+		modify $ nextVariable "d"
 		return $ concat x ++ [r]
 
 processPlainExpressionHs :: Bool -> ListNames -> PlainExpression -> State Variables Exp
@@ -233,11 +235,11 @@ beforeMatch :: Bool -> Name -> Pat -> Name -> [String] -> String -> [Stmt]
 beforeMatch th t nn d ns nc = [
 	NoBindS $ CaseE (VarE t) [
 		flip (Match $ vpw nn) [] $ NormalB $
-			VarE (returnN th) `AppE` TupE [],
+			VarE (mkName "return") `AppE` TupE [],
 		flip (Match WildP) [] $ NormalB $
 			newThrow th (show $ ppr nn) "not match pattern: " d ns nc],
 	LetS $ [ValD nn (NormalB $ VarE t) []],
-	NoBindS $ VarE (returnN th) `AppE` TupE []]
+	NoBindS $ VarE (mkName "return") `AppE` TupE []]
 	where
 	vpw (VarP _) = WildP
 	vpw (ConP n ps) = ConP n $ map vpw ps
@@ -249,15 +251,15 @@ beforeMatch th t nn d ns nc = [
 
 transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) -> State Variables Exp
 transHAReadFrom th ln (ha, rf) = do
-	modify $ flip nextVariable "d"
+	modify $ nextVariable "d"
 	smartDoE <$> processHA th ha "" (nameFromRF rf)
 		((: []) . NoBindS <$> transReadFrom th ln rf)
 
 transReadFrom :: Bool -> ListNames -> ReadFrom -> State Variables Exp
 transReadFrom th _ (FromVariable Nothing) = return $
-	ConE (stateTN' th) `AppE` VarE dvCharsN
+	ConE (stateTN th) `AppE` VarE dvCharsN
 transReadFrom th _ (FromVariable (Just var)) = return $
-	ConE (stateTN' th) `AppE` VarE (mkName var)
+	ConE (stateTN th) `AppE` VarE (mkName var)
 transReadFrom th ln (FromSelection sel) = pSomes1Sel th ln sel
 transReadFrom th ln (FromL List rf) =
 	(VarE (ln List) `AppE`) <$> transReadFrom th ln rf
@@ -268,10 +270,10 @@ transReadFrom th ln (FromL Optional rf) =
 
 transLeaf :: Bool -> ListNames -> Check -> State Variables [Stmt]
 transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
-	t <- gets $ flip getVariable "t"
-	d <- gets $ flip  getVariable "d"
-	modify $ flip nextVariable "t"
-	modify $ flip nextVariable "d"
+	t <- gets $ getVariable "t"
+	d <- gets $ getVariable "d"
+	modify $ nextVariable "t"
+	modify $ nextVariable "d"
 	case n of
 		WildP -> ((BindS (VarP d) (VarE $ getN th) :) .
 				(: [afterCheck th p d (nameFromRF rf) pc])) .
@@ -293,14 +295,14 @@ transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 transLeaf th ln ((n, nc), rf, Nothing) = do
-	t <- gets $ flip getVariable "t"
-	d <- gets $ flip getVariable "d"
-	modify $ flip nextVariable "d"
-	modify $ flip nextVariable "t"
+	t <- gets $ getVariable "t"
+	d <- gets $ getVariable "d"
+	modify $ nextVariable "d"
+	modify $ nextVariable "t"
 	case n of
 		WildP -> sequence [
 			BindS WildP <$> transReadFrom th ln rf,
-			return $ NoBindS $ VarE (returnN th) `AppE` TupE []
+			return $ NoBindS $ VarE (mkName "return") `AppE` TupE []
 		 ]
 		_	| notHaveOthers n ->
 				(: []) . BindS n <$> transReadFrom th ln rf
@@ -318,16 +320,16 @@ processHA :: Bool -> Lookahead -> String -> [String] -> State Variables [Stmt] -
 	State Variables [Stmt]
 processHA _ Here _ _ act = act
 processHA th Ahead _ _ act = do
-	d <- gets $ flip getVariable "ddd"
-	modify $ flip nextVariable "ddd"
+	d <- gets $ getVariable "ddd"
+	modify $ nextVariable "ddd"
 	r <- act
 	return [
 		BindS (VarP d) $ VarE (getN th),
 		BindS WildP $ smartDoE r,
 		NoBindS $ VarE (putN th) `AppE` VarE d]
 processHA th (NAhead com) nls ns act = do
-	d <- gets $ flip getVariable "ddd"
-	modify $ flip nextVariable "ddd"
+	d <- gets $ getVariable "ddd"
+	modify $ nextVariable "ddd"
 	r <- act
 	return [
 		BindS (VarP d) $ VarE (getN th),
@@ -374,13 +376,6 @@ optionalUsed = any $ sel . \(_, _, s) -> s
 	rf (FromSelection s) = sel s
 	rf _ = False
 
-arrT :: Type -> Type -> Type
-arrT a r = ArrowT `AppT` a `AppT` r
-
-dvCharsN, dvPosN :: Name
-dvCharsN = mkName "char"
-dvPosN = mkName "position"
-
 throwErrorPackratMBody :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
 throwErrorPackratMBody th code msg com d ns = InfixE
 	(Just $ VarE (getsN th) `AppE` VarE dvPosN)
@@ -394,6 +389,15 @@ throwErrorPackratMBody th code msg com d ns = InfixE
 			`AppE` com
 			`AppE` d
 			`AppE` ns))
+
+newThrow :: Bool -> String -> String -> Name -> [String] -> String -> Exp
+newThrow th code msg d ns com =
+	throwErrorPackratMBody th
+		(LitE $ StringL code)
+		(LitE $ StringL msg)
+		(LitE $ StringL com)
+		(VarE d)
+		(ListE $ map (LitE . StringL) ns)
 
 newNewName :: IORef Int -> String -> Q Name
 newNewName g base = do
@@ -417,43 +421,33 @@ showReading d "char" = case char d of
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
 
-catchErrorN, unlessN :: Bool -> Name
-catchErrorN True = 'catchError
-catchErrorN False = mkName "catchError"
-unlessN True = 'unless
-unlessN False = mkName "unless"
-
 smartDoE :: [Stmt] -> Exp
 smartDoE [NoBindS ex] = ex
 smartDoE stmts = DoE stmts
 
-newThrow :: Bool -> String -> String -> Name -> [String] -> String -> Exp
-newThrow th code msg d ns com =
-	throwErrorPackratMBody th
-		(LitE $ StringL code)
-		(LitE $ StringL msg)
-		(LitE $ StringL com)
-		(VarE d)
-		(ListE $ map (LitE . StringL) ns)
+arrT :: Type -> Type -> Type
+arrT a r = ArrowT `AppT` a `AppT` r
 
-returnN, putN, stateTN', getN,
-	throwErrorN, runStateTN, justN, mplusN,
-	getsN :: Bool -> Name
-returnN True = 'return
-returnN False = mkName "return"
-throwErrorN True = 'throwError
-throwErrorN False = mkName "throwError"
-putN True = 'put
-putN False = mkName "put"
-getsN True = 'gets
-getsN False = mkName "gets"
-stateTN' True = 'StateT
-stateTN' False = mkName "StateT"
-mplusN True = 'mplus
-mplusN False = mkName "mplus"
-getN True = 'get
-getN False = mkName "get"
+stateTN, runStateTN, putN, getN, getsN :: Bool -> Name
+stateTN True = 'StateT
+stateTN False = mkName "StateT"
 runStateTN True = 'runStateT
 runStateTN False = mkName "runStateT"
-justN True = 'Just
-justN False = mkName "Just"
+putN True = 'put
+putN False = mkName "put"
+getN True = 'get
+getN False = mkName "get"
+getsN True = 'gets
+getsN False = mkName "gets"
+
+unlessN, mplusN :: Bool -> Name
+unlessN True = 'unless
+unlessN False = mkName "unless"
+mplusN True = 'mplus
+mplusN False = mkName "mplus"
+
+throwErrorN, catchErrorN :: Bool -> Name
+throwErrorN True = 'throwError
+throwErrorN False = mkName "throwError"
+catchErrorN True = 'catchError
+catchErrorN False = mkName "catchError"
