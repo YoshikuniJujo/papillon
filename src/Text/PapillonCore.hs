@@ -225,11 +225,10 @@ processPlainExpressionHs th ln rfs = do
 	appApply = VarE $ mkName "<*>"
 	returnEQ = VarE $ mkName "return"
 
-afterCheck :: Bool -> ExpQ -> Name -> Q [String] -> String -> StmtQ
-afterCheck th p d names pc = do
-	pp <- p
+afterCheck :: Bool -> Exp -> Name -> Q [String] -> String -> StmtQ
+afterCheck th pp d names pc = do
 	ns <- names
-	noBindS $ varE (unlessN th) `appE` p `appE`
+	noBindS $ varE (unlessN th) `appE` return pp `appE`
 		return (newThrow th (show $ ppr pp) "not match: " d ns pc)
 
 beforeMatch :: Bool -> Name -> PatQ -> Name -> Q [String] -> String -> Q [Stmt]
@@ -276,26 +275,26 @@ transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
 	modify $ flip nextVariable "t"
 	modify $ flip nextVariable "d"
 	vars' <- get
-	lift $ case n of
+	case n of
 		WildP -> sequence [
-			bindS (varP d) $ varE $ getN th,
-			bindS wildP $ transReadFrom th vars' ln rf,
-			afterCheck th (return p) d (nameFromRF rf) pc
+			lift $ bindS (varP d) $ varE $ getN th,
+			lift $ bindS wildP $ transReadFrom th vars' ln rf,
+			lift $ afterCheck th p d (nameFromRF rf) pc
 		 ]
-		_	| notHaveOthers n -> do
+		_	| notHaveOthers n -> lift $ do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $ transReadFrom th vars' ln rf
 				m <- letS [flip (valD $ return n) [] $
 					normalB $ varE t]
-				c <- afterCheck th (return p) d (nameFromRF rf) pc
+				c <- afterCheck th p d (nameFromRF rf) pc
 				return $ bd : s : m : [c]
-			| otherwise -> do
+			| otherwise -> lift $ do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $
 					transReadFrom th vars' ln rf
 				m <- beforeMatch th t (return n) d
 					(nameFromRF rf) nc
-				c <- afterCheck th (return p) d (nameFromRF rf) pc
+				c <- afterCheck th p d (nameFromRF rf) pc
 				return $ bd : s : m ++ [c]
 	where
 	notHaveOthers (VarP _) = True
