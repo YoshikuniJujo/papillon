@@ -5,11 +5,11 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
-	type ListName はいらないな。
-		gets $ getVariable "list"
-		gets $ getVariable "list1"
-		gets $ getVariable "optional"
-		とすれば良さそう
+	parseChar を State Variable ... にする
+
+	今は独立したリストとしてあるが、本当なら
+	[(String, (Name, Name))] としたほうが良さそうだ
+	上はそうでもないかもしれない
 
 * version up して install
 

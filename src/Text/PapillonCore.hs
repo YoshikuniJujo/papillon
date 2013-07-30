@@ -94,32 +94,12 @@ derivs src pg = DataD [] (mkName "Derivs") [] [
 			`AppT` ConT (mkName "Derivs"))
 		`AppT` (TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
 
-mkParseBody :: Bool -> Peg -> ClauseQ
-mkParseBody th pg = do
-	glb <- runIO $ newIORef 0
-	vars <- foldM (newVariable glb) [] [
-		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t", "ddd",
-		"list", "list1", "optional"]
-	let	pgn = getVariable "parse" vars
-		list = getVariable "list" vars
-		list1 = getVariable "list1" vars
-		opt = getVariable "optional" vars
-	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pg
-	tmps <- mapM (newNewName glb . \(n, _, _) -> n) pg
-	let	core = FunD pgn [mkParseCore th vars tmps pNames]
-		decs = flip evalState vars $ zipWithM (pSomes th) pNames pg
-	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
-		core : decs ++
-		(if listUsed pg then listDec list list1 th else []) ++
-		(if optionalUsed pg then optionalDec opt th else [])
-
 type Variables = [(String, [Name])]
 
 newVariable :: IORef Int -> Variables -> String -> Q Variables
 newVariable g vs n = (: vs) . (n ,) <$> vars
-	where
-	vars = runIO $ unsafeInterleaveIO $ (:) <$>
-		runQ (newNewName g n) <*> runQ vars
+	where vars = runIO $ unsafeInterleaveIO $ (:)
+		<$> runQ (newNewName g n) <*> runQ vars
 
 getVariable :: String -> Variables -> Name
 getVariable = ((head . fromJust) .) . lookup
@@ -127,24 +107,39 @@ getVariable = ((head . fromJust) .) . lookup
 nextVariable :: String -> Variables -> Variables
 nextVariable n vs = (n, tail $ fromJust $ lookup n vs) : vs
 
-mkParseCore :: Bool -> Variables -> [Name] -> [Name] -> Clause
-mkParseCore th vars tmps pnames =
-	Clause [VarP pos, VarP s] (NormalB $ VarE d) $ [
-		flip (ValD $ VarP d) [] $ NormalB $ foldl1 AppE $
-			ConE (mkName "Derivs") :
-				map VarE tmps ++ [VarE chars, VarE pos]
-	 ] ++ zipWith pe1 tmps pnames ++ [parseChar th vars pgn chars pos s d]
-	where
-	pgn = getVariable "parse" vars
-	chars = getVariable "chars" vars
-	pos = getVariable "pos" vars
-	s = getVariable "s" vars
-	d = getVariable "d" vars
-	pe1 tmp name = flip (ValD $ VarP tmp) [] $ NormalB $
-		VarE (runStateTN th) `AppE` VarE name `AppE` VarE d
+mkParseBody :: Bool -> Peg -> ClauseQ
+mkParseBody th pg = do
+	glb <- runIO $ newIORef 0
+	vars <- foldM (newVariable glb) [] [
+		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t", "ddd",
+		"list", "list1", "optional"]
+	let	pgn = getVariable "parse" vars
+	rets <- mapM (newNewName glb . \(n, _, _) -> n) pg
+	rules <- mapM (newNewName glb . \(n, _, _) -> n) pg
+	let	decs = flip evalState vars $ (:)
+			<$> (FunD pgn <$> (: []) <$> mkParseCore th rets rules)
+			<*> zipWithM (pSomes th) rules pg
+		list = if not $ listUsed pg then [] else listDec
+			(getVariable "list" vars) (getVariable "list1" vars) th
+		opt = if not $ optionalUsed pg then [] else optionalDec
+			(getVariable "optional" vars) th
+	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
+		decs ++ list ++ opt
 
-parseChar :: Bool -> Variables -> Name -> Name -> Name -> Name -> Name -> Dec
-parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
+mkParseCore :: Bool -> [Name] -> [Name] -> State Variables Clause
+mkParseCore th rets rules = do
+	v <- get
+	[prs, c, p, s, d] <-
+		mapM (gets . getVariable) ["parse", "chars", "pos", "s", "d"]
+	let def ret rule = flip (ValD $ VarP ret) [] $
+		NormalB $ VarE (runStateTN th) `AppE` VarE rule `AppE` VarE d
+	return $ Clause [VarP p, VarP s] (NormalB $ VarE d) $ [
+		flip (ValD $ VarP d) [] $ NormalB $ foldl1 AppE $
+			ConE (mkName "Derivs") : map VarE rets ++ [VarE c, VarE p]
+	 ] ++ zipWith def rets rules ++ [parseChar th prs c p s d v]
+
+parseChar :: Bool -> Name -> Name -> Name -> Name -> Name -> Variables -> Dec
+parseChar th pgn chars pos s d vars = flip (ValD $ VarP chars) [] $ NormalB $
 	VarE (runStateTN th) `AppE`
 		CaseE (VarE (mkName "getToken") `AppE` VarE s) [
 			Match (mkName "Just" `ConP` [TupP [VarP c, VarP s']])
