@@ -119,7 +119,7 @@ mkParseBody th pgg = do
 	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pgg
 	tmps <- mapM (newNewName glb . \(n, _, _) -> n) pgg
 	core <- funD pgn [return $ mkParseCore th vars tmps pNames]
-	decs <- flip evalStateT vars' $ zipWithM (pSomes th ln) pNames pgg
+	let decs = flip evalState vars' $ zipWithM (pSomes th ln) pNames pgg
 	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
 		core : decs ++
 		(if listUsed pgg then listDec (ln List) (ln List1) th else []) ++
@@ -166,7 +166,7 @@ parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	returnE = VarE $ returnN th
 	parseGenE = VarE pgn
 
-type VarMonad = StateT Variables Q
+type VarMonad = State Variables
 
 pSomes :: Bool -> ListNames -> Name -> Definition -> VarMonad Dec
 pSomes th ln pname (_, _, sel) =
@@ -182,15 +182,15 @@ pSomes1Sel th ln esel = do
 	where
 	putLeftRightS a h exs = StateT $ \s -> do
 		(ex, s') <- runStateT exs s
-		ret <- putLeftRight a h $ return ex
+		let ret = putLeftRight a h ex
 		return (ret, s')
 	putLeftRight 1 0 ex = ex
-	putLeftRight _ 0 ex = leftE `appE` ex
+	putLeftRight _ 0 ex = leftE `AppE` ex
 	putLeftRight l n ex
-		| n == l - 1 = rightE `appE` putLeftRight (l - 1) (n - 1) ex
-		| otherwise = rightE `appE` putLeftRight l (n - 1) ex
-	rightE = varE (mkName "fmap") `appE` conE (mkName "Right")
-	leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
+		| n == l - 1 = rightE `AppE` putLeftRight (l - 1) (n - 1) ex
+		| otherwise = rightE `AppE` putLeftRight l (n - 1) ex
+	rightE = VarE (mkName "fmap") `AppE` ConE (mkName "Right")
+	leftE = VarE (mkName "fmap") `AppE` ConE (mkName "Left")
 
 processExpressionHs :: Bool -> ListNames -> Expression -> VarMonad Exp
 processExpressionHs th ln (expr, ret) = do
@@ -198,9 +198,9 @@ processExpressionHs th ln (expr, ret) = do
 		x <- forM expr $ \(ha, nl) -> do
 			let	nls = show $ pprCheck nl
 				(_, rf, _) = nl
-			processHA th ha (return nls) (return $ nameFromRF rf) $
+			processHA th ha nls (nameFromRF rf) $
 				transLeaf th ln nl
-		r <- lift $ noBindS $ varE (returnN th) `appE` return ret
+		r <- return $ NoBindS $ VarE (returnN th) `AppE` ret
 		modify $ flip nextVariable "d"
 		return $ concat x ++ [r]
 
@@ -251,14 +251,14 @@ beforeMatch th t nn d ns nc = [
 transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) -> VarMonad Exp
 transHAReadFrom th ln (ha, rf) = do
 	modify $ flip nextVariable "d"
-	smartDoE <$> processHA th ha (return "") (return $ nameFromRF rf)
+	smartDoE <$> processHA th ha "" (nameFromRF rf)
 		((: []) . NoBindS <$> transReadFrom th ln rf)
 
 transReadFrom :: Bool -> ListNames -> ReadFrom -> VarMonad Exp
-transReadFrom th _ (FromVariable Nothing) = lift $
-	conE (stateTN' th) `appE` varE dvCharsN
-transReadFrom th _ (FromVariable (Just var)) = lift $
-	conE (stateTN' th) `appE` varE (mkName var)
+transReadFrom th _ (FromVariable Nothing) = return $
+	ConE (stateTN' th) `AppE` VarE dvCharsN
+transReadFrom th _ (FromVariable (Just var)) = return $
+	ConE (stateTN' th) `AppE` VarE (mkName var)
 transReadFrom th ln (FromSelection sel) = pSomes1Sel th ln sel
 transReadFrom th ln (FromL List rf) =
 	(VarE (ln List) `AppE`) <$> transReadFrom th ln rf
@@ -315,32 +315,48 @@ transLeaf th ln ((n, nc), rf, Nothing) = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 
-processHA :: Bool -> Lookahead -> Q String -> Q [String] -> VarMonad [Stmt] ->
+processHA :: Bool -> Lookahead -> String -> [String] -> VarMonad [Stmt] ->
 	VarMonad [Stmt]
 processHA _ Here _ _ act = act
 processHA th Ahead _ _ act = do
 	d <- gets $ flip getVariable "ddd"
 	modify $ flip nextVariable "ddd"
 	r <- act
-	lift $ sequence [
-		bindS (varP d) $ varE (getN th),
-		bindS wildP $ return $ smartDoE r,
-		noBindS $ varE (putN th) `appE` varE d]
-processHA th (NAhead com) nlss names act = do
+	return [
+		BindS (VarP d) $ VarE (getN th),
+		BindS WildP $ smartDoE r,
+		NoBindS $ VarE (putN th) `AppE` VarE d]
+processHA th (NAhead com) nls ns act = do
 	d <- gets $ flip getVariable "ddd"
 	modify $ flip nextVariable "ddd"
-	ns <- lift names
-	nls <- lift nlss
 	r <- act
-	lift $ sequence [
-		bindS (varP d) $ varE (getN th),
-		noBindS $ flipMaybeBody th
-			(stringE nls)
-			(stringE com)
-			(varE d)
-			(listE $ map stringE ns)
-			(return $ smartDoE r),
-		noBindS $ varE (putN th) `appE` varE d]
+	return [
+		BindS (VarP d) $ VarE (getN th),
+		NoBindS $ flipMaybeBody th
+			(LitE $ StringL nls)
+			(LitE $ StringL com)
+			(VarE d)
+			(ListE $ map (LitE . StringL) ns)
+			(smartDoE r),
+		NoBindS $ VarE (putN th) `AppE` VarE d]
+
+flipMaybeBody :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
+flipMaybeBody th code com d ns act = DoE [
+	BindS (VarP $ mkName "err") $ InfixE
+		(Just actionReturnFalse)
+		(VarE $ catchErrorN th)
+		(Just constReturnTrue),
+	NoBindS $ VarE (unlessN th)
+		`AppE` VarE (mkName "err")
+		`AppE` (throwErrorPackratMBody th
+			(InfixE (Just $ LitE $ CharL '!') (ConE $ mkName ":")
+				(Just code))
+			(LitE $ StringL "not match: ") com d ns)
+ ]	where
+	actionReturnFalse = InfixE (Just act) (VarE $ mkName ">>")
+		(Just $ VarE (mkName "return") `AppE` ConE (mkName "False"))
+	constReturnTrue = VarE (mkName "const") `AppE` 
+		(VarE (mkName "return") `AppE` ConE (mkName "True"))
 
 listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
@@ -411,23 +427,6 @@ unlessN False = mkName "unless"
 smartDoE :: [Stmt] -> Exp
 smartDoE [NoBindS ex] = ex
 smartDoE stmts = DoE stmts
-
-flipMaybeBody :: Bool -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ -> ExpQ
-flipMaybeBody th code com d ns act = doE [
-	bindS (varP $ mkName "err") $ infixApp
-		actionReturnFalse
-		(varE $ catchErrorN th)
-		constReturnTrue,
-	noBindS $ varE (unlessN th)
-		`appE` varE (mkName "err")
-		`appE` (throwErrorPackratMBody th
-			<$> infixApp (litE $ charL '!') (conE $ mkName ":") code
-			<*> stringE "not match: " <*> com <*> d <*> ns)
- ]	where
-	actionReturnFalse = infixApp act (varE $ mkName ">>")
-		(varE (mkName "return") `appE` conE (mkName "False"))
-	constReturnTrue = varE (mkName "const") `appE` 
-		(varE (mkName "return") `appE` conE (mkName "True"))
 
 newThrow :: Bool -> String -> String -> Name -> [String] -> String -> Exp
 newThrow th code msg d ns com =

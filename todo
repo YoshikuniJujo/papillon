@@ -2,34 +2,6 @@
 * 次にやること           *
 **************************
 
-* VarMonad を StateT Variables Q から StateT Variables Identity にする
-	つまり StateT Variables にするということ
-	まずは、今まで変えてきたところを <$> という形にしよう
-
-* pSomes 等から Q を消す
-
-* vars :: Variables を、今 Q monad を使っているほとんどの関数に提供する
-	明らかに必要ないところ以外の全ての関数につける。
-	不必要ならあとで消せば良い。
-	これにより、Q monad を消しやすくなるだろう。
-	そういう一時変数を扱いやすいように Q monad があるのだとは思うが、
-	しかし、Q monad は IO monad を内蔵しているようで、
-	今いち使いにくいところがある。
-	これを、完了したら、ReaderT にしてしまうのはひとつの手だ。
-	できるだけ力の弱い monad を使うのが code を扱いやすくするコツだ。
-
-	入れ子になっている場合に、これだとうまくいかないな。
-
-	unsafeInterleaveIO と 無限リストを使えばできそうだな。
-
-	nextVariable :: Variables -> String -> Variables を作ろう。
-
-	map (processExpressionHs g th vars ln) sel のなかで vars を更新する
-	必要があるな。
-	processExpressionHs g th ln sel vars -> (..., vars') として、
-	flip runStateT vars $ mapM (StateT $ processExpressionHs g th ln sel)
-	とするか。
-
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
