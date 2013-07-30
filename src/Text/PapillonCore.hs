@@ -32,7 +32,7 @@ module Text.PapillonCore (
 
 import Language.Haskell.TH
 import "monads-tf" Control.Monad.State
-import "monads-tf" Control.Monad.Identity
+-- import "monads-tf" Control.Monad.Identity
 import "monads-tf" Control.Monad.Error
 
 import Control.Applicative
@@ -177,13 +177,11 @@ pSomes1Sel :: Bool -> Variables -> ListNames -> Selection -> ExpQ
 pSomes1Sel th vars ln esel =
 	(VarE (mkName "foldl1") `AppE` VarE (mplusN th) `AppE`) . ListE <$>
 		case esel of
-			Left sel -> sequence (flip evalState vars $ mapM
-				(StateT . (Identity .) . processExpressionHs th ln)
-					sel)
-			Right sel -> evalStateT
-				(zipWithM (flip (putLeftRightS $ length sel) .
-					processPlainExpressionHs th ln) sel [0..])
-						vars
+			Left sel -> flip evalStateT vars $
+				mapM (processExpressionHs th ln) sel
+			Right sel -> flip evalStateT vars $
+				zipWithM (flip (putLeftRightS $ length sel) .
+					processPlainExpressionHs th ln) sel [0..]
 	where
 	putLeftRightS a h exs = StateT $ \s -> do
 		(ex, s') <- runStateT exs s
@@ -197,17 +195,16 @@ pSomes1Sel th vars ln esel =
 	rightE = varE (mkName "fmap") `appE` conE (mkName "Right")
 	leftE = varE (mkName "fmap") `appE` conE (mkName "Left")
 
-processExpressionHs ::
-	Bool -> ListNames -> Expression -> Variables -> (ExpQ, Variables)
-processExpressionHs th ln exhs vars = (, nextVariable vars "d") $ do
-	let (expr, ret) = exhs
-	flip evalStateT vars $ fmap smartDoE $ do
+processExpressionHs :: Bool -> ListNames -> Expression -> VarMonad Exp
+processExpressionHs th ln (expr, ret) = do
+	smartDoE <$> do
 		x <- forM expr $ \(ha, nl) -> do
 			let	nls = show $ pprCheck nl
 				(_, rf, _) = nl
 			processHA th ha (return nls) (nameFromRF rf) $
 				transLeafS th ln nl
 		r <- lift $ noBindS $ varE (returnN th) `appE` return ret
+		modify $ flip nextVariable "d"
 		return $ concat x ++ [r]
 
 processPlainExpressionHs :: Bool -> ListNames -> PlainExpression -> VarMonad Exp
