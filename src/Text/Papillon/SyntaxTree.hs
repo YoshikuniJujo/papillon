@@ -196,22 +196,22 @@ searchDefinition peg name = case flip filter peg $ (== name) . \(n, _, _) -> n o
 	[d] -> d
 	_ -> error "searchDefinitionQ: bad"
 
-nameFromSelection :: Selection -> Q [String]
-nameFromSelection exs = concat <$>
+nameFromSelection :: Selection -> [String]
+nameFromSelection exs = concat $
 	(either (mapM nameFromExpression) (mapM nameFromPlainExpression) exs)
 
-nameFromExpression :: Expression -> Q [String]
+nameFromExpression :: Expression -> [String]
 nameFromExpression = nameFromCheck . snd . head . fst
 
-nameFromPlainExpression :: PlainExpression -> Q [String]
+nameFromPlainExpression :: PlainExpression -> [String]
 nameFromPlainExpression = (concat <$>) . mapM (nameFromRF . snd)
 
-nameFromCheck :: Check -> Q [String]
+nameFromCheck :: Check -> [String]
 nameFromCheck (_, rf, _) = nameFromRF rf
 
-nameFromRF :: ReadFrom -> Q [String]
-nameFromRF (FromVariable (Just s)) = return [s]
-nameFromRF (FromVariable _) = return ["char"]
+nameFromRF :: ReadFrom -> [String]
+nameFromRF (FromVariable (Just s)) = [s]
+nameFromRF (FromVariable _) = ["char"]
 nameFromRF (FromL _ rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 

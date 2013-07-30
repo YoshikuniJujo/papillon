@@ -198,7 +198,7 @@ processExpressionHs th ln (expr, ret) = do
 		x <- forM expr $ \(ha, nl) -> do
 			let	nls = show $ pprCheck nl
 				(_, rf, _) = nl
-			processHA th ha (return nls) (nameFromRF rf) $
+			processHA th ha (return nls) (return $ nameFromRF rf) $
 				transLeaf th ln nl
 		r <- lift $ noBindS $ varE (returnN th) `appE` return ret
 		modify $ flip nextVariable "d"
@@ -251,7 +251,7 @@ transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) -> VarMonad Exp
 transHAReadFrom th ln (ha, rf) = do
 	modify $ flip nextVariable "d"
 	vars <- get
-	smartDoE <$> processHA th ha (return "") (nameFromRF rf)
+	smartDoE <$> processHA th ha (return "") (return $ nameFromRF rf)
 		(lift $ (: []) . NoBindS <$> transReadFrom th vars ln rf)
 
 transReadFrom :: Bool -> Variables -> ListNames -> ReadFrom -> ExpQ
@@ -279,22 +279,22 @@ transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
 		WildP -> sequence [
 			lift $ bindS (varP d) $ varE $ getN th,
 			lift $ bindS wildP $ transReadFrom th vars' ln rf,
-			lift $ afterCheck th p d (nameFromRF rf) pc
+			lift $ afterCheck th p d (return $ nameFromRF rf) pc
 		 ]
 		_	| notHaveOthers n -> lift $ do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $ transReadFrom th vars' ln rf
 				m <- letS [flip (valD $ return n) [] $
 					normalB $ varE t]
-				c <- afterCheck th p d (nameFromRF rf) pc
+				c <- afterCheck th p d (return $ nameFromRF rf) pc
 				return $ bd : s : m : [c]
 			| otherwise -> lift $ do
 				bd <- bindS (varP d) $ varE $ getN th
 				s <- bindS (varP t) $
 					transReadFrom th vars' ln rf
 				m <- beforeMatch th t (return n) d
-					(nameFromRF rf) nc
-				c <- afterCheck th p d (nameFromRF rf) pc
+					(return $ nameFromRF rf) nc
+				c <- afterCheck th p d (return $ nameFromRF rf) pc
 				return $ bd : s : m ++ [c]
 	where
 	notHaveOthers (VarP _) = True
@@ -319,7 +319,7 @@ transLeaf th ln ((n, nc), rf, Nothing) = do
 				s <- bindS (varP t) $
 					transReadFrom th vars ln rf
 				m <- beforeMatch th t (return n) d
-					(nameFromRF rf) nc
+					(return $ nameFromRF rf) nc
 				return $ bd : s : m
 	where
 	notHaveOthers (VarP _) = True
