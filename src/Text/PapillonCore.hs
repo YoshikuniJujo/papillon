@@ -118,11 +118,10 @@ mkParseBody th pgg = do
 		mapM (newNewName glb) ["list", "list1", "optional"]
 	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pgg
 	tmps <- mapM (newNewName glb . \(n, _, _) -> n) pgg
-	decs <- (:)
-		<$> funD pgn [return $ mkParseCore th vars tmps pNames]
-		<*> zipWithM (pSomes th vars' ln) pNames pgg
+	core <- funD pgn [return $ mkParseCore th vars tmps pNames]
+	decs <- flip evalStateT vars' $ zipWithM (pSomes th ln) pNames pgg
 	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
-		decs ++
+		core : decs ++
 		(if listUsed pgg then listDec (ln List) (ln List1) th else []) ++
 		(if optionalUsed pgg then optionalDec (ln Optional) th else [])
 
@@ -169,10 +168,9 @@ parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 
 type VarMonad = StateT Variables Q
 
-pSomes :: Bool -> Variables -> ListNames -> Name -> Definition -> DecQ
-pSomes th vars ln pname (_, _, sel) =
-	flip (ValD $ VarP pname) [] . NormalB . fst <$>
-		runStateT (pSomes1Sel th ln sel) vars
+pSomes :: Bool -> ListNames -> Name -> Definition -> VarMonad Dec
+pSomes th ln pname (_, _, sel) =
+	flip (ValD $ VarP pname) [] . NormalB <$> pSomes1Sel th ln sel
 
 pSomes1Sel :: Bool -> ListNames -> Selection -> VarMonad Exp
 pSomes1Sel th ln esel = do
