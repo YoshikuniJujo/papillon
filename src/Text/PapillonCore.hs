@@ -52,7 +52,8 @@ papillonCore str = case peg $ parse str of
 		decParsed True src parsed
 	Left err -> error $ "parse error: " ++ showParseError err
 
-papillonFile :: String -> Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
+papillonFile :: String ->
+	Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
 papillonFile str = case pegFile $ parse str of
 	Right (pegfileq, _) -> do
 		g <- runIO $ newIORef 0
@@ -166,13 +167,11 @@ parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	returnE = VarE $ returnN th
 	parseGenE = VarE pgn
 
-type VarMonad = State Variables
-
-pSomes :: Bool -> ListNames -> Name -> Definition -> VarMonad Dec
+pSomes :: Bool -> ListNames -> Name -> Definition -> State Variables Dec
 pSomes th ln pname (_, _, sel) =
 	flip (ValD $ VarP pname) [] . NormalB <$> pSomes1Sel th ln sel
 
-pSomes1Sel :: Bool -> ListNames -> Selection -> VarMonad Exp
+pSomes1Sel :: Bool -> ListNames -> Selection -> State Variables Exp
 pSomes1Sel th ln esel = do
 	(VarE (mkName "foldl1") `AppE` VarE (mplusN th) `AppE`) . ListE <$>
 		case esel of
@@ -192,7 +191,7 @@ pSomes1Sel th ln esel = do
 	rightE = VarE (mkName "fmap") `AppE` ConE (mkName "Right")
 	leftE = VarE (mkName "fmap") `AppE` ConE (mkName "Left")
 
-processExpressionHs :: Bool -> ListNames -> Expression -> VarMonad Exp
+processExpressionHs :: Bool -> ListNames -> Expression -> State Variables Exp
 processExpressionHs th ln (expr, ret) = do
 	smartDoE <$> do
 		x <- forM expr $ \(ha, nl) -> do
@@ -204,7 +203,7 @@ processExpressionHs th ln (expr, ret) = do
 		modify $ flip nextVariable "d"
 		return $ concat x ++ [r]
 
-processPlainExpressionHs :: Bool -> ListNames -> PlainExpression -> VarMonad Exp
+processPlainExpressionHs :: Bool -> ListNames -> PlainExpression -> State Variables Exp
 processPlainExpressionHs th ln rfs = do
 	vars <- get
 	exps <- mapM (transHAReadFrom th ln) rfs
@@ -248,13 +247,13 @@ beforeMatch th t nn d ns nc = [
 	vpw (TupP ps) = TupP $ vpw `map` ps
 	vpw o = o
 
-transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) -> VarMonad Exp
+transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) -> State Variables Exp
 transHAReadFrom th ln (ha, rf) = do
 	modify $ flip nextVariable "d"
 	smartDoE <$> processHA th ha "" (nameFromRF rf)
 		((: []) . NoBindS <$> transReadFrom th ln rf)
 
-transReadFrom :: Bool -> ListNames -> ReadFrom -> VarMonad Exp
+transReadFrom :: Bool -> ListNames -> ReadFrom -> State Variables Exp
 transReadFrom th _ (FromVariable Nothing) = return $
 	ConE (stateTN' th) `AppE` VarE dvCharsN
 transReadFrom th _ (FromVariable (Just var)) = return $
@@ -267,7 +266,7 @@ transReadFrom th ln (FromL List1 rf) =
 transReadFrom th ln (FromL Optional rf) =
 	(VarE (ln Optional) `AppE`) <$> transReadFrom th ln rf
 
-transLeaf :: Bool -> ListNames -> Check -> VarMonad [Stmt]
+transLeaf :: Bool -> ListNames -> Check -> State Variables [Stmt]
 transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
 	t <- gets $ flip getVariable "t"
 	d <- gets $ flip  getVariable "d"
@@ -315,8 +314,8 @@ transLeaf th ln ((n, nc), rf, Nothing) = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 
-processHA :: Bool -> Lookahead -> String -> [String] -> VarMonad [Stmt] ->
-	VarMonad [Stmt]
+processHA :: Bool -> Lookahead -> String -> [String] -> State Variables [Stmt] ->
+	State Variables [Stmt]
 processHA _ Here _ _ act = act
 processHA th Ahead _ _ act = do
 	d <- gets $ flip getVariable "ddd"
