@@ -199,7 +199,7 @@ processExpressionHs th ln (expr, ret) = do
 			let	nls = show $ pprCheck nl
 				(_, rf, _) = nl
 			processHA th ha (return nls) (nameFromRF rf) $
-				transLeafS th ln nl
+				transLeaf th ln nl
 		r <- lift $ noBindS $ varE (returnN th) `appE` return ret
 		modify $ flip nextVariable "d"
 		return $ concat x ++ [r]
@@ -269,19 +269,14 @@ transReadFrom th vars ln (FromL List1 rf) =
 transReadFrom th vars ln (FromL Optional rf) =
 	varE (ln Optional) `appE` transReadFrom th vars ln rf
 
-transLeafS :: Bool -> ListNames -> Check -> VarMonad [Stmt]
-transLeafS th ln ck = do
-	vars <- get
-	modify $ flip nextVariable "d"
+transLeaf :: Bool -> ListNames -> Check -> VarMonad [Stmt]
+transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
+	t <- gets $ flip getVariable "t"
+	d <- gets $ flip  getVariable "d"
 	modify $ flip nextVariable "t"
-	lift $ transLeaf th ln ck vars
-
-transLeaf :: Bool -> ListNames -> Check -> Variables -> Q [Stmt]
-transLeaf th ln ((n, nc), rf, Just (p, pc)) vars = do
-	let	t = getVariable vars "t"
-		d = getVariable vars "d"
-		vars' = nextVariable vars "d"
-	case n of
+	modify $ flip nextVariable "d"
+	vars' <- get
+	lift $ case n of
 		WildP -> sequence [
 			bindS (varP d) $ varE $ getN th,
 			bindS wildP $ transReadFrom th vars' ln rf,
@@ -306,10 +301,13 @@ transLeaf th ln ((n, nc), rf, Just (p, pc)) vars = do
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
-transLeaf th ln ((n, nc), rf, Nothing) vars = do
-	let	t = getVariable vars "t"
-		d = getVariable vars "d"
-	case n of
+transLeaf th ln ((n, nc), rf, Nothing) = do
+	vars <- get
+	t <- gets $ flip getVariable "t"
+	d <- gets $ flip getVariable "d"
+	modify $ flip nextVariable "d"
+	modify $ flip nextVariable "t"
+	lift $ case n of
 		WildP -> sequence [
 			bindS wildP $ transReadFrom th vars ln rf,
 			noBindS $ varE (returnN th) `appE` tupE []
