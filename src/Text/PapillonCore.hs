@@ -120,7 +120,7 @@ mkParseBody th pgg = do
 	tmps <- mapM (newNewName glb . \(n, _, _) -> n) pgg
 	decs <- (:)
 		<$> funD pgn [return $ mkParseCore th vars tmps pNames]
-		<*> zipWithM (pSomesQ th vars' ln) pNames pgg
+		<*> zipWithM (pSomes th vars' ln) pNames pgg
 	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
 		decs ++
 		(if listUsed pgg then listDec (ln List) (ln List1) th else []) ++
@@ -169,18 +169,17 @@ parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 
 type VarMonad = StateT Variables Q
 
-pSomesQ :: Bool -> Variables -> ListNames -> Name -> Definition -> DecQ
-pSomesQ th vars ln pname (_, _, sel) =
-	flip (ValD $ VarP pname) [] . NormalB <$> pSomes1Sel th vars ln sel
+pSomes :: Bool -> Variables -> ListNames -> Name -> Definition -> DecQ
+pSomes th vars ln pname (_, _, sel) =
+	flip (ValD $ VarP pname) [] . NormalB . fst <$>
+		runStateT (pSomes1Sel th ln sel) vars
 
-pSomes1Sel :: Bool -> Variables -> ListNames -> Selection -> ExpQ
-pSomes1Sel th vars ln esel =
+pSomes1Sel :: Bool -> ListNames -> Selection -> VarMonad Exp
+pSomes1Sel th ln esel = do
 	(VarE (mkName "foldl1") `AppE` VarE (mplusN th) `AppE`) . ListE <$>
 		case esel of
-			Left sel -> flip evalStateT vars $
-				mapM (processExpressionHs th ln) sel
-			Right sel -> flip evalStateT vars $
-				zipWithM (flip (putLeftRightS $ length sel) .
+			Left sel -> mapM (processExpressionHs th ln) sel
+			Right sel -> zipWithM (flip (putLeftRightS $ length sel) .
 					processPlainExpressionHs th ln) sel [0..]
 	where
 	putLeftRightS a h exs = StateT $ \s -> do
@@ -263,7 +262,8 @@ transReadFrom th _ _ (FromVariable Nothing) =
 	conE (stateTN' th) `appE` varE dvCharsN
 transReadFrom th _ _ (FromVariable (Just var)) =
 	conE (stateTN' th) `appE` varE (mkName var)
-transReadFrom th vars ln (FromSelection sel) = pSomes1Sel th vars ln sel
+transReadFrom th vars ln (FromSelection sel) = fst <$>
+	runStateT (pSomes1Sel th ln sel) vars
 transReadFrom th vars ln (FromL List rf) =
 	varE (ln List) `appE` transReadFrom th vars ln rf
 transReadFrom th vars ln (FromL List1 rf) =
