@@ -225,48 +225,53 @@ processPlainExpressionHs th ln rfs = do
 	appApply = VarE $ mkName "<*>"
 	returnEQ = VarE $ mkName "return"
 
-afterCheck :: Bool -> Exp -> Name -> Q [String] -> String -> StmtQ
-afterCheck th pp d names pc = do
-	ns <- names
-	noBindS $ varE (unlessN th) `appE` return pp `appE`
-		return (newThrow th (show $ ppr pp) "not match: " d ns pc)
+afterCheck :: Bool -> Exp -> Name -> [String] -> String -> Stmt
+afterCheck th pp d ns pc = do
+	NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
+		(newThrow th (show $ ppr pp) "not match: " d ns pc)
 
-beforeMatch :: Bool -> Name -> PatQ -> Name -> Q [String] -> String -> Q [Stmt]
-beforeMatch th t n d names nc = do
-	nn <- n
-	ns <- names
-	sequence [
-		noBindS $ caseE (varE t) [
-			flip (match $ varPToWild n) [] $ normalB $
-				varE (returnN th) `appE` tupE [],
-			flip (match wildP) [] $ normalB $ return $
-				newThrow th (show $ ppr nn) "not match pattern: "
-					d ns nc
-		 ],
-		letS [flip (valD n) [] $ normalB $ varE t],
-		noBindS $ varE (returnN th) `appE` tupE []
-	 ]
+beforeMatch :: Bool -> Name -> Pat -> Name -> [String] -> String -> [Stmt]
+beforeMatch th t nn d ns nc = [
+	NoBindS $ CaseE (VarE t) [
+		flip (Match $ vpw nn) [] $ NormalB $
+			VarE (returnN th) `AppE` TupE [],
+		flip (Match WildP) [] $ NormalB $
+			newThrow th (show $ ppr nn) "not match pattern: " d ns nc],
+	LetS $ [ValD nn (NormalB $ VarE t) []],
+	NoBindS $ VarE (returnN th) `AppE` TupE []]
+	where
+	vpw (VarP _) = WildP
+	vpw (ConP n ps) = ConP n $ map vpw ps
+	vpw (InfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
+	vpw (UInfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
+	vpw (ListP ps) = ListP $ vpw `map` ps
+	vpw (TupP ps) = TupP $ vpw `map` ps
+	vpw o = o
 
 transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) -> VarMonad Exp
 transHAReadFrom th ln (ha, rf) = do
 	modify $ flip nextVariable "d"
-	vars <- get
 	smartDoE <$> processHA th ha (return "") (return $ nameFromRF rf)
-		(lift $ (: []) . NoBindS <$> transReadFrom th vars ln rf)
+		((: []) . NoBindS <$> transReadFromS th ln rf)
 
-transReadFrom :: Bool -> Variables -> ListNames -> ReadFrom -> ExpQ
-transReadFrom th _ _ (FromVariable Nothing) =
+transReadFromS :: Bool -> ListNames -> ReadFrom -> VarMonad Exp
+transReadFromS th ln rf = do
+	vars <- get
+	lift $ transReadFrom th ln rf vars
+
+transReadFrom :: Bool -> ListNames -> ReadFrom -> Variables -> Q Exp
+transReadFrom th _ (FromVariable Nothing) _ =
 	conE (stateTN' th) `appE` varE dvCharsN
-transReadFrom th _ _ (FromVariable (Just var)) =
+transReadFrom th _ (FromVariable (Just var)) _ =
 	conE (stateTN' th) `appE` varE (mkName var)
-transReadFrom th vars ln (FromSelection sel) = fst <$>
+transReadFrom th ln (FromSelection sel) vars = fst <$>
 	runStateT (pSomes1Sel th ln sel) vars
-transReadFrom th vars ln (FromL List rf) =
-	varE (ln List) `appE` transReadFrom th vars ln rf
-transReadFrom th vars ln (FromL List1 rf) =
-	varE (ln List1) `appE` transReadFrom th vars ln rf
-transReadFrom th vars ln (FromL Optional rf) =
-	varE (ln Optional) `appE` transReadFrom th vars ln rf
+transReadFrom th ln (FromL List rf) vars =
+	varE (ln List) `appE` transReadFrom th ln rf vars
+transReadFrom th ln (FromL List1 rf) vars =
+	varE (ln List1) `appE` transReadFrom th ln rf vars
+transReadFrom th ln (FromL Optional rf) vars =
+	varE (ln Optional) `appE` transReadFrom th ln rf vars
 
 transLeaf :: Bool -> ListNames -> Check -> VarMonad [Stmt]
 transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
@@ -274,52 +279,42 @@ transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
 	d <- gets $ flip  getVariable "d"
 	modify $ flip nextVariable "t"
 	modify $ flip nextVariable "d"
-	vars' <- get
 	case n of
-		WildP -> sequence [
-			lift $ bindS (varP d) $ varE $ getN th,
-			lift $ bindS wildP $ transReadFrom th vars' ln rf,
-			lift $ afterCheck th p d (return $ nameFromRF rf) pc
-		 ]
-		_	| notHaveOthers n -> lift $ do
-				bd <- bindS (varP d) $ varE $ getN th
-				s <- bindS (varP t) $ transReadFrom th vars' ln rf
-				m <- letS [flip (valD $ return n) [] $
-					normalB $ varE t]
-				c <- afterCheck th p d (return $ nameFromRF rf) pc
-				return $ bd : s : m : [c]
-			| otherwise -> lift $ do
-				bd <- bindS (varP d) $ varE $ getN th
-				s <- bindS (varP t) $
-					transReadFrom th vars' ln rf
-				m <- beforeMatch th t (return n) d
-					(return $ nameFromRF rf) nc
-				c <- afterCheck th p d (return $ nameFromRF rf) pc
-				return $ bd : s : m ++ [c]
+		WildP -> ((BindS (VarP d) (VarE $ getN th) :) .
+				(: [afterCheck th p d (nameFromRF rf) pc])) .
+			BindS WildP <$> transReadFromS th ln rf
+		_	| notHaveOthers n -> do
+				let	bd = BindS (VarP d) $ VarE $ getN th
+					m = LetS [ValD n (NormalB $ VarE t) []]
+					c = afterCheck th p d (nameFromRF rf) pc
+				s <- BindS (VarP t) <$> transReadFromS th ln rf
+				return [bd, s, m, c]
+			| otherwise -> do
+				let	bd = BindS (VarP d) $ VarE $ getN th
+					m = beforeMatch th t n d (nameFromRF rf) nc
+					c = afterCheck th p d (nameFromRF rf) pc
+				s <- BindS (VarP t) <$> transReadFromS th ln rf
+				return $ [bd, s]  ++ m ++ [c]
 	where
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 transLeaf th ln ((n, nc), rf, Nothing) = do
-	vars <- get
 	t <- gets $ flip getVariable "t"
 	d <- gets $ flip getVariable "d"
 	modify $ flip nextVariable "d"
 	modify $ flip nextVariable "t"
-	lift $ case n of
+	case n of
 		WildP -> sequence [
-			bindS wildP $ transReadFrom th vars ln rf,
-			noBindS $ varE (returnN th) `appE` tupE []
+			BindS WildP <$> transReadFromS th ln rf,
+			return $ NoBindS $ VarE (returnN th) `AppE` TupE []
 		 ]
-		_	| notHaveOthers n -> (: []) <$>
-				bindS (return n)
-					(transReadFrom th vars ln rf)
+		_	| notHaveOthers n ->
+				(: []) . BindS n <$> transReadFromS th ln rf
 			| otherwise -> do
-				bd <- bindS (varP d) $ varE $ getN th
-				s <- bindS (varP t) $
-					transReadFrom th vars ln rf
-				m <- beforeMatch th t (return n) d
-					(return $ nameFromRF rf) nc
+				let	bd = BindS (VarP d) $ VarE $ getN th
+					m = beforeMatch th t n d (nameFromRF rf) nc
+				s <- BindS (VarP t) <$> transReadFromS th ln rf
 				return $ bd : s : m
 	where
 	notHaveOthers (VarP _) = True
@@ -352,19 +347,6 @@ processHA th (NAhead com) nlss names act = do
 			(listE $ map stringE ns)
 			(return $ smartDoE r),
 		noBindS $ varE (putN th) `appE` varE d]
-
-varPToWild :: PatQ -> PatQ
-varPToWild p = do
-	pp <- p
-	return $ vpw pp
-	where
-	vpw (VarP _) = WildP
-	vpw (ConP n ps) = ConP n $ map vpw ps
-	vpw (InfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
-	vpw (UInfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
-	vpw (ListP ps) = ListP $ vpw `map` ps
-	vpw (TupP ps) = TupP $ vpw `map` ps
-	vpw o = o
 
 listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
