@@ -213,7 +213,7 @@ processExpressionHs th ln exhs vars = (, nextVariable vars "d") $ do
 processPlainExpressionHs :: Bool -> ListNames -> PlainExpression -> VarMonad Exp
 processPlainExpressionHs th ln rfs = do
 	vars <- get
-	exps <- mapM (transHAReadFromS th ln) rfs
+	exps <- mapM (transHAReadFrom th ln) rfs
 	return $ foldl (\x y -> InfixE (Just x) appApply (Just y))
 		(returnEQ `AppE` mkTuple2 (map fst rfs) vars) exps
 	where
@@ -254,18 +254,12 @@ beforeMatch th t n d names nc = do
 		noBindS $ varE (returnN th) `appE` tupE []
 	 ]
 
-transHAReadFromS :: Bool -> ListNames -> (Lookahead, ReadFrom) -> VarMonad Exp
-transHAReadFromS th ln harf = do
-	v <- get
+transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) -> VarMonad Exp
+transHAReadFrom th ln (ha, rf) = do
 	modify $ flip nextVariable "d"
-	lift $ transHAReadFrom th ln harf v
-
-transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) ->
-	Variables -> ExpQ
-transHAReadFrom th ln (ha, rf) vars = do
-	let 	vars' = nextVariable vars "d"
-	smartDoE . fst <$> runStateT (processHA th ha (return "") (nameFromRF rf)
-		(lift $ fmap (: []) $ noBindS $ transReadFrom th vars' ln rf)) vars'
+	vars <- get
+	smartDoE <$> processHA th ha (return "") (nameFromRF rf)
+		(lift $ (: []) . NoBindS <$> transReadFrom th vars ln rf)
 
 transReadFrom :: Bool -> Variables -> ListNames -> ReadFrom -> ExpQ
 transReadFrom th _ _ (FromVariable Nothing) =
