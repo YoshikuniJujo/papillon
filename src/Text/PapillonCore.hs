@@ -95,25 +95,24 @@ derivs src pg = DataD [] (mkName "Derivs") [] [
 		`AppT` (TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
 
 mkParseBody :: Bool -> Peg -> ClauseQ
-mkParseBody th pgg = do
+mkParseBody th pg = do
 	glb <- runIO $ newIORef 0
 	vars <- foldM (newVariable glb) [] [
-		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t",
-		"ddd"]
+		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t", "ddd",
+		"list", "list1", "optional"]
 	let	pgn = getVariable "parse" vars
-		vars' = nextVariable "d" vars
-	ln <- (fromJust .) . flip lookup . zip [List, List1, Optional] <$>
-		mapM (newNewName glb) ["list", "list1", "optional"]
-	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pgg
-	tmps <- mapM (newNewName glb . \(n, _, _) -> n) pgg
-	core <- funD pgn [return $ mkParseCore th vars tmps pNames]
-	let decs = flip evalState vars' $ zipWithM (pSomes th ln) pNames pgg
+		list = getVariable "list" vars
+		list1 = getVariable "list1" vars
+		opt = getVariable "optional" vars
+	pNames <- mapM (newNewName glb . \(n, _, _) -> n) pg
+	tmps <- mapM (newNewName glb . \(n, _, _) -> n) pg
+	let	core = FunD pgn [mkParseCore th vars tmps pNames]
+		decs = flip evalState vars $ zipWithM (pSomes th) pNames pg
 	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
 		core : decs ++
-		(if listUsed pgg then listDec (ln List) (ln List1) th else []) ++
-		(if optionalUsed pgg then optionalDec (ln Optional) th else [])
+		(if listUsed pg then listDec list list1 th else []) ++
+		(if optionalUsed pg then optionalDec opt th else [])
 
-type ListNames = Lists -> Name
 type Variables = [(String, [Name])]
 
 newVariable :: IORef Int -> Variables -> String -> Q Variables
@@ -169,17 +168,17 @@ parseChar th vars pgn chars pos s d = flip (ValD $ VarP chars) [] $ NormalB $
 	returnE = VarE $ mkName "return"
 	parseGenE = VarE pgn
 
-pSomes :: Bool -> ListNames -> Name -> Definition -> State Variables Dec
-pSomes th ln pname (_, _, sel) =
-	flip (ValD $ VarP pname) [] . NormalB <$> pSomes1Sel th ln sel
+pSomes :: Bool -> Name -> Definition -> State Variables Dec
+pSomes th pname (_, _, sel) =
+	flip (ValD $ VarP pname) [] . NormalB <$> pSomes1Sel th sel
 
-pSomes1Sel :: Bool -> ListNames -> Selection -> State Variables Exp
-pSomes1Sel th ln esel = do
+pSomes1Sel :: Bool -> Selection -> State Variables Exp
+pSomes1Sel th esel = do
 	(VarE (mkName "foldl1") `AppE` VarE (mplusN th) `AppE`) . ListE <$>
 		case esel of
-			Left sel -> mapM (processExpressionHs th ln) sel
+			Left sel -> mapM (processExpressionHs th) sel
 			Right sel -> zipWithM (flip (putLeftRightS $ length sel) .
-					processPlainExpressionHs th ln) sel [0..]
+					processPlainExpressionHs th) sel [0..]
 	where
 	putLeftRightS a h exs = StateT $ \s -> do
 		(ex, s') <- runStateT exs s
@@ -193,22 +192,22 @@ pSomes1Sel th ln esel = do
 	rightE = VarE (mkName "fmap") `AppE` ConE (mkName "Right")
 	leftE = VarE (mkName "fmap") `AppE` ConE (mkName "Left")
 
-processExpressionHs :: Bool -> ListNames -> Expression -> State Variables Exp
-processExpressionHs th ln (expr, ret) = do
+processExpressionHs :: Bool -> Expression -> State Variables Exp
+processExpressionHs th (expr, ret) = do
 	smartDoE <$> do
 		x <- forM expr $ \(ha, nl) -> do
 			let	nls = show $ pprCheck nl
 				(_, rf, _) = nl
 			processHA th ha nls (nameFromRF rf) $
-				transLeaf th ln nl
+				transLeaf th nl
 		r <- return $ NoBindS $ VarE (mkName "return") `AppE` ret
 		modify $ nextVariable "d"
 		return $ concat x ++ [r]
 
-processPlainExpressionHs :: Bool -> ListNames -> PlainExpression -> State Variables Exp
-processPlainExpressionHs th ln rfs = do
+processPlainExpressionHs :: Bool -> PlainExpression -> State Variables Exp
+processPlainExpressionHs th rfs = do
 	vars <- get
-	exps <- mapM (transHAReadFrom th ln) rfs
+	exps <- mapM (transHAReadFrom th) rfs
 	return $ foldl (\x y -> InfixE (Just x) appApply (Just y))
 		(returnEQ `AppE` mkTuple2 (map fst rfs) vars) exps
 	where
@@ -249,27 +248,30 @@ beforeMatch th t nn d ns nc = [
 	vpw (TupP ps) = TupP $ vpw `map` ps
 	vpw o = o
 
-transHAReadFrom :: Bool -> ListNames -> (Lookahead, ReadFrom) -> State Variables Exp
-transHAReadFrom th ln (ha, rf) = do
+transHAReadFrom :: Bool -> (Lookahead, ReadFrom) -> State Variables Exp
+transHAReadFrom th (ha, rf) = do
 	modify $ nextVariable "d"
 	smartDoE <$> processHA th ha "" (nameFromRF rf)
-		((: []) . NoBindS <$> transReadFrom th ln rf)
+		((: []) . NoBindS <$> transReadFrom th rf)
 
-transReadFrom :: Bool -> ListNames -> ReadFrom -> State Variables Exp
-transReadFrom th _ (FromVariable Nothing) = return $
+transReadFrom :: Bool -> ReadFrom -> State Variables Exp
+transReadFrom th (FromVariable Nothing) = return $
 	ConE (stateTN th) `AppE` VarE dvCharsN
-transReadFrom th _ (FromVariable (Just var)) = return $
+transReadFrom th (FromVariable (Just var)) = return $
 	ConE (stateTN th) `AppE` VarE (mkName var)
-transReadFrom th ln (FromSelection sel) = pSomes1Sel th ln sel
-transReadFrom th ln (FromL List rf) =
-	(VarE (ln List) `AppE`) <$> transReadFrom th ln rf
-transReadFrom th ln (FromL List1 rf) =
-	(VarE (ln List1) `AppE`) <$> transReadFrom th ln rf
-transReadFrom th ln (FromL Optional rf) =
-	(VarE (ln Optional) `AppE`) <$> transReadFrom th ln rf
+transReadFrom th (FromSelection sel) = pSomes1Sel th sel
+transReadFrom th (FromL List rf) = do
+	list <- gets $ getVariable "list"
+	(VarE list `AppE`) <$> transReadFrom th rf
+transReadFrom th (FromL List1 rf) = do
+	list1 <- gets $ getVariable "list1"
+	(VarE list1 `AppE`) <$> transReadFrom th rf
+transReadFrom th (FromL Optional rf) = do
+	opt <- gets $ getVariable "optional"
+	(VarE opt `AppE`) <$> transReadFrom th rf
 
-transLeaf :: Bool -> ListNames -> Check -> State Variables [Stmt]
-transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
+transLeaf :: Bool -> Check -> State Variables [Stmt]
+transLeaf th ((n, nc), rf, Just (p, pc)) = do
 	t <- gets $ getVariable "t"
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "t"
@@ -277,39 +279,39 @@ transLeaf th ln ((n, nc), rf, Just (p, pc)) = do
 	case n of
 		WildP -> ((BindS (VarP d) (VarE $ getN th) :) .
 				(: [afterCheck th p d (nameFromRF rf) pc])) .
-			BindS WildP <$> transReadFrom th ln rf
+			BindS WildP <$> transReadFrom th rf
 		_	| notHaveOthers n -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = LetS [ValD n (NormalB $ VarE t) []]
 					c = afterCheck th p d (nameFromRF rf) pc
-				s <- BindS (VarP t) <$> transReadFrom th ln rf
+				s <- BindS (VarP t) <$> transReadFrom th rf
 				return [bd, s, m, c]
 			| otherwise -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = beforeMatch th t n d (nameFromRF rf) nc
 					c = afterCheck th p d (nameFromRF rf) pc
-				s <- BindS (VarP t) <$> transReadFrom th ln rf
+				s <- BindS (VarP t) <$> transReadFrom th rf
 				return $ [bd, s]  ++ m ++ [c]
 	where
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
-transLeaf th ln ((n, nc), rf, Nothing) = do
+transLeaf th ((n, nc), rf, Nothing) = do
 	t <- gets $ getVariable "t"
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "d"
 	modify $ nextVariable "t"
 	case n of
 		WildP -> sequence [
-			BindS WildP <$> transReadFrom th ln rf,
+			BindS WildP <$> transReadFrom th rf,
 			return $ NoBindS $ VarE (mkName "return") `AppE` TupE []
 		 ]
 		_	| notHaveOthers n ->
-				(: []) . BindS n <$> transReadFrom th ln rf
+				(: []) . BindS n <$> transReadFrom th rf
 			| otherwise -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = beforeMatch th t n d (nameFromRF rf) nc
-				s <- BindS (VarP t) <$> transReadFrom th ln rf
+				s <- BindS (VarP t) <$> transReadFrom th rf
 				return $ bd : s : m
 	where
 	notHaveOthers (VarP _) = True
