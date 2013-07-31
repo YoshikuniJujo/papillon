@@ -181,27 +181,27 @@ expression th (e, r) =
 				check th ck
 
 check :: Bool -> Check -> State Variables [Stmt]
-check th ((n, nc), rf, Just (p, pc)) = do
+check th ((n, nc), rf, Just p) = do
 	t <- gets $ getVariable "t"
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "t"
 	modify $ nextVariable "d"
 	case n of
 		WildP -> ((BindS (VarP d) (VarE $ getN th) :) .
-				(: [afterCheck th p d (nameFromRF rf) pc])) .
+				(: afterCheck th p d (nameFromRF rf))) .
 			BindS WildP <$> transReadFrom th rf
 		_	| notHaveOthers n -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = LetS [ValD n (NormalB $ VarE t) []]
-					c = afterCheck th p d (nameFromRF rf) pc
+					c = afterCheck th p d (nameFromRF rf)
 				s <- BindS (VarP t) <$> transReadFrom th rf
-				return [bd, s, m, c]
+				return $ [bd, s, m] ++ c
 			| otherwise -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = beforeMatch th t n d (nameFromRF rf) nc
-					c = afterCheck th p d (nameFromRF rf) pc
+					c = afterCheck th p d (nameFromRF rf)
 				s <- BindS (VarP t) <$> transReadFrom th rf
-				return $ [bd, s]  ++ m ++ [c]
+				return $ [bd, s]  ++ m ++ c
 	where
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
@@ -315,9 +315,9 @@ beforeMatch th t nn d ns nc = [
 	vpw (TupP ps) = TupP $ vpw `map` ps
 	vpw o = o
 
-afterCheck :: Bool -> Exp -> Name -> [String] -> String -> Stmt
-afterCheck th pp d ns pc = NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
-	throwErrorTH th d ns "not match: " (show $ ppr pp) pc
+afterCheck :: Bool -> (Exp, String) -> Name -> [String] -> [Stmt]
+afterCheck th (pp, pc) d ns = [NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
+	throwErrorTH th d ns "not match: " (show $ ppr pp) pc]
 
 listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
