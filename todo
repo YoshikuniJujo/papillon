@@ -2,30 +2,6 @@
 * 次にやること           *
 **************************
 
-* PapillonCore のリファクタリング
-	以下の monadic な parser にするための準備として
-
-	check のリファクタリング
-		Just (p, pc) と Nothing の前半部分は統合できるだろう
-		つまり関数の頭で match させずに case 文を使うということ
-		必要とする変数の違いによって、なかなか難しいところがあるな
-
-		Some s とのマッチングの際には以下のコードが必要となる。
-			case ret of
-				Some _ -> return ()
-				_ -> throwError ...
-			let Some s = ret
-		もしも Some s が他の構築子を持たないのであればこうなる。
-			let Some s = ret
-
-		afterCheck の名前の変更
-			もしくは、check へうめこんで消すか
-
-	Pat を (Pat, Bool) とし、全てを網羅している pattern は (p, True) とする
-	これは parse の段階でやってしまおうかな
-
-* version up して install
-
 * リファクタリングができたら branch を切る
 	git checkout -b monadic でいいだろう
 
@@ -37,6 +13,8 @@
 	test と return のところに return を追加する。
 	monad が指定されればそのモナドを lift するような StateT や ErrorT を作り、
 	return とかは足さない
+
+* version up して install
 
 * SyntaxTree のリファクタリング
 	fromTokenChars の名前の変更
@@ -252,6 +230,28 @@
 	のような感じにしてしまったらどうだろうか
 	ただ、そうするとコードのネストが深くなって見にくくなるということもある
 	今のままのほうが良いのかもしれない
+
+* PapillonCore のリファクタリング
+	以下の monadic な parser にするための準備として
+
+	check のリファクタリング
+		Just (p, pc) と Nothing の前半部分は統合できるだろう
+		つまり関数の頭で match させずに case 文を使うということ
+		必要とする変数の違いによって、なかなか難しいところがあるな
+
+		Some s とのマッチングの際には以下のコードが必要となる。
+			case ret of
+				Some _ -> return ()
+				_ -> throwError ...
+			let Some s = ret
+		もしも Some s が他の構築子を持たないのであればこうなる。
+			let Some s = ret
+
+		afterCheck の名前の変更
+			もしくは、check へうめこんで消すか
+
+	Pat を (Pat, Bool) とし、全てを網羅している pattern は (p, True) とする
+	これは parse の段階でやってしまおうかな
 
 ******************************
 *  機能面における細かい修正  *
