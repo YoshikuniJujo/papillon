@@ -5,9 +5,12 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
+	throwErrorPackratMBody の名前を変える
+		throwError は conflict するのでだめ
+		throwErrorTH あたりかな
+
 	lookahead のリファクタリング
-		flipMaybeBody のリファクタリング
-			名前を変える -> negative
+		negative のリファクタリング
 			中身をリファクタリング
 			lookahead の where 節に入れようかな
 		NAhead の error message のための引数を何とかする
