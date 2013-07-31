@@ -158,7 +158,7 @@ parseChar th = do
 					VarE (mkName "return") `AppE` VarE c])
 				[],
 			flip (Match WildP) [] $ NormalB $
-				newThrow th "" emsg (mkName "undefined") [] ""
+				throwErrorTH th (mkName "undefined") [] emsg "" ""
 		 ] `AppE` VarE d
 
 mkRule :: Bool -> Selection -> State Variables Exp
@@ -258,13 +258,14 @@ lookahead th Ahead _ _ ret = do
 lookahead th (NAhead com) ck ns ret = do
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "d"
-	n <- negative th (LitE $ StringL $ '!' : ck) (LitE $ StringL com)
-		(VarE d) (ListE $ map (LitE . StringL) ns) (doE ret)
+	n <- negative th ('!' : ck) com
+		d ns (doE ret)
 	return [BindS (VarP d) $ VarE (getN th),
 		NoBindS n,
 		NoBindS $ VarE (putN th) `AppE` VarE d]
 
-negative :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> State Variables Exp
+negative :: Bool -> String -> String -> Name -> [String] -> Exp ->
+	State Variables Exp
 negative th code com d ns act = do
 	err <- gets $ getVariable "err"
 	modify $ nextVariable "err"
@@ -278,8 +279,7 @@ negative th code com d ns act = do
 				(VarE (mkName "return") `AppE`
 					ConE (mkName "True"))),
 		NoBindS $ VarE (unlessN th) `AppE` VarE err `AppE`
-			throwErrorTH th code (LitE $ StringL emsg) com d ns]
-	where emsg = "not match: "
+			throwErrorTH th d ns "not match: " code com]
 
 transReadFrom :: Bool -> ReadFrom -> State Variables Exp
 transReadFrom th (FromVariable Nothing) = return $
@@ -303,7 +303,7 @@ beforeMatch th t nn d ns nc = [
 		flip (Match $ vpw nn) [] $ NormalB $
 			VarE (mkName "return") `AppE` TupE [],
 		flip (Match WildP) [] $ NormalB $
-			newThrow th (show $ ppr nn) "not match pattern: " d ns nc],
+			throwErrorTH th d ns "not match pattern: " (show $ ppr nn) nc],
 	LetS [ValD nn (NormalB $ VarE t) []],
 	NoBindS $ VarE (mkName "return") `AppE` TupE []]
 	where
@@ -317,7 +317,7 @@ beforeMatch th t nn d ns nc = [
 
 afterCheck :: Bool -> Exp -> Name -> [String] -> String -> Stmt
 afterCheck th pp d ns pc = NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
-	newThrow th (show $ ppr pp) "not match: " d ns pc
+	throwErrorTH th d ns "not match: " (show $ ppr pp) pc
 
 listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
@@ -336,28 +336,19 @@ optionalUsed = any $ sel . \(_, _, s) -> s
 	rf (FromSelection s) = sel s
 	rf _ = False
 
-throwErrorTH :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
-throwErrorTH th code msg com d ns = InfixE
+throwErrorTH :: Bool -> Name -> [String] -> String -> String -> String -> Exp
+throwErrorTH th d ns msg code com = InfixE
 	(Just $ VarE (getsN th) `AppE` VarE dvPosN)
 	(VarE $ mkName ">>=")
 	(Just $ InfixE
 		(Just $ VarE $ throwErrorN th)
 		(VarE $ mkName ".")
 		(Just $ VarE (mkName "mkParseError")
-			`AppE` code
-			`AppE` msg
-			`AppE` com
-			`AppE` d
-			`AppE` ns))
-
-newThrow :: Bool -> String -> String -> Name -> [String] -> String -> Exp
-newThrow th code msg d ns com =
-	throwErrorTH th
-		(LitE $ StringL code)
-		(LitE $ StringL msg)
-		(LitE $ StringL com)
-		(VarE d)
-		(ListE $ map (LitE . StringL) ns)
+			`AppE` LitE (StringL code)
+			`AppE` LitE (StringL msg)
+			`AppE` LitE (StringL com)
+			`AppE` VarE d
+			`AppE` ListE (map (LitE . StringL) ns)))
 
 newNewName :: IORef Int -> String -> Q Name
 newNewName g base = do
