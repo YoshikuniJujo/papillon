@@ -2,11 +2,15 @@
 * 次にやること           *
 **************************
 
-* リファクタリングができたら branch を切る
-	git checkout -b monadic でいいだろう
-
 * 以下をするために、まずは、何も指定しないときには、Identity monad とする
 	test と return のところには return を追加すれば良いだろうと思う
+
+	そして、ここがややめんどくさいのだが、
+	parse を (Derivs -> ...) -> src -> Either として、
+	この中に、runIdentity や runErrorT を入れてしまおう。
+	showReading とかはどうしようかな。
+	とりあえずは、runIdentity $ runErrorT $ ... d としておくかな?
+	あるいは、runError でも用意しておこうかな。
 
 * monadic parser とする
 	何も指定しなければ、Identity monad とし、
