@@ -5,8 +5,9 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
-	transLeaf のリファクタリング
-		名前を変える
+	check のリファクタリング
+		Just (p, pc) と Nothing の前半部分は統合できるだろう
+		つまり関数の頭で match させずに case 文を使うということ
 
 	Pat を (Pat, Bool) とし、全てを網羅している pattern は (p, True) とする
 	これは parse の段階でやってしまおうかな

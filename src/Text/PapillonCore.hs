@@ -178,10 +178,10 @@ expression th (e, r) =
 	(doE . (++ [NoBindS $ VarE (mkName "return") `AppE` r]) . concat <$>) $
 		forM e $ \(la, ck@(_, rf, _)) ->
 			lookahead th la (show $ pprCheck ck) (nameFromRF rf) =<<
-				transLeaf th ck
+				check th ck
 
-transLeaf :: Bool -> Check -> State Variables [Stmt]
-transLeaf th ((n, nc), rf, Just (p, pc)) = do
+check :: Bool -> Check -> State Variables [Stmt]
+check th ((n, nc), rf, Just (p, pc)) = do
 	t <- gets $ getVariable "t"
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "t"
@@ -206,7 +206,7 @@ transLeaf th ((n, nc), rf, Just (p, pc)) = do
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
-transLeaf th ((n, nc), rf, Nothing) = do
+check th ((n, nc), rf, Nothing) = do
 	t <- gets $ getVariable "t"
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "d"
