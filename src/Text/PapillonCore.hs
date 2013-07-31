@@ -161,17 +161,16 @@ parseChar th = do
 		 ] `AppE` VarE d
 
 mkRule :: Bool -> Selection -> State Variables Exp
-mkRule th esel = do
-	(VarE (mkName "foldl1") `AppE` VarE (mplusN th) `AppE`) . ListE <$>
-		case esel of
-			Left sel -> mapM (processExpressionHs th) sel
+mkRule th s = (VarE (mkName "foldl1") `AppE` VarE (mplusN th) `AppE`) . ListE <$>
+		case s of
+			Left sel -> mapM (expression th) sel
 			Right sel -> zipWithM (flip (putLeftRightS $ length sel) .
-					processPlainExpressionHs th) sel [0..]
+					plainExpression th) sel [0..]
 	where
-	putLeftRightS a h exs = StateT $ \s -> do
-		(ex, s') <- runStateT exs s
+	putLeftRightS a h exs = StateT $ \st -> do
+		(ex, st') <- runStateT exs st
 		let ret = putLeftRight a h ex
-		return (ret, s')
+		return (ret, st')
 	putLeftRight 1 0 ex = ex
 	putLeftRight _ 0 ex = leftE `AppE` ex
 	putLeftRight l n ex
@@ -180,20 +179,18 @@ mkRule th esel = do
 	rightE = VarE (mkName "fmap") `AppE` ConE (mkName "Right")
 	leftE = VarE (mkName "fmap") `AppE` ConE (mkName "Left")
 
-processExpressionHs :: Bool -> Expression -> State Variables Exp
-processExpressionHs th (expr, ret) = do
-	smartDoE <$> do
-		x <- forM expr $ \(ha, nl) -> do
-			let	nls = show $ pprCheck nl
-				(_, rf, _) = nl
-			processHA th ha nls (nameFromRF rf) $
-				transLeaf th nl
-		r <- return $ NoBindS $ VarE (mkName "return") `AppE` ret
-		modify $ nextVariable "d"
-		return $ concat x ++ [r]
+expression :: Bool -> Expression -> State Variables Exp
+expression th (e, r) = smartDoE <$> do
+	x <- forM e $ \(ha, nl) -> do
+		let	nls = show $ pprCheck nl
+			(_, rf, _) = nl
+		processHA th ha nls (nameFromRF rf) $
+			transLeaf th nl
+	modify $ nextVariable "d"
+	return $ concat x ++ [NoBindS $ VarE (mkName "return") `AppE` r]
 
-processPlainExpressionHs :: Bool -> PlainExpression -> State Variables Exp
-processPlainExpressionHs th rfs = do
+plainExpression :: Bool -> PlainExpression -> State Variables Exp
+plainExpression th rfs = do
 	vars <- get
 	exps <- mapM (transHAReadFrom th) rfs
 	return $ foldl (\x y -> InfixE (Just x) appApply (Just y))
@@ -214,9 +211,8 @@ processPlainExpressionHs th rfs = do
 	returnEQ = VarE $ mkName "return"
 
 afterCheck :: Bool -> Exp -> Name -> [String] -> String -> Stmt
-afterCheck th pp d ns pc = do
-	NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
-		(newThrow th (show $ ppr pp) "not match: " d ns pc)
+afterCheck th pp d ns pc = NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
+	newThrow th (show $ ppr pp) "not match: " d ns pc
 
 beforeMatch :: Bool -> Name -> Pat -> Name -> [String] -> String -> [Stmt]
 beforeMatch th t nn d ns nc = [
@@ -225,7 +221,7 @@ beforeMatch th t nn d ns nc = [
 			VarE (mkName "return") `AppE` TupE [],
 		flip (Match WildP) [] $ NormalB $
 			newThrow th (show $ ppr nn) "not match pattern: " d ns nc],
-	LetS $ [ValD nn (NormalB $ VarE t) []],
+	LetS [ValD nn (NormalB $ VarE t) []],
 	NoBindS $ VarE (mkName "return") `AppE` TupE []]
 	where
 	vpw (VarP _) = WildP
@@ -339,10 +335,10 @@ flipMaybeBody th code com d ns act = DoE [
 		(Just constReturnTrue),
 	NoBindS $ VarE (unlessN th)
 		`AppE` VarE (mkName "err")
-		`AppE` (throwErrorPackratMBody th
+		`AppE` throwErrorPackratMBody th
 			(InfixE (Just $ LitE $ CharL '!') (ConE $ mkName ":")
 				(Just code))
-			(LitE $ StringL "not match: ") com d ns)
+			(LitE $ StringL "not match: ") com d ns
  ]	where
 	actionReturnFalse = InfixE (Just act) (VarE $ mkName ">>")
 		(Just $ VarE (mkName "return") `AppE` ConE (mkName "False"))
