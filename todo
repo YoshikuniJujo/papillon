@@ -8,10 +8,6 @@
 	lookahead のリファクタリング
 		NAhead の error message のための引数を何とかする
 			むしろ上の段階の型をそのまま渡すべきかもしれない
-		あるいは、より根本的なまちがいがあるかもしれない
-			lookahead が monad を取って monad を返すというのは
-			本当に正しいのか
-			おそらく正しくない。単純に Exp を取れば良い。
 
 	Pat を (Pat, Bool) とし、全てを網羅している pattern は (p, True) とする
 	これは parse の段階でやってしまおうかな

@@ -177,7 +177,7 @@ expression :: Bool -> Expression -> State Variables Exp
 expression th (e, r) =
 	(doE . (++ [NoBindS $ VarE (mkName "return") `AppE` r]) . concat <$>) $
 		forM e $ \(la, ck@(_, rf, _)) ->
-			lookahead th la (show $ pprCheck ck) (nameFromRF rf) $
+			lookahead th la (show $ pprCheck ck) (nameFromRF rf) =<<
 				transLeaf th ck
 
 transLeaf :: Bool -> Check -> State Variables [Stmt]
@@ -243,16 +243,16 @@ plainExpression th pexs = do
 transHAReadFrom :: Bool -> (Lookahead, ReadFrom) -> State Variables Exp
 transHAReadFrom th (ha, rf) = do
 	modify $ nextVariable "d"
-	doE <$> lookahead th ha "" (nameFromRF rf)
-		((: []) . NoBindS <$> transReadFrom th rf)
+	doE <$> (lookahead th ha "" (nameFromRF rf) =<<
+		((: []) . NoBindS <$> transReadFrom th rf))
 
-lookahead :: Bool -> Lookahead -> String -> [String] -> State Variables [Stmt] ->
+lookahead :: Bool -> Lookahead -> String -> [String] -> [Stmt] ->
 	State Variables [Stmt]
-lookahead _ Here _ _ act = act
+lookahead _ Here _ _ act = return act
 lookahead th Ahead _ _ act = do
 	d <- gets $ getVariable "ddd"
 	modify $ nextVariable "ddd"
-	r <- act
+	let r = act
 	return [
 		BindS (VarP d) $ VarE (getN th),
 		BindS WildP $ doE r,
@@ -260,7 +260,7 @@ lookahead th Ahead _ _ act = do
 lookahead th (NAhead com) nls ns act = do
 	d <- gets $ getVariable "ddd"
 	modify $ nextVariable "ddd"
-	r <- act
+	let r = act
 	return [
 		BindS (VarP d) $ VarE (getN th),
 		NoBindS $ flipMaybeBody th
