@@ -5,7 +5,13 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
-	mkRule のリファクタリングから
+	processHA のリファクタリング
+		NAhead の error message のための引数を何とかする
+			むしろ上の段階の型をそのまま渡すべきかもしれない
+		あるいは、より根本的なまちがいがあるかもしれない
+			processHA が monad を取って monad を返すというのは
+			本当に正しいのか
+		processHA の名前を変える
 
 * version up して install
 

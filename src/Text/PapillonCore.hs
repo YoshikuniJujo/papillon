@@ -27,10 +27,11 @@ module Text.PapillonCore (
 	ModuleName,
 	Exports,
 	Code,
-	(<*>)
+	(<*>),
+	(<$>)
 ) where
 
-import Language.Haskell.TH
+import Language.Haskell.TH hiding (infixApp, doE)
 import "monads-tf" Control.Monad.State
 -- import "monads-tf" Control.Monad.Identity
 import "monads-tf" Control.Monad.Error
@@ -161,98 +162,23 @@ parseChar th = do
 		 ] `AppE` VarE d
 
 mkRule :: Bool -> Selection -> State Variables Exp
-mkRule th s = (VarE (mkName "foldl1") `AppE` VarE (mplusN th) `AppE`) . ListE <$>
-		case s of
-			Left sel -> mapM (expression th) sel
-			Right sel -> zipWithM (flip (putLeftRightS $ length sel) .
-					plainExpression th) sel [0..]
+mkRule t s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$>
+	case s of
+		Left exs -> expression t `mapM` exs
+		Right exs -> zipWithM ((<$>) . lr (length exs)) [0 .. ] $
+			map (plainExpression t) exs
 	where
-	putLeftRightS a h exs = StateT $ \st -> do
-		(ex, st') <- runStateT exs st
-		let ret = putLeftRight a h ex
-		return (ret, st')
-	putLeftRight 1 0 ex = ex
-	putLeftRight _ 0 ex = leftE `AppE` ex
-	putLeftRight l n ex
-		| n == l - 1 = rightE `AppE` putLeftRight (l - 1) (n - 1) ex
-		| otherwise = rightE `AppE` putLeftRight l (n - 1) ex
-	rightE = VarE (mkName "fmap") `AppE` ConE (mkName "Right")
-	leftE = VarE (mkName "fmap") `AppE` ConE (mkName "Left")
+	lr 1 0 ex = ex
+	lr _ 0 ex = infixApp (ConE $ mkName "Left") (VarE $ mkName "<$>") ex
+	lr l n ex = infixApp (ConE $ mkName "Right") (VarE $ mkName "<$>") $
+		lr (l - if n == l - 1 then 1 else 0) (n - 1) ex
 
 expression :: Bool -> Expression -> State Variables Exp
-expression th (e, r) = smartDoE <$> do
-	x <- forM e $ \(ha, nl) -> do
-		let	nls = show $ pprCheck nl
-			(_, rf, _) = nl
-		processHA th ha nls (nameFromRF rf) $
-			transLeaf th nl
-	modify $ nextVariable "d"
-	return $ concat x ++ [NoBindS $ VarE (mkName "return") `AppE` r]
-
-plainExpression :: Bool -> PlainExpression -> State Variables Exp
-plainExpression th rfs = do
-	vars <- get
-	exps <- mapM (transHAReadFrom th) rfs
-	return $ foldl (\x y -> InfixE (Just x) appApply (Just y))
-		(returnEQ `AppE` mkTuple2 (map fst rfs) vars) exps
-	where
-	mkTuple2 has vars = let
-		names = take (length has) $ fromJust $ lookup "x" vars in
-		LamE (mkPat names has) $ TupE $ mkExp names has
-	mkPat _ [] = []
-	mkPat (n : ns) (Here : hs) = VarP n : mkPat ns hs
-	mkPat (_ : ns) (_ : hs) = WildP : mkPat ns hs
-	mkPat _ _ = error "bad"
-	mkExp _ [] = []
-	mkExp (n : ns) (Here : hs) = VarE n : mkExp ns hs
-	mkExp (_ : ns) (_ : hs) = mkExp ns hs
-	mkExp _ _ = error "bad"
-	appApply = VarE $ mkName "<*>"
-	returnEQ = VarE $ mkName "return"
-
-afterCheck :: Bool -> Exp -> Name -> [String] -> String -> Stmt
-afterCheck th pp d ns pc = NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
-	newThrow th (show $ ppr pp) "not match: " d ns pc
-
-beforeMatch :: Bool -> Name -> Pat -> Name -> [String] -> String -> [Stmt]
-beforeMatch th t nn d ns nc = [
-	NoBindS $ CaseE (VarE t) [
-		flip (Match $ vpw nn) [] $ NormalB $
-			VarE (mkName "return") `AppE` TupE [],
-		flip (Match WildP) [] $ NormalB $
-			newThrow th (show $ ppr nn) "not match pattern: " d ns nc],
-	LetS [ValD nn (NormalB $ VarE t) []],
-	NoBindS $ VarE (mkName "return") `AppE` TupE []]
-	where
-	vpw (VarP _) = WildP
-	vpw (ConP n ps) = ConP n $ map vpw ps
-	vpw (InfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
-	vpw (UInfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
-	vpw (ListP ps) = ListP $ vpw `map` ps
-	vpw (TupP ps) = TupP $ vpw `map` ps
-	vpw o = o
-
-transHAReadFrom :: Bool -> (Lookahead, ReadFrom) -> State Variables Exp
-transHAReadFrom th (ha, rf) = do
-	modify $ nextVariable "d"
-	smartDoE <$> processHA th ha "" (nameFromRF rf)
-		((: []) . NoBindS <$> transReadFrom th rf)
-
-transReadFrom :: Bool -> ReadFrom -> State Variables Exp
-transReadFrom th (FromVariable Nothing) = return $
-	ConE (stateTN th) `AppE` VarE dvCharsN
-transReadFrom th (FromVariable (Just var)) = return $
-	ConE (stateTN th) `AppE` VarE (mkName var)
-transReadFrom th (FromSelection sel) = mkRule th sel
-transReadFrom th (FromL List rf) = do
-	list <- gets $ getVariable "list"
-	(VarE list `AppE`) <$> transReadFrom th rf
-transReadFrom th (FromL List1 rf) = do
-	list1 <- gets $ getVariable "list1"
-	(VarE list1 `AppE`) <$> transReadFrom th rf
-transReadFrom th (FromL Optional rf) = do
-	opt <- gets $ getVariable "optional"
-	(VarE opt `AppE`) <$> transReadFrom th rf
+expression th (e, r) =
+	(doE . (++ [NoBindS $ VarE (mkName "return") `AppE` r]) . concat <$>) $
+		forM e $ \(la, ck@(_, rf, _)) ->
+			processHA th la (show $ pprCheck ck) (nameFromRF rf) $
+				transLeaf th ck
 
 transLeaf :: Bool -> Check -> State Variables [Stmt]
 transLeaf th ((n, nc), rf, Just (p, pc)) = do
@@ -302,6 +228,24 @@ transLeaf th ((n, nc), rf, Nothing) = do
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
 
+plainExpression :: Bool -> PlainExpression -> State Variables Exp
+plainExpression th pexs = do
+	laxs <- gets $ zip (map fst pexs) . fromJust . lookup "x"
+	let mkt = LamE (map (uncurry mkp) laxs) $
+		TupE $ map (VarE . snd) $ filter ((== Here) . fst) laxs
+	foldl (\x y -> infixApp x (VarE $ mkName "<*>") y)
+		(VarE (mkName "return") `AppE` mkt) <$>
+			mapM (transHAReadFrom th) pexs
+	where
+	mkp Here n = VarP n
+	mkp _ _ = WildP
+
+transHAReadFrom :: Bool -> (Lookahead, ReadFrom) -> State Variables Exp
+transHAReadFrom th (ha, rf) = do
+	modify $ nextVariable "d"
+	doE <$> processHA th ha "" (nameFromRF rf)
+		((: []) . NoBindS <$> transReadFrom th rf)
+
 processHA :: Bool -> Lookahead -> String -> [String] -> State Variables [Stmt] ->
 	State Variables [Stmt]
 processHA _ Here _ _ act = act
@@ -311,7 +255,7 @@ processHA th Ahead _ _ act = do
 	r <- act
 	return [
 		BindS (VarP d) $ VarE (getN th),
-		BindS WildP $ smartDoE r,
+		BindS WildP $ doE r,
 		NoBindS $ VarE (putN th) `AppE` VarE d]
 processHA th (NAhead com) nls ns act = do
 	d <- gets $ getVariable "ddd"
@@ -324,7 +268,7 @@ processHA th (NAhead com) nls ns act = do
 			(LitE $ StringL com)
 			(VarE d)
 			(ListE $ map (LitE . StringL) ns)
-			(smartDoE r),
+			(doE r),
 		NoBindS $ VarE (putN th) `AppE` VarE d]
 
 flipMaybeBody :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
@@ -344,6 +288,44 @@ flipMaybeBody th code com d ns act = DoE [
 		(Just $ VarE (mkName "return") `AppE` ConE (mkName "False"))
 	constReturnTrue = VarE (mkName "const") `AppE` 
 		(VarE (mkName "return") `AppE` ConE (mkName "True"))
+
+transReadFrom :: Bool -> ReadFrom -> State Variables Exp
+transReadFrom th (FromVariable Nothing) = return $
+	ConE (stateTN th) `AppE` VarE dvCharsN
+transReadFrom th (FromVariable (Just var)) = return $
+	ConE (stateTN th) `AppE` VarE (mkName var)
+transReadFrom th (FromSelection sel) = mkRule th sel
+transReadFrom th (FromL List rf) = do
+	list <- gets $ getVariable "list"
+	(VarE list `AppE`) <$> transReadFrom th rf
+transReadFrom th (FromL List1 rf) = do
+	list1 <- gets $ getVariable "list1"
+	(VarE list1 `AppE`) <$> transReadFrom th rf
+transReadFrom th (FromL Optional rf) = do
+	opt <- gets $ getVariable "optional"
+	(VarE opt `AppE`) <$> transReadFrom th rf
+
+beforeMatch :: Bool -> Name -> Pat -> Name -> [String] -> String -> [Stmt]
+beforeMatch th t nn d ns nc = [
+	NoBindS $ CaseE (VarE t) [
+		flip (Match $ vpw nn) [] $ NormalB $
+			VarE (mkName "return") `AppE` TupE [],
+		flip (Match WildP) [] $ NormalB $
+			newThrow th (show $ ppr nn) "not match pattern: " d ns nc],
+	LetS [ValD nn (NormalB $ VarE t) []],
+	NoBindS $ VarE (mkName "return") `AppE` TupE []]
+	where
+	vpw (VarP _) = WildP
+	vpw (ConP n ps) = ConP n $ map vpw ps
+	vpw (InfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
+	vpw (UInfixP p1 n p2) = InfixP (vpw p1) n (vpw p2)
+	vpw (ListP ps) = ListP $ vpw `map` ps
+	vpw (TupP ps) = TupP $ vpw `map` ps
+	vpw o = o
+
+afterCheck :: Bool -> Exp -> Name -> [String] -> String -> Stmt
+afterCheck th pp d ns pc = NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
+	newThrow th (show $ ppr pp) "not match: " d ns pc
 
 listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
@@ -407,12 +389,15 @@ showReading d "char" = case char d of
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
 
-smartDoE :: [Stmt] -> Exp
-smartDoE [NoBindS ex] = ex
-smartDoE stmts = DoE stmts
+doE :: [Stmt] -> Exp
+doE [NoBindS ex] = ex
+doE stmts = DoE stmts
 
 arrT :: Type -> Type -> Type
 arrT a r = ArrowT `AppT` a `AppT` r
+
+infixApp :: Exp -> Exp -> Exp -> Exp
+infixApp e1 op e2 = InfixE (Just e1) op (Just e2)
 
 stateTN, runStateTN, putN, getN, getsN :: Bool -> Name
 stateTN True = 'StateT

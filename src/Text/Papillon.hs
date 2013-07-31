@@ -14,7 +14,8 @@ module Text.Papillon (
 	peComment,
 	pePosition,
 	pePositionS,
-	(<*>)
+	(<*>),
+	(<$>)
 ) where
 
 import Text.PapillonCore
