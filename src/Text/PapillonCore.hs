@@ -113,7 +113,7 @@ mkParseBody :: Bool -> Peg -> ClauseQ
 mkParseBody th pg = do
 	glb <- runIO $ newIORef 0
 	vars <- foldM (newVariable glb) [] [
-		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t", "ddd",
+		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t",
 		"list", "list1", "optional"]
 	let	pgn = getVariable "parse" vars
 	rets <- mapM (newNewName glb . \(n, _, _) -> n) pg
@@ -248,31 +248,27 @@ transHAReadFrom th (ha, rf) = do
 
 lookahead :: Bool -> Lookahead -> String -> [String] -> [Stmt] ->
 	State Variables [Stmt]
-lookahead _ Here _ _ act = return act
-lookahead th Ahead _ _ act = do
-	d <- gets $ getVariable "ddd"
-	modify $ nextVariable "ddd"
-	let r = act
-	return [
-		BindS (VarP d) $ VarE (getN th),
-		BindS WildP $ doE r,
+lookahead _ Here _ _ ret = return ret
+lookahead th Ahead _ _ ret = do
+	d <- gets $ getVariable "d"
+	modify $ nextVariable "d"
+	return [BindS (VarP d) $ VarE (getN th),
+		BindS WildP $ doE ret,
 		NoBindS $ VarE (putN th) `AppE` VarE d]
-lookahead th (NAhead com) nls ns act = do
-	d <- gets $ getVariable "ddd"
-	modify $ nextVariable "ddd"
-	let r = act
-	return [
-		BindS (VarP d) $ VarE (getN th),
-		NoBindS $ flipMaybeBody th
-			(LitE $ StringL nls)
+lookahead th (NAhead com) ck ns ret = do
+	d <- gets $ getVariable "d"
+	modify $ nextVariable "d"
+	return [BindS (VarP d) $ VarE (getN th),
+		NoBindS $ negative th
+			(LitE $ StringL ck)
 			(LitE $ StringL com)
 			(VarE d)
 			(ListE $ map (LitE . StringL) ns)
-			(doE r),
+			(doE ret),
 		NoBindS $ VarE (putN th) `AppE` VarE d]
 
-flipMaybeBody :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
-flipMaybeBody th code com d ns act = DoE [
+negative :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
+negative th code com d ns act = DoE [
 	BindS (VarP $ mkName "err") $ InfixE
 		(Just actionReturnFalse)
 		(VarE $ catchErrorN th)
