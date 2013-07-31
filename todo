@@ -5,10 +5,6 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
-	throwErrorPackratMBody の名前を変える
-		throwError は conflict するのでだめ
-		throwErrorTH あたりかな
-
 	lookahead のリファクタリング
 		negative のリファクタリング
 			中身をリファクタリング

@@ -113,7 +113,7 @@ mkParseBody :: Bool -> Peg -> ClauseQ
 mkParseBody th pg = do
 	glb <- runIO $ newIORef 0
 	vars <- foldM (newVariable glb) [] [
-		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t",
+		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t", "err",
 		"list", "list1", "optional"]
 	let	pgn = getVariable "parse" vars
 	rets <- mapM (newNewName glb . \(n, _, _) -> n) pg
@@ -258,32 +258,28 @@ lookahead th Ahead _ _ ret = do
 lookahead th (NAhead com) ck ns ret = do
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "d"
+	n <- negative th (LitE $ StringL $ '!' : ck) (LitE $ StringL com)
+		(VarE d) (ListE $ map (LitE . StringL) ns) (doE ret)
 	return [BindS (VarP d) $ VarE (getN th),
-		NoBindS $ negative th
-			(LitE $ StringL ck)
-			(LitE $ StringL com)
-			(VarE d)
-			(ListE $ map (LitE . StringL) ns)
-			(doE ret),
+		NoBindS n,
 		NoBindS $ VarE (putN th) `AppE` VarE d]
 
-negative :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
-negative th code com d ns act = DoE [
-	BindS (VarP $ mkName "err") $ InfixE
-		(Just actionReturnFalse)
-		(VarE $ catchErrorN th)
-		(Just constReturnTrue),
-	NoBindS $ VarE (unlessN th)
-		`AppE` VarE (mkName "err")
-		`AppE` throwErrorPackratMBody th
-			(InfixE (Just $ LitE $ CharL '!') (ConE $ mkName ":")
-				(Just code))
-			(LitE $ StringL "not match: ") com d ns
- ]	where
-	actionReturnFalse = InfixE (Just act) (VarE $ mkName ">>")
-		(Just $ VarE (mkName "return") `AppE` ConE (mkName "False"))
-	constReturnTrue = VarE (mkName "const") `AppE` 
-		(VarE (mkName "return") `AppE` ConE (mkName "True"))
+negative :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> State Variables Exp
+negative th code com d ns act = do
+	err <- gets $ getVariable "err"
+	modify $ nextVariable "err"
+	return $ DoE [
+		BindS (VarP err) $ infixApp
+			(infixApp act (VarE $ mkName ">>")
+				(VarE (mkName "return") `AppE`
+					ConE (mkName "False")))
+			(VarE $ catchErrorN th)
+			(VarE (mkName "const") `AppE`
+				(VarE (mkName "return") `AppE`
+					ConE (mkName "True"))),
+		NoBindS $ VarE (unlessN th) `AppE` VarE err `AppE`
+			throwErrorTH th code (LitE $ StringL emsg) com d ns]
+	where emsg = "not match: "
 
 transReadFrom :: Bool -> ReadFrom -> State Variables Exp
 transReadFrom th (FromVariable Nothing) = return $
@@ -340,8 +336,8 @@ optionalUsed = any $ sel . \(_, _, s) -> s
 	rf (FromSelection s) = sel s
 	rf _ = False
 
-throwErrorPackratMBody :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
-throwErrorPackratMBody th code msg com d ns = InfixE
+throwErrorTH :: Bool -> Exp -> Exp -> Exp -> Exp -> Exp -> Exp
+throwErrorTH th code msg com d ns = InfixE
 	(Just $ VarE (getsN th) `AppE` VarE dvPosN)
 	(VarE $ mkName ">>=")
 	(Just $ InfixE
@@ -356,7 +352,7 @@ throwErrorPackratMBody th code msg com d ns = InfixE
 
 newThrow :: Bool -> String -> String -> Name -> [String] -> String -> Exp
 newThrow th code msg d ns com =
-	throwErrorPackratMBody th
+	throwErrorTH th
 		(LitE $ StringL code)
 		(LitE $ StringL msg)
 		(LitE $ StringL com)
