@@ -181,16 +181,17 @@ expression th (e, r) =
 				check th ck
 
 check :: Bool -> Check -> State Variables [Stmt]
-check th ((n, nc), rf, Just p) = do
+check th ((n, nc), rf, test) = do
 	t <- gets $ getVariable "t"
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "t"
 	modify $ nextVariable "d"
-	case n of
-		WildP -> ((BindS (VarP d) (VarE $ getN th) :) .
+	case (n, test) of
+		(WildP, Just p) -> ((BindS (VarP d) (VarE $ getN th) :) .
 				(: afterCheck th p d (nameFromRF rf))) .
 			BindS WildP <$> transReadFrom th rf
-		_	| notHaveOthers n -> do
+		(_, Just p)
+			| notHaveOthers n -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = LetS [ValD n (NormalB $ VarE t) []]
 					c = afterCheck th p d (nameFromRF rf)
@@ -202,17 +203,7 @@ check th ((n, nc), rf, Just p) = do
 					c = afterCheck th p d (nameFromRF rf)
 				s <- BindS (VarP t) <$> transReadFrom th rf
 				return $ [bd, s]  ++ m ++ c
-	where
-	notHaveOthers (VarP _) = True
-	notHaveOthers (TupP pats) = all notHaveOthers pats
-	notHaveOthers _ = False
-check th ((n, nc), rf, Nothing) = do
-	t <- gets $ getVariable "t"
-	d <- gets $ getVariable "d"
-	modify $ nextVariable "d"
-	modify $ nextVariable "t"
-	case n of
-		WildP -> sequence [
+		(WildP, _) -> sequence [
 			BindS WildP <$> transReadFrom th rf,
 			return $ NoBindS $ VarE (mkName "return") `AppE` TupE []
 		 ]
