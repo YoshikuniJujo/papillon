@@ -28,12 +28,13 @@ module Text.PapillonCore (
 	Exports,
 	Code,
 	(<*>),
-	(<$>)
+	(<$>),
+	runError
 ) where
 
 import Language.Haskell.TH hiding (infixApp, doE)
 import "monads-tf" Control.Monad.State
--- import "monads-tf" Control.Monad.Identity
+import "monads-tf" Control.Monad.Identity
 import "monads-tf" Control.Monad.Error
 
 import Control.Applicative
@@ -51,7 +52,7 @@ dvCharsN = mkName "char"
 dvPosN = mkName "position"
 
 papillonCore :: String -> DecsQ
-papillonCore str = case peg $ parse str of
+papillonCore str = case runError $ peg $ parse str of
 	Right (stpegq, _) -> do
 		(src, parsed) <- stpegq =<< runIO (newIORef 0)
 		decParsed True src parsed
@@ -59,7 +60,7 @@ papillonCore str = case peg $ parse str of
 
 papillonFile :: String ->
 	Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
-papillonFile str = case pegFile $ parse str of
+papillonFile str = case runError $ pegFile $ parse str of
 	Right (pegfileq, _) -> do
 		g <- runIO $ newIORef 0
 		(prgm, mn, ppp, pp, (src, parsed), atp) <- pegfileq g
@@ -74,13 +75,13 @@ papillonFile str = case pegFile $ parse str of
 
 decParsed :: Bool -> Type -> Peg -> DecsQ
 decParsed th src parsed = do
-	let	d = derivs src parsed
+	let	d = derivs th src parsed
 		pt = SigD (mkName "parse") $ src `arrT` ConT (mkName "Derivs")
 	p <- funD (mkName "parse") [mkParseBody th parsed]
 	return [d, pt, p]
 
-derivs :: Type -> Peg -> Dec
-derivs src pg = DataD [] (mkName "Derivs") [] [
+derivs :: Bool -> Type -> Peg -> Dec
+derivs th src pg = DataD [] (mkName "Derivs") [] [
 	RecC (mkName "Derivs") $ map derivs1 pg ++ [
 		(dvCharsN, NotStrict, resultT tkn),
 		(dvPosN, NotStrict, ConT (mkName "Pos") `AppT` src)
@@ -90,10 +91,11 @@ derivs src pg = DataD [] (mkName "Derivs") [] [
 	derivs1 (name, Just t, _) = (mkName name, NotStrict, resultT t)
 	derivs1 (name, Nothing, sel) =
 		(mkName name, NotStrict, resultT $ selectionType pg tkn sel)
-	resultT typ = ConT (mkName "Either")
+	resultT typ = ConT (errorTTN th)
 		`AppT` (ConT (mkName "ParseError")
 			`AppT` (ConT (mkName "Pos") `AppT` src)
 			`AppT` ConT (mkName "Derivs"))
+		`AppT` (ConT $ identityN th)
 		`AppT` (TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
 
 type Variables = [(String, [Name])]
@@ -125,7 +127,8 @@ mkParseBody th pg = do
 			(getVariable "list" vars) (getVariable "list1" vars) th
 		opt = if not $ optionalUsed pg then [] else optionalDec
 			(getVariable "optional" vars) th
-	return $ Clause [] (NormalB $ VarE pgn `AppE` VarE (mkName "initialPos")) $
+	return $ Clause [] (NormalB $ -- VarE (runErrorTN th) `AppE`
+			VarE pgn `AppE` VarE (mkName "initialPos")) $
 		decs ++ list ++ opt
 	where
 	mkr rule (_, _, sel) =
@@ -358,7 +361,7 @@ showParseError pe =
 	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
-showReading d "char" = case char d of
+showReading d "char" = case runError $ char d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
@@ -396,3 +399,9 @@ throwErrorN True = 'throwError
 throwErrorN False = mkName "throwError"
 catchErrorN True = 'catchError
 catchErrorN False = mkName "catchError"
+
+errorTTN, identityN :: Bool -> Name
+errorTTN True = ''ErrorT
+errorTTN False = mkName "ErrorT"
+identityN True = ''Identity
+identityN False = mkName "Identity"

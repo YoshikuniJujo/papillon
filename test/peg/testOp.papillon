@@ -4,7 +4,7 @@ import Text.Papillon
 import Data.Char
 
 main :: IO ()
-main = case add $ parse "3 + 5" of
+main = case runError $ add $ parse "3 + 5" of
 	Right (r, _) -> print r
 	Left _ -> putStrLn $ "error"
 

@@ -124,3 +124,13 @@ Text/Papillon/Papillon.hs               40
 Text/Papillon/SyntaxTree.hs             161
 Text/Papillon/List.hs                   53
 total                                   2897
+
+2013.07.31 Wed.
+
+これは ghc のバグらしい。
+newtype が not promotable になってしまう。
+困ったな。
+7.7 のどこかで解決されたみたいだけど、今の安定版は 7.6 だし。
+考えられる解決策は newtype ErrorT を data ErrorT に変えた版を作ることかな。
+
+上は全然違った。単に ' と '' のまちがいだったようだ。

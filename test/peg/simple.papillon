@@ -1,9 +1,9 @@
-{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+{-# LANGUAGE QuasiQuotes, TypeFamilies, PackageImports #-}
 
 import Text.Papillon
 
 main :: IO ()
-main = case hello $ parse "hello" of
+main = case runError $ hello $ parse "hello" of
 	Right (r, _) -> print r
 	Left err -> putStrLn $ showParseError err
 
@@ -20,7 +20,7 @@ showParseError pe =
 	
 
 showReading :: Derivs -> String -> String
-showReading d "char" = case char d of
+showReading d "char" = case runError $ char d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n

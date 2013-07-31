@@ -7,12 +7,48 @@ module Class (
 	mkParseErrorTHT,
 	mkParseErrorTH,
 	instanceErrorParseError,
-	parseErrorT
+	parseErrorT,
+	runErrorTHT,
+	runErrorTH
 ) where
 
 import Language.Haskell.TH
 import "monads-tf" Control.Monad.Error
+import "monads-tf" Control.Monad.Identity
 import Control.Monad.Trans.Error (Error(..))
+
+{-
+
+runError :: ErrorT err Identity a -> Either err a
+runError = runIdentity . runErrorT
+
+-}
+
+runErrorTHT :: Bool -> DecQ
+runErrorTHT th =
+	sigD (mkName "runError") $ forallT [PlainTV err, PlainTV a] (cxt []) $
+		conT (errorTNT th)
+			`appT` varT err
+			`appT` conT (identityNT th)
+			`appT` varT a
+		`arrT`
+		conT (mkName "Either") `appT` varT err `appT` varT a
+	where
+	err = mkName "err"
+	a = mkName "a"
+runErrorTH :: Bool -> DecQ
+runErrorTH th = flip (valD $ varP $ mkName "runError") [] $ normalB $
+	infixApp (varE $ runIdentityN th) (varE $ mkName ".") (varE $ runErrorTN th)
+
+errorTNT, identityNT, runIdentityN, runErrorTN :: Bool -> Name
+errorTNT True = ''ErrorT
+errorTNT False = mkName "ErrorT"
+identityNT True = ''Identity
+identityNT False = mkName "Identity"
+runIdentityN True = 'runIdentity
+runIdentityN False = mkName "runIdentity"
+runErrorTN True = 'runErrorT
+runErrorTN False = mkName "runErrorT"
 
 errorN, strMsgN :: Bool -> Name
 errorN True = ''Error

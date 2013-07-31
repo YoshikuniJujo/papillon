@@ -7,25 +7,25 @@ import Data.Char
 
 main :: IO ()
 main = do
-	case expression $ parse "3 * (2 + 24) / 8 / 3" of
+	case runError $ expression $ parse "3 * (2 + 24) / 8 / 3" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case expression $ parse "3 + 2 + 24 / 8 / 3" of
+	case runError $ expression $ parse "3 + 2 + 24 / 8 / 3" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case expression $ parse "50 + 3 * 6" of
+	case runError $ expression $ parse "50 + 3 * 6" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case expression $ parse "3 * (50 + 5) / 8" of
+	case runError $ expression $ parse "3 * (50 + 5) / 8" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case expression $ parse "8 * 2 + + 5" of
+	case runError $ expression $ parse "8 * 2 + + 5" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case expression $ parse "***" of
+	case runError $ expression $ parse "***" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case expression $ parse "123<456" of
+	case runError $ expression $ parse "123<456" of
 		Right (d, _) -> print d
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
 
@@ -43,7 +43,7 @@ showParseError pe =
 	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
-showReading d "char" = case char d of
+showReading d "char" = case runError $ char d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n

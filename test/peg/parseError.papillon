@@ -5,16 +5,16 @@ import Data.Char
 
 main :: IO ()
 main = do
-	case something $ parse "parse fail" of
+	case runError $ something $ parse "parse fail" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
-	case more $ parse "" of
+	case runError $ more $ parse "" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
-	case other $ parse "parse hoge" of
+	case runError $ other $ parse "parse hoge" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
-	case digits $ parse "parse hoge" of
+	case runError $ digits $ parse "parse hoge" of
 		Right (r, _) -> putStrLn $ "no no it's success: " ++ show r
 		Left pe -> putStrLn $ "OK! parse failed: " ++ showParseError pe
 
@@ -31,13 +31,13 @@ showParseError pe =
 	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
-showReading d "string" = case string d of
+showReading d "string" = case runError $ string d of
 	Right (s, _) -> show s
 	Left _ -> error "bad"
-showReading d "other" = case other d of
+showReading d "other" = case runError $ other d of
 	Right (s, _) -> show s
 	Left _ -> error "bad"
-showReading d "char" = case char d of
+showReading d "char" = case runError $ char d of
 	Right (s, _) -> show s
 	Left _ -> error "bad"
 showReading _ n = "showReading: yet: " ++ n

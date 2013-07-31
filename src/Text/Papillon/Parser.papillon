@@ -31,7 +31,9 @@ module Text.Papillon.Parser (
 	PPragma(..),
 	ModuleName,
 	Exports,
-	Code
+	Code,
+
+	runError
 ) where
 
 import Text.Papillon.SyntaxTree

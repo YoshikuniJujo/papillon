@@ -5,10 +5,10 @@ import Data.Char
 
 main :: IO ()
 main = do
-	case str $ parse "Hello, world" of
+	case runError $ str $ parse "Hello, world" of
 		Right (r, _) -> print r
 		Left _ -> putStrLn "parse error"
-	case str $ parse "hellOW, world" of
+	case runError $ str $ parse "hellOW, world" of
 		Right (r, _) -> print r
 		Left _ -> putStrLn "parse error"
 

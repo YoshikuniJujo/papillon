@@ -8,49 +8,49 @@ data SomeData = SomeData Int String deriving Show
 
 main :: IO ()
 main = do
-	case onlyDigits $ parse "123 abc" of
+	case runError $ onlyDigits $ parse "123 abc" of
 		Right (str, _) -> print $ str 4
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case onlyDigits $ parse "123 \n\t" of
+	case runError $ onlyDigits $ parse "123 \n\t" of
 		Right (str, _) -> print $ str 4
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case onlyDigits $ parse "123abc" of
+	case runError $ onlyDigits $ parse "123abc" of
 		Right (str, _) -> print $ str 4
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case mulDigits $ parse "559" of
+	case runError $ mulDigits $ parse "559" of
 		Right ((m, n), _) -> print (m 3, n ["hello", "friend"])
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case addDigits2 $ parse "33 25" of
+	case runError $ addDigits2 $ parse "33 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case divDigits $ parse "63 25" of
+	case runError $ divDigits $ parse "63 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case someData $ parse "63 25" of
+	case runError $ someData $ parse "63 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case getSomeData $ parse "63 25" of
+	case runError $ getSomeData $ parse "63 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case testSelLeaf $ parse "63 25" of
+	case runError $ testSelLeaf $ parse "63 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case testSelLeaf $ parse "abcde 25" of
+	case runError $ testSelLeaf $ parse "abcde 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case digits' $ parse "12345abc 25" of
+	case runError $ digits' $ parse "12345abc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case testAnd $ parse "12345abc 25" of
+	case runError $ testAnd $ parse "12345abc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
-	case testAnd $ parse "12345bc 25" of
+	case runError $ testAnd $ parse "12345bc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case testNot $ parse "12345abc 25" of
+	case runError $ testNot $ parse "12345abc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "OK! it's fail: " ++ showParseError pe
-	case testNot $ parse "12345bc 25" of
+	case runError $ testNot $ parse "12345bc 25" of
 		Right (r, _) -> print r
 		Left pe -> putStrLn $ "error: " ++ showParseError pe
 
@@ -67,10 +67,10 @@ showParseError pe =
 	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
-showReading d "char" = case char d of
+showReading d "char" = case runError $ char d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
-showReading d "other" = case other d of
+showReading d "other" = case runError $ other d of
 	Right (c, _) -> show c
 	Left _ -> error "bad"
 showReading _ n = "shorReading: yet: " ++ n

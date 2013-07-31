@@ -15,7 +15,8 @@ module Text.Papillon (
 	pePosition,
 	pePositionS,
 	(<*>),
-	(<$>)
+	(<$>),
+	runError
 ) where
 
 import Text.PapillonCore

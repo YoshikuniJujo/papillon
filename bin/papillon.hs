@@ -10,6 +10,7 @@ import Class
 addModules :: String
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
+	"import \"monads-tf\" Control.Monad.Identity\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n"
 
 papillonStr :: String -> IO (String, String, String)
@@ -63,12 +64,16 @@ papillonConstant mName = do
 		pepst <- pePositionST
 		pepsd <- pePositionSD
 		cls <- classSourceQ False
-		return $ [pe, iepe, mkpet, mkpe, pepst, pepsd] ++ cls
+		ret <- runErrorTHT False
+		re <- runErrorTH False
+		return $ [pe, iepe, mkpet, mkpe, pepst, pepsd] ++ cls ++ [ret, re]
 	return $
-		"{-# LANGUAGE RankNTypes, TypeFamilies #-}\n" ++
+		"{-# LANGUAGE RankNTypes, TypeFamilies, PackageImports #-}\n" ++
 		"module " ++ mName ++ " (\n\t" ++
 		intercalate ",\n\t" exportList ++ ") where\n" ++
 		"import Control.Monad.Trans.Error (Error(..))\n" ++
+		"import \"monads-tf\" Control.Monad.Error\n" ++
+		"import \"monads-tf\" Control.Monad.Identity\n" ++
 		show (ppr src) ++ "\n"
 
 main :: IO ()
@@ -98,7 +103,8 @@ exportList = [
 	"Pos(..)",
 	"Source(..)",
 	"SourceList(..)",
-	"ListPos(..)"
+	"ListPos(..)",
+	"runError"
  ]
 
 myInit :: [a] -> [a]

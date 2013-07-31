@@ -16,7 +16,7 @@ true :: Bool
 true = True
 
 main :: IO ()
-main = case three $ parse "333" of
+main = case runError $ three $ parse "333" of
 	Right ((), _) -> putStrLn "OK!"
 	Left _ -> putStrLn $ "not matched"
 

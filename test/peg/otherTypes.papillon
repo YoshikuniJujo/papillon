@@ -27,7 +27,7 @@ instance Source YourSource where
 	updatePos _ (YourPos p) = YourPos $ succ p
 
 main :: IO ()
-main = case str $ parse DEF of
+main = case runError $ str $ parse DEF of
 	Right (r, _) -> print r
 	Left _ -> putStrLn $ "not match"
 

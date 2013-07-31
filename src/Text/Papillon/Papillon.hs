@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, TypeFamilies #-}
+{-# LANGUAGE RankNTypes, TypeFamilies, PackageImports #-}
 module Text.Papillon.Papillon (
 	ParseError,
 	mkParseError,
@@ -12,8 +12,11 @@ module Text.Papillon.Papillon (
 	Pos(..),
 	Source(..),
 	SourceList(..),
-	ListPos(..)) where
+	ListPos(..),
+	runError) where
 import Control.Monad.Trans.Error (Error(..))
+import "monads-tf" Control.Monad.Error
+import "monads-tf" Control.Monad.Identity
 data ParseError pos drv
     = ParseError {peCode :: String,
                   peMessage :: String,
@@ -53,3 +56,5 @@ instance SourceList Char
           listInitialPos = CharPos (1, 1)
           listUpdatePos '\n' (CharPos (y, _)) = CharPos (y + 1, 0)
           listUpdatePos _ (CharPos (y, x)) = CharPos (y, x + 1)
+runError :: forall err a . ErrorT err Identity a -> Either err a
+runError = runIdentity . runErrorT

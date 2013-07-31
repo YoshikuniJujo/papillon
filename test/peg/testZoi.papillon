@@ -4,7 +4,7 @@ import Text.Papillon
 import Data.Char
 
 main :: IO ()
-main = case something $ parse "zoi gy. hello myfriend gy" of
+main = case runError $ something $ parse "zoi gy. hello myfriend gy" of
 	Right (r, _) -> print r
 	Left _ -> putStrLn $ "not match"
 

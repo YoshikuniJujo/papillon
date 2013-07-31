@@ -4,7 +4,7 @@ import Text.Papillon
 import Data.Char
 
 main :: IO ()
-main = case something $ parse "335,287" of
+main = case runError $ something $ parse "335,287" of
 	Right (n, _) -> print n
 	Left _ -> putStrLn $ "not match"
 
