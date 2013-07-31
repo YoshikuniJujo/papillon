@@ -5,11 +5,8 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
-	lookahead のリファクタリング
-		negative のリファクタリング
-			newThrow を使おうかな
-		NAhead の error message のための引数を何とかする
-			むしろ上の段階の型をそのまま渡すべきかもしれない
+	transLeaf のリファクタリング
+		名前を変える
 
 	Pat を (Pat, Bool) とし、全てを網羅している pattern は (p, True) とする
 	これは parse の段階でやってしまおうかな
