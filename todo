@@ -2,21 +2,30 @@
 * 次にやること           *
 **************************
 
-* 以下をするために、まずは、何も指定しないときには、Identity monad とする
-	test と return のところには return を追加すれば良いだろうと思う
-
-	そして、ここがややめんどくさいのだが、
-	parse を (Derivs -> ...) -> src -> Either として、
-	この中に、runIdentity や runErrorT を入れてしまおう。
-	showReading とかはどうしようかな。
-	とりあえずは、runIdentity $ runErrorT $ ... d としておくかな?
-	あるいは、runError でも用意しておこうかな。
-
 * monadic parser とする
 	何も指定しなければ、Identity monad とし、
 	test と return のところに return を追加する。
 	monad が指定されればそのモナドを lift するような StateT や ErrorT を作り、
 	return とかは足さない
+
+	まずは monad: Reader Int からやってみるかな
+
+	やること
+	TTPeg に Type を追加する
+	parser を書き換えて monad を指定できるようにする
+	Type が Identity でなければ return ではなく lift をつけるようにする
+	Identity の部分を Type で置き換えるようにする
+	この間、test.sh を実行し続ける
+	終了後、test/peg/simpleMonadic.papillon を試す
+
+	<...> という構造を特別扱いするようにする
+	つまり、<return . isDigit> ではなく <isDigit> とできるようにする
+	このために2つの方法が考えられる。
+	parse 中に monad が Identity であるかどうかで場合分けするか、
+	あるいは、別の構文として parser が返すか。
+	後者のほうが良さそうだ。
+	後者を採用した場合、Q や IORef Int -> を消すことができそうな気がする。
+	そっちのほうがきれいにできそうだ。
 
 * version up して install
 
@@ -256,6 +265,10 @@
 
 	Pat を (Pat, Bool) とし、全てを網羅している pattern は (p, True) とする
 	これは parse の段階でやってしまおうかな
+
+* SyntaxTree.hs
+	Q や IORef Int -> は消せる気がするので考えてみること
+	名前を変更する
 
 ******************************
 *  機能面における細かい修正  *

@@ -1,0 +1,21 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies, PackageImports #-}
+
+import Text.Papillon
+import "monads-tf" Control.Monad.Reader
+
+test :: Reader Int Int
+test = do
+	ret <- runError $ hello $ parse "hello"
+	case ret of
+		Right (r, _) -> print r
+		Left _ -> putStrLn "parse error"
+
+[papillon|
+
+monad: Reader Int
+
+hello :: Int
+	= c s:hello	{ return $ c : s }
+	/		{ return [] }
+
+|]
