@@ -10,6 +10,14 @@
 		つまり関数の頭で match させずに case 文を使うということ
 		必要とする変数の違いによって、なかなか難しいところがあるな
 
+		Some s とのマッチングの際には以下のコードが必要となる。
+			case ret of
+				Some _ -> return ()
+				_ -> throwError ...
+			let Some s = ret
+		もしも Some s が他の構築子を持たないのであればこうなる。
+			let Some s = ret
+
 		afterCheck の名前の変更
 			もしくは、check へうめこんで消すか
 
