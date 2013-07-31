@@ -5,13 +5,16 @@
 * PapillonCore のリファクタリング
 	以下の monadic な parser にするための準備として
 
-	processHA のリファクタリング
+	lookahead のリファクタリング
 		NAhead の error message のための引数を何とかする
 			むしろ上の段階の型をそのまま渡すべきかもしれない
 		あるいは、より根本的なまちがいがあるかもしれない
-			processHA が monad を取って monad を返すというのは
+			lookahead が monad を取って monad を返すというのは
 			本当に正しいのか
-		processHA の名前を変える
+			おそらく正しくない。単純に Exp を取れば良い。
+
+	Pat を (Pat, Bool) とし、全てを網羅している pattern は (p, True) とする
+	これは parse の段階でやってしまおうかな
 
 * version up して install
 

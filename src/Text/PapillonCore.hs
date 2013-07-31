@@ -177,7 +177,7 @@ expression :: Bool -> Expression -> State Variables Exp
 expression th (e, r) =
 	(doE . (++ [NoBindS $ VarE (mkName "return") `AppE` r]) . concat <$>) $
 		forM e $ \(la, ck@(_, rf, _)) ->
-			processHA th la (show $ pprCheck ck) (nameFromRF rf) $
+			lookahead th la (show $ pprCheck ck) (nameFromRF rf) $
 				transLeaf th ck
 
 transLeaf :: Bool -> Check -> State Variables [Stmt]
@@ -243,13 +243,13 @@ plainExpression th pexs = do
 transHAReadFrom :: Bool -> (Lookahead, ReadFrom) -> State Variables Exp
 transHAReadFrom th (ha, rf) = do
 	modify $ nextVariable "d"
-	doE <$> processHA th ha "" (nameFromRF rf)
+	doE <$> lookahead th ha "" (nameFromRF rf)
 		((: []) . NoBindS <$> transReadFrom th rf)
 
-processHA :: Bool -> Lookahead -> String -> [String] -> State Variables [Stmt] ->
+lookahead :: Bool -> Lookahead -> String -> [String] -> State Variables [Stmt] ->
 	State Variables [Stmt]
-processHA _ Here _ _ act = act
-processHA th Ahead _ _ act = do
+lookahead _ Here _ _ act = act
+lookahead th Ahead _ _ act = do
 	d <- gets $ getVariable "ddd"
 	modify $ nextVariable "ddd"
 	r <- act
@@ -257,7 +257,7 @@ processHA th Ahead _ _ act = do
 		BindS (VarP d) $ VarE (getN th),
 		BindS WildP $ doE r,
 		NoBindS $ VarE (putN th) `AppE` VarE d]
-processHA th (NAhead com) nls ns act = do
+lookahead th (NAhead com) nls ns act = do
 	d <- gets $ getVariable "ddd"
 	modify $ nextVariable "ddd"
 	r <- act
