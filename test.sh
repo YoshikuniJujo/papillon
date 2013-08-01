@@ -109,3 +109,10 @@ runhaskell -isrc -ibin -Wall bin/papillon test/peg/lookahead.papillon tmp/ && \
 runhaskell -isrc -itmp -Wall tmp/lookahead.hs
 cp test/peg/lookahead.papillon tmp/lookahead_th.hs
 runhaskell -isrc -Wall tmp/lookahead_th.hs
+
+echo
+echo sugar.papillon
+runhaskell -isrc -ibin -Wall bin/papillon test/peg/sugar.papillon tmp/ && \
+runhaskell -isrc -itmp -Wall tmp/sugar.hs
+cp test/peg/sugar.papillon tmp/sugar_th.hs
+runhaskell -isrc -Wall tmp/sugar_th.hs

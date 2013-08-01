@@ -176,11 +176,18 @@ mkRule t s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$>
 		lr (l - if n == l - 1 then 1 else 0) (n - 1) ex
 
 expression :: Bool -> Expression -> State Variables Exp
-expression th (e, r) =
+expression th (Left (e, r)) =
 	(doE . (++ [NoBindS $ VarE (mkName "return") `AppE` r]) . concat <$>) $
 		forM e $ \(la, ck@(_, rf, _)) ->
 			lookahead th la (show $ pprCheck ck) (nameFromRF rf) =<<
 				check th ck
+expression th (Right e) = do
+	c <- gets $ getVariable "c"
+	modify $ nextVariable "c"
+	let	e' = [(Here, ((VarP c, ""), FromVariable Nothing,
+			Just (e `AppE` VarE c, "")))]
+		r = VarE c
+	expression th (Left (e', r))
 
 check :: Bool -> Check -> State Variables [Stmt]
 check th ((n, nc), rf, test) = do
@@ -315,16 +322,18 @@ afterCheck th (pp, pc) d ns = [NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
 listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
 	where
-	sel = either	(any $ any (rf . (\(_, r, _) -> r) . snd) . fst)
-			(any $ any $ rf . snd)
+	sel = either (any ex) (any $ any $ rf . snd)
+	ex (Left e) = any (rf . (\(_, r, _) -> r) . snd) $ fst e
+	ex (Right _) = False
 	rf (FromL List _) = True
 	rf (FromL List1 _) = True
 	rf (FromSelection s) = sel s
 	rf _ = False
 optionalUsed = any $ sel . \(_, _, s) -> s
 	where
-	sel = either	(any $ any (rf . (\(_, r, _) -> r) . snd) . fst)
-			(any $ any $ rf . snd)
+	sel = either (any $ ex) (any $ any $ rf . snd)
+	ex (Left e) = any (rf . (\(_, r, _) -> r) . snd) $ fst e
+	ex (Right _) = False
 	rf (FromL Optional _) = True
 	rf (FromSelection s) = sel s
 	rf _ = False

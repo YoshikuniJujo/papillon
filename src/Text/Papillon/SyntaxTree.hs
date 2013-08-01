@@ -66,7 +66,7 @@ type STPeg = (Type, Peg)
 type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
 type Selection =  Either [Expression] [PlainExpression]
-type Expression = ([(Lookahead, Check)], Exp)
+type Expression = Either ([(Lookahead, Check)], Exp) Exp
 type PlainExpression = [(Lookahead, ReadFrom)]
 type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
 data ReadFrom
@@ -108,7 +108,7 @@ expressionQ :: ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
 expressionQ (ls, ex) g = do
 	e <- ex
 	l <- mapM (\(la, c) -> (la ,) <$> c g) ls
-	return (l, e)
+	return $ Left (l, e)
 
 plainExpressionQ :: [(Lookahead, ReadFromQ)] -> PlainExpressionQ
 plainExpressionQ ls g = do
@@ -127,12 +127,7 @@ check (pat, pcom) rfq Nothing g = do
 	return $ ((p, pcom), rf, Nothing)
 
 expressionSugar :: ExpQ -> ExpressionQ
-expressionSugar pm g = do
-	p <- pm
-	s <- runIO $ readIORef g
-	c <- newName $ "c" ++ show s
-	return $ (, VarE c) $ (: []) $ (Here ,) $ (,,)
-		(VarP c, "") (FromVariable Nothing) (Just $ (, "") $ p `AppE` VarE c)
+expressionSugar pm _ = Right <$> pm
 
 fromTokenChars :: String -> ReadFromQ
 fromTokenChars cs = \g -> do
@@ -151,8 +146,9 @@ instance Ppr ReadFrom where
 	ppr (FromSelection sel) = parens $ ps sel
 		where
 		ps = hsep . intersperse (char '/') . either (map pe) (map ppe)
-		pe (ex, hs) = (<+> braces (ppr hs)) $ hsep $
+		pe (Left (ex, hs)) = (<+> braces (ppr hs)) $ hsep $
 			map (uncurry ($) . (((<>) . ppr) *** pprCheck)) ex
+		pe (Right ex) = char '<' <> ppr ex <> char '>'
 		ppe = hsep . map (uncurry (<>) . (ppr *** ppr))
 
 
@@ -175,7 +171,8 @@ selectionType peg tk e = do
 	case e of
 		Right ex -> foldr (\x y -> (eitherT `AppT` x) `AppT` y)
 			(last $ types ex) (init $ types ex)
-		Left [ex] | tc ex -> tk
+		Left [Left ex] | tc ex -> tk
+		Left [Right _] -> tk
 		_ -> error "selectionType: can't get type"
 	where
 	eitherT = ConT $ mkName "Either"
@@ -206,7 +203,8 @@ nameFromSelection exs = concat $
 	(either (mapM nameFromExpression) (mapM nameFromPlainExpression) exs)
 
 nameFromExpression :: Expression -> [String]
-nameFromExpression = nameFromCheck . snd . head . fst
+nameFromExpression (Left e) = nameFromCheck $ snd $ head $ fst e
+nameFromExpression (Right _) = [dvCharsN]
 
 nameFromPlainExpression :: PlainExpression -> [String]
 nameFromPlainExpression = (concat <$>) . mapM (nameFromRF . snd)

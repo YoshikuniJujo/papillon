@@ -1,0 +1,15 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Data.Char
+import Text.Papillon
+
+main :: IO ()
+main = case runError $ digits $ parse "123abc" of
+	Right (r, _) -> print r
+	Left _ -> putStrLn "parse error"
+
+[papillon|
+
+digits :: String = ds:<isDigit>+	{ ds };
+
+|]
