@@ -53,7 +53,7 @@ dvPosN = mkName "position"
 papillonCore :: String -> DecsQ
 papillonCore str = case runError $ peg $ parse str of
 	Right (stpegq, _) -> do
-		(src, parsed) <- stpegq =<< runIO (newIORef 0)
+		(src, parsed) <- stpegq
 		decParsed True src parsed
 	Left err -> error $ "parse error: " ++ showParseError err
 
@@ -61,8 +61,7 @@ papillonFile :: String ->
 	Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
 papillonFile str = case runError $ pegFile $ parse str of
 	Right (pegfileq, _) -> do
-		g <- runIO $ newIORef 0
-		(prgm, mn, ppp, pp, (src, parsed), atp) <- pegfileq g
+		(prgm, mn, ppp, pp, (src, parsed), atp) <- pegfileq
 		let	lu = listUsed parsed
 			ou = optionalUsed parsed
 		let addApplicative =

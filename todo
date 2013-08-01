@@ -2,15 +2,7 @@
 * 次にやること           *
 **************************
 
-* parser から IORef Int と Q を取りのぞく
-	まずは IORef Int を消そう
-
-	<isDigit> を別の構造にしよう
-	また <isDigit> と [a-z] も別の構造にする必要があるだろう
-	前者は Either ... Exp とすれば良い
-	後者はとりあえずは Either ... (Char, Char) としておくが、
-	どっちにしても、Token が Char 以外では使えないので、
-	いずれ消すだろう
+* parser から Q を取りのぞく
 
 * monadic parser とする
 	何も指定しなければ、Identity monad とし、

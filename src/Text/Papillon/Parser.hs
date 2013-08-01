@@ -1014,8 +1014,8 @@ parse = parse1160_0 initialPos
                                               return ()
                                               d <- StateT definition
                                               p <- StateT peg_
-                                              return (\g -> (:) <$> d g <*> p g),
-                                           return (const $ return [])]
+                                              return ((:) <$> d <*> p),
+                                           return (return [])]
                 definition97_102 = foldl1 mplus [do v <- StateT variable
                                                     _ <- StateT spaces
                                                     return ()
@@ -1245,7 +1245,7 @@ parse = parse1160_0 initialPos
                                                    return ()
                                                    com <- optional154_342 (StateT comForErr)
                                                    return (check (n,
-                                                                  maybe "" id com) (const $ return $ FromVariable Nothing) Nothing)]
+                                                                  maybe "" id com) (return $ FromVariable Nothing) Nothing)]
                 nameLeafNoCom109_114 = foldl1 mplus [do n <- StateT pat1
                                                         _ <- StateT spaces
                                                         return ()
@@ -1263,7 +1263,7 @@ parse = parse1160_0 initialPos
                                                         _ <- StateT spaces
                                                         return ()
                                                         return (check (n,
-                                                                       "") (const $ return $ FromVariable Nothing) Nothing)]
+                                                                       "") (return $ FromVariable Nothing) Nothing)]
                 comForErr110_115 = foldl1 mplus [do d879_349 <- get
                                                     t384_350 <- StateT char
                                                     case t384_350 of
@@ -1334,8 +1334,7 @@ parse = parse1160_0 initialPos
                                             do rf <- StateT readFromLs
                                                return (rf, Nothing),
                                             do t <- StateT test
-                                               return (const $ return $ FromVariable Nothing,
-                                                       Just t)]
+                                               return (return $ FromVariable Nothing, Just t)]
                 patOp112_117 = foldl1 mplus [do p <- StateT pat
                                                 o <- StateT opConName
                                                 po <- StateT patOp
@@ -1590,7 +1589,7 @@ parse = parse1160_0 initialPos
                                                          _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d959_415 ["char"])
                                                      let '*' = t464_416
                                                      return ()
-                                                     return ((FromL List <$>) . rf),
+                                                     return (FromL List <$> rf),
                                                   do rf <- StateT readFrom
                                                      d961_417 <- get
                                                      t466_418 <- StateT char
@@ -1599,7 +1598,7 @@ parse = parse1160_0 initialPos
                                                          _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d961_417 ["char"])
                                                      let '+' = t466_418
                                                      return ()
-                                                     return ((FromL List1 <$>) . rf),
+                                                     return (FromL List1 <$> rf),
                                                   do rf <- StateT readFrom
                                                      d963_419 <- get
                                                      t468_420 <- StateT char
@@ -1608,11 +1607,11 @@ parse = parse1160_0 initialPos
                                                          _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d963_419 ["char"])
                                                      let '?' = t468_420
                                                      return ()
-                                                     return ((FromL Optional <$>) . rf),
+                                                     return (FromL Optional <$> rf),
                                                   do rf <- StateT readFrom
                                                      return rf]
                 readFrom122_127 = foldl1 mplus [do v <- StateT variable
-                                                   return (const $ return $ FromVariable $ Just v),
+                                                   return (return $ FromVariable $ Just v),
                                                 do d966_421 <- get
                                                    t471_422 <- StateT char
                                                    case t471_422 of
@@ -1639,7 +1638,7 @@ parse = parse1160_0 initialPos
                                                             _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d971_425 ["char"])
                                                         let '*' = t476_426
                                                         return ()
-                                                        return ((FromL List <$>) . rf),
+                                                        return (FromL List <$> rf),
                                                      do rf <- StateT selectChars
                                                         d973_427 <- get
                                                         t478_428 <- StateT char
@@ -1648,7 +1647,7 @@ parse = parse1160_0 initialPos
                                                             _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d973_427 ["char"])
                                                         let '+' = t478_428
                                                         return ()
-                                                        return ((FromL List1 <$>) . rf),
+                                                        return (FromL List1 <$> rf),
                                                      do rf <- StateT selectChars
                                                         d975_429 <- get
                                                         t480_430 <- StateT char
@@ -1657,7 +1656,7 @@ parse = parse1160_0 initialPos
                                                             _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d975_429 ["char"])
                                                         let '?' = t480_430
                                                         return ()
-                                                        return ((FromL Optional <$>) . rf),
+                                                        return (FromL Optional <$> rf),
                                                      do rf <- StateT selectChars
                                                         return rf]
                 selectChars124_129 = foldl1 mplus [do d977_431 <- get

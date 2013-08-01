@@ -50,11 +50,9 @@ module Text.Papillon.SyntaxTree (
 
 import Language.Haskell.TH
 import Language.Haskell.TH.PprLib
-import Control.Monad
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Data.List
-import Data.IORef
 
 dvCharsN :: String
 dvCharsN = "char"
@@ -75,63 +73,63 @@ data ReadFrom
 	| FromL Lists ReadFrom
 	deriving Show
 
-type STPegQ = IORef Int -> Q STPeg
-type PegQ = IORef Int -> Q Peg
-type DefinitionQ = IORef Int -> Q Definition
-type SelectionQ = IORef Int -> Q Selection
-type ExpressionQ = IORef Int -> Q Expression
-type PlainExpressionQ = IORef Int -> Q PlainExpression
-type CheckQ = IORef Int -> Q Check
-type ReadFromQ = IORef Int -> Q ReadFrom
+type STPegQ = Q STPeg
+type PegQ = Q Peg
+type DefinitionQ = Q Definition
+type SelectionQ = Q Selection
+type ExpressionQ = Q Expression
+type PlainExpressionQ = Q PlainExpression
+type CheckQ = Q Check
+type ReadFromQ = Q ReadFrom
 
 stPegQ :: TypeQ -> PegQ -> STPegQ
-stPegQ stq pegq = ((,) <$> stq <*>) . pegq
+stPegQ stq pegq = (,) <$> stq <*> pegq
 
 fromSelectionQ :: SelectionQ -> ReadFromQ
-fromSelectionQ sel = (FromSelection <$>) . sel
+fromSelectionQ sel = FromSelection <$> sel
 
 definitionQ :: String -> Maybe TypeQ -> SelectionQ -> DefinitionQ
-definitionQ name typq selq = \g -> do
-	sel <- selq g
+definitionQ name typq selq = do
+	sel <- selq
 	typ <- case typq of
 		Just t -> Just <$> t
 		_ -> return Nothing
 	return $ (name, typ, sel)
 
 normalSelectionQ :: [ExpressionQ] -> SelectionQ
-normalSelectionQ expqs = \g -> (Left <$>) $ forM expqs ($ g)
+normalSelectionQ expqs = Left <$> sequence expqs
 
 plainSelectionQ :: [PlainExpressionQ] -> SelectionQ
-plainSelectionQ expqs = \g -> (Right <$>) $ forM expqs ($ g)
+plainSelectionQ expqs = Right <$> sequence expqs
 
 expressionQ :: ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
-expressionQ (ls, ex) g = do
+expressionQ (ls, ex) = do
 	e <- ex
-	l <- mapM (\(la, c) -> (la ,) <$> c g) ls
+	l <- mapM (\(la, c) -> (la ,) <$> c) ls
 	return $ Left (l, e)
 
 plainExpressionQ :: [(Lookahead, ReadFromQ)] -> PlainExpressionQ
-plainExpressionQ ls g = do
-	l <- mapM (\(la, c) -> (la ,) <$> c g) ls
+plainExpressionQ ls = do
+	l <- mapM (\(la, c) -> (la ,) <$> c) ls
 	return l
 
 check :: (PatQ, String) -> ReadFromQ -> Maybe (ExpQ, String) -> CheckQ
-check (pat, pcom) rfq (Just (test, tcom)) g = do
-	rf <- rfq g
+check (pat, pcom) rfq (Just (test, tcom)) = do
+	rf <- rfq
 	p <- pat
 	t <- test
 	return $ ((p, pcom), rf, Just (t, tcom))
-check (pat, pcom) rfq Nothing g = do
-	rf <- rfq g
+check (pat, pcom) rfq Nothing = do
+	rf <- rfq
 	p <- pat
 	return $ ((p, pcom), rf, Nothing)
 
 expressionSugar :: ExpQ -> ExpressionQ
-expressionSugar pm _ = Right <$> pm
+expressionSugar pm = Right <$> pm
 
 fromTokenChars :: String -> ReadFromQ
-fromTokenChars cs = \g -> do
-	ex <- flip expressionSugar g $ infixE Nothing (varE $ mkName "elem") $
+fromTokenChars cs = do
+	ex <- expressionSugar $ infixE Nothing (varE $ mkName "elem") $
 		Just $ litE $ stringL cs
 	return $ FromSelection $ Left [ex]
 
@@ -219,7 +217,7 @@ nameFromRF (FromL _ rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 
 type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, STPeg, Code)
-type PegFileQ = IORef Int -> Q PegFile
+type PegFileQ = Q PegFile
 data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
 type ModuleName = [String]
 type Exports = String
@@ -227,9 +225,9 @@ type Code = String
 
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
 	STPegQ -> String -> PegFileQ
-mkPegFile ps (Just md) x y zq w g = do
-	z <- zq g
+mkPegFile ps (Just md) x y zq w = do
+	z <- zq
 	return (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
-mkPegFile ps Nothing x y zq w g = do
-	z <- zq g
+mkPegFile ps Nothing x y zq w = do
+	z <- zq
 	return (ps, [], Nothing, x ++ "\n" ++ y, z, w)

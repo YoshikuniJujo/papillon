@@ -134,8 +134,8 @@ sourceType :: String
 						{ v }
 ;
 peg_ :: PegQ
-	= _:spaces d:definition p:peg_		{ \g -> (:) <$> d g <*> p g }
-	/ 					{ const $ return [] }
+	= _:spaces d:definition p:peg_		{ (:) <$> d <*> p }
+	/ 					{ return [] }
 ;
 definition :: DefinitionQ
 	= v:variable _:spaces ':' ':'
@@ -196,13 +196,13 @@ nameLeaf :: CheckQ
 		{ check (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces com:comForErr?
 		{ check (n, maybe "" id com)
-			(const $ return $ FromVariable Nothing) Nothing }
+			(return $ FromVariable Nothing) Nothing }
 ;
 nameLeafNoCom :: CheckQ
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ check (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces
-		{ check (n, "") (const $ return $ FromVariable Nothing) Nothing }
+		{ check (n, "") (return $ FromVariable Nothing) Nothing }
 ;
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
@@ -211,7 +211,7 @@ comForErr :: String
 leaf :: (ReadFromQ, Maybe (ExpQ, String))
 	= rf:readFromLs t:test			{ (rf, Just t) }
 	/ rf:readFromLs				{ (rf, Nothing) }
-	/ t:test			{ (const $ return $ FromVariable Nothing,
+	/ t:test			{ (return $ FromVariable Nothing,
 						Just t) }
 ;
 patOp :: PatQ
@@ -266,22 +266,22 @@ pats :: [PatQ]
 	/					{ [] }
 ;
 readFromLs :: ReadFromQ
-	= rf:readFrom '*'			{ (FromL List <$>) . rf }
-	/ rf:readFrom '+'			{ (FromL List1 <$>) . rf }
-	/ rf:readFrom '?'			{ (FromL Optional <$>) . rf }
+	= rf:readFrom '*'			{ FromL List <$> rf }
+	/ rf:readFrom '+'			{ FromL List1 <$> rf }
+	/ rf:readFrom '?'			{ FromL Optional <$> rf }
 	/ rf:readFrom				{ rf }
 ;
 readFrom :: ReadFromQ
-	= v:variable				{ const $ return $
+	= v:variable				{ return $
 							FromVariable $ Just v }
 	/ '(' s:selection ')'			{ fromSelectionQ s }
 	/ e:expressionHsSugar			{ fromSelectionQ $
 							normalSelectionQ [e] }
 ;
 selectCharsLs :: ReadFromQ
-	= rf:selectChars '*'			{ (FromL List <$>) . rf }
-	/ rf:selectChars '+'			{ (FromL List1 <$>) . rf }
-	/ rf:selectChars '?'			{ (FromL Optional <$>) . rf }
+	= rf:selectChars '*'			{ FromL List <$> rf }
+	/ rf:selectChars '+'			{ FromL List1 <$> rf }
+	/ rf:selectChars '?'			{ FromL Optional <$> rf }
 	/ rf:selectChars			{ rf }
 ;
 selectChars :: ReadFromQ
