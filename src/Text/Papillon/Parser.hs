@@ -109,6 +109,9 @@ data Derivs
               peg :: (ErrorT (ParseError (Pos String) Derivs)
                              Identity
                              ((STPegQ, Derivs))),
+              monadType :: (ErrorT (ParseError (Pos String) Derivs)
+                                   Identity
+                                   ((Type, Derivs))),
               sourceType :: (ErrorT (ParseError (Pos String) Derivs)
                                     Identity
                                     ((String, Derivs))),
@@ -291,92 +294,93 @@ data Derivs
                               ((Token String, Derivs))),
               position :: (Pos String)}
 parse :: String -> Derivs
-parse = parse1160_0 initialPos
-          where parse1160_0 pos1159_1 s1161_2 = d646_3
-                                where d646_3 = Derivs pegFile0_4 pragmas1_5 pragma2_6 pragmaStr3_7 pragmaItems4_8 pragmaEnd5_9 moduleDec6_10 moduleName7_11 moduleDecStr8_12 whr9_13 preImpPap10_14 prePeg11_15 afterPeg12_16 importPapillon13_17 varToken14_18 typToken15_19 pap16_20 peg17_21 sourceType18_22 peg_19_23 definition20_24 selection21_25 normalSelection22_26 plainSelection23_27 expressionHs24_28 expressionHsSugar25_29 plainExpressionHs26_30 plainHAReadFromLs27_31 plainReadFromLs28_32 expression29_33 nameLeaf_30_34 nameLeaf31_35 nameLeafNoCom32_36 comForErr33_37 leaf34_38 patOp35_39 pat36_40 pat137_41 patList38_42 opConName39_43 charLit40_44 stringLit41_45 escapeC42_46 pats43_47 readFromLs44_48 readFrom45_49 selectCharsLs46_50 selectChars47_51 test48_52 hsExpLam49_53 hsExpTyp50_54 hsExpOp51_55 hsOp52_56 opTail53_57 hsExp54_58 hsExp155_59 hsExpTpl56_60 hsTypeArr57_61 hsType58_62 hsType159_63 hsTypeTpl60_64 typ61_65 variable62_66 tvtail63_67 integer64_68 alpha65_69 upper66_70 lower67_71 digit68_72 spaces69_73 space70_74 notNLString71_75 newLine72_76 comment73_77 comments74_78 notComStr75_79 comEnd76_80 chars1162_81 pos1159_1
-                                      pegFile0_4 = runStateT pegFile77_82 d646_3
-                                      pragmas1_5 = runStateT pragmas78_83 d646_3
-                                      pragma2_6 = runStateT pragma79_84 d646_3
-                                      pragmaStr3_7 = runStateT pragmaStr80_85 d646_3
-                                      pragmaItems4_8 = runStateT pragmaItems81_86 d646_3
-                                      pragmaEnd5_9 = runStateT pragmaEnd82_87 d646_3
-                                      moduleDec6_10 = runStateT moduleDec83_88 d646_3
-                                      moduleName7_11 = runStateT moduleName84_89 d646_3
-                                      moduleDecStr8_12 = runStateT moduleDecStr85_90 d646_3
-                                      whr9_13 = runStateT whr86_91 d646_3
-                                      preImpPap10_14 = runStateT preImpPap87_92 d646_3
-                                      prePeg11_15 = runStateT prePeg88_93 d646_3
-                                      afterPeg12_16 = runStateT afterPeg89_94 d646_3
-                                      importPapillon13_17 = runStateT importPapillon90_95 d646_3
-                                      varToken14_18 = runStateT varToken91_96 d646_3
-                                      typToken15_19 = runStateT typToken92_97 d646_3
-                                      pap16_20 = runStateT pap93_98 d646_3
-                                      peg17_21 = runStateT peg94_99 d646_3
-                                      sourceType18_22 = runStateT sourceType95_100 d646_3
-                                      peg_19_23 = runStateT peg_96_101 d646_3
-                                      definition20_24 = runStateT definition97_102 d646_3
-                                      selection21_25 = runStateT selection98_103 d646_3
-                                      normalSelection22_26 = runStateT normalSelection99_104 d646_3
-                                      plainSelection23_27 = runStateT plainSelection100_105 d646_3
-                                      expressionHs24_28 = runStateT expressionHs101_106 d646_3
-                                      expressionHsSugar25_29 = runStateT expressionHsSugar102_107 d646_3
-                                      plainExpressionHs26_30 = runStateT plainExpressionHs103_108 d646_3
-                                      plainHAReadFromLs27_31 = runStateT plainHAReadFromLs104_109 d646_3
-                                      plainReadFromLs28_32 = runStateT plainReadFromLs105_110 d646_3
-                                      expression29_33 = runStateT expression106_111 d646_3
-                                      nameLeaf_30_34 = runStateT nameLeaf_107_112 d646_3
-                                      nameLeaf31_35 = runStateT nameLeaf108_113 d646_3
-                                      nameLeafNoCom32_36 = runStateT nameLeafNoCom109_114 d646_3
-                                      comForErr33_37 = runStateT comForErr110_115 d646_3
-                                      leaf34_38 = runStateT leaf111_116 d646_3
-                                      patOp35_39 = runStateT patOp112_117 d646_3
-                                      pat36_40 = runStateT pat113_118 d646_3
-                                      pat137_41 = runStateT pat1114_119 d646_3
-                                      patList38_42 = runStateT patList115_120 d646_3
-                                      opConName39_43 = runStateT opConName116_121 d646_3
-                                      charLit40_44 = runStateT charLit117_122 d646_3
-                                      stringLit41_45 = runStateT stringLit118_123 d646_3
-                                      escapeC42_46 = runStateT escapeC119_124 d646_3
-                                      pats43_47 = runStateT pats120_125 d646_3
-                                      readFromLs44_48 = runStateT readFromLs121_126 d646_3
-                                      readFrom45_49 = runStateT readFrom122_127 d646_3
-                                      selectCharsLs46_50 = runStateT selectCharsLs123_128 d646_3
-                                      selectChars47_51 = runStateT selectChars124_129 d646_3
-                                      test48_52 = runStateT test125_130 d646_3
-                                      hsExpLam49_53 = runStateT hsExpLam126_131 d646_3
-                                      hsExpTyp50_54 = runStateT hsExpTyp127_132 d646_3
-                                      hsExpOp51_55 = runStateT hsExpOp128_133 d646_3
-                                      hsOp52_56 = runStateT hsOp129_134 d646_3
-                                      opTail53_57 = runStateT opTail130_135 d646_3
-                                      hsExp54_58 = runStateT hsExp131_136 d646_3
-                                      hsExp155_59 = runStateT hsExp1132_137 d646_3
-                                      hsExpTpl56_60 = runStateT hsExpTpl133_138 d646_3
-                                      hsTypeArr57_61 = runStateT hsTypeArr134_139 d646_3
-                                      hsType58_62 = runStateT hsType135_140 d646_3
-                                      hsType159_63 = runStateT hsType1136_141 d646_3
-                                      hsTypeTpl60_64 = runStateT hsTypeTpl137_142 d646_3
-                                      typ61_65 = runStateT typ138_143 d646_3
-                                      variable62_66 = runStateT variable139_144 d646_3
-                                      tvtail63_67 = runStateT tvtail140_145 d646_3
-                                      integer64_68 = runStateT integer141_146 d646_3
-                                      alpha65_69 = runStateT alpha142_147 d646_3
-                                      upper66_70 = runStateT upper143_148 d646_3
-                                      lower67_71 = runStateT lower144_149 d646_3
-                                      digit68_72 = runStateT digit145_150 d646_3
-                                      spaces69_73 = runStateT spaces146_151 d646_3
-                                      space70_74 = runStateT space147_152 d646_3
-                                      notNLString71_75 = runStateT notNLString148_153 d646_3
-                                      newLine72_76 = runStateT newLine149_154 d646_3
-                                      comment73_77 = runStateT comment150_155 d646_3
-                                      comments74_78 = runStateT comments151_156 d646_3
-                                      notComStr75_79 = runStateT notComStr152_157 d646_3
-                                      comEnd76_80 = runStateT comEnd153_158 d646_3
-                                      chars1162_81 = runStateT (case getToken s1161_2 of
-                                                                    Just (c1157_159,
-                                                                          s'1158_160) -> do put (parse1160_0 (updatePos c1157_159 pos1159_1) s'1158_160)
-                                                                                            return c1157_159
-                                                                    _ -> gets position >>= (throwError . mkParseError "" "end of input" "" undefined [])) d646_3
-                pegFile77_82 = foldl1 mplus [do pr <- StateT pragmas
+parse = parse1176_0 initialPos
+          where parse1176_0 pos1175_1 s1177_2 = d655_3
+                                where d655_3 = Derivs pegFile0_4 pragmas1_5 pragma2_6 pragmaStr3_7 pragmaItems4_8 pragmaEnd5_9 moduleDec6_10 moduleName7_11 moduleDecStr8_12 whr9_13 preImpPap10_14 prePeg11_15 afterPeg12_16 importPapillon13_17 varToken14_18 typToken15_19 pap16_20 peg17_21 monadType18_22 sourceType19_23 peg_20_24 definition21_25 selection22_26 normalSelection23_27 plainSelection24_28 expressionHs25_29 expressionHsSugar26_30 plainExpressionHs27_31 plainHAReadFromLs28_32 plainReadFromLs29_33 expression30_34 nameLeaf_31_35 nameLeaf32_36 nameLeafNoCom33_37 comForErr34_38 leaf35_39 patOp36_40 pat37_41 pat138_42 patList39_43 opConName40_44 charLit41_45 stringLit42_46 escapeC43_47 pats44_48 readFromLs45_49 readFrom46_50 selectCharsLs47_51 selectChars48_52 test49_53 hsExpLam50_54 hsExpTyp51_55 hsExpOp52_56 hsOp53_57 opTail54_58 hsExp55_59 hsExp156_60 hsExpTpl57_61 hsTypeArr58_62 hsType59_63 hsType160_64 hsTypeTpl61_65 typ62_66 variable63_67 tvtail64_68 integer65_69 alpha66_70 upper67_71 lower68_72 digit69_73 spaces70_74 space71_75 notNLString72_76 newLine73_77 comment74_78 comments75_79 notComStr76_80 comEnd77_81 chars1178_82 pos1175_1
+                                      pegFile0_4 = runStateT pegFile78_83 d655_3
+                                      pragmas1_5 = runStateT pragmas79_84 d655_3
+                                      pragma2_6 = runStateT pragma80_85 d655_3
+                                      pragmaStr3_7 = runStateT pragmaStr81_86 d655_3
+                                      pragmaItems4_8 = runStateT pragmaItems82_87 d655_3
+                                      pragmaEnd5_9 = runStateT pragmaEnd83_88 d655_3
+                                      moduleDec6_10 = runStateT moduleDec84_89 d655_3
+                                      moduleName7_11 = runStateT moduleName85_90 d655_3
+                                      moduleDecStr8_12 = runStateT moduleDecStr86_91 d655_3
+                                      whr9_13 = runStateT whr87_92 d655_3
+                                      preImpPap10_14 = runStateT preImpPap88_93 d655_3
+                                      prePeg11_15 = runStateT prePeg89_94 d655_3
+                                      afterPeg12_16 = runStateT afterPeg90_95 d655_3
+                                      importPapillon13_17 = runStateT importPapillon91_96 d655_3
+                                      varToken14_18 = runStateT varToken92_97 d655_3
+                                      typToken15_19 = runStateT typToken93_98 d655_3
+                                      pap16_20 = runStateT pap94_99 d655_3
+                                      peg17_21 = runStateT peg95_100 d655_3
+                                      monadType18_22 = runStateT monadType96_101 d655_3
+                                      sourceType19_23 = runStateT sourceType97_102 d655_3
+                                      peg_20_24 = runStateT peg_98_103 d655_3
+                                      definition21_25 = runStateT definition99_104 d655_3
+                                      selection22_26 = runStateT selection100_105 d655_3
+                                      normalSelection23_27 = runStateT normalSelection101_106 d655_3
+                                      plainSelection24_28 = runStateT plainSelection102_107 d655_3
+                                      expressionHs25_29 = runStateT expressionHs103_108 d655_3
+                                      expressionHsSugar26_30 = runStateT expressionHsSugar104_109 d655_3
+                                      plainExpressionHs27_31 = runStateT plainExpressionHs105_110 d655_3
+                                      plainHAReadFromLs28_32 = runStateT plainHAReadFromLs106_111 d655_3
+                                      plainReadFromLs29_33 = runStateT plainReadFromLs107_112 d655_3
+                                      expression30_34 = runStateT expression108_113 d655_3
+                                      nameLeaf_31_35 = runStateT nameLeaf_109_114 d655_3
+                                      nameLeaf32_36 = runStateT nameLeaf110_115 d655_3
+                                      nameLeafNoCom33_37 = runStateT nameLeafNoCom111_116 d655_3
+                                      comForErr34_38 = runStateT comForErr112_117 d655_3
+                                      leaf35_39 = runStateT leaf113_118 d655_3
+                                      patOp36_40 = runStateT patOp114_119 d655_3
+                                      pat37_41 = runStateT pat115_120 d655_3
+                                      pat138_42 = runStateT pat1116_121 d655_3
+                                      patList39_43 = runStateT patList117_122 d655_3
+                                      opConName40_44 = runStateT opConName118_123 d655_3
+                                      charLit41_45 = runStateT charLit119_124 d655_3
+                                      stringLit42_46 = runStateT stringLit120_125 d655_3
+                                      escapeC43_47 = runStateT escapeC121_126 d655_3
+                                      pats44_48 = runStateT pats122_127 d655_3
+                                      readFromLs45_49 = runStateT readFromLs123_128 d655_3
+                                      readFrom46_50 = runStateT readFrom124_129 d655_3
+                                      selectCharsLs47_51 = runStateT selectCharsLs125_130 d655_3
+                                      selectChars48_52 = runStateT selectChars126_131 d655_3
+                                      test49_53 = runStateT test127_132 d655_3
+                                      hsExpLam50_54 = runStateT hsExpLam128_133 d655_3
+                                      hsExpTyp51_55 = runStateT hsExpTyp129_134 d655_3
+                                      hsExpOp52_56 = runStateT hsExpOp130_135 d655_3
+                                      hsOp53_57 = runStateT hsOp131_136 d655_3
+                                      opTail54_58 = runStateT opTail132_137 d655_3
+                                      hsExp55_59 = runStateT hsExp133_138 d655_3
+                                      hsExp156_60 = runStateT hsExp1134_139 d655_3
+                                      hsExpTpl57_61 = runStateT hsExpTpl135_140 d655_3
+                                      hsTypeArr58_62 = runStateT hsTypeArr136_141 d655_3
+                                      hsType59_63 = runStateT hsType137_142 d655_3
+                                      hsType160_64 = runStateT hsType1138_143 d655_3
+                                      hsTypeTpl61_65 = runStateT hsTypeTpl139_144 d655_3
+                                      typ62_66 = runStateT typ140_145 d655_3
+                                      variable63_67 = runStateT variable141_146 d655_3
+                                      tvtail64_68 = runStateT tvtail142_147 d655_3
+                                      integer65_69 = runStateT integer143_148 d655_3
+                                      alpha66_70 = runStateT alpha144_149 d655_3
+                                      upper67_71 = runStateT upper145_150 d655_3
+                                      lower68_72 = runStateT lower146_151 d655_3
+                                      digit69_73 = runStateT digit147_152 d655_3
+                                      spaces70_74 = runStateT spaces148_153 d655_3
+                                      space71_75 = runStateT space149_154 d655_3
+                                      notNLString72_76 = runStateT notNLString150_155 d655_3
+                                      newLine73_77 = runStateT newLine151_156 d655_3
+                                      comment74_78 = runStateT comment152_157 d655_3
+                                      comments75_79 = runStateT comments153_158 d655_3
+                                      notComStr76_80 = runStateT notComStr154_159 d655_3
+                                      comEnd77_81 = runStateT comEnd155_160 d655_3
+                                      chars1178_82 = runStateT (case getToken s1177_2 of
+                                                                    Just (c1173_161,
+                                                                          s'1174_162) -> do put (parse1176_0 (updatePos c1173_161 pos1175_1) s'1174_162)
+                                                                                            return c1173_161
+                                                                    _ -> gets position >>= (throwError . mkParseError "" "end of input" "" undefined [])) d655_3
+                pegFile78_83 = foldl1 mplus [do pr <- StateT pragmas
                                                 md <- StateT moduleDec
                                                 pip <- StateT preImpPap
                                                 _ <- StateT importPapillon
@@ -387,26 +391,26 @@ parse = parse1160_0 initialPos
                                                 p <- StateT peg
                                                 _ <- StateT spaces
                                                 return ()
-                                                d654_161 <- get
-                                                t165_162 <- StateT char
-                                                case t165_162 of
+                                                d663_163 <- get
+                                                t167_164 <- StateT char
+                                                case t167_164 of
                                                     '|' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "'|'" "not match pattern: " "" d654_161 ["char"])
-                                                let '|' = t165_162
+                                                    _ -> gets position >>= (throwError . mkParseError "'|'" "not match pattern: " "" d663_163 ["char"])
+                                                let '|' = t167_164
                                                 return ()
-                                                d655_163 <- get
-                                                t166_164 <- StateT char
-                                                case t166_164 of
+                                                d664_165 <- get
+                                                t168_166 <- StateT char
+                                                case t168_166 of
                                                     ']' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d655_163 ["char"])
-                                                let ']' = t166_164
+                                                    _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d664_165 ["char"])
+                                                let ']' = t168_166
                                                 return ()
-                                                d656_165 <- get
-                                                t167_166 <- StateT char
-                                                case t167_166 of
+                                                d665_167 <- get
+                                                t169_168 <- StateT char
+                                                case t169_168 of
                                                     '\n' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d656_165 ["char"])
-                                                let '\n' = t167_166
+                                                    _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d665_167 ["char"])
+                                                let '\n' = t169_168
                                                 return ()
                                                 atp <- StateT afterPeg
                                                 return (mkPegFile pr md pip pp p atp),
@@ -418,30 +422,30 @@ parse = parse1160_0 initialPos
                                                 p <- StateT peg
                                                 _ <- StateT spaces
                                                 return ()
-                                                d664_167 <- get
-                                                t175_168 <- StateT char
-                                                case t175_168 of
+                                                d673_169 <- get
+                                                t177_170 <- StateT char
+                                                case t177_170 of
                                                     '|' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "'|'" "not match pattern: " "" d664_167 ["char"])
-                                                let '|' = t175_168
+                                                    _ -> gets position >>= (throwError . mkParseError "'|'" "not match pattern: " "" d673_169 ["char"])
+                                                let '|' = t177_170
                                                 return ()
-                                                d665_169 <- get
-                                                t176_170 <- StateT char
-                                                case t176_170 of
+                                                d674_171 <- get
+                                                t178_172 <- StateT char
+                                                case t178_172 of
                                                     ']' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d665_169 ["char"])
-                                                let ']' = t176_170
+                                                    _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d674_171 ["char"])
+                                                let ']' = t178_172
                                                 return ()
-                                                d666_171 <- get
-                                                t177_172 <- StateT char
-                                                case t177_172 of
+                                                d675_173 <- get
+                                                t179_174 <- StateT char
+                                                case t179_174 of
                                                     '\n' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d666_171 ["char"])
-                                                let '\n' = t177_172
+                                                    _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d675_173 ["char"])
+                                                let '\n' = t179_174
                                                 return ()
                                                 atp <- StateT afterPeg
                                                 return (mkPegFile pr md [] pp p atp)]
-                pragmas78_83 = foldl1 mplus [do _ <- StateT spaces
+                pragmas79_84 = foldl1 mplus [do _ <- StateT spaces
                                                 return ()
                                                 pr <- StateT pragma
                                                 prs <- StateT pragmas
@@ -449,84 +453,84 @@ parse = parse1160_0 initialPos
                                              do _ <- StateT spaces
                                                 return ()
                                                 return []]
-                pragma79_84 = foldl1 mplus [do d672_173 <- get
-                                               t183_174 <- StateT char
-                                               case t183_174 of
+                pragma80_85 = foldl1 mplus [do d681_175 <- get
+                                               t185_176 <- StateT char
+                                               case t185_176 of
                                                    '{' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d672_173 ["char"])
-                                               let '{' = t183_174
+                                                   _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d681_175 ["char"])
+                                               let '{' = t185_176
                                                return ()
-                                               d673_175 <- get
-                                               t184_176 <- StateT char
-                                               case t184_176 of
+                                               d682_177 <- get
+                                               t186_178 <- StateT char
+                                               case t186_178 of
                                                    '-' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d673_175 ["char"])
-                                               let '-' = t184_176
+                                                   _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d682_177 ["char"])
+                                               let '-' = t186_178
                                                return ()
-                                               d674_177 <- get
-                                               t185_178 <- StateT char
-                                               case t185_178 of
+                                               d683_179 <- get
+                                               t187_180 <- StateT char
+                                               case t187_180 of
                                                    '#' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d674_177 ["char"])
-                                               let '#' = t185_178
+                                                   _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d683_179 ["char"])
+                                               let '#' = t187_180
                                                return ()
                                                _ <- StateT spaces
                                                return ()
-                                               d676_179 <- get
-                                               t187_180 <- StateT char
-                                               case t187_180 of
+                                               d685_181 <- get
+                                               t189_182 <- StateT char
+                                               case t189_182 of
                                                    'L' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'L'" "not match pattern: " "" d676_179 ["char"])
-                                               let 'L' = t187_180
+                                                   _ -> gets position >>= (throwError . mkParseError "'L'" "not match pattern: " "" d685_181 ["char"])
+                                               let 'L' = t189_182
                                                return ()
-                                               d677_181 <- get
-                                               t188_182 <- StateT char
-                                               case t188_182 of
+                                               d686_183 <- get
+                                               t190_184 <- StateT char
+                                               case t190_184 of
                                                    'A' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'A'" "not match pattern: " "" d677_181 ["char"])
-                                               let 'A' = t188_182
+                                                   _ -> gets position >>= (throwError . mkParseError "'A'" "not match pattern: " "" d686_183 ["char"])
+                                               let 'A' = t190_184
                                                return ()
-                                               d678_183 <- get
-                                               t189_184 <- StateT char
-                                               case t189_184 of
+                                               d687_185 <- get
+                                               t191_186 <- StateT char
+                                               case t191_186 of
                                                    'N' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'N'" "not match pattern: " "" d678_183 ["char"])
-                                               let 'N' = t189_184
+                                                   _ -> gets position >>= (throwError . mkParseError "'N'" "not match pattern: " "" d687_185 ["char"])
+                                               let 'N' = t191_186
                                                return ()
-                                               d679_185 <- get
-                                               t190_186 <- StateT char
-                                               case t190_186 of
+                                               d688_187 <- get
+                                               t192_188 <- StateT char
+                                               case t192_188 of
                                                    'G' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'G'" "not match pattern: " "" d679_185 ["char"])
-                                               let 'G' = t190_186
+                                                   _ -> gets position >>= (throwError . mkParseError "'G'" "not match pattern: " "" d688_187 ["char"])
+                                               let 'G' = t192_188
                                                return ()
-                                               d680_187 <- get
-                                               t191_188 <- StateT char
-                                               case t191_188 of
+                                               d689_189 <- get
+                                               t193_190 <- StateT char
+                                               case t193_190 of
                                                    'U' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'U'" "not match pattern: " "" d680_187 ["char"])
-                                               let 'U' = t191_188
+                                                   _ -> gets position >>= (throwError . mkParseError "'U'" "not match pattern: " "" d689_189 ["char"])
+                                               let 'U' = t193_190
                                                return ()
-                                               d681_189 <- get
-                                               t192_190 <- StateT char
-                                               case t192_190 of
+                                               d690_191 <- get
+                                               t194_192 <- StateT char
+                                               case t194_192 of
                                                    'A' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'A'" "not match pattern: " "" d681_189 ["char"])
-                                               let 'A' = t192_190
+                                                   _ -> gets position >>= (throwError . mkParseError "'A'" "not match pattern: " "" d690_191 ["char"])
+                                               let 'A' = t194_192
                                                return ()
-                                               d682_191 <- get
-                                               t193_192 <- StateT char
-                                               case t193_192 of
+                                               d691_193 <- get
+                                               t195_194 <- StateT char
+                                               case t195_194 of
                                                    'G' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'G'" "not match pattern: " "" d682_191 ["char"])
-                                               let 'G' = t193_192
+                                                   _ -> gets position >>= (throwError . mkParseError "'G'" "not match pattern: " "" d691_193 ["char"])
+                                               let 'G' = t195_194
                                                return ()
-                                               d683_193 <- get
-                                               t194_194 <- StateT char
-                                               case t194_194 of
+                                               d692_195 <- get
+                                               t196_196 <- StateT char
+                                               case t196_196 of
                                                    'E' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'E'" "not match pattern: " "" d683_193 ["char"])
-                                               let 'E' = t194_194
+                                                   _ -> gets position >>= (throwError . mkParseError "'E'" "not match pattern: " "" d692_195 ["char"])
+                                               let 'E' = t196_196
                                                return ()
                                                _ <- StateT spaces
                                                return ()
@@ -536,26 +540,26 @@ parse = parse1160_0 initialPos
                                                _ <- StateT spaces
                                                return ()
                                                return (LanguagePragma s),
-                                            do d688_195 <- get
-                                               t199_196 <- StateT char
-                                               case t199_196 of
+                                            do d697_197 <- get
+                                               t201_198 <- StateT char
+                                               case t201_198 of
                                                    '{' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d688_195 ["char"])
-                                               let '{' = t199_196
+                                                   _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d697_197 ["char"])
+                                               let '{' = t201_198
                                                return ()
-                                               d689_197 <- get
-                                               t200_198 <- StateT char
-                                               case t200_198 of
+                                               d698_199 <- get
+                                               t202_200 <- StateT char
+                                               case t202_200 of
                                                    '-' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d689_197 ["char"])
-                                               let '-' = t200_198
+                                                   _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d698_199 ["char"])
+                                               let '-' = t202_200
                                                return ()
-                                               d690_199 <- get
-                                               t201_200 <- StateT char
-                                               case t201_200 of
+                                               d699_201 <- get
+                                               t203_202 <- StateT char
+                                               case t203_202 of
                                                    '#' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d690_199 ["char"])
-                                               let '#' = t201_200
+                                                   _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d699_201 ["char"])
+                                               let '#' = t203_202
                                                return ()
                                                _ <- StateT spaces
                                                return ()
@@ -563,22 +567,22 @@ parse = parse1160_0 initialPos
                                                _ <- StateT pragmaEnd
                                                return ()
                                                return (OtherPragma s)]
-                pragmaStr80_85 = foldl1 mplus [do d695_201 <- get
-                                                  do err1146_202 <- ((do _ <- StateT pragmaEnd
+                pragmaStr81_86 = foldl1 mplus [do d704_203 <- get
+                                                  do err1162_204 <- ((do _ <- StateT pragmaEnd
                                                                          return ()) >> return False) `catchError` const (return True)
-                                                     unless err1146_202 (gets position >>= (throwError . mkParseError "!_:pragmaEnd" "not match: " "" d695_201 ["pragmaEnd"]))
-                                                  put d695_201
+                                                     unless err1162_204 (gets position >>= (throwError . mkParseError "!_:pragmaEnd" "not match: " "" d704_203 ["pragmaEnd"]))
+                                                  put d704_203
                                                   c <- StateT char
                                                   s <- StateT pragmaStr
                                                   return (c : s),
                                                return ""]
-                pragmaItems81_86 = foldl1 mplus [do t <- StateT typToken
-                                                    d699_203 <- get
-                                                    t209_204 <- StateT char
-                                                    case t209_204 of
+                pragmaItems82_87 = foldl1 mplus [do t <- StateT typToken
+                                                    d708_205 <- get
+                                                    t211_206 <- StateT char
+                                                    case t211_206 of
                                                         ',' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "','" "not match pattern: " "" d699_203 ["char"])
-                                                    let ',' = t209_204
+                                                        _ -> gets position >>= (throwError . mkParseError "','" "not match pattern: " "" d708_205 ["char"])
+                                                    let ',' = t211_206
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
@@ -586,83 +590,83 @@ parse = parse1160_0 initialPos
                                                     return (t : i),
                                                  do t <- StateT typToken
                                                     return [t]]
-                pragmaEnd82_87 = foldl1 mplus [do _ <- StateT spaces
+                pragmaEnd83_88 = foldl1 mplus [do _ <- StateT spaces
                                                   return ()
-                                                  d704_205 <- get
-                                                  t214_206 <- StateT char
-                                                  case t214_206 of
+                                                  d713_207 <- get
+                                                  t216_208 <- StateT char
+                                                  case t216_208 of
                                                       '#' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d704_205 ["char"])
-                                                  let '#' = t214_206
+                                                      _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d713_207 ["char"])
+                                                  let '#' = t216_208
                                                   return ()
-                                                  d705_207 <- get
-                                                  t215_208 <- StateT char
-                                                  case t215_208 of
+                                                  d714_209 <- get
+                                                  t217_210 <- StateT char
+                                                  case t217_210 of
                                                       '-' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d705_207 ["char"])
-                                                  let '-' = t215_208
+                                                      _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d714_209 ["char"])
+                                                  let '-' = t217_210
                                                   return ()
-                                                  d706_209 <- get
-                                                  t216_210 <- StateT char
-                                                  case t216_210 of
+                                                  d715_211 <- get
+                                                  t218_212 <- StateT char
+                                                  case t218_212 of
                                                       '}' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d706_209 ["char"])
-                                                  let '}' = t216_210
+                                                      _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d715_211 ["char"])
+                                                  let '}' = t218_212
                                                   return ()
                                                   return ()]
-                moduleDec83_88 = foldl1 mplus [do d707_211 <- get
-                                                  t217_212 <- StateT char
-                                                  case t217_212 of
+                moduleDec84_89 = foldl1 mplus [do d716_213 <- get
+                                                  t219_214 <- StateT char
+                                                  case t219_214 of
                                                       'm' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'m'" "not match pattern: " "" d707_211 ["char"])
-                                                  let 'm' = t217_212
+                                                      _ -> gets position >>= (throwError . mkParseError "'m'" "not match pattern: " "" d716_213 ["char"])
+                                                  let 'm' = t219_214
                                                   return ()
-                                                  d708_213 <- get
-                                                  t218_214 <- StateT char
-                                                  case t218_214 of
+                                                  d717_215 <- get
+                                                  t220_216 <- StateT char
+                                                  case t220_216 of
                                                       'o' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'o'" "not match pattern: " "" d708_213 ["char"])
-                                                  let 'o' = t218_214
+                                                      _ -> gets position >>= (throwError . mkParseError "'o'" "not match pattern: " "" d717_215 ["char"])
+                                                  let 'o' = t220_216
                                                   return ()
-                                                  d709_215 <- get
-                                                  t219_216 <- StateT char
-                                                  case t219_216 of
+                                                  d718_217 <- get
+                                                  t221_218 <- StateT char
+                                                  case t221_218 of
                                                       'd' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'d'" "not match pattern: " "" d709_215 ["char"])
-                                                  let 'd' = t219_216
+                                                      _ -> gets position >>= (throwError . mkParseError "'d'" "not match pattern: " "" d718_217 ["char"])
+                                                  let 'd' = t221_218
                                                   return ()
-                                                  d710_217 <- get
-                                                  t220_218 <- StateT char
-                                                  case t220_218 of
+                                                  d719_219 <- get
+                                                  t222_220 <- StateT char
+                                                  case t222_220 of
                                                       'u' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'u'" "not match pattern: " "" d710_217 ["char"])
-                                                  let 'u' = t220_218
+                                                      _ -> gets position >>= (throwError . mkParseError "'u'" "not match pattern: " "" d719_219 ["char"])
+                                                  let 'u' = t222_220
                                                   return ()
-                                                  d711_219 <- get
-                                                  t221_220 <- StateT char
-                                                  case t221_220 of
+                                                  d720_221 <- get
+                                                  t223_222 <- StateT char
+                                                  case t223_222 of
                                                       'l' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'l'" "not match pattern: " "" d711_219 ["char"])
-                                                  let 'l' = t221_220
+                                                      _ -> gets position >>= (throwError . mkParseError "'l'" "not match pattern: " "" d720_221 ["char"])
+                                                  let 'l' = t223_222
                                                   return ()
-                                                  d712_221 <- get
-                                                  t222_222 <- StateT char
-                                                  case t222_222 of
+                                                  d721_223 <- get
+                                                  t224_224 <- StateT char
+                                                  case t224_224 of
                                                       'e' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d712_221 ["char"])
-                                                  let 'e' = t222_222
+                                                      _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d721_223 ["char"])
+                                                  let 'e' = t224_224
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
                                                   n <- StateT moduleName
                                                   _ <- StateT spaces
                                                   return ()
-                                                  d716_223 <- get
-                                                  t226_224 <- StateT char
-                                                  case t226_224 of
+                                                  d725_225 <- get
+                                                  t228_226 <- StateT char
+                                                  case t228_226 of
                                                       '(' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d716_223 ["char"])
-                                                  let '(' = t226_224
+                                                      _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d725_225 ["char"])
+                                                  let '(' = t228_226
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
@@ -670,453 +674,475 @@ parse = parse1160_0 initialPos
                                                   _ <- StateT whr
                                                   return ()
                                                   return (Just (n, Just s)),
-                                               do d720_225 <- get
-                                                  t230_226 <- StateT char
-                                                  case t230_226 of
+                                               do d729_227 <- get
+                                                  t232_228 <- StateT char
+                                                  case t232_228 of
                                                       'm' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'m'" "not match pattern: " "" d720_225 ["char"])
-                                                  let 'm' = t230_226
+                                                      _ -> gets position >>= (throwError . mkParseError "'m'" "not match pattern: " "" d729_227 ["char"])
+                                                  let 'm' = t232_228
                                                   return ()
-                                                  d721_227 <- get
-                                                  t231_228 <- StateT char
-                                                  case t231_228 of
+                                                  d730_229 <- get
+                                                  t233_230 <- StateT char
+                                                  case t233_230 of
                                                       'o' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'o'" "not match pattern: " "" d721_227 ["char"])
-                                                  let 'o' = t231_228
+                                                      _ -> gets position >>= (throwError . mkParseError "'o'" "not match pattern: " "" d730_229 ["char"])
+                                                  let 'o' = t233_230
                                                   return ()
-                                                  d722_229 <- get
-                                                  t232_230 <- StateT char
-                                                  case t232_230 of
+                                                  d731_231 <- get
+                                                  t234_232 <- StateT char
+                                                  case t234_232 of
                                                       'd' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'d'" "not match pattern: " "" d722_229 ["char"])
-                                                  let 'd' = t232_230
+                                                      _ -> gets position >>= (throwError . mkParseError "'d'" "not match pattern: " "" d731_231 ["char"])
+                                                  let 'd' = t234_232
                                                   return ()
-                                                  d723_231 <- get
-                                                  t233_232 <- StateT char
-                                                  case t233_232 of
+                                                  d732_233 <- get
+                                                  t235_234 <- StateT char
+                                                  case t235_234 of
                                                       'u' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'u'" "not match pattern: " "" d723_231 ["char"])
-                                                  let 'u' = t233_232
+                                                      _ -> gets position >>= (throwError . mkParseError "'u'" "not match pattern: " "" d732_233 ["char"])
+                                                  let 'u' = t235_234
                                                   return ()
-                                                  d724_233 <- get
-                                                  t234_234 <- StateT char
-                                                  case t234_234 of
+                                                  d733_235 <- get
+                                                  t236_236 <- StateT char
+                                                  case t236_236 of
                                                       'l' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'l'" "not match pattern: " "" d724_233 ["char"])
-                                                  let 'l' = t234_234
+                                                      _ -> gets position >>= (throwError . mkParseError "'l'" "not match pattern: " "" d733_235 ["char"])
+                                                  let 'l' = t236_236
                                                   return ()
-                                                  d725_235 <- get
-                                                  t235_236 <- StateT char
-                                                  case t235_236 of
+                                                  d734_237 <- get
+                                                  t237_238 <- StateT char
+                                                  case t237_238 of
                                                       'e' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d725_235 ["char"])
-                                                  let 'e' = t235_236
+                                                      _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d734_237 ["char"])
+                                                  let 'e' = t237_238
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
                                                   n <- StateT moduleName
                                                   _ <- StateT spaces
                                                   return ()
-                                                  d729_237 <- get
-                                                  t239_238 <- StateT char
-                                                  case t239_238 of
+                                                  d738_239 <- get
+                                                  t241_240 <- StateT char
+                                                  case t241_240 of
                                                       'w' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'w'" "not match pattern: " "" d729_237 ["char"])
-                                                  let 'w' = t239_238
+                                                      _ -> gets position >>= (throwError . mkParseError "'w'" "not match pattern: " "" d738_239 ["char"])
+                                                  let 'w' = t241_240
                                                   return ()
-                                                  d730_239 <- get
-                                                  t240_240 <- StateT char
-                                                  case t240_240 of
+                                                  d739_241 <- get
+                                                  t242_242 <- StateT char
+                                                  case t242_242 of
                                                       'h' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'h'" "not match pattern: " "" d730_239 ["char"])
-                                                  let 'h' = t240_240
+                                                      _ -> gets position >>= (throwError . mkParseError "'h'" "not match pattern: " "" d739_241 ["char"])
+                                                  let 'h' = t242_242
                                                   return ()
-                                                  d731_241 <- get
-                                                  t241_242 <- StateT char
-                                                  case t241_242 of
+                                                  d740_243 <- get
+                                                  t243_244 <- StateT char
+                                                  case t243_244 of
                                                       'e' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d731_241 ["char"])
-                                                  let 'e' = t241_242
+                                                      _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d740_243 ["char"])
+                                                  let 'e' = t243_244
                                                   return ()
-                                                  d732_243 <- get
-                                                  t242_244 <- StateT char
-                                                  case t242_244 of
+                                                  d741_245 <- get
+                                                  t244_246 <- StateT char
+                                                  case t244_246 of
                                                       'r' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'r'" "not match pattern: " "" d732_243 ["char"])
-                                                  let 'r' = t242_244
+                                                      _ -> gets position >>= (throwError . mkParseError "'r'" "not match pattern: " "" d741_245 ["char"])
+                                                  let 'r' = t244_246
                                                   return ()
-                                                  d733_245 <- get
-                                                  t243_246 <- StateT char
-                                                  case t243_246 of
+                                                  d742_247 <- get
+                                                  t245_248 <- StateT char
+                                                  case t245_248 of
                                                       'e' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d733_245 ["char"])
-                                                  let 'e' = t243_246
+                                                      _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d742_247 ["char"])
+                                                  let 'e' = t245_248
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
                                                   return (Just (n, Nothing)),
                                                return Nothing]
-                moduleName84_89 = foldl1 mplus [do t <- StateT typ
-                                                   d736_247 <- get
-                                                   t246_248 <- StateT char
-                                                   case t246_248 of
+                moduleName85_90 = foldl1 mplus [do t <- StateT typ
+                                                   d745_249 <- get
+                                                   t248_250 <- StateT char
+                                                   case t248_250 of
                                                        '.' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "'.'" "not match pattern: " "" d736_247 ["char"])
-                                                   let '.' = t246_248
+                                                       _ -> gets position >>= (throwError . mkParseError "'.'" "not match pattern: " "" d745_249 ["char"])
+                                                   let '.' = t248_250
                                                    return ()
                                                    n <- StateT moduleName
                                                    return (t : n),
                                                 do t <- StateT typ
                                                    return [t]]
-                moduleDecStr85_90 = foldl1 mplus [do d740_249 <- get
-                                                     do err1147_250 <- ((do _ <- StateT whr
+                moduleDecStr86_91 = foldl1 mplus [do d749_251 <- get
+                                                     do err1163_252 <- ((do _ <- StateT whr
                                                                             return ()) >> return False) `catchError` const (return True)
-                                                        unless err1147_250 (gets position >>= (throwError . mkParseError "!_:whr" "not match: " "" d740_249 ["whr"]))
-                                                     put d740_249
+                                                        unless err1163_252 (gets position >>= (throwError . mkParseError "!_:whr" "not match: " "" d749_251 ["whr"]))
+                                                     put d749_251
                                                      c <- StateT char
                                                      s <- StateT moduleDecStr
                                                      return (c : s),
                                                   return ""]
-                whr86_91 = foldl1 mplus [do _ <- StateT spaces
+                whr87_92 = foldl1 mplus [do _ <- StateT spaces
                                             return ()
-                                            d744_251 <- get
-                                            t253_252 <- StateT char
-                                            case t253_252 of
+                                            d753_253 <- get
+                                            t255_254 <- StateT char
+                                            case t255_254 of
                                                 ')' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d744_251 ["char"])
-                                            let ')' = t253_252
+                                                _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d753_253 ["char"])
+                                            let ')' = t255_254
                                             return ()
                                             _ <- StateT spaces
                                             return ()
-                                            d746_253 <- get
-                                            t255_254 <- StateT char
-                                            case t255_254 of
+                                            d755_255 <- get
+                                            t257_256 <- StateT char
+                                            case t257_256 of
                                                 'w' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'w'" "not match pattern: " "" d746_253 ["char"])
-                                            let 'w' = t255_254
+                                                _ -> gets position >>= (throwError . mkParseError "'w'" "not match pattern: " "" d755_255 ["char"])
+                                            let 'w' = t257_256
                                             return ()
-                                            d747_255 <- get
-                                            t256_256 <- StateT char
-                                            case t256_256 of
+                                            d756_257 <- get
+                                            t258_258 <- StateT char
+                                            case t258_258 of
                                                 'h' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'h'" "not match pattern: " "" d747_255 ["char"])
-                                            let 'h' = t256_256
+                                                _ -> gets position >>= (throwError . mkParseError "'h'" "not match pattern: " "" d756_257 ["char"])
+                                            let 'h' = t258_258
                                             return ()
-                                            d748_257 <- get
-                                            t257_258 <- StateT char
-                                            case t257_258 of
+                                            d757_259 <- get
+                                            t259_260 <- StateT char
+                                            case t259_260 of
                                                 'e' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d748_257 ["char"])
-                                            let 'e' = t257_258
+                                                _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d757_259 ["char"])
+                                            let 'e' = t259_260
                                             return ()
-                                            d749_259 <- get
-                                            t258_260 <- StateT char
-                                            case t258_260 of
+                                            d758_261 <- get
+                                            t260_262 <- StateT char
+                                            case t260_262 of
                                                 'r' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'r'" "not match pattern: " "" d749_259 ["char"])
-                                            let 'r' = t258_260
+                                                _ -> gets position >>= (throwError . mkParseError "'r'" "not match pattern: " "" d758_261 ["char"])
+                                            let 'r' = t260_262
                                             return ()
-                                            d750_261 <- get
-                                            t259_262 <- StateT char
-                                            case t259_262 of
+                                            d759_263 <- get
+                                            t261_264 <- StateT char
+                                            case t261_264 of
                                                 'e' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d750_261 ["char"])
-                                            let 'e' = t259_262
+                                                _ -> gets position >>= (throwError . mkParseError "'e'" "not match pattern: " "" d759_263 ["char"])
+                                            let 'e' = t261_264
                                             return ()
                                             return ()]
-                preImpPap87_92 = foldl1 mplus [do d752_263 <- get
-                                                  do err1148_264 <- ((do _ <- StateT importPapillon
+                preImpPap88_93 = foldl1 mplus [do d761_265 <- get
+                                                  do err1164_266 <- ((do _ <- StateT importPapillon
                                                                          return ()) >> return False) `catchError` const (return True)
-                                                     unless err1148_264 (gets position >>= (throwError . mkParseError "!_:importPapillon" "not match: " "" d752_263 ["importPapillon"]))
-                                                  put d752_263
-                                                  d754_265 <- get
-                                                  do err1149_266 <- ((do _ <- StateT pap
+                                                     unless err1164_266 (gets position >>= (throwError . mkParseError "!_:importPapillon" "not match: " "" d761_265 ["importPapillon"]))
+                                                  put d761_265
+                                                  d763_267 <- get
+                                                  do err1165_268 <- ((do _ <- StateT pap
                                                                          return ()) >> return False) `catchError` const (return True)
-                                                     unless err1149_266 (gets position >>= (throwError . mkParseError "!_:pap" "not match: " "" d754_265 ["pap"]))
-                                                  put d754_265
+                                                     unless err1165_268 (gets position >>= (throwError . mkParseError "!_:pap" "not match: " "" d763_267 ["pap"]))
+                                                  put d763_267
                                                   c <- StateT char
                                                   pip <- StateT preImpPap
                                                   return (c : pip),
                                                return ""]
-                prePeg88_93 = foldl1 mplus [do d758_267 <- get
-                                               do err1150_268 <- ((do _ <- StateT pap
+                prePeg89_94 = foldl1 mplus [do d767_269 <- get
+                                               do err1166_270 <- ((do _ <- StateT pap
                                                                       return ()) >> return False) `catchError` const (return True)
-                                                  unless err1150_268 (gets position >>= (throwError . mkParseError "!_:pap" "not match: " "" d758_267 ["pap"]))
-                                               put d758_267
+                                                  unless err1166_270 (gets position >>= (throwError . mkParseError "!_:pap" "not match: " "" d767_269 ["pap"]))
+                                               put d767_269
                                                c <- StateT char
                                                pp <- StateT prePeg
                                                return (c : pp),
                                             return ""]
-                afterPeg89_94 = foldl1 mplus [do c <- StateT char
+                afterPeg90_95 = foldl1 mplus [do c <- StateT char
                                                  atp <- StateT afterPeg
                                                  return (c : atp),
                                               return ""]
-                importPapillon90_95 = foldl1 mplus [do d763_269 <- get
-                                                       t269_270 <- StateT varToken
-                                                       case t269_270 of
+                importPapillon91_96 = foldl1 mplus [do d772_271 <- get
+                                                       t271_272 <- StateT varToken
+                                                       case t271_272 of
                                                            "import" -> return ()
-                                                           _ -> gets position >>= (throwError . mkParseError "\"import\"" "not match pattern: " "" d763_269 ["varToken"])
-                                                       let "import" = t269_270
+                                                           _ -> gets position >>= (throwError . mkParseError "\"import\"" "not match pattern: " "" d772_271 ["varToken"])
+                                                       let "import" = t271_272
                                                        return ()
-                                                       d764_271 <- get
-                                                       t270_272 <- StateT typToken
-                                                       case t270_272 of
+                                                       d773_273 <- get
+                                                       t272_274 <- StateT typToken
+                                                       case t272_274 of
                                                            "Text" -> return ()
-                                                           _ -> gets position >>= (throwError . mkParseError "\"Text\"" "not match pattern: " "" d764_271 ["typToken"])
-                                                       let "Text" = t270_272
+                                                           _ -> gets position >>= (throwError . mkParseError "\"Text\"" "not match pattern: " "" d773_273 ["typToken"])
+                                                       let "Text" = t272_274
                                                        return ()
-                                                       d765_273 <- get
-                                                       t271_274 <- StateT char
-                                                       case t271_274 of
+                                                       d774_275 <- get
+                                                       t273_276 <- StateT char
+                                                       case t273_276 of
                                                            '.' -> return ()
-                                                           _ -> gets position >>= (throwError . mkParseError "'.'" "not match pattern: " "" d765_273 ["char"])
-                                                       let '.' = t271_274
+                                                           _ -> gets position >>= (throwError . mkParseError "'.'" "not match pattern: " "" d774_275 ["char"])
+                                                       let '.' = t273_276
                                                        return ()
                                                        _ <- StateT spaces
                                                        return ()
-                                                       d767_275 <- get
-                                                       t273_276 <- StateT typToken
-                                                       case t273_276 of
+                                                       d776_277 <- get
+                                                       t275_278 <- StateT typToken
+                                                       case t275_278 of
                                                            "Papillon" -> return ()
-                                                           _ -> gets position >>= (throwError . mkParseError "\"Papillon\"" "not match pattern: " "" d767_275 ["typToken"])
-                                                       let "Papillon" = t273_276
+                                                           _ -> gets position >>= (throwError . mkParseError "\"Papillon\"" "not match pattern: " "" d776_277 ["typToken"])
+                                                       let "Papillon" = t275_278
                                                        return ()
-                                                       d769_277 <- get
-                                                       do err1151_278 <- ((do d768_279 <- get
-                                                                              t274_280 <- StateT char
-                                                                              case t274_280 of
+                                                       d778_279 <- get
+                                                       do err1167_280 <- ((do d777_281 <- get
+                                                                              t276_282 <- StateT char
+                                                                              case t276_282 of
                                                                                   '.' -> return ()
-                                                                                  _ -> gets position >>= (throwError . mkParseError "'.'" "not match pattern: " "" d768_279 ["char"])
-                                                                              let '.' = t274_280
+                                                                                  _ -> gets position >>= (throwError . mkParseError "'.'" "not match pattern: " "" d777_281 ["char"])
+                                                                              let '.' = t276_282
                                                                               return ()) >> return False) `catchError` const (return True)
-                                                          unless err1151_278 (gets position >>= (throwError . mkParseError "!'.':" "not match: " "" d769_277 ["char"]))
-                                                       put d769_277
+                                                          unless err1167_280 (gets position >>= (throwError . mkParseError "!'.':" "not match: " "" d778_279 ["char"]))
+                                                       put d778_279
                                                        return ()]
-                varToken91_96 = foldl1 mplus [do v <- StateT variable
+                varToken92_97 = foldl1 mplus [do v <- StateT variable
                                                  _ <- StateT spaces
                                                  return ()
                                                  return v]
-                typToken92_97 = foldl1 mplus [do t <- StateT typ
+                typToken93_98 = foldl1 mplus [do t <- StateT typ
                                                  _ <- StateT spaces
                                                  return ()
                                                  return t]
-                pap93_98 = foldl1 mplus [do d774_281 <- get
-                                            t279_282 <- StateT char
-                                            case t279_282 of
+                pap94_99 = foldl1 mplus [do d783_283 <- get
+                                            t281_284 <- StateT char
+                                            case t281_284 of
                                                 '\n' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d774_281 ["char"])
-                                            let '\n' = t279_282
+                                                _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d783_283 ["char"])
+                                            let '\n' = t281_284
                                             return ()
-                                            d775_283 <- get
-                                            t280_284 <- StateT char
-                                            case t280_284 of
+                                            d784_285 <- get
+                                            t282_286 <- StateT char
+                                            case t282_286 of
                                                 '[' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d775_283 ["char"])
-                                            let '[' = t280_284
+                                                _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d784_285 ["char"])
+                                            let '[' = t282_286
                                             return ()
-                                            d776_285 <- get
-                                            t281_286 <- StateT char
-                                            case t281_286 of
+                                            d785_287 <- get
+                                            t283_288 <- StateT char
+                                            case t283_288 of
                                                 'p' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'p'" "not match pattern: " "" d776_285 ["char"])
-                                            let 'p' = t281_286
+                                                _ -> gets position >>= (throwError . mkParseError "'p'" "not match pattern: " "" d785_287 ["char"])
+                                            let 'p' = t283_288
                                             return ()
-                                            d777_287 <- get
-                                            t282_288 <- StateT char
-                                            case t282_288 of
+                                            d786_289 <- get
+                                            t284_290 <- StateT char
+                                            case t284_290 of
                                                 'a' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'a'" "not match pattern: " "" d777_287 ["char"])
-                                            let 'a' = t282_288
+                                                _ -> gets position >>= (throwError . mkParseError "'a'" "not match pattern: " "" d786_289 ["char"])
+                                            let 'a' = t284_290
                                             return ()
-                                            d778_289 <- get
-                                            t283_290 <- StateT char
-                                            case t283_290 of
+                                            d787_291 <- get
+                                            t285_292 <- StateT char
+                                            case t285_292 of
                                                 'p' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'p'" "not match pattern: " "" d778_289 ["char"])
-                                            let 'p' = t283_290
+                                                _ -> gets position >>= (throwError . mkParseError "'p'" "not match pattern: " "" d787_291 ["char"])
+                                            let 'p' = t285_292
                                             return ()
-                                            d779_291 <- get
-                                            t284_292 <- StateT char
-                                            case t284_292 of
+                                            d788_293 <- get
+                                            t286_294 <- StateT char
+                                            case t286_294 of
                                                 'i' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'i'" "not match pattern: " "" d779_291 ["char"])
-                                            let 'i' = t284_292
+                                                _ -> gets position >>= (throwError . mkParseError "'i'" "not match pattern: " "" d788_293 ["char"])
+                                            let 'i' = t286_294
                                             return ()
-                                            d780_293 <- get
-                                            t285_294 <- StateT char
-                                            case t285_294 of
+                                            d789_295 <- get
+                                            t287_296 <- StateT char
+                                            case t287_296 of
                                                 'l' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'l'" "not match pattern: " "" d780_293 ["char"])
-                                            let 'l' = t285_294
+                                                _ -> gets position >>= (throwError . mkParseError "'l'" "not match pattern: " "" d789_295 ["char"])
+                                            let 'l' = t287_296
                                             return ()
-                                            d781_295 <- get
-                                            t286_296 <- StateT char
-                                            case t286_296 of
+                                            d790_297 <- get
+                                            t288_298 <- StateT char
+                                            case t288_298 of
                                                 'l' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'l'" "not match pattern: " "" d781_295 ["char"])
-                                            let 'l' = t286_296
+                                                _ -> gets position >>= (throwError . mkParseError "'l'" "not match pattern: " "" d790_297 ["char"])
+                                            let 'l' = t288_298
                                             return ()
-                                            d782_297 <- get
-                                            t287_298 <- StateT char
-                                            case t287_298 of
+                                            d791_299 <- get
+                                            t289_300 <- StateT char
+                                            case t289_300 of
                                                 'o' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'o'" "not match pattern: " "" d782_297 ["char"])
-                                            let 'o' = t287_298
+                                                _ -> gets position >>= (throwError . mkParseError "'o'" "not match pattern: " "" d791_299 ["char"])
+                                            let 'o' = t289_300
                                             return ()
-                                            d783_299 <- get
-                                            t288_300 <- StateT char
-                                            case t288_300 of
+                                            d792_301 <- get
+                                            t290_302 <- StateT char
+                                            case t290_302 of
                                                 'n' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'n'" "not match pattern: " "" d783_299 ["char"])
-                                            let 'n' = t288_300
+                                                _ -> gets position >>= (throwError . mkParseError "'n'" "not match pattern: " "" d792_301 ["char"])
+                                            let 'n' = t290_302
                                             return ()
-                                            d784_301 <- get
-                                            t289_302 <- StateT char
-                                            case t289_302 of
+                                            d793_303 <- get
+                                            t291_304 <- StateT char
+                                            case t291_304 of
                                                 '|' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'|'" "not match pattern: " "" d784_301 ["char"])
-                                            let '|' = t289_302
+                                                _ -> gets position >>= (throwError . mkParseError "'|'" "not match pattern: " "" d793_303 ["char"])
+                                            let '|' = t291_304
                                             return ()
-                                            d785_303 <- get
-                                            t290_304 <- StateT char
-                                            case t290_304 of
+                                            d794_305 <- get
+                                            t292_306 <- StateT char
+                                            case t292_306 of
                                                 '\n' -> return ()
-                                                _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d785_303 ["char"])
-                                            let '\n' = t290_304
+                                                _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d794_305 ["char"])
+                                            let '\n' = t292_306
                                             return ()
                                             return ()]
-                peg94_99 = foldl1 mplus [do _ <- StateT spaces
-                                            return ()
-                                            s <- StateT sourceType
-                                            p <- StateT peg_
-                                            return (stPegQ (ConT $ mkName s) p),
-                                         do p <- StateT peg_
-                                            return (stPegQ (ConT $ mkName "String") p)]
-                sourceType95_100 = foldl1 mplus [do d790_305 <- get
-                                                    t295_306 <- StateT varToken
-                                                    case t295_306 of
+                peg95_100 = foldl1 mplus [do mt <- optional156_307 (StateT monadType)
+                                             _ <- StateT spaces
+                                             return ()
+                                             s <- StateT sourceType
+                                             p <- StateT peg_
+                                             return (stPegQ mt (ConT $ mkName s) p),
+                                          do mt <- optional156_307 (StateT monadType)
+                                             p <- StateT peg_
+                                             return (stPegQ mt (ConT $ mkName "String") p)]
+                monadType96_101 = foldl1 mplus [do _ <- StateT spaces
+                                                   return ()
+                                                   d802_308 <- get
+                                                   t300_309 <- StateT varToken
+                                                   case t300_309 of
+                                                       "monad" -> return ()
+                                                       _ -> gets position >>= (throwError . mkParseError "\"monad\"" "not match pattern: " "" d802_308 ["varToken"])
+                                                   let "monad" = t300_309
+                                                   return ()
+                                                   d803_310 <- get
+                                                   t301_311 <- StateT char
+                                                   case t301_311 of
+                                                       ':' -> return ()
+                                                       _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d803_310 ["char"])
+                                                   let ':' = t301_311
+                                                   return ()
+                                                   _ <- StateT spaces
+                                                   return ()
+                                                   t <- StateT hsTypeArr
+                                                   return t]
+                sourceType97_102 = foldl1 mplus [do d806_312 <- get
+                                                    t304_313 <- StateT varToken
+                                                    case t304_313 of
                                                         "source" -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "\"source\"" "not match pattern: " "" d790_305 ["varToken"])
-                                                    let "source" = t295_306
+                                                        _ -> gets position >>= (throwError . mkParseError "\"source\"" "not match pattern: " "" d806_312 ["varToken"])
+                                                    let "source" = t304_313
                                                     return ()
-                                                    d791_307 <- get
-                                                    t296_308 <- StateT char
-                                                    case t296_308 of
+                                                    d807_314 <- get
+                                                    t305_315 <- StateT char
+                                                    case t305_315 of
                                                         ':' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d791_307 ["char"])
-                                                    let ':' = t296_308
+                                                        _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d807_314 ["char"])
+                                                    let ':' = t305_315
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
                                                     v <- StateT typToken
                                                     return v]
-                peg_96_101 = foldl1 mplus [do _ <- StateT spaces
+                peg_98_103 = foldl1 mplus [do _ <- StateT spaces
                                               return ()
                                               d <- StateT definition
                                               p <- StateT peg_
                                               return (d : p),
                                            return []]
-                definition97_102 = foldl1 mplus [do v <- StateT variable
+                definition99_104 = foldl1 mplus [do v <- StateT variable
                                                     _ <- StateT spaces
                                                     return ()
-                                                    d799_309 <- get
-                                                    t304_310 <- StateT char
-                                                    case t304_310 of
+                                                    d815_316 <- get
+                                                    t313_317 <- StateT char
+                                                    case t313_317 of
                                                         ':' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d799_309 ["char"])
-                                                    let ':' = t304_310
+                                                        _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d815_316 ["char"])
+                                                    let ':' = t313_317
                                                     return ()
-                                                    d800_311 <- get
-                                                    t305_312 <- StateT char
-                                                    case t305_312 of
+                                                    d816_318 <- get
+                                                    t314_319 <- StateT char
+                                                    case t314_319 of
                                                         ':' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d800_311 ["char"])
-                                                    let ':' = t305_312
+                                                        _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d816_318 ["char"])
+                                                    let ':' = t314_319
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
                                                     t <- StateT hsTypeArr
                                                     _ <- StateT spaces
                                                     return ()
-                                                    d804_313 <- get
-                                                    t309_314 <- StateT char
-                                                    case t309_314 of
+                                                    d820_320 <- get
+                                                    t318_321 <- StateT char
+                                                    case t318_321 of
                                                         '=' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'='" "not match pattern: " "" d804_313 ["char"])
-                                                    let '=' = t309_314
+                                                        _ -> gets position >>= (throwError . mkParseError "'='" "not match pattern: " "" d820_320 ["char"])
+                                                    let '=' = t318_321
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
                                                     sel <- StateT selection
                                                     _ <- StateT spaces
                                                     return ()
-                                                    d808_315 <- get
-                                                    t313_316 <- StateT char
-                                                    case t313_316 of
+                                                    d824_322 <- get
+                                                    t322_323 <- StateT char
+                                                    case t322_323 of
                                                         ';' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d808_315 ["char"])
-                                                    let ';' = t313_316
+                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d824_322 ["char"])
+                                                    let ';' = t322_323
                                                     return ()
                                                     return (definitionQ v (Just t) sel),
                                                  do v <- StateT variable
                                                     _ <- StateT spaces
                                                     return ()
-                                                    d811_317 <- get
-                                                    t316_318 <- StateT char
-                                                    case t316_318 of
+                                                    d827_324 <- get
+                                                    t325_325 <- StateT char
+                                                    case t325_325 of
                                                         '<' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'<'" "not match pattern: " "" d811_317 ["char"])
-                                                    let '<' = t316_318
+                                                        _ -> gets position >>= (throwError . mkParseError "'<'" "not match pattern: " "" d827_324 ["char"])
+                                                    let '<' = t325_325
                                                     return ()
-                                                    d812_319 <- get
-                                                    t317_320 <- StateT char
-                                                    case t317_320 of
+                                                    d828_326 <- get
+                                                    t326_327 <- StateT char
+                                                    case t326_327 of
                                                         '-' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d812_319 ["char"])
-                                                    let '-' = t317_320
+                                                        _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d828_326 ["char"])
+                                                    let '-' = t326_327
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
                                                     sel <- StateT plainSelection
                                                     _ <- StateT spaces
                                                     return ()
-                                                    d816_321 <- get
-                                                    t321_322 <- StateT char
-                                                    case t321_322 of
+                                                    d832_328 <- get
+                                                    t330_329 <- StateT char
+                                                    case t330_329 of
                                                         ';' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d816_321 ["char"])
-                                                    let ';' = t321_322
+                                                        _ -> gets position >>= (throwError . mkParseError "';'" "not match pattern: " "" d832_328 ["char"])
+                                                    let ';' = t330_329
                                                     return ()
                                                     return (definitionQ v Nothing $ plainSelectionQ sel)]
-                selection98_103 = foldl1 mplus [do s <- StateT normalSelection
-                                                   return (normalSelectionQ s),
-                                                do s <- StateT plainSelection
-                                                   return (plainSelectionQ s)]
-                normalSelection99_104 = foldl1 mplus [do ex <- StateT expressionHs
+                selection100_105 = foldl1 mplus [do s <- StateT normalSelection
+                                                    return (normalSelectionQ s),
+                                                 do s <- StateT plainSelection
+                                                    return (plainSelectionQ s)]
+                normalSelection101_106 = foldl1 mplus [do ex <- StateT expressionHs
+                                                          _ <- StateT spaces
+                                                          return ()
+                                                          d837_330 <- get
+                                                          t335_331 <- StateT char
+                                                          case t335_331 of
+                                                              '/' -> return ()
+                                                              _ -> gets position >>= (throwError . mkParseError "'/'" "not match pattern: " "" d837_330 ["char"])
+                                                          let '/' = t335_331
+                                                          return ()
+                                                          _ <- StateT spaces
+                                                          return ()
+                                                          sel <- StateT normalSelection
+                                                          return (ex : sel),
+                                                       do ex <- StateT expressionHs
+                                                          return [ex]]
+                plainSelection102_107 = foldl1 mplus [do ex <- StateT plainExpressionHs
                                                          _ <- StateT spaces
                                                          return ()
-                                                         d821_323 <- get
-                                                         t326_324 <- StateT char
-                                                         case t326_324 of
+                                                         d843_332 <- get
+                                                         t341_333 <- StateT char
+                                                         case t341_333 of
                                                              '/' -> return ()
-                                                             _ -> gets position >>= (throwError . mkParseError "'/'" "not match pattern: " "" d821_323 ["char"])
-                                                         let '/' = t326_324
-                                                         return ()
-                                                         _ <- StateT spaces
-                                                         return ()
-                                                         sel <- StateT normalSelection
-                                                         return (ex : sel),
-                                                      do ex <- StateT expressionHs
-                                                         return [ex]]
-                plainSelection100_105 = foldl1 mplus [do ex <- StateT plainExpressionHs
-                                                         _ <- StateT spaces
-                                                         return ()
-                                                         d827_325 <- get
-                                                         t332_326 <- StateT char
-                                                         case t332_326 of
-                                                             '/' -> return ()
-                                                             _ -> gets position >>= (throwError . mkParseError "'/'" "not match pattern: " "" d827_325 ["char"])
-                                                         let '/' = t332_326
+                                                             _ -> gets position >>= (throwError . mkParseError "'/'" "not match pattern: " "" d843_332 ["char"])
+                                                         let '/' = t341_333
                                                          return ()
                                                          _ <- StateT spaces
                                                          return ()
@@ -1124,138 +1150,138 @@ parse = parse1160_0 initialPos
                                                          return (ex : sel),
                                                       do ex <- StateT plainExpressionHs
                                                          return [ex]]
-                expressionHs101_106 = foldl1 mplus [do e <- StateT expression
+                expressionHs103_108 = foldl1 mplus [do e <- StateT expression
                                                        _ <- StateT spaces
                                                        return ()
-                                                       d833_327 <- get
-                                                       t338_328 <- StateT char
-                                                       case t338_328 of
+                                                       d849_334 <- get
+                                                       t347_335 <- StateT char
+                                                       case t347_335 of
                                                            '{' -> return ()
-                                                           _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d833_327 ["char"])
-                                                       let '{' = t338_328
+                                                           _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d849_334 ["char"])
+                                                       let '{' = t347_335
                                                        return ()
                                                        _ <- StateT spaces
                                                        return ()
                                                        h <- StateT hsExpLam
                                                        _ <- StateT spaces
                                                        return ()
-                                                       d837_329 <- get
-                                                       t342_330 <- StateT char
-                                                       case t342_330 of
+                                                       d853_336 <- get
+                                                       t351_337 <- StateT char
+                                                       case t351_337 of
                                                            '}' -> return ()
-                                                           _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d837_329 ["char"])
-                                                       let '}' = t342_330
+                                                           _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d853_336 ["char"])
+                                                       let '}' = t351_337
                                                        return ()
                                                        return (expressionQ (e, h)),
                                                     do e <- StateT expressionHsSugar
                                                        return e]
-                expressionHsSugar102_107 = foldl1 mplus [do d839_331 <- get
-                                                            t344_332 <- StateT char
-                                                            case t344_332 of
+                expressionHsSugar104_109 = foldl1 mplus [do d855_338 <- get
+                                                            t353_339 <- StateT char
+                                                            case t353_339 of
                                                                 '<' -> return ()
-                                                                _ -> gets position >>= (throwError . mkParseError "'<'" "not match pattern: " "" d839_331 ["char"])
-                                                            let '<' = t344_332
+                                                                _ -> gets position >>= (throwError . mkParseError "'<'" "not match pattern: " "" d855_338 ["char"])
+                                                            let '<' = t353_339
                                                             return ()
                                                             _ <- StateT spaces
                                                             return ()
                                                             h <- StateT hsExpLam
                                                             _ <- StateT spaces
                                                             return ()
-                                                            d843_333 <- get
-                                                            t348_334 <- StateT char
-                                                            case t348_334 of
+                                                            d859_340 <- get
+                                                            t357_341 <- StateT char
+                                                            case t357_341 of
                                                                 '>' -> return ()
-                                                                _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d843_333 ["char"])
-                                                            let '>' = t348_334
+                                                                _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d859_340 ["char"])
+                                                            let '>' = t357_341
                                                             return ()
                                                             return (expressionSugar h)]
-                plainExpressionHs103_108 = foldl1 mplus [do rfs <- list155_335 (foldl1 mplus [do rf <- StateT plainHAReadFromLs
+                plainExpressionHs105_110 = foldl1 mplus [do rfs <- list157_342 (foldl1 mplus [do rf <- StateT plainHAReadFromLs
                                                                                                  _ <- StateT spaces
                                                                                                  return ()
                                                                                                  return rf])
                                                             return (plainExpressionQ rfs)]
-                plainHAReadFromLs104_109 = foldl1 mplus [do rf <- StateT plainReadFromLs
+                plainHAReadFromLs106_111 = foldl1 mplus [do rf <- StateT plainReadFromLs
                                                             return (Here, rf),
-                                                         do d848_336 <- get
-                                                            t353_337 <- StateT char
-                                                            case t353_337 of
+                                                         do d864_343 <- get
+                                                            t362_344 <- StateT char
+                                                            case t362_344 of
                                                                 '&' -> return ()
-                                                                _ -> gets position >>= (throwError . mkParseError "'&'" "not match pattern: " "" d848_336 ["char"])
-                                                            let '&' = t353_337
+                                                                _ -> gets position >>= (throwError . mkParseError "'&'" "not match pattern: " "" d864_343 ["char"])
+                                                            let '&' = t362_344
                                                             return ()
                                                             rf <- StateT plainReadFromLs
                                                             return (Ahead, rf),
-                                                         do d850_338 <- get
-                                                            t355_339 <- StateT char
-                                                            case t355_339 of
+                                                         do d866_345 <- get
+                                                            t364_346 <- StateT char
+                                                            case t364_346 of
                                                                 '!' -> return ()
-                                                                _ -> gets position >>= (throwError . mkParseError "'!'" "not match pattern: " "" d850_338 ["char"])
-                                                            let '!' = t355_339
+                                                                _ -> gets position >>= (throwError . mkParseError "'!'" "not match pattern: " "" d866_345 ["char"])
+                                                            let '!' = t364_346
                                                             return ()
                                                             rf <- StateT plainReadFromLs
                                                             return (NAhead "", rf)]
-                plainReadFromLs105_110 = foldl1 mplus [do rf <- StateT readFromLs
+                plainReadFromLs107_112 = foldl1 mplus [do rf <- StateT readFromLs
                                                           return rf,
                                                        do rf <- StateT selectCharsLs
                                                           return rf]
-                expression106_111 = foldl1 mplus [do l <- StateT nameLeaf_
+                expression108_113 = foldl1 mplus [do l <- StateT nameLeaf_
                                                      _ <- StateT spaces
                                                      return ()
                                                      e <- StateT expression
                                                      return (l : e),
                                                   return []]
-                nameLeaf_107_112 = foldl1 mplus [do d857_340 <- get
-                                                    t362_341 <- StateT char
-                                                    case t362_341 of
+                nameLeaf_109_114 = foldl1 mplus [do d873_347 <- get
+                                                    t371_348 <- StateT char
+                                                    case t371_348 of
                                                         '!' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'!'" "not match pattern: " "" d857_340 ["char"])
-                                                    let '!' = t362_341
+                                                        _ -> gets position >>= (throwError . mkParseError "'!'" "not match pattern: " "" d873_347 ["char"])
+                                                    let '!' = t371_348
                                                     return ()
                                                     nl <- StateT nameLeafNoCom
                                                     _ <- StateT spaces
                                                     return ()
-                                                    com <- optional154_342 (StateT comForErr)
+                                                    com <- optional156_307 (StateT comForErr)
                                                     return (NAhead $ maybe "" id com, nl),
-                                                 do d861_343 <- get
-                                                    t366_344 <- StateT char
-                                                    case t366_344 of
+                                                 do d877_349 <- get
+                                                    t375_350 <- StateT char
+                                                    case t375_350 of
                                                         '&' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'&'" "not match pattern: " "" d861_343 ["char"])
-                                                    let '&' = t366_344
+                                                        _ -> gets position >>= (throwError . mkParseError "'&'" "not match pattern: " "" d877_349 ["char"])
+                                                    let '&' = t375_350
                                                     return ()
                                                     nl <- StateT nameLeaf
                                                     return (Ahead, nl),
                                                  do nl <- StateT nameLeaf
                                                     return (Here, nl)]
-                nameLeaf108_113 = foldl1 mplus [do n <- StateT pat1
+                nameLeaf110_115 = foldl1 mplus [do n <- StateT pat1
                                                    _ <- StateT spaces
                                                    return ()
-                                                   com <- optional154_342 (StateT comForErr)
-                                                   d867_345 <- get
-                                                   t372_346 <- StateT char
-                                                   case t372_346 of
+                                                   com <- optional156_307 (StateT comForErr)
+                                                   d883_351 <- get
+                                                   t381_352 <- StateT char
+                                                   case t381_352 of
                                                        ':' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d867_345 ["char"])
-                                                   let ':' = t372_346
+                                                       _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d883_351 ["char"])
+                                                   let ':' = t381_352
                                                    return ()
                                                    (rf, p) <- StateT leaf
                                                    return (check (n, maybe "" id com) rf p),
                                                 do n <- StateT pat1
                                                    _ <- StateT spaces
                                                    return ()
-                                                   com <- optional154_342 (StateT comForErr)
+                                                   com <- optional156_307 (StateT comForErr)
                                                    return (check (n,
                                                                   maybe "" id com) (FromVariable Nothing) Nothing)]
-                nameLeafNoCom109_114 = foldl1 mplus [do n <- StateT pat1
+                nameLeafNoCom111_116 = foldl1 mplus [do n <- StateT pat1
                                                         _ <- StateT spaces
                                                         return ()
-                                                        com <- optional154_342 (StateT comForErr)
-                                                        d875_347 <- get
-                                                        t380_348 <- StateT char
-                                                        case t380_348 of
+                                                        com <- optional156_307 (StateT comForErr)
+                                                        d891_353 <- get
+                                                        t389_354 <- StateT char
+                                                        case t389_354 of
                                                             ':' -> return ()
-                                                            _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d875_347 ["char"])
-                                                        let ':' = t380_348
+                                                            _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d891_353 ["char"])
+                                                        let ':' = t389_354
                                                         return ()
                                                         (rf, p) <- StateT leaf
                                                         return (check (n, maybe "" id com) rf p),
@@ -1264,98 +1290,98 @@ parse = parse1160_0 initialPos
                                                         return ()
                                                         return (check (n,
                                                                        "") (FromVariable Nothing) Nothing)]
-                comForErr110_115 = foldl1 mplus [do d879_349 <- get
-                                                    t384_350 <- StateT char
-                                                    case t384_350 of
+                comForErr112_117 = foldl1 mplus [do d895_355 <- get
+                                                    t393_356 <- StateT char
+                                                    case t393_356 of
                                                         '{' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d879_349 ["char"])
-                                                    let '{' = t384_350
+                                                        _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d895_355 ["char"])
+                                                    let '{' = t393_356
                                                     return ()
-                                                    d880_351 <- get
-                                                    t385_352 <- StateT char
-                                                    case t385_352 of
+                                                    d896_357 <- get
+                                                    t394_358 <- StateT char
+                                                    case t394_358 of
                                                         '-' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d880_351 ["char"])
-                                                    let '-' = t385_352
+                                                        _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d896_357 ["char"])
+                                                    let '-' = t394_358
                                                     return ()
-                                                    d881_353 <- get
-                                                    t386_354 <- StateT char
-                                                    case t386_354 of
+                                                    d897_359 <- get
+                                                    t395_360 <- StateT char
+                                                    case t395_360 of
                                                         '#' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d881_353 ["char"])
-                                                    let '#' = t386_354
+                                                        _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d897_359 ["char"])
+                                                    let '#' = t395_360
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
-                                                    d883_355 <- get
-                                                    t388_356 <- StateT char
-                                                    case t388_356 of
+                                                    d899_361 <- get
+                                                    t397_362 <- StateT char
+                                                    case t397_362 of
                                                         '"' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d883_355 ["char"])
-                                                    let '"' = t388_356
+                                                        _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d899_361 ["char"])
+                                                    let '"' = t397_362
                                                     return ()
                                                     s <- StateT stringLit
-                                                    d885_357 <- get
-                                                    t390_358 <- StateT char
-                                                    case t390_358 of
+                                                    d901_363 <- get
+                                                    t399_364 <- StateT char
+                                                    case t399_364 of
                                                         '"' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d885_357 ["char"])
-                                                    let '"' = t390_358
+                                                        _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d901_363 ["char"])
+                                                    let '"' = t399_364
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
-                                                    d887_359 <- get
-                                                    t392_360 <- StateT char
-                                                    case t392_360 of
+                                                    d903_365 <- get
+                                                    t401_366 <- StateT char
+                                                    case t401_366 of
                                                         '#' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d887_359 ["char"])
-                                                    let '#' = t392_360
+                                                        _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d903_365 ["char"])
+                                                    let '#' = t401_366
                                                     return ()
-                                                    d888_361 <- get
-                                                    t393_362 <- StateT char
-                                                    case t393_362 of
+                                                    d904_367 <- get
+                                                    t402_368 <- StateT char
+                                                    case t402_368 of
                                                         '-' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d888_361 ["char"])
-                                                    let '-' = t393_362
+                                                        _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d904_367 ["char"])
+                                                    let '-' = t402_368
                                                     return ()
-                                                    d889_363 <- get
-                                                    t394_364 <- StateT char
-                                                    case t394_364 of
+                                                    d905_369 <- get
+                                                    t403_370 <- StateT char
+                                                    case t403_370 of
                                                         '}' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d889_363 ["char"])
-                                                    let '}' = t394_364
+                                                        _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d905_369 ["char"])
+                                                    let '}' = t403_370
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
                                                     return s]
-                leaf111_116 = foldl1 mplus [do rf <- StateT readFromLs
+                leaf113_118 = foldl1 mplus [do rf <- StateT readFromLs
                                                t <- StateT test
                                                return (rf, Just t),
                                             do rf <- StateT readFromLs
                                                return (rf, Nothing),
                                             do t <- StateT test
                                                return (FromVariable Nothing, Just t)]
-                patOp112_117 = foldl1 mplus [do p <- StateT pat
+                patOp114_119 = foldl1 mplus [do p <- StateT pat
                                                 o <- StateT opConName
                                                 po <- StateT patOp
                                                 return (UInfixP p o po),
                                              do p <- StateT pat
                                                 _ <- StateT spaces
                                                 return ()
-                                                d900_365 <- get
-                                                t405_366 <- StateT char
-                                                case t405_366 of
+                                                d916_371 <- get
+                                                t414_372 <- StateT char
+                                                case t414_372 of
                                                     '`' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d900_365 ["char"])
-                                                let '`' = t405_366
+                                                    _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d916_371 ["char"])
+                                                let '`' = t414_372
                                                 return ()
                                                 t <- StateT typ
-                                                d902_367 <- get
-                                                t407_368 <- StateT char
-                                                case t407_368 of
+                                                d918_373 <- get
+                                                t416_374 <- StateT char
+                                                case t416_374 of
                                                     '`' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d902_367 ["char"])
-                                                let '`' = t407_368
+                                                    _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d918_373 ["char"])
+                                                let '`' = t416_374
                                                 return ()
                                                 _ <- StateT spaces
                                                 return ()
@@ -1363,25 +1389,25 @@ parse = parse1160_0 initialPos
                                                 return (UInfixP p (mkName t) po),
                                              do p <- StateT pat
                                                 return p]
-                pat113_118 = foldl1 mplus [do t <- StateT typ
+                pat115_120 = foldl1 mplus [do t <- StateT typ
                                               _ <- StateT spaces
                                               return ()
                                               ps <- StateT pats
                                               return (ConP (mkName t) ps),
-                                           do d909_369 <- get
-                                              t414_370 <- StateT char
-                                              case t414_370 of
+                                           do d925_375 <- get
+                                              t423_376 <- StateT char
+                                              case t423_376 of
                                                   '(' -> return ()
-                                                  _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d909_369 ["char"])
-                                              let '(' = t414_370
+                                                  _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d925_375 ["char"])
+                                              let '(' = t423_376
                                               return ()
                                               o <- StateT opConName
-                                              d911_371 <- get
-                                              t416_372 <- StateT char
-                                              case t416_372 of
+                                              d927_377 <- get
+                                              t425_378 <- StateT char
+                                              case t425_378 of
                                                   ')' -> return ()
-                                                  _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d911_371 ["char"])
-                                              let ')' = t416_372
+                                                  _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d927_377 ["char"])
+                                              let ')' = t425_378
                                               return ()
                                               _ <- StateT spaces
                                               return ()
@@ -1389,104 +1415,104 @@ parse = parse1160_0 initialPos
                                               return (ConP o ps),
                                            do p <- StateT pat1
                                               return p]
-                pat1114_119 = foldl1 mplus [do t <- StateT typ
+                pat1116_121 = foldl1 mplus [do t <- StateT typ
                                                return (ConP (mkName t) []),
-                                            do d916_373 <- get
-                                               t421_374 <- StateT variable
-                                               case t421_374 of
+                                            do d932_379 <- get
+                                               t430_380 <- StateT variable
+                                               case t430_380 of
                                                    "_" -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "\"_\"" "not match pattern: " "" d916_373 ["variable"])
-                                               let "_" = t421_374
+                                                   _ -> gets position >>= (throwError . mkParseError "\"_\"" "not match pattern: " "" d932_379 ["variable"])
+                                               let "_" = t430_380
                                                return ()
                                                return WildP,
                                             do n <- StateT variable
                                                return (VarP $ mkName n),
                                             do i <- StateT integer
                                                return (LitP (IntegerL i)),
-                                            do d919_375 <- get
-                                               t424_376 <- StateT char
-                                               case t424_376 of
+                                            do d935_381 <- get
+                                               t433_382 <- StateT char
+                                               case t433_382 of
                                                    '-' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d919_375 ["char"])
-                                               let '-' = t424_376
+                                                   _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d935_381 ["char"])
+                                               let '-' = t433_382
                                                return ()
                                                _ <- StateT spaces
                                                return ()
                                                i <- StateT integer
                                                return (LitP (IntegerL $ negate i)),
-                                            do d922_377 <- get
-                                               t427_378 <- StateT char
-                                               case t427_378 of
+                                            do d938_383 <- get
+                                               t436_384 <- StateT char
+                                               case t436_384 of
                                                    '\'' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d922_377 ["char"])
-                                               let '\'' = t427_378
+                                                   _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d938_383 ["char"])
+                                               let '\'' = t436_384
                                                return ()
                                                c <- StateT charLit
-                                               d924_379 <- get
-                                               t429_380 <- StateT char
-                                               case t429_380 of
+                                               d940_385 <- get
+                                               t438_386 <- StateT char
+                                               case t438_386 of
                                                    '\'' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d924_379 ["char"])
-                                               let '\'' = t429_380
+                                                   _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d940_385 ["char"])
+                                               let '\'' = t438_386
                                                return ()
                                                return (LitP $ CharL c),
-                                            do d925_381 <- get
-                                               t430_382 <- StateT char
-                                               case t430_382 of
+                                            do d941_387 <- get
+                                               t439_388 <- StateT char
+                                               case t439_388 of
                                                    '"' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d925_381 ["char"])
-                                               let '"' = t430_382
+                                                   _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d941_387 ["char"])
+                                               let '"' = t439_388
                                                return ()
                                                s <- StateT stringLit
-                                               d927_383 <- get
-                                               t432_384 <- StateT char
-                                               case t432_384 of
+                                               d943_389 <- get
+                                               t441_390 <- StateT char
+                                               case t441_390 of
                                                    '"' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d927_383 ["char"])
-                                               let '"' = t432_384
+                                                   _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d943_389 ["char"])
+                                               let '"' = t441_390
                                                return ()
                                                return (LitP $ StringL s),
-                                            do d928_385 <- get
-                                               t433_386 <- StateT char
-                                               case t433_386 of
+                                            do d944_391 <- get
+                                               t442_392 <- StateT char
+                                               case t442_392 of
                                                    '(' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d928_385 ["char"])
-                                               let '(' = t433_386
+                                                   _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d944_391 ["char"])
+                                               let '(' = t442_392
                                                return ()
                                                p <- StateT patList
-                                               d930_387 <- get
-                                               t435_388 <- StateT char
-                                               case t435_388 of
+                                               d946_393 <- get
+                                               t444_394 <- StateT char
+                                               case t444_394 of
                                                    ')' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d930_387 ["char"])
-                                               let ')' = t435_388
+                                                   _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d946_393 ["char"])
+                                               let ')' = t444_394
                                                return ()
                                                return (TupP p),
-                                            do d931_389 <- get
-                                               t436_390 <- StateT char
-                                               case t436_390 of
+                                            do d947_395 <- get
+                                               t445_396 <- StateT char
+                                               case t445_396 of
                                                    '[' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d931_389 ["char"])
-                                               let '[' = t436_390
+                                                   _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d947_395 ["char"])
+                                               let '[' = t445_396
                                                return ()
                                                p <- StateT patList
-                                               d933_391 <- get
-                                               t438_392 <- StateT char
-                                               case t438_392 of
+                                               d949_397 <- get
+                                               t447_398 <- StateT char
+                                               case t447_398 of
                                                    ']' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d933_391 ["char"])
-                                               let ']' = t438_392
+                                                   _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d949_397 ["char"])
+                                               let ']' = t447_398
                                                return ()
                                                return (ListP p)]
-                patList115_120 = foldl1 mplus [do p <- StateT patOp
+                patList117_122 = foldl1 mplus [do p <- StateT patOp
                                                   _ <- StateT spaces
                                                   return ()
-                                                  d936_393 <- get
-                                                  t441_394 <- StateT char
-                                                  case t441_394 of
+                                                  d952_399 <- get
+                                                  t450_400 <- StateT char
+                                                  case t450_400 of
                                                       ',' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "','" "not match pattern: " "" d936_393 ["char"])
-                                                  let ',' = t441_394
+                                                      _ -> gets position >>= (throwError . mkParseError "','" "not match pattern: " "" d952_399 ["char"])
+                                                  let ',' = t450_400
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
@@ -1495,283 +1521,283 @@ parse = parse1160_0 initialPos
                                                do p <- StateT patOp
                                                   return [p],
                                                return []]
-                opConName116_121 = foldl1 mplus [do d940_395 <- get
-                                                    t445_396 <- StateT char
-                                                    case t445_396 of
+                opConName118_123 = foldl1 mplus [do d956_401 <- get
+                                                    t454_402 <- StateT char
+                                                    case t454_402 of
                                                         ':' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d940_395 ["char"])
-                                                    let ':' = t445_396
+                                                        _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d956_401 ["char"])
+                                                    let ':' = t454_402
                                                     return ()
                                                     ot <- StateT opTail
                                                     return (mkName $ ':' : ot)]
-                charLit117_122 = foldl1 mplus [do d942_397 <- get
-                                                  t447_398 <- StateT char
-                                                  let c = t447_398
-                                                  unless (c `notElem` "\\'") (gets position >>= (throwError . mkParseError "c `notElem` \"\\\\'\"" "not match: " "" d942_397 ["char"]))
+                charLit119_124 = foldl1 mplus [do d958_403 <- get
+                                                  t456_404 <- StateT char
+                                                  let c = t456_404
+                                                  unless (c `notElem` "\\'") (gets position >>= (throwError . mkParseError "c `notElem` \"\\\\'\"" "not match: " "" d958_403 ["char"]))
                                                   return c,
-                                               do d943_399 <- get
-                                                  t448_400 <- StateT char
-                                                  case t448_400 of
+                                               do d959_405 <- get
+                                                  t457_406 <- StateT char
+                                                  case t457_406 of
                                                       '\\' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'\\\\'" "not match pattern: " "" d943_399 ["char"])
-                                                  let '\\' = t448_400
+                                                      _ -> gets position >>= (throwError . mkParseError "'\\\\'" "not match pattern: " "" d959_405 ["char"])
+                                                  let '\\' = t457_406
                                                   return ()
                                                   c <- StateT escapeC
                                                   return c]
-                stringLit118_123 = foldl1 mplus [do d945_401 <- get
-                                                    t450_402 <- StateT char
-                                                    let c = t450_402
-                                                    unless (c `notElem` "\"\\") (gets position >>= (throwError . mkParseError "c `notElem` \"\\\"\\\\\"" "not match: " "" d945_401 ["char"]))
+                stringLit120_125 = foldl1 mplus [do d961_407 <- get
+                                                    t459_408 <- StateT char
+                                                    let c = t459_408
+                                                    unless (c `notElem` "\"\\") (gets position >>= (throwError . mkParseError "c `notElem` \"\\\"\\\\\"" "not match: " "" d961_407 ["char"]))
                                                     s <- StateT stringLit
                                                     return (c : s),
-                                                 do d947_403 <- get
-                                                    t452_404 <- StateT char
-                                                    case t452_404 of
+                                                 do d963_409 <- get
+                                                    t461_410 <- StateT char
+                                                    case t461_410 of
                                                         '\\' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'\\\\'" "not match pattern: " "" d947_403 ["char"])
-                                                    let '\\' = t452_404
+                                                        _ -> gets position >>= (throwError . mkParseError "'\\\\'" "not match pattern: " "" d963_409 ["char"])
+                                                    let '\\' = t461_410
                                                     return ()
                                                     c <- StateT escapeC
                                                     s <- StateT stringLit
                                                     return (c : s),
                                                  return ""]
-                escapeC119_124 = foldl1 mplus [do d950_405 <- get
-                                                  t455_406 <- StateT char
-                                                  case t455_406 of
+                escapeC121_126 = foldl1 mplus [do d966_411 <- get
+                                                  t464_412 <- StateT char
+                                                  case t464_412 of
                                                       '"' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d950_405 ["char"])
-                                                  let '"' = t455_406
+                                                      _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d966_411 ["char"])
+                                                  let '"' = t464_412
                                                   return ()
                                                   return '"',
-                                               do d951_407 <- get
-                                                  t456_408 <- StateT char
-                                                  case t456_408 of
+                                               do d967_413 <- get
+                                                  t465_414 <- StateT char
+                                                  case t465_414 of
                                                       '\'' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d951_407 ["char"])
-                                                  let '\'' = t456_408
+                                                      _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d967_413 ["char"])
+                                                  let '\'' = t465_414
                                                   return ()
                                                   return '\'',
-                                               do d952_409 <- get
-                                                  t457_410 <- StateT char
-                                                  case t457_410 of
+                                               do d968_415 <- get
+                                                  t466_416 <- StateT char
+                                                  case t466_416 of
                                                       '\\' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'\\\\'" "not match pattern: " "" d952_409 ["char"])
-                                                  let '\\' = t457_410
+                                                      _ -> gets position >>= (throwError . mkParseError "'\\\\'" "not match pattern: " "" d968_415 ["char"])
+                                                  let '\\' = t466_416
                                                   return ()
                                                   return '\\',
-                                               do d953_411 <- get
-                                                  t458_412 <- StateT char
-                                                  case t458_412 of
+                                               do d969_417 <- get
+                                                  t467_418 <- StateT char
+                                                  case t467_418 of
                                                       'n' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'n'" "not match pattern: " "" d953_411 ["char"])
-                                                  let 'n' = t458_412
+                                                      _ -> gets position >>= (throwError . mkParseError "'n'" "not match pattern: " "" d969_417 ["char"])
+                                                  let 'n' = t467_418
                                                   return ()
                                                   return '\n',
-                                               do d954_413 <- get
-                                                  t459_414 <- StateT char
-                                                  case t459_414 of
+                                               do d970_419 <- get
+                                                  t468_420 <- StateT char
+                                                  case t468_420 of
                                                       't' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'t'" "not match pattern: " "" d954_413 ["char"])
-                                                  let 't' = t459_414
+                                                      _ -> gets position >>= (throwError . mkParseError "'t'" "not match pattern: " "" d970_419 ["char"])
+                                                  let 't' = t468_420
                                                   return ()
                                                   return '\t']
-                pats120_125 = foldl1 mplus [do p <- StateT pat
+                pats122_127 = foldl1 mplus [do p <- StateT pat
                                                _ <- StateT spaces
                                                return ()
                                                ps <- StateT pats
                                                return (p : ps),
                                             return []]
-                readFromLs121_126 = foldl1 mplus [do rf <- StateT readFrom
-                                                     d959_415 <- get
-                                                     t464_416 <- StateT char
-                                                     case t464_416 of
+                readFromLs123_128 = foldl1 mplus [do rf <- StateT readFrom
+                                                     d975_421 <- get
+                                                     t473_422 <- StateT char
+                                                     case t473_422 of
                                                          '*' -> return ()
-                                                         _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d959_415 ["char"])
-                                                     let '*' = t464_416
+                                                         _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d975_421 ["char"])
+                                                     let '*' = t473_422
                                                      return ()
                                                      return (FromL List rf),
                                                   do rf <- StateT readFrom
-                                                     d961_417 <- get
-                                                     t466_418 <- StateT char
-                                                     case t466_418 of
+                                                     d977_423 <- get
+                                                     t475_424 <- StateT char
+                                                     case t475_424 of
                                                          '+' -> return ()
-                                                         _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d961_417 ["char"])
-                                                     let '+' = t466_418
+                                                         _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d977_423 ["char"])
+                                                     let '+' = t475_424
                                                      return ()
                                                      return (FromL List1 rf),
                                                   do rf <- StateT readFrom
-                                                     d963_419 <- get
-                                                     t468_420 <- StateT char
-                                                     case t468_420 of
+                                                     d979_425 <- get
+                                                     t477_426 <- StateT char
+                                                     case t477_426 of
                                                          '?' -> return ()
-                                                         _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d963_419 ["char"])
-                                                     let '?' = t468_420
+                                                         _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d979_425 ["char"])
+                                                     let '?' = t477_426
                                                      return ()
                                                      return (FromL Optional rf),
                                                   do rf <- StateT readFrom
                                                      return rf]
-                readFrom122_127 = foldl1 mplus [do v <- StateT variable
+                readFrom124_129 = foldl1 mplus [do v <- StateT variable
                                                    return (FromVariable $ Just v),
-                                                do d966_421 <- get
-                                                   t471_422 <- StateT char
-                                                   case t471_422 of
+                                                do d982_427 <- get
+                                                   t480_428 <- StateT char
+                                                   case t480_428 of
                                                        '(' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d966_421 ["char"])
-                                                   let '(' = t471_422
+                                                       _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d982_427 ["char"])
+                                                   let '(' = t480_428
                                                    return ()
                                                    s <- StateT selection
-                                                   d968_423 <- get
-                                                   t473_424 <- StateT char
-                                                   case t473_424 of
+                                                   d984_429 <- get
+                                                   t482_430 <- StateT char
+                                                   case t482_430 of
                                                        ')' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d968_423 ["char"])
-                                                   let ')' = t473_424
+                                                       _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d984_429 ["char"])
+                                                   let ')' = t482_430
                                                    return ()
                                                    return (fromSelectionQ s),
                                                 do e <- StateT expressionHsSugar
                                                    return (fromSelectionQ $ normalSelectionQ [e])]
-                selectCharsLs123_128 = foldl1 mplus [do rf <- StateT selectChars
-                                                        d971_425 <- get
-                                                        t476_426 <- StateT char
-                                                        case t476_426 of
+                selectCharsLs125_130 = foldl1 mplus [do rf <- StateT selectChars
+                                                        d987_431 <- get
+                                                        t485_432 <- StateT char
+                                                        case t485_432 of
                                                             '*' -> return ()
-                                                            _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d971_425 ["char"])
-                                                        let '*' = t476_426
+                                                            _ -> gets position >>= (throwError . mkParseError "'*'" "not match pattern: " "" d987_431 ["char"])
+                                                        let '*' = t485_432
                                                         return ()
                                                         return (FromL List rf),
                                                      do rf <- StateT selectChars
-                                                        d973_427 <- get
-                                                        t478_428 <- StateT char
-                                                        case t478_428 of
+                                                        d989_433 <- get
+                                                        t487_434 <- StateT char
+                                                        case t487_434 of
                                                             '+' -> return ()
-                                                            _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d973_427 ["char"])
-                                                        let '+' = t478_428
+                                                            _ -> gets position >>= (throwError . mkParseError "'+'" "not match pattern: " "" d989_433 ["char"])
+                                                        let '+' = t487_434
                                                         return ()
                                                         return (FromL List1 rf),
                                                      do rf <- StateT selectChars
-                                                        d975_429 <- get
-                                                        t480_430 <- StateT char
-                                                        case t480_430 of
+                                                        d991_435 <- get
+                                                        t489_436 <- StateT char
+                                                        case t489_436 of
                                                             '?' -> return ()
-                                                            _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d975_429 ["char"])
-                                                        let '?' = t480_430
+                                                            _ -> gets position >>= (throwError . mkParseError "'?'" "not match pattern: " "" d991_435 ["char"])
+                                                        let '?' = t489_436
                                                         return ()
                                                         return (FromL Optional rf),
                                                      do rf <- StateT selectChars
                                                         return rf]
-                selectChars124_129 = foldl1 mplus [do d977_431 <- get
-                                                      t482_432 <- StateT char
-                                                      case t482_432 of
+                selectChars126_131 = foldl1 mplus [do d993_437 <- get
+                                                      t491_438 <- StateT char
+                                                      case t491_438 of
                                                           '[' -> return ()
-                                                          _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d977_431 ["char"])
-                                                      let '[' = t482_432
+                                                          _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d993_437 ["char"])
+                                                      let '[' = t491_438
                                                       return ()
-                                                      cs <- list1156_433 (foldl1 mplus [do d979_434 <- get
-                                                                                           t484_435 <- StateT char
-                                                                                           let c = t484_435
-                                                                                           unless (isLower c) (gets position >>= (throwError . mkParseError "isLower c" "not match: " "" d979_434 ["char"]))
+                                                      cs <- list1158_439 (foldl1 mplus [do d995_440 <- get
+                                                                                           t493_441 <- StateT char
+                                                                                           let c = t493_441
+                                                                                           unless (isLower c) (gets position >>= (throwError . mkParseError "isLower c" "not match: " "" d995_440 ["char"]))
                                                                                            return c])
-                                                      d980_436 <- get
-                                                      t485_437 <- StateT char
-                                                      case t485_437 of
+                                                      d996_442 <- get
+                                                      t494_443 <- StateT char
+                                                      case t494_443 of
                                                           ']' -> return ()
-                                                          _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d980_436 ["char"])
-                                                      let ']' = t485_437
+                                                          _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d996_442 ["char"])
+                                                      let ']' = t494_443
                                                       return ()
                                                       return (fromTokenChars cs),
-                                                   do d981_438 <- get
-                                                      t486_439 <- StateT char
-                                                      case t486_439 of
+                                                   do d997_444 <- get
+                                                      t495_445 <- StateT char
+                                                      case t495_445 of
                                                           '[' -> return ()
-                                                          _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d981_438 ["char"])
-                                                      let '[' = t486_439
+                                                          _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d997_444 ["char"])
+                                                      let '[' = t495_445
                                                       return ()
-                                                      d982_440 <- get
-                                                      t487_441 <- StateT char
-                                                      let cb = t487_441
-                                                      unless (cb `notElem` "\\-") (gets position >>= (throwError . mkParseError "cb `notElem` \"\\\\-\"" "not match: " "" d982_440 ["char"]))
-                                                      d983_442 <- get
-                                                      t488_443 <- StateT char
-                                                      case t488_443 of
+                                                      d998_446 <- get
+                                                      t496_447 <- StateT char
+                                                      let cb = t496_447
+                                                      unless (cb `notElem` "\\-") (gets position >>= (throwError . mkParseError "cb `notElem` \"\\\\-\"" "not match: " "" d998_446 ["char"]))
+                                                      d999_448 <- get
+                                                      t497_449 <- StateT char
+                                                      case t497_449 of
                                                           '-' -> return ()
-                                                          _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d983_442 ["char"])
-                                                      let '-' = t488_443
+                                                          _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d999_448 ["char"])
+                                                      let '-' = t497_449
                                                       return ()
-                                                      d984_444 <- get
-                                                      t489_445 <- StateT char
-                                                      let ce = t489_445
-                                                      unless (ce `notElem` "\\-") (gets position >>= (throwError . mkParseError "ce `notElem` \"\\\\-\"" "not match: " "" d984_444 ["char"]))
-                                                      d985_446 <- get
-                                                      t490_447 <- StateT char
-                                                      case t490_447 of
+                                                      d1000_450 <- get
+                                                      t498_451 <- StateT char
+                                                      let ce = t498_451
+                                                      unless (ce `notElem` "\\-") (gets position >>= (throwError . mkParseError "ce `notElem` \"\\\\-\"" "not match: " "" d1000_450 ["char"]))
+                                                      d1001_452 <- get
+                                                      t499_453 <- StateT char
+                                                      case t499_453 of
                                                           ']' -> return ()
-                                                          _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d985_446 ["char"])
-                                                      let ']' = t490_447
+                                                          _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1001_452 ["char"])
+                                                      let ']' = t499_453
                                                       return ()
                                                       return (fromTokenChars [cb .. ce]),
-                                                   do d986_448 <- get
-                                                      t491_449 <- StateT char
-                                                      case t491_449 of
+                                                   do d1002_454 <- get
+                                                      t500_455 <- StateT char
+                                                      case t500_455 of
                                                           '\'' -> return ()
-                                                          _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d986_448 ["char"])
-                                                      let '\'' = t491_449
+                                                          _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d1002_454 ["char"])
+                                                      let '\'' = t500_455
                                                       return ()
-                                                      d987_450 <- get
-                                                      t492_451 <- StateT char
-                                                      let c = t492_451
-                                                      unless (c `notElem` "\\'") (gets position >>= (throwError . mkParseError "c `notElem` \"\\\\'\"" "not match: " "" d987_450 ["char"]))
-                                                      d988_452 <- get
-                                                      t493_453 <- StateT char
-                                                      case t493_453 of
+                                                      d1003_456 <- get
+                                                      t501_457 <- StateT char
+                                                      let c = t501_457
+                                                      unless (c `notElem` "\\'") (gets position >>= (throwError . mkParseError "c `notElem` \"\\\\'\"" "not match: " "" d1003_456 ["char"]))
+                                                      d1004_458 <- get
+                                                      t502_459 <- StateT char
+                                                      case t502_459 of
                                                           '\'' -> return ()
-                                                          _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d988_452 ["char"])
-                                                      let '\'' = t493_453
+                                                          _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d1004_458 ["char"])
+                                                      let '\'' = t502_459
                                                       return ()
                                                       return (fromTokenChars [c])]
-                test125_130 = foldl1 mplus [do d989_454 <- get
-                                               t494_455 <- StateT char
-                                               case t494_455 of
+                test127_132 = foldl1 mplus [do d1005_460 <- get
+                                               t503_461 <- StateT char
+                                               case t503_461 of
                                                    '[' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d989_454 ["char"])
-                                               let '[' = t494_455
+                                                   _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d1005_460 ["char"])
+                                               let '[' = t503_461
                                                return ()
                                                h <- StateT hsExpLam
                                                _ <- StateT spaces
                                                return ()
-                                               com <- optional154_342 (StateT comForErr)
-                                               d993_456 <- get
-                                               t498_457 <- StateT char
-                                               case t498_457 of
+                                               com <- optional156_307 (StateT comForErr)
+                                               d1009_462 <- get
+                                               t507_463 <- StateT char
+                                               case t507_463 of
                                                    ']' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d993_456 ["char"])
-                                               let ']' = t498_457
+                                                   _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1009_462 ["char"])
+                                               let ']' = t507_463
                                                return ()
                                                return (h, maybe "" id com)]
-                hsExpLam126_131 = foldl1 mplus [do d994_458 <- get
-                                                   t499_459 <- StateT char
-                                                   case t499_459 of
+                hsExpLam128_133 = foldl1 mplus [do d1010_464 <- get
+                                                   t508_465 <- StateT char
+                                                   case t508_465 of
                                                        '\\' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "'\\\\'" "not match pattern: " "" d994_458 ["char"])
-                                                   let '\\' = t499_459
+                                                       _ -> gets position >>= (throwError . mkParseError "'\\\\'" "not match pattern: " "" d1010_464 ["char"])
+                                                   let '\\' = t508_465
                                                    return ()
                                                    _ <- StateT spaces
                                                    return ()
                                                    ps <- StateT pats
                                                    _ <- StateT spaces
                                                    return ()
-                                                   d998_460 <- get
-                                                   t503_461 <- StateT char
-                                                   case t503_461 of
+                                                   d1014_466 <- get
+                                                   t512_467 <- StateT char
+                                                   case t512_467 of
                                                        '-' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d998_460 ["char"])
-                                                   let '-' = t503_461
+                                                       _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1014_466 ["char"])
+                                                   let '-' = t512_467
                                                    return ()
-                                                   d999_462 <- get
-                                                   t504_463 <- StateT char
-                                                   case t504_463 of
+                                                   d1015_468 <- get
+                                                   t513_469 <- StateT char
+                                                   case t513_469 of
                                                        '>' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d999_462 ["char"])
-                                                   let '>' = t504_463
+                                                       _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d1015_468 ["char"])
+                                                   let '>' = t513_469
                                                    return ()
                                                    _ <- StateT spaces
                                                    return ()
@@ -1779,20 +1805,20 @@ parse = parse1160_0 initialPos
                                                    return (LamE ps e),
                                                 do e <- StateT hsExpTyp
                                                    return e]
-                hsExpTyp127_132 = foldl1 mplus [do eo <- StateT hsExpOp
-                                                   d1004_464 <- get
-                                                   t509_465 <- StateT char
-                                                   case t509_465 of
+                hsExpTyp129_134 = foldl1 mplus [do eo <- StateT hsExpOp
+                                                   d1020_470 <- get
+                                                   t518_471 <- StateT char
+                                                   case t518_471 of
                                                        ':' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d1004_464 ["char"])
-                                                   let ':' = t509_465
+                                                       _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d1020_470 ["char"])
+                                                   let ':' = t518_471
                                                    return ()
-                                                   d1005_466 <- get
-                                                   t510_467 <- StateT char
-                                                   case t510_467 of
+                                                   d1021_472 <- get
+                                                   t519_473 <- StateT char
+                                                   case t519_473 of
                                                        ':' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d1005_466 ["char"])
-                                                   let ':' = t510_467
+                                                       _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d1021_472 ["char"])
+                                                   let ':' = t519_473
                                                    return ()
                                                    _ <- StateT spaces
                                                    return ()
@@ -1800,7 +1826,7 @@ parse = parse1160_0 initialPos
                                                    return (SigE eo t),
                                                 do eo <- StateT hsExpOp
                                                    return eo]
-                hsExpOp128_133 = foldl1 mplus [do l <- StateT hsExp
+                hsExpOp130_135 = foldl1 mplus [do l <- StateT hsExp
                                                   _ <- StateT spaces
                                                   return ()
                                                   o <- StateT hsOp
@@ -1810,131 +1836,131 @@ parse = parse1160_0 initialPos
                                                   return (UInfixE (l id) o r),
                                                do e <- StateT hsExp
                                                   return (e id)]
-                hsOp129_134 = foldl1 mplus [do d1015_468 <- get
-                                               t520_469 <- StateT char
-                                               let c = t520_469
-                                               unless (c `elem` "+*/-!|&.^=<>$") (gets position >>= (throwError . mkParseError "c `elem` \"+*/-!|&.^=<>$\"" "not match: " "" d1015_468 ["char"]))
+                hsOp131_136 = foldl1 mplus [do d1031_474 <- get
+                                               t529_475 <- StateT char
+                                               let c = t529_475
+                                               unless (c `elem` "+*/-!|&.^=<>$") (gets position >>= (throwError . mkParseError "c `elem` \"+*/-!|&.^=<>$\"" "not match: " "" d1031_474 ["char"]))
                                                o <- StateT opTail
                                                return (VarE $ mkName $ c : o),
-                                            do d1017_470 <- get
-                                               t522_471 <- StateT char
-                                               case t522_471 of
+                                            do d1033_476 <- get
+                                               t531_477 <- StateT char
+                                               case t531_477 of
                                                    ':' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d1017_470 ["char"])
-                                               let ':' = t522_471
+                                                   _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d1033_476 ["char"])
+                                               let ':' = t531_477
                                                return ()
-                                               d1019_472 <- get
-                                               do err1152_473 <- ((do d1018_474 <- get
-                                                                      t523_475 <- StateT char
-                                                                      case t523_475 of
+                                               d1035_478 <- get
+                                               do err1168_479 <- ((do d1034_480 <- get
+                                                                      t532_481 <- StateT char
+                                                                      case t532_481 of
                                                                           ':' -> return ()
-                                                                          _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d1018_474 ["char"])
-                                                                      let ':' = t523_475
+                                                                          _ -> gets position >>= (throwError . mkParseError "':'" "not match pattern: " "" d1034_480 ["char"])
+                                                                      let ':' = t532_481
                                                                       return ()) >> return False) `catchError` const (return True)
-                                                  unless err1152_473 (gets position >>= (throwError . mkParseError "!':':" "not match: " "" d1019_472 ["char"]))
-                                               put d1019_472
+                                                  unless err1168_479 (gets position >>= (throwError . mkParseError "!':':" "not match: " "" d1035_478 ["char"]))
+                                               put d1035_478
                                                o <- StateT opTail
                                                return (ConE $ mkName $ ':' : o),
-                                            do d1021_476 <- get
-                                               t525_477 <- StateT char
-                                               case t525_477 of
+                                            do d1037_482 <- get
+                                               t534_483 <- StateT char
+                                               case t534_483 of
                                                    '`' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d1021_476 ["char"])
-                                               let '`' = t525_477
+                                                   _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d1037_482 ["char"])
+                                               let '`' = t534_483
                                                return ()
                                                v <- StateT variable
-                                               d1023_478 <- get
-                                               t527_479 <- StateT char
-                                               case t527_479 of
+                                               d1039_484 <- get
+                                               t536_485 <- StateT char
+                                               case t536_485 of
                                                    '`' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d1023_478 ["char"])
-                                               let '`' = t527_479
+                                                   _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d1039_484 ["char"])
+                                               let '`' = t536_485
                                                return ()
                                                return (VarE $ mkName v),
-                                            do d1024_480 <- get
-                                               t528_481 <- StateT char
-                                               case t528_481 of
+                                            do d1040_486 <- get
+                                               t537_487 <- StateT char
+                                               case t537_487 of
                                                    '`' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d1024_480 ["char"])
-                                               let '`' = t528_481
+                                                   _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d1040_486 ["char"])
+                                               let '`' = t537_487
                                                return ()
                                                t <- StateT typ
-                                               d1026_482 <- get
-                                               t530_483 <- StateT char
-                                               case t530_483 of
+                                               d1042_488 <- get
+                                               t539_489 <- StateT char
+                                               case t539_489 of
                                                    '`' -> return ()
-                                                   _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d1026_482 ["char"])
-                                               let '`' = t530_483
+                                                   _ -> gets position >>= (throwError . mkParseError "'`'" "not match pattern: " "" d1042_488 ["char"])
+                                               let '`' = t539_489
                                                return ()
                                                return (ConE $ mkName t)]
-                opTail130_135 = foldl1 mplus [do d1027_484 <- get
-                                                 t531_485 <- StateT char
-                                                 let c = t531_485
-                                                 unless (c `elem` ":+*/-!|&.^=<>$") (gets position >>= (throwError . mkParseError "c `elem` \":+*/-!|&.^=<>$\"" "not match: " "" d1027_484 ["char"]))
+                opTail132_137 = foldl1 mplus [do d1043_490 <- get
+                                                 t540_491 <- StateT char
+                                                 let c = t540_491
+                                                 unless (c `elem` ":+*/-!|&.^=<>$") (gets position >>= (throwError . mkParseError "c `elem` \":+*/-!|&.^=<>$\"" "not match: " "" d1043_490 ["char"]))
                                                  s <- StateT opTail
                                                  return (c : s),
                                               return ""]
-                hsExp131_136 = foldl1 mplus [do e <- StateT hsExp1
+                hsExp133_138 = foldl1 mplus [do e <- StateT hsExp1
                                                 _ <- StateT spaces
                                                 return ()
                                                 h <- StateT hsExp
                                                 return (\f -> h (f e `AppE`)),
                                              do e <- StateT hsExp1
                                                 return (\f -> f e)]
-                hsExp1132_137 = foldl1 mplus [do d1033_486 <- get
-                                                 t537_487 <- StateT char
-                                                 case t537_487 of
+                hsExp1134_139 = foldl1 mplus [do d1049_492 <- get
+                                                 t546_493 <- StateT char
+                                                 case t546_493 of
                                                      '(' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d1033_486 ["char"])
-                                                 let '(' = t537_487
+                                                     _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d1049_492 ["char"])
+                                                 let '(' = t546_493
                                                  return ()
-                                                 l <- optional154_342 (foldl1 mplus [do e <- StateT hsExpTyp
+                                                 l <- optional156_307 (foldl1 mplus [do e <- StateT hsExpTyp
                                                                                         return e])
                                                  _ <- StateT spaces
                                                  return ()
                                                  o <- StateT hsOp
                                                  _ <- StateT spaces
                                                  return ()
-                                                 r <- optional154_342 (foldl1 mplus [do e <- StateT hsExpTyp
+                                                 r <- optional156_307 (foldl1 mplus [do e <- StateT hsExpTyp
                                                                                         return e])
-                                                 d1041_488 <- get
-                                                 t545_489 <- StateT char
-                                                 case t545_489 of
+                                                 d1057_494 <- get
+                                                 t554_495 <- StateT char
+                                                 case t554_495 of
                                                      ')' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d1041_488 ["char"])
-                                                 let ')' = t545_489
+                                                     _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d1057_494 ["char"])
+                                                 let ')' = t554_495
                                                  return ()
                                                  return (InfixE l o r),
-                                              do d1042_490 <- get
-                                                 t546_491 <- StateT char
-                                                 case t546_491 of
+                                              do d1058_496 <- get
+                                                 t555_497 <- StateT char
+                                                 case t555_497 of
                                                      '(' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d1042_490 ["char"])
-                                                 let '(' = t546_491
+                                                     _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d1058_496 ["char"])
+                                                 let '(' = t555_497
                                                  return ()
                                                  et <- StateT hsExpTpl
-                                                 d1044_492 <- get
-                                                 t548_493 <- StateT char
-                                                 case t548_493 of
+                                                 d1060_498 <- get
+                                                 t557_499 <- StateT char
+                                                 case t557_499 of
                                                      ')' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d1044_492 ["char"])
-                                                 let ')' = t548_493
+                                                     _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d1060_498 ["char"])
+                                                 let ')' = t557_499
                                                  return ()
                                                  return (TupE et),
-                                              do d1045_494 <- get
-                                                 t549_495 <- StateT char
-                                                 case t549_495 of
+                                              do d1061_500 <- get
+                                                 t558_501 <- StateT char
+                                                 case t558_501 of
                                                      '[' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d1045_494 ["char"])
-                                                 let '[' = t549_495
+                                                     _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d1061_500 ["char"])
+                                                 let '[' = t558_501
                                                  return ()
                                                  et <- StateT hsExpTpl
-                                                 d1047_496 <- get
-                                                 t551_497 <- StateT char
-                                                 case t551_497 of
+                                                 d1063_502 <- get
+                                                 t560_503 <- StateT char
+                                                 case t560_503 of
                                                      ']' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1047_496 ["char"])
-                                                 let ']' = t551_497
+                                                     _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1063_502 ["char"])
+                                                 let ']' = t560_503
                                                  return ()
                                                  return (ListE et),
                                               do v <- StateT variable
@@ -1945,58 +1971,58 @@ parse = parse1160_0 initialPos
                                                  _ <- StateT spaces
                                                  return ()
                                                  return (LitE $ integerL i),
-                                              do d1052_498 <- get
-                                                 t556_499 <- StateT char
-                                                 case t556_499 of
+                                              do d1068_504 <- get
+                                                 t565_505 <- StateT char
+                                                 case t565_505 of
                                                      '\'' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d1052_498 ["char"])
-                                                 let '\'' = t556_499
+                                                     _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d1068_504 ["char"])
+                                                 let '\'' = t565_505
                                                  return ()
                                                  c <- StateT charLit
-                                                 d1054_500 <- get
-                                                 t558_501 <- StateT char
-                                                 case t558_501 of
+                                                 d1070_506 <- get
+                                                 t567_507 <- StateT char
+                                                 case t567_507 of
                                                      '\'' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d1054_500 ["char"])
-                                                 let '\'' = t558_501
+                                                     _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d1070_506 ["char"])
+                                                 let '\'' = t567_507
                                                  return ()
                                                  return (LitE $ charL c),
-                                              do d1055_502 <- get
-                                                 t559_503 <- StateT char
-                                                 case t559_503 of
+                                              do d1071_508 <- get
+                                                 t568_509 <- StateT char
+                                                 case t568_509 of
                                                      '"' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d1055_502 ["char"])
-                                                 let '"' = t559_503
+                                                     _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d1071_508 ["char"])
+                                                 let '"' = t568_509
                                                  return ()
                                                  s <- StateT stringLit
-                                                 d1057_504 <- get
-                                                 t561_505 <- StateT char
-                                                 case t561_505 of
+                                                 d1073_510 <- get
+                                                 t570_511 <- StateT char
+                                                 case t570_511 of
                                                      '"' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d1057_504 ["char"])
-                                                 let '"' = t561_505
+                                                     _ -> gets position >>= (throwError . mkParseError "'\"'" "not match pattern: " "" d1073_510 ["char"])
+                                                 let '"' = t570_511
                                                  return ()
                                                  return (LitE $ stringL s),
-                                              do d1058_506 <- get
-                                                 t562_507 <- StateT char
-                                                 case t562_507 of
+                                              do d1074_512 <- get
+                                                 t571_513 <- StateT char
+                                                 case t571_513 of
                                                      '-' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1058_506 ["char"])
-                                                 let '-' = t562_507
+                                                     _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1074_512 ["char"])
+                                                 let '-' = t571_513
                                                  return ()
                                                  _ <- StateT spaces
                                                  return ()
                                                  e <- StateT hsExp1
                                                  return (AppE (VarE $ mkName "negate") e)]
-                hsExpTpl133_138 = foldl1 mplus [do e <- StateT hsExpLam
+                hsExpTpl135_140 = foldl1 mplus [do e <- StateT hsExpLam
                                                    _ <- StateT spaces
                                                    return ()
-                                                   d1063_508 <- get
-                                                   t567_509 <- StateT char
-                                                   case t567_509 of
+                                                   d1079_514 <- get
+                                                   t576_515 <- StateT char
+                                                   case t576_515 of
                                                        ',' -> return ()
-                                                       _ -> gets position >>= (throwError . mkParseError "','" "not match pattern: " "" d1063_508 ["char"])
-                                                   let ',' = t567_509
+                                                       _ -> gets position >>= (throwError . mkParseError "','" "not match pattern: " "" d1079_514 ["char"])
+                                                   let ',' = t576_515
                                                    return ()
                                                    _ <- StateT spaces
                                                    return ()
@@ -2005,20 +2031,20 @@ parse = parse1160_0 initialPos
                                                 do e <- StateT hsExpLam
                                                    return [e],
                                                 return []]
-                hsTypeArr134_139 = foldl1 mplus [do l <- StateT hsType
-                                                    d1068_510 <- get
-                                                    t572_511 <- StateT char
-                                                    case t572_511 of
+                hsTypeArr136_141 = foldl1 mplus [do l <- StateT hsType
+                                                    d1084_516 <- get
+                                                    t581_517 <- StateT char
+                                                    case t581_517 of
                                                         '-' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1068_510 ["char"])
-                                                    let '-' = t572_511
+                                                        _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1084_516 ["char"])
+                                                    let '-' = t581_517
                                                     return ()
-                                                    d1069_512 <- get
-                                                    t573_513 <- StateT char
-                                                    case t573_513 of
+                                                    d1085_518 <- get
+                                                    t582_519 <- StateT char
+                                                    case t582_519 of
                                                         '>' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d1069_512 ["char"])
-                                                    let '>' = t573_513
+                                                        _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d1085_518 ["char"])
+                                                    let '>' = t582_519
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
@@ -2026,106 +2052,106 @@ parse = parse1160_0 initialPos
                                                     return (AppT (AppT ArrowT $ l id) r),
                                                  do t <- StateT hsType
                                                     return (t id)]
-                hsType135_140 = foldl1 mplus [do t <- StateT hsType1
+                hsType137_142 = foldl1 mplus [do t <- StateT hsType1
                                                  ts <- StateT hsType
                                                  return (\f -> ts (f t `AppT`)),
                                               do t <- StateT hsType1
                                                  return ($ t)]
-                hsType1136_141 = foldl1 mplus [do d1076_514 <- get
-                                                  t580_515 <- StateT char
-                                                  case t580_515 of
+                hsType1138_143 = foldl1 mplus [do d1092_520 <- get
+                                                  t589_521 <- StateT char
+                                                  case t589_521 of
                                                       '[' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d1076_514 ["char"])
-                                                  let '[' = t580_515
+                                                      _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d1092_520 ["char"])
+                                                  let '[' = t589_521
                                                   return ()
-                                                  d1077_516 <- get
-                                                  t581_517 <- StateT char
-                                                  case t581_517 of
+                                                  d1093_522 <- get
+                                                  t590_523 <- StateT char
+                                                  case t590_523 of
                                                       ']' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1077_516 ["char"])
-                                                  let ']' = t581_517
+                                                      _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1093_522 ["char"])
+                                                  let ']' = t590_523
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
                                                   return ListT,
-                                               do d1079_518 <- get
-                                                  t583_519 <- StateT char
-                                                  case t583_519 of
+                                               do d1095_524 <- get
+                                                  t592_525 <- StateT char
+                                                  case t592_525 of
                                                       '[' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d1079_518 ["char"])
-                                                  let '[' = t583_519
+                                                      _ -> gets position >>= (throwError . mkParseError "'['" "not match pattern: " "" d1095_524 ["char"])
+                                                  let '[' = t592_525
                                                   return ()
                                                   t <- StateT hsTypeArr
-                                                  d1081_520 <- get
-                                                  t585_521 <- StateT char
-                                                  case t585_521 of
+                                                  d1097_526 <- get
+                                                  t594_527 <- StateT char
+                                                  case t594_527 of
                                                       ']' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1081_520 ["char"])
-                                                  let ']' = t585_521
+                                                      _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1097_526 ["char"])
+                                                  let ']' = t594_527
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
                                                   return (ListT `AppT` t),
-                                               do d1083_522 <- get
-                                                  t587_523 <- StateT char
-                                                  case t587_523 of
+                                               do d1099_528 <- get
+                                                  t596_529 <- StateT char
+                                                  case t596_529 of
                                                       '(' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d1083_522 ["char"])
-                                                  let '(' = t587_523
+                                                      _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d1099_528 ["char"])
+                                                  let '(' = t596_529
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
                                                   tt <- StateT hsTypeTpl
-                                                  d1086_524 <- get
-                                                  t590_525 <- StateT char
-                                                  case t590_525 of
+                                                  d1102_530 <- get
+                                                  t599_531 <- StateT char
+                                                  case t599_531 of
                                                       ')' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d1086_524 ["char"])
-                                                  let ')' = t590_525
+                                                      _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d1102_530 ["char"])
+                                                  let ')' = t599_531
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
                                                   return (foldl AppT (TupleT $ length tt) tt),
                                                do t <- StateT typToken
                                                   return (ConT $ mkName t),
-                                               do d1089_526 <- get
-                                                  t593_527 <- StateT char
-                                                  case t593_527 of
+                                               do d1105_532 <- get
+                                                  t602_533 <- StateT char
+                                                  case t602_533 of
                                                       '(' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d1089_526 ["char"])
-                                                  let '(' = t593_527
+                                                      _ -> gets position >>= (throwError . mkParseError "'('" "not match pattern: " "" d1105_532 ["char"])
+                                                  let '(' = t602_533
                                                   return ()
-                                                  d1090_528 <- get
-                                                  t594_529 <- StateT char
-                                                  case t594_529 of
+                                                  d1106_534 <- get
+                                                  t603_535 <- StateT char
+                                                  case t603_535 of
                                                       '-' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1090_528 ["char"])
-                                                  let '-' = t594_529
+                                                      _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1106_534 ["char"])
+                                                  let '-' = t603_535
                                                   return ()
-                                                  d1091_530 <- get
-                                                  t595_531 <- StateT char
-                                                  case t595_531 of
+                                                  d1107_536 <- get
+                                                  t604_537 <- StateT char
+                                                  case t604_537 of
                                                       '>' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d1091_530 ["char"])
-                                                  let '>' = t595_531
+                                                      _ -> gets position >>= (throwError . mkParseError "'>'" "not match pattern: " "" d1107_536 ["char"])
+                                                  let '>' = t604_537
                                                   return ()
-                                                  d1092_532 <- get
-                                                  t596_533 <- StateT char
-                                                  case t596_533 of
+                                                  d1108_538 <- get
+                                                  t605_539 <- StateT char
+                                                  case t605_539 of
                                                       ')' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d1092_532 ["char"])
-                                                  let ')' = t596_533
+                                                      _ -> gets position >>= (throwError . mkParseError "')'" "not match pattern: " "" d1108_538 ["char"])
+                                                  let ')' = t605_539
                                                   return ()
                                                   _ <- StateT spaces
                                                   return ()
                                                   return ArrowT]
-                hsTypeTpl137_142 = foldl1 mplus [do t <- StateT hsTypeArr
-                                                    d1095_534 <- get
-                                                    t599_535 <- StateT char
-                                                    case t599_535 of
+                hsTypeTpl139_144 = foldl1 mplus [do t <- StateT hsTypeArr
+                                                    d1111_540 <- get
+                                                    t608_541 <- StateT char
+                                                    case t608_541 of
                                                         ',' -> return ()
-                                                        _ -> gets position >>= (throwError . mkParseError "','" "not match pattern: " "" d1095_534 ["char"])
-                                                    let ',' = t599_535
+                                                        _ -> gets position >>= (throwError . mkParseError "','" "not match pattern: " "" d1111_540 ["char"])
+                                                    let ',' = t608_541
                                                     return ()
                                                     _ <- StateT spaces
                                                     return ()
@@ -2134,73 +2160,73 @@ parse = parse1160_0 initialPos
                                                  do t <- StateT hsTypeArr
                                                     return [t],
                                                  return []]
-                typ138_143 = foldl1 mplus [do u <- StateT upper
+                typ140_145 = foldl1 mplus [do u <- StateT upper
                                               t <- StateT tvtail
                                               return (u : t)]
-                variable139_144 = foldl1 mplus [do l <- StateT lower
+                variable141_146 = foldl1 mplus [do l <- StateT lower
                                                    t <- StateT tvtail
                                                    return (l : t)]
-                tvtail140_145 = foldl1 mplus [do a <- StateT alpha
+                tvtail142_147 = foldl1 mplus [do a <- StateT alpha
                                                  t <- StateT tvtail
                                                  return (a : t),
                                               return ""]
-                integer141_146 = foldl1 mplus [do dh <- StateT digit
-                                                  ds <- list155_335 (foldl1 mplus [do d <- StateT digit
+                integer143_148 = foldl1 mplus [do dh <- StateT digit
+                                                  ds <- list157_342 (foldl1 mplus [do d <- StateT digit
                                                                                       return d])
                                                   return (read $ dh : ds)]
-                alpha142_147 = foldl1 mplus [do u <- StateT upper
+                alpha144_149 = foldl1 mplus [do u <- StateT upper
                                                 return u,
                                              do l <- StateT lower
                                                 return l,
                                              do d <- StateT digit
                                                 return d,
-                                             do d1111_536 <- get
-                                                t615_537 <- StateT char
-                                                case t615_537 of
+                                             do d1127_542 <- get
+                                                t624_543 <- StateT char
+                                                case t624_543 of
                                                     '\'' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d1111_536 ["char"])
-                                                let '\'' = t615_537
+                                                    _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d1127_542 ["char"])
+                                                let '\'' = t624_543
                                                 return ()
                                                 return '\'']
-                upper143_148 = foldl1 mplus [do d1112_538 <- get
-                                                t616_539 <- StateT char
-                                                let u = t616_539
-                                                unless (isUpper u) (gets position >>= (throwError . mkParseError "isUpper u" "not match: " "" d1112_538 ["char"]))
+                upper145_150 = foldl1 mplus [do d1128_544 <- get
+                                                t625_545 <- StateT char
+                                                let u = t625_545
+                                                unless (isUpper u) (gets position >>= (throwError . mkParseError "isUpper u" "not match: " "" d1128_544 ["char"]))
                                                 return u]
-                lower144_149 = foldl1 mplus [do d1113_540 <- get
-                                                t617_541 <- StateT char
-                                                let l = t617_541
-                                                unless (isLower l || l == '_') (gets position >>= (throwError . mkParseError "isLower l || l == '_'" "not match: " "" d1113_540 ["char"]))
+                lower146_151 = foldl1 mplus [do d1129_546 <- get
+                                                t626_547 <- StateT char
+                                                let l = t626_547
+                                                unless (isLower l || l == '_') (gets position >>= (throwError . mkParseError "isLower l || l == '_'" "not match: " "" d1129_546 ["char"]))
                                                 return l]
-                digit145_150 = foldl1 mplus [do d1114_542 <- get
-                                                t618_543 <- StateT char
-                                                let d = t618_543
-                                                unless (isDigit d) (gets position >>= (throwError . mkParseError "isDigit d" "not match: " "" d1114_542 ["char"]))
+                digit147_152 = foldl1 mplus [do d1130_548 <- get
+                                                t627_549 <- StateT char
+                                                let d = t627_549
+                                                unless (isDigit d) (gets position >>= (throwError . mkParseError "isDigit d" "not match: " "" d1130_548 ["char"]))
                                                 return d]
-                spaces146_151 = foldl1 mplus [do _ <- StateT space
+                spaces148_153 = foldl1 mplus [do _ <- StateT space
                                                  return ()
                                                  _ <- StateT spaces
                                                  return ()
                                                  return (),
                                               return ()]
-                space147_152 = foldl1 mplus [do d1117_544 <- get
-                                                t621_545 <- StateT char
-                                                let s = t621_545
-                                                unless (isSpace s) (gets position >>= (throwError . mkParseError "isSpace s" "not match: " "" d1117_544 ["char"]))
+                space149_154 = foldl1 mplus [do d1133_550 <- get
+                                                t630_551 <- StateT char
+                                                let s = t630_551
+                                                unless (isSpace s) (gets position >>= (throwError . mkParseError "isSpace s" "not match: " "" d1133_550 ["char"]))
                                                 return (),
-                                             do d1118_546 <- get
-                                                t622_547 <- StateT char
-                                                case t622_547 of
+                                             do d1134_552 <- get
+                                                t631_553 <- StateT char
+                                                case t631_553 of
                                                     '-' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1118_546 ["char"])
-                                                let '-' = t622_547
+                                                    _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1134_552 ["char"])
+                                                let '-' = t631_553
                                                 return ()
-                                                d1119_548 <- get
-                                                t623_549 <- StateT char
-                                                case t623_549 of
+                                                d1135_554 <- get
+                                                t632_555 <- StateT char
+                                                case t632_555 of
                                                     '-' -> return ()
-                                                    _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1119_548 ["char"])
-                                                let '-' = t623_549
+                                                    _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1135_554 ["char"])
+                                                let '-' = t632_555
                                                 return ()
                                                 _ <- StateT notNLString
                                                 return ()
@@ -2210,53 +2236,53 @@ parse = parse1160_0 initialPos
                                              do _ <- StateT comment
                                                 return ()
                                                 return ()]
-                notNLString148_153 = foldl1 mplus [do d1124_550 <- get
-                                                      do err1153_551 <- ((do _ <- StateT newLine
+                notNLString150_155 = foldl1 mplus [do d1140_556 <- get
+                                                      do err1169_557 <- ((do _ <- StateT newLine
                                                                              return ()) >> return False) `catchError` const (return True)
-                                                         unless err1153_551 (gets position >>= (throwError . mkParseError "!_:newLine" "not match: " "" d1124_550 ["newLine"]))
-                                                      put d1124_550
+                                                         unless err1169_557 (gets position >>= (throwError . mkParseError "!_:newLine" "not match: " "" d1140_556 ["newLine"]))
+                                                      put d1140_556
                                                       c <- StateT char
                                                       s <- StateT notNLString
                                                       return (c : s),
                                                    return ""]
-                newLine149_154 = foldl1 mplus [do d1127_552 <- get
-                                                  t630_553 <- StateT char
-                                                  case t630_553 of
+                newLine151_156 = foldl1 mplus [do d1143_558 <- get
+                                                  t639_559 <- StateT char
+                                                  case t639_559 of
                                                       '\n' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d1127_552 ["char"])
-                                                  let '\n' = t630_553
+                                                      _ -> gets position >>= (throwError . mkParseError "'\\n'" "not match pattern: " "" d1143_558 ["char"])
+                                                  let '\n' = t639_559
                                                   return ()
                                                   return ()]
-                comment150_155 = foldl1 mplus [do d1128_554 <- get
-                                                  t631_555 <- StateT char
-                                                  case t631_555 of
+                comment152_157 = foldl1 mplus [do d1144_560 <- get
+                                                  t640_561 <- StateT char
+                                                  case t640_561 of
                                                       '{' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d1128_554 ["char"])
-                                                  let '{' = t631_555
+                                                      _ -> gets position >>= (throwError . mkParseError "'{'" "not match pattern: " "" d1144_560 ["char"])
+                                                  let '{' = t640_561
                                                   return ()
-                                                  d1129_556 <- get
-                                                  t632_557 <- StateT char
-                                                  case t632_557 of
+                                                  d1145_562 <- get
+                                                  t641_563 <- StateT char
+                                                  case t641_563 of
                                                       '-' -> return ()
-                                                      _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1129_556 ["char"])
-                                                  let '-' = t632_557
+                                                      _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1145_562 ["char"])
+                                                  let '-' = t641_563
                                                   return ()
-                                                  d1131_558 <- get
-                                                  do err1154_559 <- ((do d1130_560 <- get
-                                                                         t633_561 <- StateT char
-                                                                         case t633_561 of
+                                                  d1147_564 <- get
+                                                  do err1170_565 <- ((do d1146_566 <- get
+                                                                         t642_567 <- StateT char
+                                                                         case t642_567 of
                                                                              '#' -> return ()
-                                                                             _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d1130_560 ["char"])
-                                                                         let '#' = t633_561
+                                                                             _ -> gets position >>= (throwError . mkParseError "'#'" "not match pattern: " "" d1146_566 ["char"])
+                                                                         let '#' = t642_567
                                                                          return ()) >> return False) `catchError` const (return True)
-                                                     unless err1154_559 (gets position >>= (throwError . mkParseError "!'#':" "not match: " "" d1131_558 ["char"]))
-                                                  put d1131_558
+                                                     unless err1170_565 (gets position >>= (throwError . mkParseError "!'#':" "not match: " "" d1147_564 ["char"]))
+                                                  put d1147_564
                                                   _ <- StateT comments
                                                   return ()
                                                   _ <- StateT comEnd
                                                   return ()
                                                   return ()]
-                comments151_156 = foldl1 mplus [do _ <- StateT notComStr
+                comments153_158 = foldl1 mplus [do _ <- StateT notComStr
                                                    return ()
                                                    _ <- StateT comment
                                                    return ()
@@ -2266,44 +2292,44 @@ parse = parse1160_0 initialPos
                                                 do _ <- StateT notComStr
                                                    return ()
                                                    return ()]
-                notComStr152_157 = foldl1 mplus [do d1139_562 <- get
-                                                    do err1155_563 <- ((do _ <- StateT comment
+                notComStr154_159 = foldl1 mplus [do d1155_568 <- get
+                                                    do err1171_569 <- ((do _ <- StateT comment
                                                                            return ()) >> return False) `catchError` const (return True)
-                                                       unless err1155_563 (gets position >>= (throwError . mkParseError "!_:comment" "not match: " "" d1139_562 ["comment"]))
-                                                    put d1139_562
-                                                    d1141_564 <- get
-                                                    do err1156_565 <- ((do _ <- StateT comEnd
+                                                       unless err1171_569 (gets position >>= (throwError . mkParseError "!_:comment" "not match: " "" d1155_568 ["comment"]))
+                                                    put d1155_568
+                                                    d1157_570 <- get
+                                                    do err1172_571 <- ((do _ <- StateT comEnd
                                                                            return ()) >> return False) `catchError` const (return True)
-                                                       unless err1156_565 (gets position >>= (throwError . mkParseError "!_:comEnd" "not match: " "" d1141_564 ["comEnd"]))
-                                                    put d1141_564
+                                                       unless err1172_571 (gets position >>= (throwError . mkParseError "!_:comEnd" "not match: " "" d1157_570 ["comEnd"]))
+                                                    put d1157_570
                                                     _ <- StateT char
                                                     return ()
                                                     _ <- StateT notComStr
                                                     return ()
                                                     return (),
                                                  return ()]
-                comEnd153_158 = foldl1 mplus [do d1144_566 <- get
-                                                 t644_567 <- StateT char
-                                                 case t644_567 of
+                comEnd155_160 = foldl1 mplus [do d1160_572 <- get
+                                                 t653_573 <- StateT char
+                                                 case t653_573 of
                                                      '-' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1144_566 ["char"])
-                                                 let '-' = t644_567
+                                                     _ -> gets position >>= (throwError . mkParseError "'-'" "not match pattern: " "" d1160_572 ["char"])
+                                                 let '-' = t653_573
                                                  return ()
-                                                 d1145_568 <- get
-                                                 t645_569 <- StateT char
-                                                 case t645_569 of
+                                                 d1161_574 <- get
+                                                 t654_575 <- StateT char
+                                                 case t654_575 of
                                                      '}' -> return ()
-                                                     _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d1145_568 ["char"])
-                                                 let '}' = t645_569
+                                                     _ -> gets position >>= (throwError . mkParseError "'}'" "not match pattern: " "" d1161_574 ["char"])
+                                                 let '}' = t654_575
                                                  return ()
                                                  return ()]
-                list155_335 :: forall m a . (MonadPlus m, Applicative m) =>
+                list157_342 :: forall m a . (MonadPlus m, Applicative m) =>
                                             m a -> m ([a])
-                list1156_433 :: forall m a . (MonadPlus m, Applicative m) =>
+                list1158_439 :: forall m a . (MonadPlus m, Applicative m) =>
                                              m a -> m ([a])
-                list155_335 p = list1156_433 p `mplus` return []
-                list1156_433 p = ((:) <$> p) <*> list155_335 p
-                optional154_342 :: forall m a . (MonadPlus m, Applicative m) =>
+                list157_342 p = list1158_439 p `mplus` return []
+                list1158_439 p = ((:) <$> p) <*> list157_342 p
+                optional156_307 :: forall m a . (MonadPlus m, Applicative m) =>
                                                 m a -> m (Maybe a)
-                optional154_342 p = (Just <$> p) `mplus` return Nothing
+                optional156_307 p = (Just <$> p) `mplus` return Nothing
 

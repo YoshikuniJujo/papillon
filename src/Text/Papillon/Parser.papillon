@@ -126,8 +126,13 @@ pap :: ()
 	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ () }
 ;
 peg :: STPegQ
-	= _:spaces s:sourceType p:peg_		{ stPegQ (ConT $ mkName s) p }
-	/ p:peg_				{ stPegQ (ConT $ mkName "String") p }
+	= mt:monadType? _:spaces s:sourceType p:peg_
+		{ stPegQ mt (ConT $ mkName s) p }
+	/ mt:monadType? p:peg_				
+		{ stPegQ mt (ConT $ mkName "String") p }
+;
+monadType :: Type
+	= _:spaces "monad":varToken ':' _:spaces t:hsTypeArr	{ t }
 ;
 sourceType :: String
 	= "source":varToken ':' _:spaces v:typToken

@@ -59,7 +59,7 @@ dvCharsN = "char"
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
 data Lists = List | List1 | Optional deriving (Show, Eq)
 
-type STPeg = (Type, Peg)
+type STPeg = (Maybe Type, Type, Peg)
 type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
 type Selection =  Either [Expression] [PlainExpression]
@@ -81,8 +81,8 @@ type PlainExpressionQ = PlainExpression
 type CheckQ = Check
 type ReadFromQ = ReadFrom
 
-stPegQ :: Type -> PegQ -> STPegQ
-stPegQ stq pegq = (,) stq pegq
+stPegQ :: Maybe Type -> Type -> PegQ -> STPegQ
+stPegQ = (,,)
 
 fromSelectionQ :: SelectionQ -> ReadFromQ
 fromSelectionQ sel = FromSelection sel

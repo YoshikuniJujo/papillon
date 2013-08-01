@@ -2,32 +2,12 @@
 * 次にやること           *
 **************************
 
-* monadic parser とする
-	何も指定しなければ、Identity monad とし、
-	test と return のところに return を追加する。
-	monad が指定されればそのモナドを lift するような StateT や ErrorT を作り、
-	return とかは足さない
-
-	まずは monad: Reader Int からやってみるかな
-
-	やること
-	TTPeg に Type を追加する
-	parser を書き換えて monad を指定できるようにする
-	Type が Identity でなければ return ではなく lift をつけるようにする
-	Identity の部分を Type で置き換えるようにする
-	この間、test.sh を実行し続ける
-	終了後、test/peg/simpleMonadic.papillon を試す
-
-	<...> という構造を特別扱いするようにする
-	つまり、<return . isDigit> ではなく <isDigit> とできるようにする
-	このために2つの方法が考えられる。
-	parse 中に monad が Identity であるかどうかで場合分けするか、
-	あるいは、別の構文として parser が返すか。
-	後者のほうが良さそうだ。
-	後者を採用した場合、Q や IORef Int -> を消すことができそうな気がする。
-	そっちのほうがきれいにできそうだ。
+* monadic を master に merge する
+	master 以外の branch は全て削除する
 
 * version up して install
+	tag をつける
+	hackage に upload
 
 * SyntaxTree のリファクタリング
 	fromTokenChars の名前の変更
@@ -108,6 +88,8 @@
 	reify を使い、Pat -> Q (Pat, Bool) とする。
 	IO 内では reify が使えないので、th :: Bool が必要になる。
 	とすると、monad: Reader Bool とする必要がある。
+
+* Control.Monad.Identity と Control.Monad.Error が重複しないようにする
 
 **************************
 *  エラーメッセージ関係  *

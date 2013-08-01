@@ -2,20 +2,43 @@
 
 import Text.Papillon
 import "monads-tf" Control.Monad.Reader
+import "monads-tf" Control.Monad.Error
+import Data.Char
 
-test :: Reader Int Int
-test = do
-	ret <- runError $ hello $ parse "hello"
+main :: IO ()
+main = do
+	print $ runReader testHello 88
+	print $ runReader (test "321") 320
+	print $ runReader (test "300") 299
+	print $ runReader (test "300") 300
+
+testHello :: Reader Int String
+testHello = do
+	ret <- runErrorT $ hello $ parse "hello"
 	case ret of
-		Right (r, _) -> print r
-		Left _ -> putStrLn "parse error"
+		Right (r, _) -> return r
+		Left _ -> return ""
+
+test :: String -> Reader Int Int
+test src = do
+	ret <- runErrorT $ select $ parse src
+	case ret of
+		Right (r, _) -> return r
+		Left _ -> return 0
 
 [papillon|
 
 monad: Reader Int
 
-hello :: Int
+hello :: String
 	= c s:hello	{ return $ c : s }
 	/		{ return [] }
+;
+select :: Int
+	= n:number[(n >) <$> ask]	{ return n }
+;
+number :: Int
+	= ds:<isDigit>+	{ return $ read ds }
+;
 
 |]

@@ -53,33 +53,33 @@ dvPosN = mkName "position"
 papillonCore :: String -> DecsQ
 papillonCore str = case runError $ peg $ parse str of
 	Right (stpegq, _) -> do
-		let (src, parsed) = stpegq
-		decParsed True src parsed
+		let (monad, src, parsed) = stpegq
+		decParsed True monad src parsed
 	Left err -> error $ "parse error: " ++ showParseError err
 
 papillonFile :: String ->
 	Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
 papillonFile str = case runError $ pegFile $ parse str of
 	Right (pegfileq, _) -> do
-		(prgm, mn, ppp, pp, (src, parsed), atp) <- pegfileq
+		(prgm, mn, ppp, pp, (monad, src, parsed), atp) <- pegfileq
 		let	lu = listUsed parsed
 			ou = optionalUsed parsed
 		let addApplicative =
 			if lu || ou then "import Control.Applicative\n" else ""
-		return (prgm, mn, ppp, addApplicative ++ pp, decs src parsed, atp)
+		return (prgm, mn, ppp, addApplicative ++ pp, decs monad src parsed, atp)
 		where
 		decs = decParsed False
 	Left err -> error $ "parse error: " ++ showParseError err
 
-decParsed :: Bool -> Type -> Peg -> DecsQ
-decParsed th src parsed = do
-	let	d = derivs th src parsed
+decParsed :: Bool -> Maybe Type -> Type -> Peg -> DecsQ
+decParsed th monad src parsed = do
+	let	d = derivs th (fromMaybe (ConT $ identityN th) monad) src parsed
 		pt = SigD (mkName "parse") $ src `arrT` ConT (mkName "Derivs")
-	p <- funD (mkName "parse") [mkParseBody th parsed]
+	p <- funD (mkName "parse") [mkParseBody th (isJust monad) parsed]
 	return [d, pt, p]
 
-derivs :: Bool -> Type -> Peg -> Dec
-derivs th src pg = DataD [] (mkName "Derivs") [] [
+derivs :: Bool -> Type -> Type -> Peg -> Dec
+derivs th monad src pg = DataD [] (mkName "Derivs") [] [
 	RecC (mkName "Derivs") $ map derivs1 pg ++ [
 		(mkName dvCharsN, NotStrict, resultT tkn),
 		(dvPosN, NotStrict, ConT (mkName "Pos") `AppT` src)
@@ -93,7 +93,7 @@ derivs th src pg = DataD [] (mkName "Derivs") [] [
 		`AppT` (ConT (mkName "ParseError")
 			`AppT` (ConT (mkName "Pos") `AppT` src)
 			`AppT` ConT (mkName "Derivs"))
-		`AppT` (ConT $ identityN th)
+		`AppT` monad
 		`AppT` (TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
 
 type Variables = [(String, [Name])]
@@ -109,11 +109,11 @@ getVariable = ((head . fromJust) .) . lookup
 nextVariable :: String -> Variables -> Variables
 nextVariable n vs = (n, tail $ fromJust $ lookup n vs) : vs
 
-mkParseBody :: Bool -> Peg -> ClauseQ
-mkParseBody th pg = do
+mkParseBody :: Bool -> Bool -> Peg -> ClauseQ
+mkParseBody th monadic pg = do
 	glb <- runIO $ newIORef 0
 	vars <- foldM (newVariable glb) [] [
-		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t", "err",
+		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t", "err", "b",
 		"list", "list1", "optional"]
 	let	pgn = getVariable "parse" vars
 	rets <- mapM (newNewName glb . \(n, _, _) -> n) pg
@@ -130,7 +130,7 @@ mkParseBody th pg = do
 		decs ++ list ++ opt
 	where
 	mkr rule (_, _, sel) =
-		flip (ValD $ VarP rule) [] . NormalB <$> mkRule th sel
+		flip (ValD $ VarP rule) [] . NormalB <$> mkRule th monadic sel
 
 mkParseCore :: Bool -> [Name] -> [Name] -> State Variables Clause
 mkParseCore th rets rules = do
@@ -162,10 +162,10 @@ parseChar th = do
 				throwErrorTH th (mkName "undefined") [] emsg "" ""
 		 ] `AppE` VarE d
 
-mkRule :: Bool -> Selection -> State Variables Exp
-mkRule t s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$>
+mkRule :: Bool -> Bool -> Selection -> State Variables Exp
+mkRule t m s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$>
 	case s of
-		Left exs -> expression t `mapM` exs
+		Left exs -> expression t m `mapM` exs
 		Right exs -> zipWithM ((<$>) . lr (length exs)) [0 .. ] $
 			map (plainExpression t) exs
 	where
@@ -174,41 +174,45 @@ mkRule t s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$>
 	lr l n ex = infixApp (ConE $ mkName "Right") (VarE $ mkName "<$>") $
 		lr (l - if n == l - 1 then 1 else 0) (n - 1) ex
 
-expression :: Bool -> Expression -> State Variables Exp
-expression th (Left (e, r)) =
-	(doE . (++ [NoBindS $ VarE (mkName "return") `AppE` r]) . concat <$>) $
+expression :: Bool -> Bool -> Expression -> State Variables Exp
+expression th m (Left (e, r)) =
+	(doE . (++ [NoBindS $ retLift `AppE` r]) . concat <$>) $
 		forM e $ \(la, ck@(_, rf, _)) ->
 			lookahead th la (show $ pprCheck ck) (nameFromRF rf) =<<
-				check th ck
-expression th (Right e) = do
+				check th m ck
+	where
+	retLift = if m then VarE $ liftN th else VarE $ mkName "return"
+expression th _ (Right e) = do
 	c <- gets $ getVariable "c"
 	modify $ nextVariable "c"
 	let	e' = [(Here, ((VarP c, ""), FromVariable Nothing,
 			Just (e `AppE` VarE c, "")))]
 		r = VarE c
-	expression th (Left (e', r))
+	expression th False (Left (e', r))
 
-check :: Bool -> Check -> State Variables [Stmt]
-check th ((n, nc), rf, test) = do
+check :: Bool -> Bool -> Check -> State Variables [Stmt]
+check th monadic ((n, nc), rf, test) = do
 	t <- gets $ getVariable "t"
 	d <- gets $ getVariable "d"
+	b <- gets $ getVariable "b"
 	modify $ nextVariable "t"
 	modify $ nextVariable "d"
+	modify $ nextVariable "b"
 	case (n, test) of
 		(WildP, Just p) -> ((BindS (VarP d) (VarE $ getN th) :) .
-				(: afterCheck th p d (nameFromRF rf))) .
+				(: afterCheck th monadic b p d (nameFromRF rf))) .
 			BindS WildP <$> transReadFrom th rf
 		(_, Just p)
 			| notHaveOthers n -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = LetS [ValD n (NormalB $ VarE t) []]
-					c = afterCheck th p d (nameFromRF rf)
+					c = afterCheck th monadic b p d (nameFromRF rf)
 				s <- BindS (VarP t) <$> transReadFrom th rf
 				return $ [bd, s, m] ++ c
 			| otherwise -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = beforeMatch th t n d (nameFromRF rf) nc
-					c = afterCheck th p d (nameFromRF rf)
+					c = afterCheck th monadic b p d (nameFromRF rf)
 				s <- BindS (VarP t) <$> transReadFrom th rf
 				return $ [bd, s]  ++ m ++ c
 		(WildP, _) -> sequence [
@@ -285,7 +289,7 @@ transReadFrom th (FromVariable Nothing) = return $
 	ConE (stateTN th) `AppE` VarE (mkName dvCharsN)
 transReadFrom th (FromVariable (Just var)) = return $
 	ConE (stateTN th) `AppE` VarE (mkName var)
-transReadFrom th (FromSelection sel) = mkRule th sel
+transReadFrom th (FromSelection sel) = mkRule th {- stub -} False {- stub -} sel
 transReadFrom th (FromL List rf) = do
 	list <- gets $ getVariable "list"
 	(VarE list `AppE`) <$> transReadFrom th rf
@@ -314,9 +318,13 @@ beforeMatch th t nn d ns nc = [
 	vpw (TupP ps) = TupP $ vpw `map` ps
 	vpw o = o
 
-afterCheck :: Bool -> (Exp, String) -> Name -> [String] -> [Stmt]
-afterCheck th (pp, pc) d ns = [NoBindS $ VarE (unlessN th) `AppE` pp `AppE`
-	throwErrorTH th d ns "not match: " (show $ ppr pp) pc]
+afterCheck :: Bool -> Bool -> Name -> (Exp, String) -> Name -> [String] -> [Stmt]
+afterCheck th monadic b (pp, pc) d ns = [
+	BindS (VarP b) $ retLift `AppE` pp,
+	NoBindS $ VarE (unlessN th) `AppE` VarE b `AppE`
+		throwErrorTH th d ns "not match: " (show $ ppr pp) pc]
+	where
+	retLift = if monadic then VarE $ liftN th else VarE $ mkName "return"
 
 listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
@@ -413,3 +421,7 @@ errorTTN True = ''ErrorT
 errorTTN False = mkName "ErrorT"
 identityN True = ''Identity
 identityN False = mkName "Identity"
+
+liftN :: Bool -> Name
+liftN True = 'lift
+liftN False = mkName "lift"

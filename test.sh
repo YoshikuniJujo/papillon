@@ -116,3 +116,10 @@ runhaskell -isrc -ibin -Wall bin/papillon test/peg/sugar.papillon tmp/ && \
 runhaskell -isrc -itmp -Wall tmp/sugar.hs
 cp test/peg/sugar.papillon tmp/sugar_th.hs
 runhaskell -isrc -Wall tmp/sugar_th.hs
+
+echo
+echo simpleMonadic.papillon
+runhaskell -isrc -ibin -Wall bin/papillon test/peg/simpleMonadic.papillon tmp/ && \
+runhaskell -isrc -itmp -Wall tmp/simpleMonadic.hs
+cp test/peg/simpleMonadic.papillon tmp/simpleMonadic_th.hs
+runhaskell -isrc -Wall tmp/simpleMonadic_th.hs
