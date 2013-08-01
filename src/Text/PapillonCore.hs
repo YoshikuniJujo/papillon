@@ -182,7 +182,7 @@ expression :: Bool -> Bool -> Expression -> State Variables Exp
 expression th m (Left (e, r)) =
 	(doE . (++ [NoBindS $ retLift `AppE` r]) . concat <$>) $
 		forM e $ \(la, ck@(_, rf, _)) ->
-			lookahead th la (show $ pprCheck ck) (nameFromRF rf) =<<
+			lookahead th la (show $ pprCheck ck) (readings rf) =<<
 				check th m ck
 	where
 	retLift = if m then VarE $ liftN th else VarE $ mkName "return"
@@ -204,19 +204,19 @@ check th monadic ((n, nc), rf, test) = do
 	modify $ nextVariable "b"
 	case (n, test) of
 		(WildP, Just p) -> ((BindS (VarP d) (VarE $ getN th) :) .
-				(: afterCheck th monadic b p d (nameFromRF rf))) .
+				(: afterCheck th monadic b p d (readings rf))) .
 			BindS WildP <$> transReadFrom th rf
 		(_, Just p)
 			| notHaveOthers n -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = LetS [ValD n (NormalB $ VarE t) []]
-					c = afterCheck th monadic b p d (nameFromRF rf)
+					c = afterCheck th monadic b p d (readings rf)
 				s <- BindS (VarP t) <$> transReadFrom th rf
 				return $ [bd, s, m] ++ c
 			| otherwise -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
-					m = beforeMatch th t n d (nameFromRF rf) nc
-					c = afterCheck th monadic b p d (nameFromRF rf)
+					m = beforeMatch th t n d (readings rf) nc
+					c = afterCheck th monadic b p d (readings rf)
 				s <- BindS (VarP t) <$> transReadFrom th rf
 				return $ [bd, s]  ++ m ++ c
 		(WildP, _) -> sequence [
@@ -227,7 +227,7 @@ check th monadic ((n, nc), rf, test) = do
 				(: []) . BindS n <$> transReadFrom th rf
 			| otherwise -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
-					m = beforeMatch th t n d (nameFromRF rf) nc
+					m = beforeMatch th t n d (readings rf) nc
 				s <- BindS (VarP t) <$> transReadFrom th rf
 				return $ bd : s : m
 	where
@@ -250,7 +250,7 @@ plainExpression th pexs = do
 transHAReadFrom :: Bool -> (Lookahead, ReadFrom) -> State Variables Exp
 transHAReadFrom th (ha, rf) = do
 	modify $ nextVariable "d"
-	doE <$> (lookahead th ha "" (nameFromRF rf) =<<
+	doE <$> (lookahead th ha "" (readings rf) =<<
 		((: []) . NoBindS <$> transReadFrom th rf))
 
 lookahead :: Bool -> Lookahead -> String -> [String] -> [Stmt] ->

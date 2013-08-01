@@ -5,8 +5,6 @@
 * SyntaxTree のリファクタリング
 	いろいろと変更したので全体的に見てみること
 
-	nameFromRF の名前を変更しよう
-
 	mkPegFile を消せないかな
 		Parser に直書きできないかな
 

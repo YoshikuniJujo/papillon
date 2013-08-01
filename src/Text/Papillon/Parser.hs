@@ -13,7 +13,7 @@ module Text.Papillon.Parser (
 
 	selectionType,
 	pprCheck,
-	nameFromRF,
+	readings,
 
 	parse,
 	Source(..),
@@ -1768,7 +1768,7 @@ parse = parse1789_0 initialPos
                                                           _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1060_464 ["char"])
                                                       let ']' = t514_465
                                                       return ()
-                                                      return (fromTokenChars cs),
+                                                      return (charList cs),
                                                    do d1061_466 <- get
                                                       t515_467 <- StateT char
                                                       case t515_467 of
@@ -1800,7 +1800,7 @@ parse = parse1789_0 initialPos
                                                           _ -> gets position >>= (throwError . mkParseError "']'" "not match pattern: " "" d1065_476 ["char"])
                                                       let ']' = t519_477
                                                       return ()
-                                                      return (fromTokenChars [cb .. ce]),
+                                                      return (charList [cb .. ce]),
                                                    do d1066_478 <- get
                                                       t520_479 <- StateT char
                                                       case t520_479 of
@@ -1820,7 +1820,7 @@ parse = parse1789_0 initialPos
                                                           _ -> gets position >>= (throwError . mkParseError "'\\''" "not match pattern: " "" d1068_483 ["char"])
                                                       let '\'' = t522_484
                                                       return ()
-                                                      return (fromTokenChars [c])]
+                                                      return (charList [c])]
                 test133_138 = foldl1 mplus [do d1069_485 <- get
                                                t523_486 <- StateT char
                                                case t523_486 of

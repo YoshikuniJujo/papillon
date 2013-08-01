@@ -14,7 +14,7 @@ module Text.Papillon.Parser (
 
 	selectionType,
 	pprCheck,
-	nameFromRF,
+	readings,
 
 	parse,
 	Source(..),
@@ -285,14 +285,10 @@ selectCharsLs :: ReadFrom
 	/ rf:selectChars			{ rf }
 ;
 selectChars :: ReadFrom
---	= '[' cs:(c:[(`notElem` "\\-") c] { c })+ ']'
---	= '[' cs:(<flip notElem "\\-">)+ ']'
---	= '[' cs:<isDigit>+ ']'
-	= '[' cs:(<(`notElem` "\\-")>)+ ']'
-						{ fromTokenChars cs }
+	= '[' cs:<(`notElem` "\\-")>+ ']'	{ charList cs }
 	/ '[' cb:[cb `notElem` "\\-"] '-'
-		ce:[ce `notElem` "\\-"] ']'	{ fromTokenChars [cb .. ce] }
-	/ '\'' c:[c `notElem` "\\'"] '\''	{ fromTokenChars [c] }
+		ce:[ce `notElem` "\\-"] ']'	{ charList [cb .. ce] }
+	/ '\'' c:[c `notElem` "\\'"] '\''	{ charList [c] }
 ;
 test :: (Exp, String)
 	= '[' h:hsExpLam _:spaces com:comForErr? ']'

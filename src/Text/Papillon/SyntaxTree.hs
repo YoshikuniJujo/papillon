@@ -9,15 +9,14 @@ module Text.Papillon.SyntaxTree (
 	PlainExpression,
 	Check,
 	ReadFrom(..),
+	charList,
 
 	Lookahead(..),
 	Lists(..),
 
-	fromTokenChars,
-
 	selectionType,
 	pprCheck,
-	nameFromRF,
+	readings,
 
 	PegFile,
 	mkPegFile,
@@ -53,8 +52,8 @@ data ReadFrom
 	| FromL Lists ReadFrom
 	deriving Show
 
-fromTokenChars :: String -> ReadFrom
-fromTokenChars cs = FromSelection $ Left $ (: []) $ Right $
+charList :: String -> ReadFrom
+charList cs = FromSelection $ Left $ (: []) $ Right $
 	InfixE Nothing (VarE $ mkName "elem") $ Just $ LitE $ StringL cs
 
 pprCheck :: Check -> Doc
@@ -89,22 +88,21 @@ definitionType _ _ (_, Just typ, _) = typ
 definitionType peg tk (_, _, sel) = selectionType peg tk sel
 
 selectionType :: Peg -> Type -> Selection -> Type
-selectionType peg tk e = do
-	case e of
-		Right ex -> foldr (\x y -> (eitherT `AppT` x) `AppT` y)
-			(last $ types ex) (init $ types ex)
-		Left [Left ex] | tc ex -> tk
-		Left [Right _] -> tk
-		_ -> error "selectionType: can't get type"
+selectionType peg tk e = case e of
+	Right ex -> foldr (\x y -> (eitherT `AppT` x) `AppT` y)
+		(last $ types ex) (init $ types ex)
+	Left [Left ex] | tc ex -> tk
+	Left [Right _] -> tk
+	_ -> error "selectionType: can't get type"
 	where
 	eitherT = ConT $ mkName "Either"
-	types e' = map (plainExpressionType peg tk) e'
+	types = map $ plainExpressionType peg tk
 	tc ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v) = p == v
 	tc _ = False
 
 plainExpressionType :: Peg -> Type -> PlainExpression -> Type
 plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
-	foldl AppT (TupleT $ length fe) $ map (readFromType peg tk . snd) $ fe
+	foldl AppT (TupleT $ length fe) $ map (readFromType peg tk . snd) fe
 
 readFromType :: Peg -> Type -> ReadFrom -> Type
 readFromType peg tk (FromVariable (Just v)) =
@@ -120,25 +118,15 @@ searchDefinition peg name = case flip filter peg $ (== name) . \(n, _, _) -> n o
 	[d] -> d
 	_ -> error "searchDefinitionQ: bad"
 
-nameFromSelection :: Selection -> [String]
-nameFromSelection exs = concat $
-	(either (mapM nameFromExpression) (mapM nameFromPlainExpression) exs)
-
-nameFromExpression :: Expression -> [String]
-nameFromExpression (Left e) = nameFromCheck $ snd $ head $ fst e
-nameFromExpression (Right _) = [dvCharsN]
-
-nameFromPlainExpression :: PlainExpression -> [String]
-nameFromPlainExpression = concat . map (nameFromRF . snd)
-
-nameFromCheck :: Check -> [String]
-nameFromCheck (_, rf, _) = nameFromRF rf
-
-nameFromRF :: ReadFrom -> [String]
-nameFromRF (FromVariable (Just s)) = [s]
-nameFromRF (FromVariable _) = [dvCharsN]
-nameFromRF (FromL _ rf) = nameFromRF rf
-nameFromRF (FromSelection sel) = nameFromSelection sel
+readings :: ReadFrom -> [String]
+readings (FromVariable (Just s)) = [s]
+readings (FromVariable _) = [dvCharsN]
+readings (FromL _ rf) = readings rf
+readings (FromSelection s) = concat $ either
+	(mapM $ either
+		(readings . (\(_, rf, _) -> rf) . snd . head . fst)
+		(const [dvCharsN]))
+	(mapM $ concatMap $ readings . snd) s
 
 type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, STPeg, Code)
 data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
@@ -148,9 +136,5 @@ type Code = String
 
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
 	STPeg -> String -> PegFile
-mkPegFile ps (Just md) x y zq w =
-	let z = zq in
-	(ps, fst md, snd md, x ++ "\n" ++ y, z, w)
-mkPegFile ps Nothing x y zq w =
-	let z = zq in
-	(ps, [], Nothing, x ++ "\n" ++ y, z, w)
+mkPegFile ps (Just md) x y z w = (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
+mkPegFile ps Nothing x y z w = (ps, [], Nothing, x ++ "\n" ++ y, z, w)
