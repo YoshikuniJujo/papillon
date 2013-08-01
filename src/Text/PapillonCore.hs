@@ -47,8 +47,7 @@ import Text.Papillon.List
 
 import System.IO.Unsafe
 
-dvCharsN, dvPosN :: Name
-dvCharsN = mkName "char"
+dvPosN :: Name
 dvPosN = mkName "position"
 
 papillonCore :: String -> DecsQ
@@ -83,7 +82,7 @@ decParsed th src parsed = do
 derivs :: Bool -> Type -> Peg -> Dec
 derivs th src pg = DataD [] (mkName "Derivs") [] [
 	RecC (mkName "Derivs") $ map derivs1 pg ++ [
-		(dvCharsN, NotStrict, resultT tkn),
+		(mkName dvCharsN, NotStrict, resultT tkn),
 		(dvPosN, NotStrict, ConT (mkName "Pos") `AppT` src)
 	 ]] []
 	where
@@ -277,7 +276,7 @@ negative th code com d ns act = do
 
 transReadFrom :: Bool -> ReadFrom -> State Variables Exp
 transReadFrom th (FromVariable Nothing) = return $
-	ConE (stateTN th) `AppE` VarE dvCharsN
+	ConE (stateTN th) `AppE` VarE (mkName dvCharsN)
 transReadFrom th (FromVariable (Just var)) = return $
 	ConE (stateTN th) `AppE` VarE (mkName var)
 transReadFrom th (FromSelection sel) = mkRule th sel
@@ -361,9 +360,10 @@ showParseError pe =
 	p = pePositionS pe
 
 showReading :: Derivs -> String -> String
-showReading d "char" = case runError $ char d of
-	Right (c, _) -> show c
-	Left _ -> error "bad"
+showReading d n
+	| n == dvCharsN = case runError $ char d of
+		Right (c, _) -> show c
+		Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
 
 doE :: [Stmt] -> Exp

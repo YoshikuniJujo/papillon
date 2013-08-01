@@ -32,7 +32,9 @@ module Text.Papillon.Parser (
 	Exports,
 	Code,
 
-	runError
+	runError,
+
+	dvCharsN
 ) where
 
 import Text.Papillon.Papillon

@@ -43,7 +43,9 @@ module Text.Papillon.SyntaxTree (
 	PPragma(..),
 	ModuleName,
 	Exports,
-	Code
+	Code,
+
+	dvCharsN
 ) where
 
 import Language.Haskell.TH
@@ -53,6 +55,9 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Data.List
 import Data.IORef
+
+dvCharsN :: String
+dvCharsN = "char"
 
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
 data Lists = List | List1 | Optional deriving (Show, Eq)
@@ -211,7 +216,7 @@ nameFromCheck (_, rf, _) = nameFromRF rf
 
 nameFromRF :: ReadFrom -> [String]
 nameFromRF (FromVariable (Just s)) = [s]
-nameFromRF (FromVariable _) = ["char"]
+nameFromRF (FromVariable _) = [dvCharsN]
 nameFromRF (FromL _ rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 
