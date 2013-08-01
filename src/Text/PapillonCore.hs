@@ -61,10 +61,10 @@ papillonFile :: String ->
 	Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
 papillonFile str = case runError $ pegFile $ parse str of
 	Right (pegfileq, _) -> do
-		(prgm, mn, ppp, pp, (monad, src, parsed), atp) <- pegfileq
-		let	lu = listUsed parsed
+		let	(prgm, mn, ppp, pp, (monad, src, parsed), atp) = pegfileq
+			lu = listUsed parsed
 			ou = optionalUsed parsed
-		let	addApplicative = if lu || ou
+			addApplicative = if lu || ou
 				then "import Control.Applicative\n" else ""
 			addIdentity = if isJust monad then ""
 				else "import \"monads-tf\" Control.Monad.Identity\n"

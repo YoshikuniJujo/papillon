@@ -1,6 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module Text.Papillon.SyntaxTree (
+	STPeg,
 	Peg,
 	Definition,
 	Selection,
@@ -9,20 +10,6 @@ module Text.Papillon.SyntaxTree (
 	Check,
 	ReadFrom(..),
 
-	Q,
-	STPegQ,
-	PegQ,
-	DefinitionQ,
-	SelectionQ,
-	ExpressionQ,
-	PlainExpressionQ,
-	CheckQ,
-	ReadFromQ,
-
-	stPegQ,
-	definitionQ,
-	normalSelectionQ,
-	plainSelectionQ,
 	expressionQ,
 	plainExpressionQ,
 	check,
@@ -38,7 +25,7 @@ module Text.Papillon.SyntaxTree (
 	pprCheck,
 	nameFromRF,
 
-	PegFileQ,
+	PegFile,
 	mkPegFile,
 	PPragma(..),
 	ModuleName,
@@ -72,45 +59,19 @@ data ReadFrom
 	| FromL Lists ReadFrom
 	deriving Show
 
-type STPegQ = STPeg
-type PegQ = Peg
-type DefinitionQ = Definition
-type SelectionQ = Selection
-type ExpressionQ = Expression
-type PlainExpressionQ = PlainExpression
-type CheckQ = Check
-type ReadFromQ = ReadFrom
-
-stPegQ :: Maybe Type -> Type -> PegQ -> STPegQ
-stPegQ = (,,)
-
-fromSelectionQ :: SelectionQ -> ReadFromQ
+fromSelectionQ :: Selection -> ReadFrom
 fromSelectionQ sel = FromSelection sel
 
-definitionQ :: String -> Maybe Type -> SelectionQ -> DefinitionQ
-definitionQ name typq selq = let
-	sel = selq
-	typ = case typq of
-		Just t -> Just t
-		_ -> Nothing in
-	(name, typ, sel)
-
-normalSelectionQ :: [ExpressionQ] -> SelectionQ
-normalSelectionQ expqs = Left expqs
-
-plainSelectionQ :: [PlainExpressionQ] -> SelectionQ
-plainSelectionQ expqs = Right expqs
-
-expressionQ :: ([(Lookahead, CheckQ)], Exp) -> ExpressionQ
+expressionQ :: ([(Lookahead, Check)], Exp) -> Expression
 expressionQ (ls, ex) =
 	let	e = ex
 		l = map (\(la, c) -> (la ,) c) ls in
 		Left (l, e)
 
-plainExpressionQ :: [(Lookahead, ReadFromQ)] -> PlainExpressionQ
+plainExpressionQ :: [(Lookahead, ReadFrom)] -> PlainExpression
 plainExpressionQ ls = map (\(la, c) -> (la ,) c) ls
 
-check :: (Pat, String) -> ReadFromQ -> Maybe (Exp, String) -> CheckQ
+check :: (Pat, String) -> ReadFrom -> Maybe (Exp, String) -> Check
 check (pat, pcom) rfq (Just (test, tcom)) = do
 	let	rf = rfq
 		p = pat
@@ -121,10 +82,10 @@ check (pat, pcom) rfq Nothing = do
 		p = pat in
 		((p, pcom), rf, Nothing)
 
-expressionSugar :: Exp -> ExpressionQ
+expressionSugar :: Exp -> Expression
 expressionSugar pm = Right pm
 
-fromTokenChars :: String -> ReadFromQ
+fromTokenChars :: String -> ReadFrom
 fromTokenChars cs = do
 	let ex = expressionSugar $ InfixE Nothing (VarE $ mkName "elem") $
 		Just $ LitE $ StringL cs
@@ -214,17 +175,16 @@ nameFromRF (FromL _ rf) = nameFromRF rf
 nameFromRF (FromSelection sel) = nameFromSelection sel
 
 type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, STPeg, Code)
-type PegFileQ = Q PegFile
 data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
 type ModuleName = [String]
 type Exports = String
 type Code = String
 
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
-	STPegQ -> String -> PegFileQ
-mkPegFile ps (Just md) x y zq w = do
-	let z = zq
-	return (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
-mkPegFile ps Nothing x y zq w = do
-	let z = zq
-	return (ps, [], Nothing, x ++ "\n" ++ y, z, w)
+	STPeg -> String -> PegFile
+mkPegFile ps (Just md) x y zq w =
+	let z = zq in
+	(ps, fst md, snd md, x ++ "\n" ++ y, z, w)
+mkPegFile ps Nothing x y zq w =
+	let z = zq in
+	(ps, [], Nothing, x ++ "\n" ++ y, z, w)

@@ -134,3 +134,14 @@ newtype が not promotable になってしまう。
 考えられる解決策は newtype ErrorT を data ErrorT に変えた版を作ることかな。
 
 上は全然違った。単に ' と '' のまちがいだったようだ。
+
+2013.08.01 Thu.
+
+2013年  8月  1日 木曜日 15:08:40 JST
+Text/Papillon.hs                        9
+Text/PapillonCore.hs                    357
+Text/Papillon/Parser.hs                 2286
+Text/Papillon/Papillon.hs               44
+Text/Papillon/SyntaxTree.hs             149
+Text/Papillon/List.hs                   59
+total                                   2904
