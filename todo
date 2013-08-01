@@ -2,12 +2,13 @@
 * 次にやること           *
 **************************
 
-* version up して install
-
-* ebuild の upload
-
 * SyntaxTree のリファクタリング
 	いろいろと変更したので全体的に見てみること
+
+	nameFromRF の名前を変更しよう
+
+	mkPegFile を消せないかな
+		Parser に直書きできないかな
 
 	fromTokenChars の名前の変更
 		むしろ、fromTokenChars は消してもいいのかもしれない
@@ -18,6 +19,9 @@
 	Peg の構造も変えよう
 	where 以下に入れられる関数は入れてしまう
 		外で使われている関数を調べる
+
+
+* ebuild の upload
 
 * SyntaxTree の名前を適切なものに変える
 
