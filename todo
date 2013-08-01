@@ -2,12 +2,13 @@
 * 次にやること           *
 **************************
 
-* monadic を master に merge する
-	master 以外の branch は全て削除する
-
-* version up して install
-	tag をつける
-	hackage に upload
+* Control.Monad.Identity と Control.Monad.Error が重複しないようにする
+	やるべきことは2つ。
+	まず、monad が Nothing だったら Identity は import しないようにすること。
+	それから、同じ module を import しないようにすること。
+	前者は比較的簡単だが、後者は import する変数がどうなっているかがわからないと
+	けっこうめんどくさい。
+	とりあえず前者をちゃちゃっとやってしまおう。
 
 * SyntaxTree のリファクタリング
 	fromTokenChars の名前の変更
@@ -88,8 +89,6 @@
 	reify を使い、Pat -> Q (Pat, Bool) とする。
 	IO 内では reify が使えないので、th :: Bool が必要になる。
 	とすると、monad: Reader Bool とする必要がある。
-
-* Control.Monad.Identity と Control.Monad.Error が重複しないようにする
 
 **************************
 *  エラーメッセージ関係  *
@@ -227,8 +226,6 @@
 	今のままのほうが良いのかもしれない
 
 * PapillonCore のリファクタリング
-	以下の monadic な parser にするための準備として
-
 	check のリファクタリング
 		Just (p, pc) と Nothing の前半部分は統合できるだろう
 		つまり関数の頭で match させずに case 文を使うということ
@@ -249,7 +246,6 @@
 	これは parse の段階でやってしまおうかな
 
 * SyntaxTree.hs
-	Q や IORef Int -> は消せる気がするので考えてみること
 	名前を変更する
 
 ******************************
@@ -291,6 +287,8 @@
 **************************
 *  ドキュメント関係      *
 **************************
+
+* とりあえず簡単なチュートリアルを書いてみよう
 
 * cabal haddock について
 	説明も入れてみようかな
