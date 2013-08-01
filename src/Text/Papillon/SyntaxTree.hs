@@ -10,16 +10,10 @@ module Text.Papillon.SyntaxTree (
 	Check,
 	ReadFrom(..),
 
-	expressionQ,
-	plainExpressionQ,
-	check,
-	fromSelectionQ,
-
 	Lookahead(..),
 	Lists(..),
 
 	fromTokenChars,
-	expressionSugar,
 
 	selectionType,
 	pprCheck,
@@ -59,37 +53,9 @@ data ReadFrom
 	| FromL Lists ReadFrom
 	deriving Show
 
-fromSelectionQ :: Selection -> ReadFrom
-fromSelectionQ sel = FromSelection sel
-
-expressionQ :: ([(Lookahead, Check)], Exp) -> Expression
-expressionQ (ls, ex) =
-	let	e = ex
-		l = map (\(la, c) -> (la ,) c) ls in
-		Left (l, e)
-
-plainExpressionQ :: [(Lookahead, ReadFrom)] -> PlainExpression
-plainExpressionQ ls = map (\(la, c) -> (la ,) c) ls
-
-check :: (Pat, String) -> ReadFrom -> Maybe (Exp, String) -> Check
-check (pat, pcom) rfq (Just (test, tcom)) = do
-	let	rf = rfq
-		p = pat
-		t = test in
-		((p, pcom), rf, Just (t, tcom))
-check (pat, pcom) rfq Nothing = do
-	let	rf = rfq
-		p = pat in
-		((p, pcom), rf, Nothing)
-
-expressionSugar :: Exp -> Expression
-expressionSugar pm = Right pm
-
 fromTokenChars :: String -> ReadFrom
-fromTokenChars cs = do
-	let ex = expressionSugar $ InfixE Nothing (VarE $ mkName "elem") $
-		Just $ LitE $ StringL cs
-	FromSelection $ Left [ex]
+fromTokenChars cs = FromSelection $ Left $ (: []) $ Right $
+	InfixE Nothing (VarE $ mkName "elem") $ Just $ LitE $ StringL cs
 
 pprCheck :: Check -> Doc
 pprCheck ((pat, _), rf, test) =

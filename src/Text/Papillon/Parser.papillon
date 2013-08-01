@@ -150,9 +150,7 @@ definition :: Definition
 	/ v:variable _:spaces '=' _:spaces
 		sel:plainSelection _:spaces ';'	{ (v, Nothing, Right sel) }
 ;
-selection :: Selection
-	= s:normalSelection			{ Left s }
-	/ s:plainSelection			{ Right s }
+selection = normalSelection / plainSelection
 ;
 normalSelection :: [Expression]
 	= ex:expressionHs _:spaces '/' _:spaces sel:normalSelection
@@ -166,15 +164,17 @@ plainSelection :: [PlainExpression]
 ;
 expressionHs :: Expression
 	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
-						{ expressionQ (e, h) }
+						{ Left (e, h) }
 	/ e:expressionHsSugar			{ e }
 ;
 expressionHsSugar :: Expression
-	= '<' _:spaces h:hsExpLam _:spaces '>'	{ expressionSugar h }
+	= '<' _:spaces h:hsExpLam _:spaces '>'	{ Right h }
+;
+expressionHsSugar' :: Expression
+	= '<' _:spaces h:hsExpLam' _:spaces '>'	{ Right h }
 ;
 plainExpressionHs :: PlainExpression
-	= rfs:(rf:plainHAReadFromLs _:spaces { rf })*
-						{ plainExpressionQ rfs }
+	= rfs:(rf:plainHAReadFromLs _:spaces { rf })*	{ rfs }
 ;
 plainHAReadFromLs :: (Lookahead, ReadFrom)
 	= rf:plainReadFromLs			{ (Here, rf) }
@@ -197,16 +197,15 @@ nameLeaf_ :: (Lookahead, Check)
 ;
 nameLeaf :: Check
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
-		{ check (n, maybe "" id com) rf p }
+		{ ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces com:comForErr?
-		{ check (n, maybe "" id com)
-			(FromVariable Nothing) Nothing }
+		{ ((n, maybe "" id com), FromVariable Nothing, Nothing) }
 ;
 nameLeafNoCom :: Check
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
-		{ check (n, maybe "" id com) rf p }
+		{ ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces
-		{ check (n, "") (FromVariable Nothing) Nothing }
+		{ ((n, ""), FromVariable Nothing, Nothing) }
 ;
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
@@ -276,8 +275,8 @@ readFromLs :: ReadFrom
 ;
 readFrom :: ReadFrom
 	= v:variable				{ FromVariable $ Just v }
-	/ '(' s:selection ')'			{ fromSelectionQ s }
-	/ e:expressionHsSugar			{ fromSelectionQ $ Left [e] }
+	/ '(' s:selection ')'			{ FromSelection s }
+	/ e:expressionHsSugar'			{ FromSelection $ Left [e] }
 ;
 selectCharsLs :: ReadFrom
 	= rf:selectChars '*'			{ FromL List rf }
@@ -286,7 +285,11 @@ selectCharsLs :: ReadFrom
 	/ rf:selectChars			{ rf }
 ;
 selectChars :: ReadFrom
-	= '[' cs:(c:[isLower c] { c })+ ']'	{ fromTokenChars cs }
+--	= '[' cs:(c:[(`notElem` "\\-") c] { c })+ ']'
+--	= '[' cs:(<flip notElem "\\-">)+ ']'
+--	= '[' cs:<isDigit>+ ']'
+	= '[' cs:(<(`notElem` "\\-")>)+ ']'
+						{ fromTokenChars cs }
 	/ '[' cb:[cb `notElem` "\\-"] '-'
 		ce:[ce `notElem` "\\-"] ']'	{ fromTokenChars [cb .. ce] }
 	/ '\'' c:[c `notElem` "\\'"] '\''	{ fromTokenChars [c] }
@@ -316,6 +319,29 @@ hsOp :: Exp
 	/ '`' v:variable '`'			{ VarE $ mkName v }
 	/ '`' t:typ '`'				{ ConE $ mkName t }
 ;
+
+hsExpLam' :: Exp
+	= '\\' _:spaces ps:pats _:spaces '-' '>' _:spaces e:hsExpTyp'
+						{ LamE ps e }
+	/ e:hsExpTyp'				{ e }
+;
+hsExpTyp' :: Exp
+	= eo:hsExpOp' ':' ':' _:spaces t:hsTypeArr
+						{ SigE eo t }
+	/ eo:hsExpOp'				{ eo }
+;
+hsExpOp' :: Exp
+	= l:hsExp _:spaces o:hsOp' _:spaces r:hsExpOp'
+						{ UInfixE (l id) o r }
+	/ e:hsExp				{ e id }
+;
+hsOp' :: Exp
+	= c:[c `elem` "+*/-!|&.^=<$"] o:opTail { VarE $ mkName $ c : o }
+	/ ':' !':' o:opTail			{ ConE $ mkName $ ':' : o }
+	/ '`' v:variable '`'			{ VarE $ mkName v }
+	/ '`' t:typ '`'				{ ConE $ mkName t }
+;
+
 opTail :: String
 	= c:[c `elem` ":+*/-!|&.^=<>$"] s:opTail{ c : s }
 	/					{ "" }
