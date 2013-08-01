@@ -39,12 +39,12 @@ module Text.Papillon.Parser (
 ) where
 
 import Text.Papillon.SyntaxTree
-import Language.Haskell.TH (
+import Language.Haskell.TH {- (
 	Name, TypeQ, PatQ, ExpQ, mkName,
 	conT, tupleT, listT, appT, arrowT,
 	wildP, litP, varP, conP, tupP, listP, uInfixP,
 	litE, varE, conE, tupE, listE, sigE, appE, infixE, uInfixE, lamE,
-	integerL, charL, stringL)
+	integerL, charL, stringL) -}
 import Data.Char (isSpace, isDigit, isUpper, isLower)
 
 [papillon|
@@ -126,16 +126,16 @@ pap :: ()
 	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ () }
 ;
 peg :: STPegQ
-	= _:spaces s:sourceType p:peg_		{ stPegQ (conT $ mkName s) p }
-	/ p:peg_				{ stPegQ (conT $ mkName "String") p }
+	= _:spaces s:sourceType p:peg_		{ stPegQ (ConT $ mkName s) p }
+	/ p:peg_				{ stPegQ (ConT $ mkName "String") p }
 ;
 sourceType :: String
 	= "source":varToken ':' _:spaces v:typToken
 						{ v }
 ;
 peg_ :: PegQ
-	= _:spaces d:definition p:peg_		{ (:) <$> d <*> p }
-	/ 					{ return [] }
+	= _:spaces d:definition p:peg_		{ d : p }
+	/ 					{ [] }
 ;
 definition :: DefinitionQ
 	= v:variable _:spaces ':' ':'
@@ -196,47 +196,46 @@ nameLeaf :: CheckQ
 		{ check (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces com:comForErr?
 		{ check (n, maybe "" id com)
-			(return $ FromVariable Nothing) Nothing }
+			(FromVariable Nothing) Nothing }
 ;
 nameLeafNoCom :: CheckQ
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ check (n, maybe "" id com) rf p }
 	/ n:pat1 _:spaces
-		{ check (n, "") (return $ FromVariable Nothing) Nothing }
+		{ check (n, "") (FromVariable Nothing) Nothing }
 ;
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
 						{ s }
 ;
-leaf :: (ReadFromQ, Maybe (ExpQ, String))
+leaf :: (ReadFromQ, Maybe (Exp, String))
 	= rf:readFromLs t:test			{ (rf, Just t) }
 	/ rf:readFromLs				{ (rf, Nothing) }
-	/ t:test			{ (return $ FromVariable Nothing,
-						Just t) }
+	/ t:test			{ (FromVariable Nothing, Just t) }
 ;
-patOp :: PatQ
-	= p:pat o:opConName po:patOp		{ uInfixP p o po }
+patOp :: Pat
+	= p:pat o:opConName po:patOp		{ UInfixP p o po }
 	/ p:pat _:spaces '`' t:typ '`' _:spaces po:patOp
-						{ uInfixP p (mkName t) po }
+						{ UInfixP p (mkName t) po }
 	/ p:pat					{ p }
 ;
-pat :: PatQ
-	= t:typ _:spaces ps:pats		{ conP (mkName t) ps }
-	/ '(' o:opConName ')'_:spaces ps:pats	{ conP o ps }
+pat :: Pat
+	= t:typ _:spaces ps:pats		{ ConP (mkName t) ps }
+	/ '(' o:opConName ')'_:spaces ps:pats	{ ConP o ps }
 	/ p:pat1				{ p }
 ;
-pat1 :: PatQ
-	= t:typ					{ conP (mkName t) [] }
-	/ "_":variable				{ wildP }
-	/ n:variable				{ varP $ mkName n }
-	/ i:integer				{ litP (integerL i) }
-	/ '-' _:spaces i:integer		{ litP (integerL $ - i) }
-	/ '\'' c:charLit '\''			{ litP $ charL c }
-	/ '"' s:stringLit '"'			{ litP $ stringL s }
-	/ '(' p:patList ')'			{ tupP p }
-	/ '[' p:patList ']'			{ listP p }
+pat1 :: Pat
+	= t:typ					{ ConP (mkName t) [] }
+	/ "_":variable				{ WildP }
+	/ n:variable				{ VarP $ mkName n }
+	/ i:integer				{ LitP (IntegerL i) }
+	/ '-' _:spaces i:integer		{ LitP (IntegerL $ - i) }
+	/ '\'' c:charLit '\''			{ LitP $ CharL c }
+	/ '"' s:stringLit '"'			{ LitP $ StringL s }
+	/ '(' p:patList ')'			{ TupP p }
+	/ '[' p:patList ']'			{ ListP p }
 ;
-patList :: [PatQ]
+patList :: [Pat]
 	= p:patOp _:spaces ',' _:spaces ps:patList
 						{ p : ps }
 	/ p:patOp				{ [p] }
@@ -261,27 +260,26 @@ escapeC :: Char
 	/ 'n'					{ '\n' }
 	/ 't'					{ '\t' }
 ;
-pats :: [PatQ]
+pats :: [Pat]
 	= p:pat _:spaces ps:pats		{ p : ps }
 	/					{ [] }
 ;
 readFromLs :: ReadFromQ
-	= rf:readFrom '*'			{ FromL List <$> rf }
-	/ rf:readFrom '+'			{ FromL List1 <$> rf }
-	/ rf:readFrom '?'			{ FromL Optional <$> rf }
+	= rf:readFrom '*'			{ FromL List rf }
+	/ rf:readFrom '+'			{ FromL List1 rf }
+	/ rf:readFrom '?'			{ FromL Optional rf }
 	/ rf:readFrom				{ rf }
 ;
 readFrom :: ReadFromQ
-	= v:variable				{ return $
-							FromVariable $ Just v }
+	= v:variable				{ FromVariable $ Just v }
 	/ '(' s:selection ')'			{ fromSelectionQ s }
 	/ e:expressionHsSugar			{ fromSelectionQ $
 							normalSelectionQ [e] }
 ;
 selectCharsLs :: ReadFromQ
-	= rf:selectChars '*'			{ FromL List <$> rf }
-	/ rf:selectChars '+'			{ FromL List1 <$> rf }
-	/ rf:selectChars '?'			{ FromL Optional <$> rf }
+	= rf:selectChars '*'			{ FromL List rf }
+	/ rf:selectChars '+'			{ FromL List1 rf }
+	/ rf:selectChars '?'			{ FromL Optional rf }
 	/ rf:selectChars			{ rf }
 ;
 selectChars :: ReadFromQ
@@ -290,75 +288,75 @@ selectChars :: ReadFromQ
 		ce:[ce `notElem` "\\-"] ']'	{ fromTokenChars [cb .. ce] }
 	/ '\'' c:[c `notElem` "\\'"] '\''	{ fromTokenChars [c] }
 ;
-test :: (ExpQ, String)
+test :: (Exp, String)
 	= '[' h:hsExpLam _:spaces com:comForErr? ']'
 						{ (h, maybe "" id com) }
 ;
-hsExpLam :: ExpQ
+hsExpLam :: Exp
 	= '\\' _:spaces ps:pats _:spaces '-' '>' _:spaces e:hsExpTyp
-						{ lamE ps e }
+						{ LamE ps e }
 	/ e:hsExpTyp				{ e }
 ;
-hsExpTyp :: ExpQ
+hsExpTyp :: Exp
 	= eo:hsExpOp ':' ':' _:spaces t:hsTypeArr
-						{ sigE eo t }
+						{ SigE eo t }
 	/ eo:hsExpOp				{ eo }
 ;
-hsExpOp :: ExpQ
+hsExpOp :: Exp
 	= l:hsExp _:spaces o:hsOp _:spaces r:hsExpOp
-						{ uInfixE (l id) o r }
+						{ UInfixE (l id) o r }
 	/ e:hsExp				{ e id }
 ;
-hsOp :: ExpQ
-	= c:[c `elem` "+*/-!|&.^=<>$"] o:opTail { varE $ mkName $ c : o }
-	/ ':' !':' o:opTail			{ conE $ mkName $ ':' : o }
-	/ '`' v:variable '`'			{ varE $ mkName v }
-	/ '`' t:typ '`'				{ conE $ mkName t }
+hsOp :: Exp
+	= c:[c `elem` "+*/-!|&.^=<>$"] o:opTail { VarE $ mkName $ c : o }
+	/ ':' !':' o:opTail			{ ConE $ mkName $ ':' : o }
+	/ '`' v:variable '`'			{ VarE $ mkName v }
+	/ '`' t:typ '`'				{ ConE $ mkName t }
 ;
 opTail :: String
 	= c:[c `elem` ":+*/-!|&.^=<>$"] s:opTail{ c : s }
 	/					{ "" }
 ;
-hsExp :: (ExpQ -> ExpQ) -> ExpQ
-	= e:hsExp1 _:spaces h:hsExp		{ \f -> h (f e `appE`) }
+hsExp :: (Exp -> Exp) -> Exp
+	= e:hsExp1 _:spaces h:hsExp		{ \f -> h (f e `AppE`) }
 	/ e:hsExp1				{ \f -> f e }
 ;
-hsExp1 :: ExpQ
+hsExp1 :: Exp
 	= '(' l:(e:hsExpTyp {e})? _:spaces o:hsOp _:spaces r:(e:hsExpTyp {e})? ')'
-						{ infixE l o r }
-	/ '(' et:hsExpTpl ')'			{ tupE et }
-	/ '[' et:hsExpTpl ']'			{ listE et }
-	/ v:variable				{ varE $ mkName v }
-	/ t:typ					{ conE $ mkName t }
-	/ i:integer _:spaces			{ litE $ integerL i }
-	/ '\'' c:charLit '\''			{ litE $ charL c }
-	/ '"' s:stringLit '"'			{ litE $ stringL s }
-	/ '-' _:spaces e:hsExp1			{ appE (varE $ mkName "negate") e }
+						{ InfixE l o r }
+	/ '(' et:hsExpTpl ')'			{ TupE et }
+	/ '[' et:hsExpTpl ']'			{ ListE et }
+	/ v:variable				{ VarE $ mkName v }
+	/ t:typ					{ ConE $ mkName t }
+	/ i:integer _:spaces			{ LitE $ integerL i }
+	/ '\'' c:charLit '\''			{ LitE $ charL c }
+	/ '"' s:stringLit '"'			{ LitE $ stringL s }
+	/ '-' _:spaces e:hsExp1			{ AppE (VarE $ mkName "negate") e }
 ;
-hsExpTpl :: [ExpQ]
+hsExpTpl :: [Exp]
 	= e:hsExpLam _:spaces ',' _:spaces et:hsExpTpl
 						{ e : et }
 	/ e:hsExpLam				{ [e] }
 	/					{ [] }
 ;
-hsTypeArr :: TypeQ
+hsTypeArr :: Type
 	= l:hsType '-' '>' _:spaces r:hsTypeArr
-						{ appT (appT arrowT $ l id) r }
+						{ AppT (AppT ArrowT $ l id) r }
 	/ t:hsType				{ t id }
 ;
-hsType :: (TypeQ -> TypeQ) -> TypeQ
-	= t:hsType1 ts:hsType			{ \f -> ts (f t `appT`) }
+hsType :: (Type -> Type) -> Type
+	= t:hsType1 ts:hsType			{ \f -> ts (f t `AppT`) }
 	/ t:hsType1				{ ($ t) }
 ;
-hsType1 :: TypeQ
-	= '[' ']' _:spaces			{ listT }
-	/ '[' t:hsTypeArr ']' _:spaces		{ listT `appT` t }
+hsType1 :: Type
+	= '[' ']' _:spaces			{ ListT }
+	/ '[' t:hsTypeArr ']' _:spaces		{ ListT `AppT` t }
 	/ '(' _:spaces tt:hsTypeTpl ')' _:spaces
-					{ foldl appT (tupleT $ length tt) tt }
-	/ t:typToken				{ conT $ mkName t }
-	/ '(' '-' '>' ')' _:spaces		{ arrowT }
+					{ foldl AppT (TupleT $ length tt) tt }
+	/ t:typToken				{ ConT $ mkName t }
+	/ '(' '-' '>' ')' _:spaces		{ ArrowT }
 ;
-hsTypeTpl :: [TypeQ]
+hsTypeTpl :: [Type]
 	= t:hsTypeArr ',' _:spaces tt:hsTypeTpl
 						{ t : tt }
 	/ t:hsTypeArr				{ [t] }

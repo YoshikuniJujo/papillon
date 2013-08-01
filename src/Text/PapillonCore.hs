@@ -53,7 +53,7 @@ dvPosN = mkName "position"
 papillonCore :: String -> DecsQ
 papillonCore str = case runError $ peg $ parse str of
 	Right (stpegq, _) -> do
-		(src, parsed) <- stpegq
+		let (src, parsed) = stpegq
 		decParsed True src parsed
 	Left err -> error $ "parse error: " ++ showParseError err
 

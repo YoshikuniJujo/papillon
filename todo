@@ -2,8 +2,6 @@
 * 次にやること           *
 **************************
 
-* parser から Q を取りのぞく
-
 * monadic parser とする
 	何も指定しなければ、Identity monad とし、
 	test と return のところに return を追加する。

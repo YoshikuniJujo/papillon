@@ -50,7 +50,6 @@ module Text.Papillon.SyntaxTree (
 
 import Language.Haskell.TH
 import Language.Haskell.TH.PprLib
-import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Data.List
 
@@ -73,65 +72,63 @@ data ReadFrom
 	| FromL Lists ReadFrom
 	deriving Show
 
-type STPegQ = Q STPeg
-type PegQ = Q Peg
-type DefinitionQ = Q Definition
-type SelectionQ = Q Selection
-type ExpressionQ = Q Expression
-type PlainExpressionQ = Q PlainExpression
-type CheckQ = Q Check
-type ReadFromQ = Q ReadFrom
+type STPegQ = STPeg
+type PegQ = Peg
+type DefinitionQ = Definition
+type SelectionQ = Selection
+type ExpressionQ = Expression
+type PlainExpressionQ = PlainExpression
+type CheckQ = Check
+type ReadFromQ = ReadFrom
 
-stPegQ :: TypeQ -> PegQ -> STPegQ
-stPegQ stq pegq = (,) <$> stq <*> pegq
+stPegQ :: Type -> PegQ -> STPegQ
+stPegQ stq pegq = (,) stq pegq
 
 fromSelectionQ :: SelectionQ -> ReadFromQ
-fromSelectionQ sel = FromSelection <$> sel
+fromSelectionQ sel = FromSelection sel
 
-definitionQ :: String -> Maybe TypeQ -> SelectionQ -> DefinitionQ
-definitionQ name typq selq = do
-	sel <- selq
-	typ <- case typq of
-		Just t -> Just <$> t
-		_ -> return Nothing
-	return $ (name, typ, sel)
+definitionQ :: String -> Maybe Type -> SelectionQ -> DefinitionQ
+definitionQ name typq selq = let
+	sel = selq
+	typ = case typq of
+		Just t -> Just t
+		_ -> Nothing in
+	(name, typ, sel)
 
 normalSelectionQ :: [ExpressionQ] -> SelectionQ
-normalSelectionQ expqs = Left <$> sequence expqs
+normalSelectionQ expqs = Left expqs
 
 plainSelectionQ :: [PlainExpressionQ] -> SelectionQ
-plainSelectionQ expqs = Right <$> sequence expqs
+plainSelectionQ expqs = Right expqs
 
-expressionQ :: ([(Lookahead, CheckQ)], ExpQ) -> ExpressionQ
-expressionQ (ls, ex) = do
-	e <- ex
-	l <- mapM (\(la, c) -> (la ,) <$> c) ls
-	return $ Left (l, e)
+expressionQ :: ([(Lookahead, CheckQ)], Exp) -> ExpressionQ
+expressionQ (ls, ex) =
+	let	e = ex
+		l = map (\(la, c) -> (la ,) c) ls in
+		Left (l, e)
 
 plainExpressionQ :: [(Lookahead, ReadFromQ)] -> PlainExpressionQ
-plainExpressionQ ls = do
-	l <- mapM (\(la, c) -> (la ,) <$> c) ls
-	return l
+plainExpressionQ ls = map (\(la, c) -> (la ,) c) ls
 
-check :: (PatQ, String) -> ReadFromQ -> Maybe (ExpQ, String) -> CheckQ
+check :: (Pat, String) -> ReadFromQ -> Maybe (Exp, String) -> CheckQ
 check (pat, pcom) rfq (Just (test, tcom)) = do
-	rf <- rfq
-	p <- pat
-	t <- test
-	return $ ((p, pcom), rf, Just (t, tcom))
+	let	rf = rfq
+		p = pat
+		t = test in
+		((p, pcom), rf, Just (t, tcom))
 check (pat, pcom) rfq Nothing = do
-	rf <- rfq
-	p <- pat
-	return $ ((p, pcom), rf, Nothing)
+	let	rf = rfq
+		p = pat in
+		((p, pcom), rf, Nothing)
 
-expressionSugar :: ExpQ -> ExpressionQ
-expressionSugar pm = Right <$> pm
+expressionSugar :: Exp -> ExpressionQ
+expressionSugar pm = Right pm
 
 fromTokenChars :: String -> ReadFromQ
 fromTokenChars cs = do
-	ex <- expressionSugar $ infixE Nothing (varE $ mkName "elem") $
-		Just $ litE $ stringL cs
-	return $ FromSelection $ Left [ex]
+	let ex = expressionSugar $ InfixE Nothing (VarE $ mkName "elem") $
+		Just $ LitE $ StringL cs
+	FromSelection $ Left [ex]
 
 pprCheck :: Check -> Doc
 pprCheck ((pat, _), rf, test) =
@@ -205,7 +202,7 @@ nameFromExpression (Left e) = nameFromCheck $ snd $ head $ fst e
 nameFromExpression (Right _) = [dvCharsN]
 
 nameFromPlainExpression :: PlainExpression -> [String]
-nameFromPlainExpression = (concat <$>) . mapM (nameFromRF . snd)
+nameFromPlainExpression = concat . map (nameFromRF . snd)
 
 nameFromCheck :: Check -> [String]
 nameFromCheck (_, rf, _) = nameFromRF rf
@@ -226,8 +223,8 @@ type Code = String
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
 	STPegQ -> String -> PegFileQ
 mkPegFile ps (Just md) x y zq w = do
-	z <- zq
+	let z = zq
 	return (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
 mkPegFile ps Nothing x y zq w = do
-	z <- zq
+	let z = zq
 	return (ps, [], Nothing, x ++ "\n" ++ y, z, w)
