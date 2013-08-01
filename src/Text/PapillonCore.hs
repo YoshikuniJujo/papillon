@@ -92,7 +92,7 @@ derivs th monad src pg = DataD [] (mkName "Derivs") [] [
 	tkn = ConT (mkName "Token") `AppT` src
 	derivs1 (name, Just t, _) = (mkName name, NotStrict, resultT t)
 	derivs1 (name, Nothing, sel) =
-		(mkName name, NotStrict, resultT $ selectionType pg tkn sel)
+		(mkName name, NotStrict, resultT $ getType pg tkn sel)
 	resultT typ = ConT (errorTTN th)
 		`AppT` (ConT (mkName "ParseError")
 			`AppT` (ConT (mkName "Pos") `AppT` src)

@@ -11,7 +11,7 @@ module Text.Papillon.Parser (
 	Check,
 	ReadFrom(..),
 
-	selectionType,
+	getType,
 	pprCheck,
 	readings,
 

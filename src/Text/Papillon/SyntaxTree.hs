@@ -14,7 +14,7 @@ module Text.Papillon.SyntaxTree (
 	Lookahead(..),
 	Lists(..),
 
-	selectionType,
+	getType,
 	pprCheck,
 	readings,
 
@@ -83,40 +83,27 @@ instance Ppr Lists where
 	ppr List1 = char '+'
 	ppr Optional = char '?'
 
-definitionType :: Peg -> Type -> Definition -> Type
-definitionType _ _ (_, Just typ, _) = typ
-definitionType peg tk (_, _, sel) = selectionType peg tk sel
-
-selectionType :: Peg -> Type -> Selection -> Type
-selectionType peg tk e = case e of
-	Right ex -> foldr (\x y -> (eitherT `AppT` x) `AppT` y)
-		(last $ types ex) (init $ types ex)
-	Left [Left ex] | tc ex -> tk
-	Left [Right _] -> tk
-	_ -> error "selectionType: can't get type"
+getType :: Peg -> Type -> Selection -> Type
+getType peg tkn s = case s of
+	Right e -> foldr1 (\x y -> (ConT (mkName "Either") `AppT` x) `AppT` y) $
+		map (mkt . map (rf . snd) . filter ((== Here) . fst)) e
+	Left [Right _] -> tkn
+	Left [Left ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v)]
+		| p == v -> tkn
+	_ -> error "getType: can't get type"
 	where
-	eitherT = ConT $ mkName "Either"
-	types = map $ plainExpressionType peg tk
-	tc ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v) = p == v
-	tc _ = False
-
-plainExpressionType :: Peg -> Type -> PlainExpression -> Type
-plainExpressionType peg tk e = let fe = filter ((== Here) . fst) e in
-	foldl AppT (TupleT $ length fe) $ map (readFromType peg tk . snd) fe
-
-readFromType :: Peg -> Type -> ReadFrom -> Type
-readFromType peg tk (FromVariable (Just v)) =
-	definitionType peg tk $ searchDefinition peg v
-readFromType peg tk (FromSelection sel) = selectionType peg tk sel
-readFromType _ tk (FromVariable _) = tk
-readFromType peg tk (FromL l rf) = lt l `AppT` readFromType peg tk rf
-	where	lt Optional = ConT $ mkName "Maybe"
-		lt _ = ListT
-
-searchDefinition :: Peg -> String -> Definition
-searchDefinition peg name = case flip filter peg $ (== name) . \(n, _, _) -> n of
-	[d] -> d
-	_ -> error "searchDefinitionQ: bad"
+	rf (FromVariable (Just v)) = let
+		def = case flip filter peg $ (== v) . \(n, _, _) -> n of
+			[d] -> d
+			_ -> error "search: bad" in
+		case def of
+			(_, Just typ, _) -> typ
+			(_, _, sel) -> getType peg tkn sel
+	rf (FromVariable _) = tkn
+	rf (FromSelection sel) = getType peg tkn sel
+	rf (FromL Optional r) = ConT (mkName "Maybe") `AppT` rf r
+	rf (FromL _ r) = ListT `AppT` rf r
+	mkt ts = foldl AppT (TupleT $ length ts) ts
 
 readings :: ReadFrom -> [String]
 readings (FromVariable (Just s)) = [s]
