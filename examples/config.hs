@@ -8,7 +8,7 @@ main :: IO ()
 main = do
 	fp : _ <- getArgs
 	cnt <- readFile fp
-	case conf $ parse cnt of
+	case runError $ conf $ parse cnt of
 		Right (r, _) -> print r
 		Left _ -> putStrLn "parse error"
 

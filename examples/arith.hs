@@ -7,7 +7,7 @@ import System.Environment
 main :: IO ()
 main = do
 	arg : _ <- getArgs
-	case expr $ parse arg of
+	case runError $ expr $ parse arg of
 		Right (r, _) -> print r
 		Left _ -> putStrLn "parse error"
 
