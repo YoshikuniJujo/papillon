@@ -64,9 +64,13 @@ papillonFile str = case runError $ pegFile $ parse str of
 		(prgm, mn, ppp, pp, (monad, src, parsed), atp) <- pegfileq
 		let	lu = listUsed parsed
 			ou = optionalUsed parsed
-		let addApplicative =
-			if lu || ou then "import Control.Applicative\n" else ""
-		return (prgm, mn, ppp, addApplicative ++ pp, decs monad src parsed, atp)
+		let	addApplicative = if lu || ou
+				then "import Control.Applicative\n" else ""
+			addIdentity = if isJust monad then ""
+				else "import \"monads-tf\" Control.Monad.Identity\n"
+		return (prgm, mn, ppp,
+			addApplicative ++ addIdentity ++ pp,
+			decs monad src parsed, atp)
 		where
 		decs = decParsed False
 	Left err -> error $ "parse error: " ++ showParseError err

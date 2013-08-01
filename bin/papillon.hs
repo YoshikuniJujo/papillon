@@ -10,7 +10,7 @@ import Class
 addModules :: String
 addModules =
 	"import \"monads-tf\" Control.Monad.State\n" ++
-	"import \"monads-tf\" Control.Monad.Identity\n" ++
+--	"import \"monads-tf\" Control.Monad.Identity\n" ++
 	"import \"monads-tf\" Control.Monad.Error\n"
 
 papillonStr :: String -> IO (String, String, String)

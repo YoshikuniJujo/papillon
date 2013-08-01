@@ -2,15 +2,9 @@
 * 次にやること           *
 **************************
 
-* Control.Monad.Identity と Control.Monad.Error が重複しないようにする
-	やるべきことは2つ。
-	まず、monad が Nothing だったら Identity は import しないようにすること。
-	それから、同じ module を import しないようにすること。
-	前者は比較的簡単だが、後者は import する変数がどうなっているかがわからないと
-	けっこうめんどくさい。
-	とりあえず前者をちゃちゃっとやってしまおう。
-
 * SyntaxTree のリファクタリング
+	いろいろと変更したので全体的に見てみること
+
 	fromTokenChars の名前の変更
 		むしろ、fromTokenChars は消してもいいのかもしれない
 		Parser.pappy のほうに直書き、とか
@@ -95,6 +89,12 @@
 	reify を使い、Pat -> Q (Pat, Bool) とする。
 	IO 内では reify が使えないので、th :: Bool が必要になる。
 	とすると、monad: Reader Bool とする必要がある。
+
+* Control.Monad.Error が重複しないようにする
+	それから、同じ module を import しないようにすること。
+	import する変数がどうなっているかがわからないとけっこうめんどくさい。
+	import 文をちゃんと parsing する必要があるが、どの cost-performance を
+	考える必要がある(主に code の複雑化について)
 
 **************************
 *  エラーメッセージ関係  *
