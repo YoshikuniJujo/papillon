@@ -19,7 +19,7 @@ type Hoge = Either (String, String) (Either (String, String) ())
 uppers :: String
 	= s:(c:[isUpper c] { c })+	{ s }
 ;
-lowers <- [a-z]+;
+lowers = [a-z]+;
 str <- uppers lowers &',' / lowers uppers !',' / lowers;
 
 |]

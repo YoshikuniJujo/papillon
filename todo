@@ -6,6 +6,8 @@
 
 * version up して install
 
+* ebuild の upload
+
 * SyntaxTree のリファクタリング
 	いろいろと変更したので全体的に見てみること
 

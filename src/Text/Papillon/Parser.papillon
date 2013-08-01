@@ -147,6 +147,8 @@ definition :: Definition
 						{ (v, Just t, sel) }
 	/ v:variable _:spaces '<' '-' _:spaces
 		sel:plainSelection _:spaces ';'	{ (v, Nothing, Right sel) }
+	/ v:variable _:spaces '=' _:spaces
+		sel:plainSelection _:spaces ';'	{ (v, Nothing, Right sel) }
 ;
 selection :: Selection
 	= s:normalSelection			{ Left s }
