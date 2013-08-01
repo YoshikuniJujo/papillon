@@ -2,10 +2,9 @@
 * 次にやること           *
 **************************
 
-* chars よりも char のほうが良いかもしれない
-	いずれにしても変更を容易にするために、dvCharsN を SyntaxTree に移動した
-
 * parser から IORef Int と Q を取りのぞく
+	まずは IORef Int を消そう
+
 	<isDigit> を別の構造にしよう
 	また <isDigit> と [a-z] も別の構造にする必要があるだろう
 	前者は Either ... Exp とすれば良い
