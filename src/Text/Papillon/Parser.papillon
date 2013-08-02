@@ -337,7 +337,9 @@ charLitLs :: ReadFrom
 	= charLit _:spaces '*'			{ return 
 	/ charLit _:spaces '+'
 	/ charLit _:spaces '?'
--}readFromLs :: ReadFrom
+-}
+
+readFromLs :: ReadFrom
 	= rf:readFrom '*'			{ return $ FromL List rf }
 	/ rf:readFrom '+'			{ return $ FromL List1 rf }
 	/ rf:readFrom '?'			{ return $ FromL Optional rf }
