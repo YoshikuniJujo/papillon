@@ -15,6 +15,9 @@
 	export list のリファクタリング
 	Peg の構造も変えよう
 
+* Text.PapillonCore よりも Text.Papillon.Core のほうがいいかもしれない
+	考えてみること
+
 * ebuild の upload
 
 * SyntaxTree の名前を適切なものに変える
@@ -255,9 +258,6 @@
 
 * SyntaxTree.hs
 	名前を変更する
-
-* Text.PapillonCore よりも Text.Papillon.Core のほうがいいかもしれない
-	考えてみること
 
 ******************************
 *  機能面における細かい修正  *

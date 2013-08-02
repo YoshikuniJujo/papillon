@@ -41,7 +41,6 @@ import "monads-tf" Control.Monad.Identity
 
 
 
-import Text.Papillon.SyntaxTree
 import Language.Haskell.TH {- (
 	Name, TypeQ, PatQ, ExpQ, mkName,
 	conT, tupleT, listT, appT, arrowT,
@@ -49,6 +48,73 @@ import Language.Haskell.TH {- (
 	litE, varE, conE, tupE, listE, sigE, appE, infixE, uInfixE, lamE,
 	integerL, charL, stringL) -}
 import Data.Char (isSpace, isDigit, isUpper, isLower)
+
+import Language.Haskell.TH.PprLib
+	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>))
+import qualified Language.Haskell.TH.PprLib as P
+import Control.Arrow ((***))
+import Data.List
+
+data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
+data Lists = List | List1 | Optional deriving (Show, Eq)
+
+type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, STPeg, Code)
+data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
+type ModuleName = [String]
+type Exports = String
+type Code = String
+
+type STPeg = (Maybe Type, Type, Peg)
+type Peg = [Definition]
+type Definition = (String, Maybe Type, Selection)
+type Selection =  Either [Expression] [PlainExpression]
+type Expression = Either ([(Lookahead, Check)], Exp) Exp
+type PlainExpression = [(Lookahead, ReadFrom)]
+type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
+data ReadFrom
+	= FromVariable (Maybe String)
+	| FromSelection Selection
+	| FromL Lists ReadFrom
+	deriving Show
+
+pprCheck :: Check -> Doc
+pprCheck ((pt, _), rf, tst) =
+	ppr pt <> colon <> ppr rf <> maybe P.empty (brackets . ppr . fst) tst
+
+instance Ppr ReadFrom where
+	ppr (FromVariable (Just v)) = text v
+	ppr (FromVariable _) = P.empty
+	ppr (FromL l rf) = ppr rf <> ppr l
+	ppr (FromSelection sel) = parens $ ps sel
+		where
+		ps = hsep . intersperse (P.char '/') . either (map pe) (map ppe)
+		pe (Left (ex, hs)) = (<+> braces (ppr hs)) $ hsep $
+			map (uncurry ($) . (((<>) . ppr) *** pprCheck)) ex
+		pe (Right ex) = P.char '<' <> ppr ex <> P.char '>'
+		ppe = hsep . map (uncurry (<>) . (ppr *** ppr))
+
+
+instance Ppr Lookahead where
+	ppr Here = P.empty
+	ppr Ahead = P.char '&'
+	ppr (NAhead _) = P.char '!'
+
+instance Ppr Lists where
+	ppr List = P.char '*'
+	ppr List1 = P.char '+'
+	ppr Optional = P.char '?'
+
+mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
+	STPeg -> String -> PegFile
+mkPegFile ps (Just md) x y z w = (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
+mkPegFile ps Nothing x y z w = (ps, [], Nothing, x ++ "\n" ++ y, z, w)
+
+charList :: String -> ReadFrom
+charList cs = FromSelection $ Left $ (: []) $ Right $
+	InfixE Nothing (VarE $ mkName "elem") $ Just $ LitE $ StringL cs
+
+dvCharsN :: String
+dvCharsN = "char"
 
 data Derivs
     = Derivs {pegFile :: (ErrorT (ParseError (Pos String) Derivs)
