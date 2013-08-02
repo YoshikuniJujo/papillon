@@ -1,0 +1,47 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies, PackageImports #-}
+
+import Text.Papillon
+import System.Environment
+import Data.Char
+import Control.Arrow
+import "monads-tf" Control.Monad.State
+import "monads-tf" Control.Monad.Error
+
+main :: IO ()
+main = do
+	cnt <- readFile . head =<< getArgs
+	case flip evalState (0, 0) $ runErrorT $ defs $ parse cnt of
+		Right (r, _) -> print r
+		Left _ -> putStrLn "parse error"
+
+[papillon|
+
+monad: State (Int, Int)
+
+defs :: [(String, [String])] = ds:def*	{ return ds };
+
+def :: (String, [String]) = n:word "=":symbol v:value _:semiColon
+	{ gets snd >>= modify . first . const >> return (n, v) };
+word :: String = w:<isAlphaNum>+ _:space*	{ return w };
+symbol :: String = s:<isSymbol>+ _:<(`elem` " \t")>*	{ return s };
+
+value :: [String] = ws:word*	{ return ws };
+
+space :: ()
+	= _:<(`elem` " \t")>			{ return () }
+	/ _:notSemiColon			{ return () };
+
+semiColon :: ()
+	= ';'			{ return () }
+	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))] { return () }
+	/ !_:[return True]	{ return () };
+notSemiColon :: ()
+	= _:newLine _:headSpace[get>>=(\(b, h) -> return (b < h))]
+		{ return () };
+
+newLine :: () = '\n'	{ modify $ second $ const 0 };
+headSpace :: ()
+	= '\t'		{ modify $ second $ (* 8) . (+ 1) . (`div` 8) }
+	/ ' '		{ modify $ second (+ 1) };
+
+|]

@@ -1,0 +1,5 @@
+hello = hoge
+hage = hoge
+boke = bonas konas
+	dogas naka
+hage = koshi

@@ -1,0 +1,15 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Prelude hiding (abs)
+import Text.Papillon
+
+main = case runError $ abs $ parse "abc" of
+	Right (r, _) -> print r
+	Left _ -> putStrLn "parse error"
+
+[papillon|
+
+abs :: String = s:ab*			{ s };
+ab :: Char = c:[c == 'a' || c == 'b']	{ c };
+
+|]
