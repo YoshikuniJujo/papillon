@@ -210,10 +210,10 @@ peg_ :: Peg
 definition :: Definition
 	= v:variable _:spaces ':' ':'
 		_:spaces t:hsTypeArr _:spaces '='
-		_:spaces sel:selection _:spaces _:semiColon
+		_:spaces sel:selection _:spaces _:semiColon _:spaces
 		{ gets snd >>= modify . first . const >> return (v, Just t, sel) }
 	/ v:variable _:spaces '=' _:spaces
-		sel:plainSelection _:spaces _:semiColon
+		sel:plainSelection _:spaces _:semiColon _:spaces
 		{ gets snd >>= modify . first . const >> return (v, Nothing, Right sel) }
 
 selection = normalSelection / plainSelection
@@ -229,7 +229,7 @@ plainSelection :: [PlainExpression]
 	/ ex:plainExpressionHs			{ return [ex] }
 
 expressionHs :: Expression
-	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
+	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}' _:spaces
 						{ return $ Left (e, h) }
 	/ e:expressionHsSugar			{ return e }
 
@@ -496,11 +496,11 @@ spaces :: ()
 space :: ()
 	= s:[return $ s `elem` " \t"]		{ return () }
 	/ _:notSemiColon			{ return () }
-	/ '-' '-' _:notNLString _:newLine	{ return () }
+	/ '-' '-' _:notNLString '\n'		{ return () }
 	/ _:comment _:semiColon?		{ return () }
 
 notNLString :: String
-	= !_:newLine c s:notNLString		{ return $ c : s }
+	= !'\n' c s:notNLString			{ return $ c : s }
 	/					{ return "" }
 
 comment :: ()
@@ -519,18 +519,26 @@ comEnd :: ()
 
 semiColon :: ()
 	= ';' _:newLine?			{ return () }
-	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))] ';' _:newLine?
-						{ return () }
 	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))]
+		';' _:newLine?
+						{ return () }
+	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))] !_:lineCommentPre
 						{ return () }
 	/ !_:[return True]			{ return () }
+
+lineCommentPre :: ()
+	= '-' '-'				{ return () }
 
 notSemiColon :: ()
 	= _:newLine _:headSpace[get>>=(\(b, h) -> return (b < h))]
 						{ return () }
+	/ _:newLine _:lineCommentPre _:notNLString '\n'	{ return () }
 
 newLine :: ()
-	= _:('\n' { return ()})+	{ modify $ second $ const 0 }
+--	= _:('\n' { return ()})+	{ modify $ second $ const 0 }
+	= '\n'+				{ modify $ second $ const 0 }
+--	= _:('\n' { return ()})+	{ modify $ second $ const 0 }
+--	= _:('\n' { return ()})+	{ modify $ second $ const 0 }
 
 headSpace :: ()
 	= '\t'	{ modify $ second $ (* 8) . (+ 1) . (`div` 8) }
