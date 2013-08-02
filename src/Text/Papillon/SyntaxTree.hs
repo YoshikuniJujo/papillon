@@ -1,6 +1,12 @@
 {-# LANGUAGE TupleSections #-}
 
 module Text.Papillon.SyntaxTree (
+	PegFile,
+	PPragma(..),
+	ModuleName,
+	Exports,
+	Code,
+
 	STPeg,
 	Peg,
 	Definition,
@@ -9,21 +15,13 @@ module Text.Papillon.SyntaxTree (
 	PlainExpression,
 	Check,
 	ReadFrom(..),
-	charList,
 
 	Lookahead(..),
 	Lists(..),
 
-	getType,
 	pprCheck,
-	readings,
-
-	PegFile,
 	mkPegFile,
-	PPragma(..),
-	ModuleName,
-	Exports,
-	Code,
+	charList,
 
 	dvCharsN
 ) where
@@ -33,11 +31,14 @@ import Language.Haskell.TH.PprLib
 import Control.Arrow ((***))
 import Data.List
 
-dvCharsN :: String
-dvCharsN = "char"
-
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
 data Lists = List | List1 | Optional deriving (Show, Eq)
+
+type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, STPeg, Code)
+data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
+type ModuleName = [String]
+type Exports = String
+type Code = String
 
 type STPeg = (Maybe Type, Type, Peg)
 type Peg = [Definition]
@@ -51,10 +52,6 @@ data ReadFrom
 	| FromSelection Selection
 	| FromL Lists ReadFrom
 	deriving Show
-
-charList :: String -> ReadFrom
-charList cs = FromSelection $ Left $ (: []) $ Right $
-	InfixE Nothing (VarE $ mkName "elem") $ Just $ LitE $ StringL cs
 
 pprCheck :: Check -> Doc
 pprCheck ((pat, _), rf, test) =
@@ -83,45 +80,14 @@ instance Ppr Lists where
 	ppr List1 = char '+'
 	ppr Optional = char '?'
 
-getType :: Peg -> Type -> Selection -> Type
-getType peg tkn s = case s of
-	Right e -> foldr1 (\x y -> (ConT (mkName "Either") `AppT` x) `AppT` y) $
-		map (mkt . map (rf . snd) . filter ((== Here) . fst)) e
-	Left [Right _] -> tkn
-	Left [Left ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v)]
-		| p == v -> tkn
-	_ -> error "getType: can't get type"
-	where
-	rf (FromVariable (Just v)) = let
-		def = case flip filter peg $ (== v) . \(n, _, _) -> n of
-			[d] -> d
-			_ -> error "search: bad" in
-		case def of
-			(_, Just typ, _) -> typ
-			(_, _, sel) -> getType peg tkn sel
-	rf (FromVariable _) = tkn
-	rf (FromSelection sel) = getType peg tkn sel
-	rf (FromL Optional r) = ConT (mkName "Maybe") `AppT` rf r
-	rf (FromL _ r) = ListT `AppT` rf r
-	mkt ts = foldl AppT (TupleT $ length ts) ts
-
-readings :: ReadFrom -> [String]
-readings (FromVariable (Just s)) = [s]
-readings (FromVariable _) = [dvCharsN]
-readings (FromL _ rf) = readings rf
-readings (FromSelection s) = concat $ either
-	(mapM $ either
-		(readings . (\(_, rf, _) -> rf) . snd . head . fst)
-		(const [dvCharsN]))
-	(mapM $ concatMap $ readings . snd) s
-
-type PegFile = ([PPragma], ModuleName, Maybe Exports, Code, STPeg, Code)
-data PPragma = LanguagePragma [String] | OtherPragma String deriving Show
-type ModuleName = [String]
-type Exports = String
-type Code = String
-
 mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
 	STPeg -> String -> PegFile
 mkPegFile ps (Just md) x y z w = (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
 mkPegFile ps Nothing x y z w = (ps, [], Nothing, x ++ "\n" ++ y, z, w)
+
+charList :: String -> ReadFrom
+charList cs = FromSelection $ Left $ (: []) $ Right $
+	InfixE Nothing (VarE $ mkName "elem") $ Just $ LitE $ StringL cs
+
+dvCharsN :: String
+dvCharsN = "char"

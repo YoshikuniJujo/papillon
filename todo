@@ -5,6 +5,8 @@
 * SyntaxTree のリファクタリング
 	いろいろと変更したので全体的に見てみること
 
+	getType と readings は PapillonCore.hs に移すべきかもしれない
+
 	mkPegFile を消せないかな
 		Parser に直書きできないかな
 
@@ -253,6 +255,9 @@
 
 * SyntaxTree.hs
 	名前を変更する
+
+* Text.PapillonCore よりも Text.Papillon.Core のほうがいいかもしれない
+	考えてみること
 
 ******************************
 *  機能面における細かい修正  *

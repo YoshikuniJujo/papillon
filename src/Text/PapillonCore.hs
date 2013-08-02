@@ -429,3 +429,35 @@ identityN False = mkName "Identity"
 liftN :: Bool -> Name
 liftN True = 'lift
 liftN False = mkName "lift"
+
+getType :: Peg -> Type -> Selection -> Type
+getType pg tkn s = case s of
+	Right e -> foldr1 (\x y -> (ConT (mkName "Either") `AppT` x) `AppT` y) $
+		map (mkt . map (rf . snd) . filter ((== Here) . fst)) e
+	Left [Right _] -> tkn
+	Left [Left ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v)]
+		| p == v -> tkn
+	_ -> error "getType: can't get type"
+	where
+	rf (FromVariable (Just v)) = let
+		def = case flip filter pg $ (== v) . \(n, _, _) -> n of
+			[d] -> d
+			_ -> error "search: bad" in
+		case def of
+			(_, Just typ, _) -> typ
+			(_, _, sel) -> getType pg tkn sel
+	rf (FromVariable _) = tkn
+	rf (FromSelection sel) = getType pg tkn sel
+	rf (FromL Optional r) = ConT (mkName "Maybe") `AppT` rf r
+	rf (FromL _ r) = ListT `AppT` rf r
+	mkt ts = foldl AppT (TupleT $ length ts) ts
+
+readings :: ReadFrom -> [String]
+readings (FromVariable (Just s)) = [s]
+readings (FromVariable _) = [dvCharsN]
+readings (FromL _ rf) = readings rf
+readings (FromSelection s) = concat $ either
+	(mapM $ either
+		(readings . (\(_, rf, _) -> rf) . snd . head . fst)
+		(const [dvCharsN]))
+	(mapM $ concatMap $ readings . snd) s
