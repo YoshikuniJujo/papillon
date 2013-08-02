@@ -27,9 +27,12 @@ showReading _ n = "yet: " ++ n
 
 [papillon|
 
+hello2 :: String
+	= c s:hello	{ c : s }
+	/		{ "" }
+;
 hello:: String
 	= c s:hello	{ c : s }
 	/		{ [] }
-;
 
 |]

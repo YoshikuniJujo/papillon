@@ -130,3 +130,10 @@ runhaskell -isrc -ibin -Wall bin/papillon test/peg/testSugar.papillon tmp/ && \
 runhaskell -isrc -itmp -Wall tmp/testSugar.hs
 cp test/peg/testSugar.papillon tmp/testSugar_th.hs
 runhaskell -isrc -Wall tmp/testSugar_th.hs
+
+echo
+echo layout.papillon
+runhaskell -isrc -ibin -Wall bin/papillon test/peg/layout.papillon tmp/ && \
+runhaskell -isrc -itmp -Wall tmp/layout.hs
+cp test/peg/layout.papillon tmp/layout_th.hs
+runhaskell -isrc -Wall tmp/layout_th.hs

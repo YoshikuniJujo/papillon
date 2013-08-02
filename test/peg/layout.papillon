@@ -1,0 +1,22 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Text.Papillon
+import Data.Char
+
+main :: IO ()
+main = case runError $ helloWorld $ parse "Hello, world!" of
+	Right (r, _) -> print r
+	Left _ -> putStrLn "parse error"
+
+[papillon|
+
+helloWorld :: (String, String) = h:hello _:<isSpace>+
+	w:world
+	{ (h, w) }
+
+hello :: String = _:('H' { () }/ 'h' { () }) 'e' 'l' 'l' 'o' _:(',' { () })?
+	{ "hello" }
+world :: String = 'w' 'o' 'r' 'l' 'd' _:('!' { () })?
+	{ "world" }
+
+|]

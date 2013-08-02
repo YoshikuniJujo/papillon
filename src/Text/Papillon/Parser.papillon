@@ -45,7 +45,7 @@ import Data.Char (isSpace, isDigit, isUpper, isLower)
 import Language.Haskell.TH.PprLib
 	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>))
 import qualified Language.Haskell.TH.PprLib as P
-import Control.Arrow ((***))
+import Control.Arrow ((***), first, second)
 import Data.List
 
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
@@ -115,39 +115,39 @@ monad: State (Int, Int)
 
 pegFile :: PegFile
 	= pr:pragmas md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
-		p:peg _:spaces '|' ']' '\n' atp:afterPeg
+		p:peg _:spaces' '|' ']' '\n' atp:afterPeg
 			{ return $ mkPegFile pr md pip pp p atp }
-	/ pr:pragmas md:moduleDec pp:prePeg _:pap p:peg _:spaces
+	/ pr:pragmas md:moduleDec pp:prePeg _:pap p:peg _:spaces'
 		'|' ']' '\n' atp:afterPeg
 			{ return $ mkPegFile pr md [] pp p atp }
 ;
 pragmas :: [PPragma]
-	= _:spaces pr:pragma prs:pragmas	{ return $ pr : prs }
-	/ _:spaces				{ return [] }
+	= _:spaces' pr:pragma prs:pragmas	{ return $ pr : prs }
+	/ _:spaces'				{ return [] }
 ;
 pragma :: PPragma
-	= '{' '-' '#' _:spaces 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces
-		s:pragmaItems _:pragmaEnd _:spaces	{ return $ LanguagePragma s }
-	/ '{' '-' '#' _:spaces s:pragmaStr _:pragmaEnd	{ return $ OtherPragma s }
+	= '{' '-' '#' _:spaces' 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces'
+		s:pragmaItems _:pragmaEnd _:spaces'	{ return $ LanguagePragma s }
+	/ '{' '-' '#' _:spaces' s:pragmaStr _:pragmaEnd	{ return $ OtherPragma s }
 ;
 pragmaStr :: String
 	= !_:pragmaEnd c s:pragmaStr		{ return $ c : s }
 	/					{ return "" }
 ;
 pragmaItems :: [String]
-	= t:typToken ',' _:spaces i:pragmaItems	{ return $ t : i }
+	= t:typToken ',' _:spaces' i:pragmaItems	{ return $ t : i }
 	/ t:typToken				{ return [t] }
 ;
 pragmaEnd :: ()
-	= _:spaces '#' '-' '}'			{ return () }
+	= _:spaces' '#' '-' '}'			{ return () }
 ;
 moduleDec :: Maybe ([String], Maybe String)
-	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces
-		n:moduleName _:spaces
-		'(' _:spaces s:moduleDecStr _:whr
+	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces'
+		n:moduleName _:spaces'
+		'(' _:spaces' s:moduleDecStr _:whr
 						{ return $ Just (n, Just s) }
-	/ 'm' 'o' 'd' 'u' 'l' 'e' _:spaces
-		n:moduleName _:spaces 'w' 'h' 'e' 'r' 'e' _:spaces
+	/ 'm' 'o' 'd' 'u' 'l' 'e' _:spaces'
+		n:moduleName _:spaces' 'w' 'h' 'e' 'r' 'e' _:spaces'
 						{ return $ Just (n, Nothing) }
 	/					{ return Nothing }
 ;
@@ -160,7 +160,7 @@ moduleDecStr :: String
 	/					{ return "" }
 ;
 whr :: ()
-	= _:spaces ')' _:spaces 'w' 'h' 'e' 'r' 'e'
+	= _:spaces' ')' _:spaces' 'w' 'h' 'e' 'r' 'e'
 						{ return () }
 ;
 preImpPap :: String
@@ -177,29 +177,29 @@ afterPeg :: String
 	/					{ return "" }
 ;
 importPapillon :: ()
-	= "import":varToken "Text":typToken '.' _:spaces "Papillon":typToken
+	= "import":varToken "Text":typToken '.' _:spaces' "Papillon":typToken
 		!'.'				{ return () }
 ;
 varToken :: String
-	= v:variable _:spaces			{ return v }
+	= v:variable _:spaces'			{ return v }
 ;
 typToken :: String
-	= t:typ _:spaces			{ return t }
+	= t:typ _:spaces'			{ return t }
 ;
 pap :: ()
 	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ return () }
 ;
 peg :: STPeg
-	= mt:monadType? _:spaces s:sourceType p:peg_
+	= mt:monadType? _:spaces' s:sourceType _:spaces _:semiColon? p:peg_
 		{ return (mt, ConT $ mkName s, p) }
-	/ mt:monadType? p:peg_				
+	/ mt:monadType? _:spaces' _:spaces _:semiColon? p:peg_				
 		{ return (mt, ConT $ mkName "String", p) }
 ;
 monadType :: Type
-	= _:spaces "monad":varToken ':' _:spaces t:hsTypeArr	{ return t }
+	= _:spaces' "monad":varToken ':' _:spaces' t:hsTypeArr	{ return t }
 ;
 sourceType :: String
-	= "source":varToken ':' _:spaces v:typToken
+	= "source":varToken ':' _:spaces' v:typToken
 						{ return v }
 ;
 peg_ :: Peg
@@ -209,10 +209,11 @@ peg_ :: Peg
 definition :: Definition
 	= v:variable _:spaces ':' ':'
 		_:spaces t:hsTypeArr _:spaces '='
-		_:spaces sel:selection _:spaces ';'
-						{ return (v, Just t, sel) }
+		_:spaces sel:selection _:spaces _:semiColon
+		{ gets snd >>= modify . first . const >> return (v, Just t, sel) }
 	/ v:variable _:spaces '=' _:spaces
-		sel:plainSelection _:spaces ';'	{ return (v, Nothing, Right sel) }
+		sel:plainSelection _:spaces _:semiColon
+		{ gets snd >>= modify . first . const >> return (v, Nothing, Right sel) }
 ;
 selection = normalSelection / plainSelection
 ;
@@ -478,21 +479,21 @@ lower :: Char
 digit :: Char
 	= d:[return $ isDigit d]		{ return d }
 ;
+spaces' :: () = _:<isSpace>*			{ return () }
+;
 spaces :: ()
 	= _:space _:spaces			{ return () }
 	/ 					{ return () }
 ;
 space :: ()
-	= s:[return $ isSpace s]		{ return () }
+	= s:[return $ s `elem` " \t"]		{ return () }
+	/ _:notSemiColon			{ return () }
 	/ '-' '-' _:notNLString _:newLine	{ return () }
 	/ _:comment				{ return () }
 ;
 notNLString :: String
 	= !_:newLine c s:notNLString		{ return $ c : s }
 	/					{ return "" }
-;
-newLine :: ()
-	= '\n'					{ return () }
 ;
 comment :: ()
 	= '{' '-' !'#' _:comments _:comEnd	{ return () }
@@ -507,6 +508,25 @@ notComStr :: ()
 ;
 comEnd :: ()
 	= '-' '}'				{ return () }
+;
+semiColon :: ()
+	= ';' _:newLine?			{ return () }
+	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))] ';' _:newLine?
+						{ return () }
+	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))]
+						{ return () }
+	/ !_:[return True]			{ return () }
+;
+notSemiColon :: ()
+	= _:newLine _:headSpace[get>>=(\(b, h) -> return (b < h))]
+						{ return () }
+;
+newLine :: ()
+	= _:('\n' { return ()})+	{ modify $ second $ const 0 }
+;
+headSpace :: ()
+	= '\t'	{ modify $ second $ (* 8) . (+ 1) . (`div` 8) }
+	/ ' '	{ modify $ second (+ 1) }
 ;
 
 |]
