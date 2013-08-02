@@ -2,7 +2,10 @@
 * 次にやること           *
 **************************
 
-* version up して install
+* 'c'+ という表記を許したい
+	これはつまり、_:('c' { return () })+ ということだ。
+	つまり char literal に list 化記号がついたものを特別扱いするということ
+	これは、parse の際に作ることができるな。
 
 * Parser.papillon のリファクタリング
 	まずは以前の papillon の制限によるトリッキーなコードを直す
@@ -69,8 +72,6 @@
 * op の前後に space を許す
 
 * [] の内側に space を許す
-
-* 'c'+ という表記を許したい
 
 * parse error をつかまえる表記をつけたい
 	たとえば、_:parseError とすると parse error が match するような感じ

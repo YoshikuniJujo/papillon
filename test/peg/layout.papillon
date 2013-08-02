@@ -10,9 +10,15 @@ main = case runError $ helloWorld $ parse "Hello, world!" of
 
 [papillon|
 
+{- this is comment
+-}
+
 helloWorld :: (String, String) = h:hello _:<isSpace>+
 	w:world
 	{ (h, w) }
+
+{- is this comment
+-}
 
 hello :: String = _:('H' { () }/ 'h' { () }) 'e' 'l' 'l' 'o' _:(',' { () })?
 	{ "hello" }
