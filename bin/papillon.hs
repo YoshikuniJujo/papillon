@@ -1,4 +1,4 @@
-import Text.PapillonCore
+import Text.Papillon.Core
 import System.Environment
 import System.Directory
 import System.FilePath

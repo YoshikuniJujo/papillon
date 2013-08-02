@@ -32,7 +32,7 @@ source-repository	this
 
 library
   hs-source-dirs:	src
-  exposed-modules:	Text.Papillon, Text.PapillonCore
+  exposed-modules:	Text.Papillon, Text.Papillon.Core
   other-modules:
     Text.Papillon.Parser,
     Text.Papillon.Papillon,

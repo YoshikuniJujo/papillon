@@ -19,7 +19,7 @@ module Text.Papillon (
 	runError
 ) where
 
-import Text.PapillonCore
+import Text.Papillon.Core
 import Language.Haskell.TH.Quote
 
 papillon :: QuasiQuoter

@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, PackageImports, TypeFamilies, FlexibleContexts,
 	FlexibleInstances, TupleSections #-}
 
-module Text.PapillonCore (
+module Text.Papillon.Core (
 	-- * For Text.Papillon library
 	papillonCore,
 
