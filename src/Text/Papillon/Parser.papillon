@@ -481,11 +481,11 @@ alpha :: Char
 upper :: Char
 	= u:[return $ isUpper u]		{ return u }
 
-lower :: Char
-	= l:[return $ isLower l || l == '_' ]	{ return l }
+-- lower :: Char = <\l -> isLower l || l == '_'>
 
-digit :: Char
-	= d:[return $ isDigit d]		{ return d }
+lower :: Char = <(||) <$> isLower <*> (== '_')>
+
+digit :: Char = <isDigit>
 
 spaces' :: () = _:<isSpace>*			{ return () }
 
@@ -496,8 +496,10 @@ spaces :: ()
 space :: ()
 	= s:[return $ s `elem` " \t"]		{ return () }
 	/ _:notSemiColon			{ return () }
-	/ '-' '-' _:notNLString '\n'		{ return () }
+	/ _:lineComment				{ return () }
 	/ _:comment _:semiColon?		{ return () }
+
+lineComment :: () = '-' '-' _:notNLString &'\n'	{ return () }
 
 notNLString :: String
 	= !'\n' c s:notNLString			{ return $ c : s }
@@ -522,23 +524,16 @@ semiColon :: ()
 	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))]
 		';' _:newLine?
 						{ return () }
-	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))] !_:lineCommentPre
+	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))] !_:lineComment
 						{ return () }
 	/ !_:[return True]			{ return () }
-
-lineCommentPre :: ()
-	= '-' '-'				{ return () }
 
 notSemiColon :: ()
 	= _:newLine _:headSpace[get>>=(\(b, h) -> return (b < h))]
 						{ return () }
-	/ _:newLine _:lineCommentPre _:notNLString '\n'	{ return () }
+	/ _:newLine _:lineComment		{ return () }
 
-newLine :: ()
---	= _:('\n' { return ()})+	{ modify $ second $ const 0 }
-	= '\n'+				{ modify $ second $ const 0 }
---	= _:('\n' { return ()})+	{ modify $ second $ const 0 }
---	= _:('\n' { return ()})+	{ modify $ second $ const 0 }
+newLine :: () = '\n'+				{ modify $ second $ const 0 }
 
 headSpace :: ()
 	= '\t'	{ modify $ second $ (* 8) . (+ 1) . (`div` 8) }

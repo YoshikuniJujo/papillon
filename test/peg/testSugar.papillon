@@ -4,12 +4,15 @@ import Text.Papillon
 import Data.Char
 
 main :: IO ()
-main = case runError $ var $ parse "hello, world" of
+main = case runError $ var' $ parse "he_llo, world" of
 	Right (r, _) -> print r
 	Left _ -> putStrLn "parse error"
 
 [papillon|
 
-var :: String = cs:<isLower>+ ',' { cs };
+var :: String = cs:<isLower>+ ',' { cs }
+
+var' :: (String, Char)
+	= cs:<(||) <$> isLower <*> (== '_')>+ ',' ' ' c	{ (cs, c) }
 
 |]

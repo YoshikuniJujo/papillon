@@ -1,0 +1,21 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Text.Papillon
+import Data.Char
+
+main :: IO ()
+main = case runError $ add $ parse "3 + 5" of
+	Right (r, _) -> print r
+	Left _ -> putStrLn "parse error"
+
+[papillon|
+
+add :: Int = x:num "+":word y:num				{ x + y }
+
+-- num :: Int = ds:<isDigit>+	{ read ds }
+num :: Int = ds:word[all isDigit ds]				{ read ds }
+
+word :: String
+	= w:<(||) <$> isAlphaNum <*> isSymbol>+ _:<isSpace>*	{ w }
+
+|]
