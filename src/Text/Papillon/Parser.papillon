@@ -209,8 +209,6 @@ definition :: Definition
 		_:spaces t:hsTypeArr _:spaces '='
 		_:spaces sel:selection _:spaces ';'
 						{ (v, Just t, sel) }
-	/ v:variable _:spaces '<' '-' _:spaces
-		sel:plainSelection _:spaces ';'	{ (v, Nothing, Right sel) }
 	/ v:variable _:spaces '=' _:spaces
 		sel:plainSelection _:spaces ';'	{ (v, Nothing, Right sel) }
 ;

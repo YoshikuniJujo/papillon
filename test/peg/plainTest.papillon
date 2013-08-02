@@ -20,6 +20,6 @@ uppers :: String
 	= s:(c:[isUpper c] { c })+	{ s }
 ;
 lowers = [a-z]+;
-str <- uppers lowers &',' / lowers uppers !',' / lowers;
+str = uppers lowers &',' / lowers uppers !',' / lowers;
 
 |]

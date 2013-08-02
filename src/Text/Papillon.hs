@@ -4,6 +4,7 @@ module Text.Papillon (
 	SourceList(..),
 	Pos(..),
 	ListPos(..),
+
 	-- * For parse error message
 	ParseError,
 	mkParseError,
