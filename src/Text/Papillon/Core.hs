@@ -181,21 +181,23 @@ mkRule t m s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$
 expression :: Bool -> Bool -> Expression -> State Variables Exp
 expression th m (Left (e, r)) =
 	(doE . (++ [NoBindS $ retLift `AppE` r]) . concat <$>) $
-		forM e $ \(la, ck@(_, rf, _)) ->
-			lookahead th la (show $ pprCheck ck) (readings rf) =<<
+		forM e $ \(la, ck) ->
+			lookahead th la (show $ pprCheck ck) (getReadings ck) =<<
 				check th m ck
 	where
 	retLift = if m then VarE $ liftN th else VarE $ mkName "return"
+	getReadings (Left (_, rf, _)) = readings rf
+	getReadings (Right _) = [dvCharsN]
 expression th _ (Right e) = do
 	c <- gets $ getVariable "c"
 	modify $ nextVariable "c"
-	let	e' = [(Here, ((VarP c, ""), FromVariable Nothing,
+	let	e' = [(Here, Left ((VarP c, ""), FromVariable Nothing,
 			Just (e `AppE` VarE c, "")))]
 		r = VarE c
 	expression th False (Left (e', r))
 
 check :: Bool -> Bool -> Check -> State Variables [Stmt]
-check th monadic ((n, nc), rf, test) = do
+check th monadic (Left ((n, nc), rf, test)) = do
 	t <- gets $ getVariable "t"
 	d <- gets $ getVariable "d"
 	b <- gets $ getVariable "b"
@@ -234,6 +236,13 @@ check th monadic ((n, nc), rf, test) = do
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers _ = False
+check th monadic (Right (c, l)) =
+	check th monadic
+		(Left ((WildP, ""), FromL l $ FromSelection sel, Nothing))
+	where
+	sel = Left [Left
+		([(Here, Left ((LitP $ CharL c, ""), FromVariable Nothing, Nothing))],
+		if monadic then VarE (mkName "return") `AppE` TupE [] else TupE [])]
 
 plainExpression :: Bool -> Bool -> PlainExpression -> State Variables Exp
 plainExpression th monadic pexs = do
@@ -334,8 +343,11 @@ listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
 	where
 	sel = either (any ex) (any $ any $ rf . snd)
-	ex (Left e) = any (rf . (\(_, r, _) -> r) . snd) $ fst e
+	ex (Left e) = any (either (rf . \(_, r, _) -> r) chr . snd) $ fst e
 	ex (Right _) = False
+	chr (_, List) = True
+	chr (_, List1) = True
+	chr (_, _) = False
 	rf (FromL List _) = True
 	rf (FromL List1 _) = True
 	rf (FromSelection s) = sel s
@@ -343,8 +355,10 @@ listUsed = any $ sel . \(_, _, s) -> s
 optionalUsed = any $ sel . \(_, _, s) -> s
 	where
 	sel = either (any $ ex) (any $ any $ rf . snd)
-	ex (Left e) = any (rf . (\(_, r, _) -> r) . snd) $ fst e
+	ex (Left e) = any (either (rf . \(_, r, _) -> r) chr . snd) $ fst e
 	ex (Right _) = False
+	chr (_, Optional) = True
+	chr (_, _) = False
 	rf (FromL Optional _) = True
 	rf (FromSelection s) = sel s
 	rf _ = False
@@ -435,7 +449,7 @@ getType pg tkn s = case s of
 	Right e -> foldr1 (\x y -> (ConT (mkName "Either") `AppT` x) `AppT` y) $
 		map (mkt . map (rf . snd) . filter ((== Here) . fst)) e
 	Left [Right _] -> tkn
-	Left [Left ([(Here, ((VarP p, _), FromVariable Nothing, _))], VarE v)]
+	Left [Left ([(Here, Left ((VarP p, _), FromVariable Nothing, _))], VarE v)]
 		| p == v -> tkn
 	_ -> error "getType: can't get type"
 	where
@@ -458,6 +472,6 @@ readings (FromVariable _) = [dvCharsN]
 readings (FromL _ rf) = readings rf
 readings (FromSelection s) = concat $ either
 	(mapM $ either
-		(readings . (\(_, rf, _) -> rf) . snd . head . fst)
+		(either (readings . \(_, rf, _) -> rf) (const [dvCharsN]) . snd . head . fst)
 		(const [dvCharsN]))
 	(mapM $ concatMap $ readings . snd) s

@@ -2,20 +2,7 @@
 * 次にやること           *
 **************************
 
-* 'c'+ という表記を許したい
-	これはつまり、_:('c' { return () })+ ということだ。
-	つまり char literal に list 化記号がついたものを特別扱いするということ
-	これは、parse の際に作ることができるな。
-	と思ったのだが、実はやっかいなところがある。
-	return をつけるかどうかという問題が出てきてしまうかもしれない。
-	そうすると Check を Either とする必要があるが ...
-	type Check = Either ... Char となるだろうか。
-
-	これは採用するかどうか迷うところなので branch を切ってから作業を進める
-	ことにしよう。
-
-	((WildP, ""), FromL List1 (FromSelection ...), Nothing)
-	... = Left [Left ([],  ]
+* version up して install
 
 * Parser.papillon のリファクタリング
 	まずは以前の papillon の制限によるトリッキーなコードを直す

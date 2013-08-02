@@ -1,0 +1,15 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = case runError $ as $ parse "aaaabbbbcc" of
+	Right (r, _) -> print r
+	Left _ -> putStrLn "parse error"
+
+[papillon|
+
+-- as :: String = 'a'+	{ "hello" }
+as :: String = 'a'+ s:<const True>*	{ s }
+
+|]

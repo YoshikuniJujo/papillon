@@ -43,7 +43,7 @@ import Language.Haskell.TH {- (
 import Data.Char (isSpace, isDigit, isUpper, isLower)
 
 import Language.Haskell.TH.PprLib
-	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>))
+	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>), quotes)
 import qualified Language.Haskell.TH.PprLib as P
 import Control.Arrow ((***), first, second)
 import Data.List
@@ -63,7 +63,7 @@ type Definition = (String, Maybe Type, Selection)
 type Selection =  Either [Expression] [PlainExpression]
 type Expression = Either ([(Lookahead, Check)], Exp) Exp
 type PlainExpression = [(Lookahead, ReadFrom)]
-type Check = ((Pat, String), ReadFrom, Maybe (Exp, String))
+type Check = Either ((Pat, String), ReadFrom, Maybe (Exp, String)) (Char, Lists)
 data ReadFrom
 	= FromVariable (Maybe String)
 	| FromSelection Selection
@@ -71,8 +71,9 @@ data ReadFrom
 	deriving Show
 
 pprCheck :: Check -> Doc
-pprCheck ((pt, _), rf, tst) =
+pprCheck (Left ((pt, _), rf, tst)) =
 	ppr pt <> colon <> ppr rf <> maybe P.empty (brackets . ppr . fst) tst
+pprCheck (Right (c, l)) = quotes (P.char c) <> ppr l
 
 instance Ppr ReadFrom where
 	ppr (FromVariable (Just v)) = text v
@@ -261,16 +262,18 @@ nameLeaf_ :: (Lookahead, Check)
 	/ nl:nameLeaf				{ return (Here, nl) }
 
 nameLeaf :: Check
-	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
-		{ return ((n, maybe "" id com), rf, p) }
+	= cl:charLitLs	{ return cl }
+	/ n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
+		{ return $ Left ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces com:comForErr?
-		{ return ((n, maybe "" id com), FromVariable Nothing, Nothing) }
+		{ return $ Left ((n, maybe "" id com), FromVariable Nothing, Nothing) }
 
 nameLeafNoCom :: Check
-	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
-		{ return ((n, maybe "" id com), rf, p) }
+	= cl:charLitLs { return cl }
+	/ n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
+		{ return $ Left ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces
-		{ return ((n, ""), FromVariable Nothing, Nothing) }
+		{ return $ Left ((n, ""), FromVariable Nothing, Nothing) }
 
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
@@ -332,12 +335,10 @@ pats :: [Pat]
 	= p:pat _:spaces ps:pats		{ return $ p : ps }
 	/					{ return [] }
 
-{-
-charLitLs :: ReadFrom
-	= charLit _:spaces '*'			{ return 
-	/ charLit _:spaces '+'
-	/ charLit _:spaces '?'
--}
+charLitLs :: Check
+	= c:charLit _:spaces '*'		{ return $ Right (c, List) }
+	/ c:charLit _:spaces '+'		{ return $ Right (c, List1) }
+	/ c:charLit _:spaces '?'		{ return $ Right (c, Optional) }
 
 readFromLs :: ReadFrom
 	= rf:readFrom '*'			{ return $ FromL List rf }
