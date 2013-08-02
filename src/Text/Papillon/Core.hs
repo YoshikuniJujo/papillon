@@ -51,7 +51,7 @@ dvPosN :: Name
 dvPosN = mkName "position"
 
 papillonCore :: String -> DecsQ
-papillonCore str = case runError $ peg $ parse str of
+papillonCore str = case flip evalState (0, 0) $ runErrorT $ peg $ parse str of
 	Right (stpegq, _) -> do
 		let (monad, src, parsed) = stpegq
 		decParsed True monad src parsed
@@ -59,7 +59,7 @@ papillonCore str = case runError $ peg $ parse str of
 
 papillonFile :: String ->
 	Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
-papillonFile str = case runError $ pegFile $ parse str of
+papillonFile str = case flip evalState (0, 0) $ runErrorT $ pegFile $ parse str of
 	Right (pegfileq, _) -> do
 		let	(prgm, mn, ppp, pp, (monad, src, parsed), atp) = pegfileq
 			lu = listUsed parsed
@@ -381,7 +381,7 @@ showParseError pe =
 
 showReading :: Derivs -> String -> String
 showReading d n
-	| n == dvCharsN = case runError $ char d of
+	| n == dvCharsN = case flip evalState (0, 0) $ runErrorT $ char d of
 		Right (c, _) -> show c
 		Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
