@@ -2,6 +2,9 @@
 * 次にやること           *
 **************************
 
+* merge する
+	そろそろ char_plus を master に merge するべきだ。
+
 * Parser.papillon のリファクタリング
 	次は spaces をつけてまわることから解放されるために、
 	word	= <isAlphaNum>+ spaces
