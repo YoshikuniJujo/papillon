@@ -1,3 +1,4 @@
 /tmp/
 /dist/
 /*.ebuild
+/src/Text/Papillon/Parser.hs
