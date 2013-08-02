@@ -16,6 +16,10 @@ add :: Int = x:num "+":word y:num				{ x + y }
 num :: Int = ds:word[all isDigit ds]				{ read ds }
 
 word :: String
-	= w:<(||) <$> isAlphaNum <*> isSymbol>+ _:<isSpace>*	{ w }
+	= 'h' 'o' 'g' 'e'					{ "hoge" }
+{-
+	= bad line
+	-}
+	/ w:<(||) <$> isAlphaNum <*> isSymbol>+ _:<isSpace>*	{ w }
 
 |]

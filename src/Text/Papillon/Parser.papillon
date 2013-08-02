@@ -359,9 +359,13 @@ selectCharsLs :: ReadFrom
 
 selectChars :: ReadFrom
 	= '[' cs:<(`notElem` "\\-")>+ ']'	{ return $ charList cs }
+	{-
 	/ '[' cb:[return $ cb `notElem` "\\-"] '-'
 		ce:[return $ ce `notElem` "\\-"] ']'	{ return $ charList [cb .. ce] }
-	/ '\'' c:[return $ c `notElem` "\\'"] '\''	{ return $ charList [c] }
+	-}
+	/ '[' cb:[return $ cb `notElem` "\\-"] '-'
+		ce:[return $ ce `notElem` "\\-"] ']'	{ return $ charList [cb .. ce] }
+	/ '\'' c:<(`notElem` "\\'")> '\''	{ return $ charList [c] }
 
 test :: (Exp, String)
 	= '[' h:hsExpLam _:spaces com:comForErr? ']'
@@ -383,7 +387,7 @@ hsExpOp :: Exp
 	/ e:hsExp				{ return $ e id }
 
 hsOp :: Exp
-	= c:[return $ c `elem` "+*/-!|&.^=<>$"] o:opTail { return $ VarE $ mkName $ c : o }
+	= c:<(`elem` "+*/-!|&.^=<>$")> o:opTail	{ return $ VarE $ mkName $ c : o }
 	/ ':' !':' o:opTail			{ return $ ConE $ mkName $ ':' : o }
 	/ '`' v:variable '`'			{ return $ VarE $ mkName v }
 	/ '`' t:typ '`'				{ return $ ConE $ mkName t }
@@ -405,13 +409,13 @@ hsExpOp' :: Exp
 	/ e:hsExp				{ return $ e id }
 
 hsOp' :: Exp
-	= c:[return $ c `elem` "+*/-!|&.^=<$"] o:opTail	{ return $ VarE $ mkName $ c : o }
+	= c:<(`elem` "+*/-!|&.^=<$")> o:opTail	{ return $ VarE $ mkName $ c : o }
 	/ ':' !':' o:opTail			{ return $ ConE $ mkName $ ':' : o }
 	/ '`' v:variable '`'			{ return $ VarE $ mkName v }
 	/ '`' t:typ '`'				{ return $ ConE $ mkName t }
 
 opTail :: String
-	= c:[return $ c `elem` ":+*/-!|&.^=<>$"] s:opTail{ return $ c : s }
+	= c:<(`elem` ":+*/-!|&.^=<>$")> s:opTail{ return $ c : s }
 	/					{ return "" }
 
 hsExp :: (Exp -> Exp) -> Exp
@@ -478,10 +482,7 @@ alpha :: Char
 	/ d:digit				{ return d }
 	/ '\''					{ return '\'' }
 
-upper :: Char
-	= u:[return $ isUpper u]		{ return u }
-
--- lower :: Char = <\l -> isLower l || l == '_'>
+upper :: Char = <isUpper>
 
 lower :: Char = <(||) <$> isLower <*> (== '_')>
 
@@ -524,7 +525,8 @@ semiColon :: ()
 	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))]
 		';' _:newLine?
 						{ return () }
-	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))] !_:lineComment
+	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))]
+		!_:lineComment !_:comment
 						{ return () }
 	/ !_:[return True]			{ return () }
 
@@ -532,6 +534,7 @@ notSemiColon :: ()
 	= _:newLine _:headSpace[get>>=(\(b, h) -> return (b < h))]
 						{ return () }
 	/ _:newLine _:lineComment		{ return () }
+	/ _:newLine _:comment			{ return () }
 
 newLine :: () = '\n'+				{ modify $ second $ const 0 }
 
