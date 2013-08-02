@@ -120,27 +120,27 @@ pegFile :: PegFile
 	/ pr:pragmas md:moduleDec pp:prePeg _:pap p:peg _:spaces'
 		'|' ']' '\n' atp:afterPeg
 			{ return $ mkPegFile pr md [] pp p atp }
-;
+
 pragmas :: [PPragma]
 	= _:spaces' pr:pragma prs:pragmas	{ return $ pr : prs }
 	/ _:spaces'				{ return [] }
-;
+
 pragma :: PPragma
 	= '{' '-' '#' _:spaces' 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces'
 		s:pragmaItems _:pragmaEnd _:spaces'	{ return $ LanguagePragma s }
 	/ '{' '-' '#' _:spaces' s:pragmaStr _:pragmaEnd	{ return $ OtherPragma s }
-;
+
 pragmaStr :: String
 	= !_:pragmaEnd c s:pragmaStr		{ return $ c : s }
 	/					{ return "" }
-;
+
 pragmaItems :: [String]
 	= t:typToken ',' _:spaces' i:pragmaItems	{ return $ t : i }
 	/ t:typToken				{ return [t] }
-;
+
 pragmaEnd :: ()
 	= _:spaces' '#' '-' '}'			{ return () }
-;
+
 moduleDec :: Maybe ([String], Maybe String)
 	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces'
 		n:moduleName _:spaces'
@@ -150,62 +150,62 @@ moduleDec :: Maybe ([String], Maybe String)
 		n:moduleName _:spaces' 'w' 'h' 'e' 'r' 'e' _:spaces'
 						{ return $ Just (n, Nothing) }
 	/					{ return Nothing }
-;
+
 moduleName :: ModuleName
 	= t:typ '.' n:moduleName		{ return $ t : n }
 	/ t:typ					{ return [t] }
-;
+
 moduleDecStr :: String
 	= !_:whr c s:moduleDecStr		{ return $ c : s }
 	/					{ return "" }
-;
+
 whr :: ()
 	= _:spaces' ')' _:spaces' 'w' 'h' 'e' 'r' 'e'
 						{ return () }
-;
+
 preImpPap :: String
 	= !_:importPapillon !_:pap c pip:preImpPap
 						{ return $ c : pip }
 	/					{ return "" }
-;
+
 prePeg :: String
 	= !_:pap c pp:prePeg			{ return $ c : pp }
 	/					{ return "" }
-;
+
 afterPeg :: String
 	= c atp:afterPeg			{ return $ c : atp }
 	/					{ return "" }
-;
+
 importPapillon :: ()
 	= "import":varToken "Text":typToken '.' _:spaces' "Papillon":typToken
 		!'.'				{ return () }
-;
+
 varToken :: String
 	= v:variable _:spaces'			{ return v }
-;
+
 typToken :: String
 	= t:typ _:spaces'			{ return t }
-;
+
 pap :: ()
 	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ return () }
-;
+
 peg :: STPeg
 	= mt:monadType? _:spaces' s:sourceType _:spaces _:semiColon? p:peg_
 		{ return (mt, ConT $ mkName s, p) }
 	/ mt:monadType? _:spaces' _:spaces _:semiColon? p:peg_				
 		{ return (mt, ConT $ mkName "String", p) }
-;
+
 monadType :: Type
 	= _:spaces' "monad":varToken ':' _:spaces' t:hsTypeArr	{ return t }
-;
+
 sourceType :: String
 	= "source":varToken ':' _:spaces' v:typToken
 						{ return v }
-;
+
 peg_ :: Peg
 	= _:spaces d:definition p:peg_		{ return $ d : p }
 	/ 					{ return [] }
-;
+
 definition :: Definition
 	= v:variable _:spaces ':' ':'
 		_:spaces t:hsTypeArr _:spaces '='
@@ -214,84 +214,84 @@ definition :: Definition
 	/ v:variable _:spaces '=' _:spaces
 		sel:plainSelection _:spaces _:semiColon
 		{ gets snd >>= modify . first . const >> return (v, Nothing, Right sel) }
-;
+
 selection = normalSelection / plainSelection
-;
+
 normalSelection :: [Expression]
 	= ex:expressionHs _:spaces '/' _:spaces sel:normalSelection
 						{ return $ ex : sel }
 	/ ex:expressionHs			{ return [ex] }
-;
+
 plainSelection :: [PlainExpression]
 	= ex:plainExpressionHs _:spaces '/' _:spaces sel:plainSelection
 						{ return $ ex : sel }
 	/ ex:plainExpressionHs			{ return [ex] }
-;
+
 expressionHs :: Expression
 	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}'
 						{ return $ Left (e, h) }
 	/ e:expressionHsSugar			{ return e }
-;
+
 expressionHsSugar :: Expression
 	= '<' _:spaces h:hsExpLam _:spaces '>'	{ return $ Right h }
-;
+
 expressionHsSugar' :: Expression
 	= '<' _:spaces h:hsExpLam' _:spaces '>'	{ return $ Right h }
-;
+
 plainExpressionHs :: PlainExpression
 	= rfs:(rf:plainHAReadFromLs _:spaces { return rf })*	{ return rfs }
-;
+
 plainHAReadFromLs :: (Lookahead, ReadFrom)
 	= rf:plainReadFromLs			{ return (Here, rf) }
 	/ '&' rf:plainReadFromLs		{ return (Ahead, rf) }
 	/ '!' rf:plainReadFromLs		{ return (NAhead "", rf) }
-;
+
 plainReadFromLs :: ReadFrom
 	= rf:readFromLs				{ return rf }
 	/ rf:selectCharsLs			{ return rf }
-;
+
 expression :: [(Lookahead, Check)]
 	= l:nameLeaf_ _:spaces e:expression	{ return $ l : e }
 	/ 					{ return [] }
-;
+
 nameLeaf_ :: (Lookahead, Check)
 	= '!' nl:nameLeafNoCom _:spaces com:comForErr?
 						{ return (NAhead $ maybe "" id com, nl) }
 	/ '&' nl:nameLeaf			{ return (Ahead, nl) }
 	/ nl:nameLeaf				{ return (Here, nl) }
-;
+
 nameLeaf :: Check
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ return ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces com:comForErr?
 		{ return ((n, maybe "" id com), FromVariable Nothing, Nothing) }
-;
+
 nameLeafNoCom :: Check
 	= n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
 		{ return ((n, maybe "" id com), rf, p) }
 	/ n:pat1 _:spaces
 		{ return ((n, ""), FromVariable Nothing, Nothing) }
-;
+
 comForErr :: String
 	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
 						{ return s }
-;
+
 leaf :: (ReadFrom, Maybe (Exp, String))
 	= rf:readFromLs t:test			{ return (rf, Just t) }
 	/ rf:readFromLs				{ return (rf, Nothing) }
 	/ t:test			{ return (FromVariable Nothing, Just t) }
-;
+
 patOp :: Pat
 	= p:pat o:opConName po:patOp		{ return $ UInfixP p o po }
 	/ p:pat _:spaces '`' t:typ '`' _:spaces po:patOp
 						{ return $ UInfixP p (mkName t) po }
 	/ p:pat					{ return p }
-;
+
 pat :: Pat
 	= t:typ _:spaces ps:pats		{ return $ ConP (mkName t) ps }
 	/ '(' o:opConName ')'_:spaces ps:pats	{ return $ ConP o ps }
 	/ p:pat1				{ return p }
-;
+
 pat1 :: Pat
 	= t:typ					{ return $ ConP (mkName t) [] }
 	/ "_":variable				{ return WildP }
@@ -302,114 +302,114 @@ pat1 :: Pat
 	/ '"' s:stringLit '"'			{ return $ LitP $ StringL s }
 	/ '(' p:patList ')'			{ return $ TupP p }
 	/ '[' p:patList ']'			{ return $ ListP p }
-;
+
 patList :: [Pat]
 	= p:patOp _:spaces ',' _:spaces ps:patList
 						{ return $ p : ps }
 	/ p:patOp				{ return [p] }
 	/					{ return [] }
-;
+
 opConName :: Name
 	= ':' ot:opTail				{ return $ mkName $ ':' : ot }
-;
+
 charLit :: Char
 	= c:[return $ c `notElem` "\\'"]	{ return c }
 	/ '\\' c:escapeC			{ return c }
-;
+
 stringLit :: String
 	= c:[return $ c `notElem` "\"\\"] s:stringLit	{ return $ c : s }
 	/ '\\' c:escapeC s:stringLit		{ return $ c : s }
 	/					{ return "" }
-;
+
 escapeC :: Char
 	= '"'					{ return '"' }
 	/ '\''					{ return '\'' }
 	/ '\\'					{ return '\\' }
 	/ 'n'					{ return '\n' }
 	/ 't'					{ return '\t' }
-;
+
 pats :: [Pat]
 	= p:pat _:spaces ps:pats		{ return $ p : ps }
 	/					{ return [] }
-;
+
 readFromLs :: ReadFrom
 	= rf:readFrom '*'			{ return $ FromL List rf }
 	/ rf:readFrom '+'			{ return $ FromL List1 rf }
 	/ rf:readFrom '?'			{ return $ FromL Optional rf }
 	/ rf:readFrom				{ return rf }
-;
+
 readFrom :: ReadFrom
 	= v:variable				{ return $ FromVariable $ Just v }
 	/ '(' s:selection ')'			{ return $ FromSelection s }
 	/ e:expressionHsSugar'			{ return $ FromSelection $ Left [e] }
-;
+
 selectCharsLs :: ReadFrom
 	= rf:selectChars '*'			{ return $ FromL List rf }
 	/ rf:selectChars '+'			{ return $ FromL List1 rf }
 	/ rf:selectChars '?'			{ return $ FromL Optional rf }
 	/ rf:selectChars			{ return rf }
-;
+
 selectChars :: ReadFrom
 	= '[' cs:<(`notElem` "\\-")>+ ']'	{ return $ charList cs }
 	/ '[' cb:[return $ cb `notElem` "\\-"] '-'
 		ce:[return $ ce `notElem` "\\-"] ']'	{ return $ charList [cb .. ce] }
 	/ '\'' c:[return $ c `notElem` "\\'"] '\''	{ return $ charList [c] }
-;
+
 test :: (Exp, String)
 	= '[' h:hsExpLam _:spaces com:comForErr? ']'
 						{ return (h, maybe "" id com) }
-;
+
 hsExpLam :: Exp
 	= '\\' _:spaces ps:pats _:spaces '-' '>' _:spaces e:hsExpTyp
 						{ return $ LamE ps e }
 	/ e:hsExpTyp				{ return e }
-;
+
 hsExpTyp :: Exp
 	= eo:hsExpOp ':' ':' _:spaces t:hsTypeArr
 						{ return $ SigE eo t }
 	/ eo:hsExpOp				{ return eo }
-;
+
 hsExpOp :: Exp
 	= l:hsExp _:spaces o:hsOp _:spaces r:hsExpOp
 						{ return $ UInfixE (l id) o r }
 	/ e:hsExp				{ return $ e id }
-;
+
 hsOp :: Exp
 	= c:[return $ c `elem` "+*/-!|&.^=<>$"] o:opTail { return $ VarE $ mkName $ c : o }
 	/ ':' !':' o:opTail			{ return $ ConE $ mkName $ ':' : o }
 	/ '`' v:variable '`'			{ return $ VarE $ mkName v }
 	/ '`' t:typ '`'				{ return $ ConE $ mkName t }
-;
+
 
 hsExpLam' :: Exp
 	= '\\' _:spaces ps:pats _:spaces '-' '>' _:spaces e:hsExpTyp'
 						{ return $ LamE ps e }
 	/ e:hsExpTyp'				{ return e }
-;
+
 hsExpTyp' :: Exp
 	= eo:hsExpOp' ':' ':' _:spaces t:hsTypeArr
 						{ return $ SigE eo t }
 	/ eo:hsExpOp'				{ return eo }
-;
+
 hsExpOp' :: Exp
 	= l:hsExp _:spaces o:hsOp' _:spaces r:hsExpOp'
 						{ return $ UInfixE (l id) o r }
 	/ e:hsExp				{ return $ e id }
-;
+
 hsOp' :: Exp
 	= c:[return $ c `elem` "+*/-!|&.^=<$"] o:opTail	{ return $ VarE $ mkName $ c : o }
 	/ ':' !':' o:opTail			{ return $ ConE $ mkName $ ':' : o }
 	/ '`' v:variable '`'			{ return $ VarE $ mkName v }
 	/ '`' t:typ '`'				{ return $ ConE $ mkName t }
-;
+
 opTail :: String
 	= c:[return $ c `elem` ":+*/-!|&.^=<>$"] s:opTail{ return $ c : s }
 	/					{ return "" }
-;
+
 hsExp :: (Exp -> Exp) -> Exp
 	= e:hsExp1 _:spaces h:hsExp		{return (\f->h (f e `AppE`))}
 	/ e:hsExp1				{return (\f->f e)}
-;
+
 hsExp1 :: Exp
 	= '(' l:(e:hsExpTyp {return e})? _:spaces o:hsOp _:spaces
 		r:(e:hsExpTyp {return e})? ')'	{ return $ InfixE l o r }
@@ -421,22 +421,22 @@ hsExp1 :: Exp
 	/ '\'' c:charLit '\''			{ return $ LitE $ charL c }
 	/ '"' s:stringLit '"'			{ return $ LitE $ stringL s }
 	/ '-' _:spaces e:hsExp1			{ return $ AppE (VarE $ mkName "negate") e }
-;
+
 hsExpTpl :: [Exp]
 	= e:hsExpLam _:spaces ',' _:spaces et:hsExpTpl
 						{ return $ e : et }
 	/ e:hsExpLam				{ return [e] }
 	/					{ return [] }
-;
+
 hsTypeArr :: Type
 	= l:hsType '-' '>' _:spaces r:hsTypeArr
 						{ return $ AppT (AppT ArrowT $ l id) r }
 	/ t:hsType				{ return $ t id }
-;
+
 hsType :: (Type -> Type) -> Type
 	= t:hsType1 ts:hsType			{ return $(\f -> ts (f t `AppT`)) }
 	/ t:hsType1				{ return ($ t) }
-;
+
 hsType1 :: Type
 	= '[' ']' _:spaces			{ return ListT }
 	/ '[' t:hsTypeArr ']' _:spaces		{ return $ ListT `AppT` t }
@@ -444,71 +444,71 @@ hsType1 :: Type
 					{ return $ foldl AppT (TupleT $ length tt) tt }
 	/ t:typToken				{ return $ ConT $ mkName t }
 	/ '(' '-' '>' ')' _:spaces		{ return ArrowT }
-;
+
 hsTypeTpl :: [Type]
 	= t:hsTypeArr ',' _:spaces tt:hsTypeTpl
 						{ return $ t : tt }
 	/ t:hsTypeArr				{ return [t] }
 	/					{ return [] }
-;
+
 typ :: String
 	= u:upper t:tvtail			{ return $ u : t }
-;
+
 variable :: String
 	= l:lower t:tvtail			{ return $ l : t }
-;
+
 tvtail :: String
 	= a:alpha t:tvtail			{ return $ a : t }
 	/ 					{ return "" }
-;
+
 integer :: Integer
 	= dh:digit ds:(d:digit { return d })*	{ return $ (read $ dh : ds) }
-;
+
 alpha :: Char
 	= u:upper				{ return u }
 	/ l:lower				{ return l }
 	/ d:digit				{ return d }
 	/ '\''					{ return '\'' }
-;
+
 upper :: Char
 	= u:[return $ isUpper u]		{ return u }
-;
+
 lower :: Char
 	= l:[return $ isLower l || l == '_' ]	{ return l }
-;
+
 digit :: Char
 	= d:[return $ isDigit d]		{ return d }
-;
+
 spaces' :: () = _:<isSpace>*			{ return () }
-;
+
 spaces :: ()
 	= _:space _:spaces			{ return () }
 	/ 					{ return () }
-;
+
 space :: ()
 	= s:[return $ s `elem` " \t"]		{ return () }
 	/ _:notSemiColon			{ return () }
 	/ '-' '-' _:notNLString _:newLine	{ return () }
 	/ _:comment				{ return () }
-;
+
 notNLString :: String
 	= !_:newLine c s:notNLString		{ return $ c : s }
 	/					{ return "" }
-;
+
 comment :: ()
 	= '{' '-' !'#' _:comments _:comEnd	{ return () }
-;
+
 comments :: ()
 	= _:notComStr _:comment _:comments	{ return () }
 	/ _:notComStr				{ return () }
-;
+
 notComStr :: ()
 	= !_:comment !_:comEnd _ _:notComStr	{ return () }
 	/					{ return () }
-;
+
 comEnd :: ()
 	= '-' '}'				{ return () }
-;
+
 semiColon :: ()
 	= ';' _:newLine?			{ return () }
 	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))] ';' _:newLine?
@@ -516,17 +516,17 @@ semiColon :: ()
 	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))]
 						{ return () }
 	/ !_:[return True]			{ return () }
-;
+
 notSemiColon :: ()
 	= _:newLine _:headSpace[get>>=(\(b, h) -> return (b < h))]
 						{ return () }
-;
+
 newLine :: ()
 	= _:('\n' { return ()})+	{ modify $ second $ const 0 }
-;
+
 headSpace :: ()
 	= '\t'	{ modify $ second $ (* 8) . (+ 1) . (`div` 8) }
 	/ ' '	{ modify $ second (+ 1) }
-;
+
 
 |]

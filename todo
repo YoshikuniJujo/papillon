@@ -2,52 +2,7 @@
 * 次にやること           *
 **************************
 
-* ss:(ss:some { ss })? という形が monadic なほうではうまく動かない
-
-* 以下を実現するために
-	まずは、monad: State (Int, Int) としよう
-	そして、すべてに return をつける
-
-* ; を省略可能にしようかな
-	レイアウトルールを使うほうが良いかもしれない。
-	その場合どうなるか。
-	開始の行と比較して、インデントが同じか、より浅くなっている場合には、
-	そこの直前に ';' を挿入することにすれば良いだろう。
-
-	これをするためにはとりあえず、
-	すべての {} と [] に return を入れる必要がある。
-
-	上がうまくいくかどうかすこし考えてみる必要がある。
-	State (Int, Int) を使いインデントを記録する。
-	noSemiColon :: ()
-		= _:newLine _:headSpace	[ do {	(b, h) <- get;
-						return $ b < h } ]	{ return () }
-	;
-	semiColon :: ()
-		= _:newLine _:headSpace [ do {	(b, h) <- get;
-						return $ b >= h } ]	{ return () }
-		/ ';'							{ return () }
-	;
-	newLine :: ()
-		= '\n'	{ modify $ second $ const 0 }
-	;
-	headSpace :: ()
-		= '\t'	{ modify $ second $ (* 8) . (+ 1) . (`div` 8) }
-		/ ' '	{ modify $ second (+ 1) }
-	;
-	definition :: ...
-		= ... ... { gets snd >>= modify (first . const) >> ... }
-
-	タブの計算について。
-	0 -> 8
-	1 -> 8
-	6 -> 8
-	7 -> 8
-	8 -> 16
-
-	(n `div` 8 + 1) * 8
-
-	上記は本番でやる前にテストを作ってみたほうが良いかもしれない。
+* version up して install
 
 * Parser.papillon のリファクタリング
 	まずは以前の papillon の制限によるトリッキーなコードを直す
@@ -116,6 +71,12 @@
 * [] の内側に space を許す
 
 * 'c'+ という表記を許したい
+
+* parse error をつかまえる表記をつけたい
+	たとえば、_:parseError とすると parse error が match するような感じ
+	catchError を使ってできそうな気がするが ...
+	あるいは monad の内側をえぐるとか
+	無理そうならやめるけど。
 
 **************************
 *  warning 関係          *
