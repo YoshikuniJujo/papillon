@@ -399,7 +399,6 @@ hsOp' :: Exp
 	/ '`' v:variable '`'			{ VarE $ mkName v }
 	/ '`' t:typ '`'				{ ConE $ mkName t }
 ;
-
 opTail :: String
 	= c:[c `elem` ":+*/-!|&.^=<>$"] s:opTail{ c : s }
 	/					{ "" }
