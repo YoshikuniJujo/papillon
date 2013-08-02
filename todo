@@ -3,9 +3,20 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	まずは以前の papillon の制限によるトリッキーなコードを直す
-	getEx や applyEx 等々を直書きするようにする
-	u:[isUpper u] { u } 等を <isUpper> 等を使って書き換える
+	次は spaces をつけてまわることから解放されるために、
+	word	= <isAlphaNum>+ spaces
+		/ <isSymbol>+ spaces
+	のような感じにする。
+	そして、以下のようにする。
+	some	= x:word[all isDigit x] "+":word y:word[all isDigit y]
+	また、top に来るものに関しては、例えば、
+	peg = spaces peg_
+	peg_ = ...
+	のような感じにしよう。
+	この変更は大規模であり、また途中でうまくいかないことに気づく可能性もあるので、
+	branch を切る。
+	git checkout -b word
+	で良いだろう。
 
 * import Text.Papillon を消すわけだが
 	今は単純な import 文しか消せない

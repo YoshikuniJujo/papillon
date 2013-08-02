@@ -136,7 +136,7 @@ pragmaStr :: String
 	/					{ return "" }
 
 pragmaItems :: [String]
-	= t:typToken ',' _:spaces' i:pragmaItems	{ return $ t : i }
+	= t:typToken ',' _:spaces' i:pragmaItems{ return $ t : i }
 	/ t:typToken				{ return [t] }
 
 pragmaEnd :: ()
@@ -187,8 +187,7 @@ varToken :: String
 typToken :: String
 	= t:typ _:spaces'			{ return t }
 
-pap :: ()
-	= '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ return () }
+pap :: () = '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ return () }
 
 peg :: STPeg
 	= mt:monadType? _:spaces' s:sourceType _:spaces _:semiColon? p:peg_
@@ -200,8 +199,7 @@ monadType :: Type
 	= _:spaces' "monad":varToken ':' _:spaces' t:hsTypeArr	{ return t }
 
 sourceType :: String
-	= "source":varToken ':' _:spaces' v:typToken
-						{ return v }
+	= "source":varToken ':' _:spaces' v:typToken		{ return v }
 
 peg_ :: Peg
 	= _:spaces d:definition p:peg_		{ return $ d : p }
@@ -320,7 +318,7 @@ charLit :: Char
 	/ '\'' '\\' c:escapeC '\''		{ return c }
 
 stringLit :: String
-	= c:[return $ c `notElem` "\"\\"] s:stringLit	{ return $ c : s }
+	= c:<(`notElem` "\"\\")> s:stringLit	{ return $ c : s }
 	/ '\\' c:escapeC s:stringLit		{ return $ c : s }
 	/					{ return "" }
 
@@ -359,12 +357,8 @@ selectCharsLs :: ReadFrom
 
 selectChars :: ReadFrom
 	= '[' cs:<(`notElem` "\\-")>+ ']'	{ return $ charList cs }
-	{-
-	/ '[' cb:[return $ cb `notElem` "\\-"] '-'
-		ce:[return $ ce `notElem` "\\-"] ']'	{ return $ charList [cb .. ce] }
-	-}
-	/ '[' cb:[return $ cb `notElem` "\\-"] '-'
-		ce:[return $ ce `notElem` "\\-"] ']'	{ return $ charList [cb .. ce] }
+	/ '[' cb:<(`notElem` "\\-")> '-' ce:<(`notElem` "\\-")> ']'
+						{ return $ charList [cb .. ce] }
 	/ '\'' c:<(`notElem` "\\'")> '\''	{ return $ charList [c] }
 
 test :: (Exp, String)
