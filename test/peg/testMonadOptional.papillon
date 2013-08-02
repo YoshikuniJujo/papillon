@@ -1,0 +1,23 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies, PackageImports #-}
+
+import Data.Maybe
+import Text.Papillon
+import "monads-tf" Control.Monad.Error
+
+main :: IO ()
+main = do
+	ret <- runErrorT $ abcac $ parse "abc"
+	case ret of
+		Right (r, _) -> print r
+		Left _ -> putStrLn "parse error"
+
+[papillon|
+
+monad: IO
+
+abcac :: String = 'a' mb:(b:[return $ b == 'b'] { return b })? 'c'
+				{ return $ "a" ++ maybeToList mb ++ "c" };
+
+onlyB :: Char = 'b'		{ return $ 'b' };
+
+|]
