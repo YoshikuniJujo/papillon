@@ -2,6 +2,8 @@
 * 次にやること           *
 **************************
 
+* author が iocikun.jujon になってたが、iocikun.juj に変えよう
+
 * position を使った形に書き直すのも、branch を切ろう
 	word とは独立した refactoring なので、
 	いざとなったときに、cherry-pick で使えるかもしれないので
