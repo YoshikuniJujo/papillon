@@ -1,0 +1,24 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = case runError $ pos $ parse "  hello\n\tmy friend  !" of
+	Right ((ListPos r, ListPos r'), _) -> print r >> print r'
+	Left _ -> putStrLn "parse error"
+
+[papillon|
+
+pos :: (Pos String, Pos String)
+	= _:notHs p:position 'h' _:notMs p':position 'm'
+					{ (p, p') }
+
+notHs :: String
+	= !'h' c s:notHs		{ c : s }
+	/				{ "" }
+
+notMs :: String
+	= !'m' c s:notMs		{ c : s }
+	/				{ "" }
+
+|]

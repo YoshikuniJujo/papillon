@@ -86,7 +86,7 @@ derivs :: Bool -> Type -> Type -> Peg -> Dec
 derivs th monad src pg = DataD [] (mkName "Derivs") [] [
 	RecC (mkName "Derivs") $ map derivs1 pg ++ [
 		(mkName dvCharsN, NotStrict, resultT tkn),
-		(dvPosN, NotStrict, ConT (mkName "Pos") `AppT` src)
+		(dvPosN, NotStrict, resultT $ ConT (mkName "Pos") `AppT` src)
 	 ]] []
 	where
 	tkn = ConT (mkName "Token") `AppT` src
@@ -129,9 +129,8 @@ mkParseBody th monadic pg = do
 			(getVariable "list" vars) (getVariable "list1" vars) th
 		opt = if not $ optionalUsed pg then [] else optionalDec
 			(getVariable "optional" vars) th
-	return $ Clause [] (NormalB $ -- VarE (runErrorTN th) `AppE`
-			VarE pgn `AppE` VarE (mkName "initialPos")) $
-		decs ++ list ++ opt
+	return $ flip (Clause []) (decs ++ list ++ opt) $ NormalB $
+		VarE pgn `AppE` VarE (mkName "initialPos")
 	where
 	mkr rule (_, _, sel) =
 		flip (ValD $ VarP rule) [] . NormalB <$> mkRule th monadic sel
@@ -144,7 +143,8 @@ mkParseCore th rets rules = do
 	pc <- parseChar th
 	return $ Clause [VarP p, VarP s] (NormalB $ VarE d) $ [
 		flip (ValD $ VarP d) [] $ NormalB $ foldl1 AppE $
-			ConE (mkName "Derivs") : map VarE rets ++ [VarE ch, VarE p]
+			ConE (mkName "Derivs") : map VarE rets ++ [VarE ch,
+				VarE (mkName "return") `AppE` TupE [VarE p, VarE d]]
 	 ] ++ zipWith def rets rules ++ [pc]
 
 parseChar :: Bool -> State Variables Dec
@@ -365,7 +365,7 @@ optionalUsed = any $ sel . \(_, _, s) -> s
 
 throwErrorTH :: Bool -> Name -> [String] -> String -> String -> String -> Exp
 throwErrorTH th d ns msg code com = InfixE
-	(Just $ VarE (getsN th) `AppE` VarE dvPosN)
+	(Just $ ConE (stateTN th) `AppE` VarE dvPosN)
 	(VarE $ mkName ">>=")
 	(Just $ InfixE
 		(Just $ VarE $ throwErrorN th)
@@ -410,7 +410,7 @@ arrT a r = ArrowT `AppT` a `AppT` r
 infixApp :: Exp -> Exp -> Exp -> Exp
 infixApp e1 op e2 = InfixE (Just e1) op (Just e2)
 
-stateTN, runStateTN, putN, getN, getsN :: Bool -> Name
+stateTN, runStateTN, putN, getN :: Bool -> Name
 stateTN True = 'StateT
 stateTN False = mkName "StateT"
 runStateTN True = 'runStateT
@@ -419,8 +419,6 @@ putN True = 'put
 putN False = mkName "put"
 getN True = 'get
 getN False = mkName "get"
-getsN True = 'gets
-getsN False = mkName "gets"
 
 unlessN, mplusN :: Bool -> Name
 unlessN True = 'unless

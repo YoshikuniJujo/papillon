@@ -145,3 +145,18 @@ Text/Papillon/Papillon.hs               44
 Text/Papillon/SyntaxTree.hs             149
 Text/Papillon/List.hs                   59
 total                                   2904
+
+2013.08.03 Sat.
+
+tab をちゃんと数える。
+次の 8n + 1 へ行くということ。
+1 -> 9
+2 -> 9
+8 -> 9
+9 -> 17
+10 -> 17
+16 -> 17
+17 -> 25
+
+((x - 1) `div` 8 + 1) * 8 + 1
+--> (+ 1) . (* 8) . (+ 1) . (`div` 8) . (subtract 1)

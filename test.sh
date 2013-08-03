@@ -151,3 +151,10 @@ runhaskell -isrc -ibin -Wall bin/papillon test/peg/comment.papillon tmp/ && \
 runhaskell -isrc -itmp -Wall tmp/comment.hs
 cp test/peg/comment.papillon tmp/comment_th.hs
 runhaskell -isrc -Wall tmp/comment_th.hs
+
+echo
+echo position.papillon
+runhaskell -isrc -ibin -Wall bin/papillon test/peg/position.papillon tmp/ && \
+runhaskell -isrc -itmp -Wall tmp/position.hs
+cp test/peg/position.papillon tmp/position_th.hs
+runhaskell -isrc -Wall tmp/position_th.hs

@@ -323,7 +323,10 @@ instanceSLC th = instanceD (cxt []) (conT sourceList `appT` conT (charN th)) [
 	funD listUpdatePosN [
 		flip (clause [litP $ charL '\n', pCharPos [tupP [varP y, wildP]]]) [] $
 			normalB $ eCharPos `appE` tupE [
-				infixApp (varE y) plus one, zero],
+				infixApp (varE y) plus one, one],
+		flip (clause [litP $ charL '\t', pCharPos [tupP [varP y, varP x]]]) [] $
+			normalB $ eCharPos `appE` tupE [
+				varE y, procTab `appE` varE x],
 		flip (clause [wildP, pCharPos [tupP [varP y, varP x]]]) [] $
 			normalB $ eCharPos `appE` tupE [
 				varE y, infixApp (varE x) plus one]
@@ -335,8 +338,16 @@ instanceSLC th = instanceD (cxt []) (conT sourceList `appT` conT (charN th)) [
 	x = mkName "x"
 	tupleBody = tupE [varE c, varE s]
 	one = litE $ integerL 1
-	zero = litE $ integerL 0
+--	zero = litE $ integerL 0
+	eight = litE $ integerL 8
 	plus = varE $ mkName "+"
 	charPosN = mkName "CharPos"
 	eCharPos = conE charPosN
 	pCharPos = conP charPosN
+	procTab = addOne `conc` mulEight `conc` addOne `conc` divEight `conc`
+		subOne
+	conc f g = uInfixE f (varE $ mkName ".") g
+	addOne = infixE Nothing (varE $ mkName "+") $ Just one
+	mulEight = infixE Nothing (varE $ mkName "*") $ Just eight
+	divEight = infixE Nothing (varE $ mkName "div") $ Just eight
+	subOne = varE (mkName "subtract") `appE` one
