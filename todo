@@ -2,9 +2,6 @@
 * 次にやること           *
 **************************
 
-* position を、内部からも使えるようにする
-	これは branch を切ったほうが良いだろう
-
 * Parser.papillon のリファクタリング
 	次は spaces をつけてまわることから解放されるために、
 	word	= <isAlphaNum>+ spaces
@@ -20,6 +17,8 @@
 	branch を切る。
 	git checkout -b word
 	で良いだろう。
+
+	layout rule (offset rule) を position を使った形に書き直すこと
 
 * import Text.Papillon を消すわけだが
 	今は単純な import 文しか消せない
