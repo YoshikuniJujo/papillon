@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, TemplateHaskell, UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell, UndecidableInstances,
+	BangPatterns #-}
 
 module Text.Papillon.Parser (
 	Lookahead(..),
@@ -216,13 +217,15 @@ peg_ :: Peg
 
 definition :: Definition
 --	= (!(ListPos (CharPos (_, x)))):position
-	= (ListPos (CharPos (_, x))):position
+	= (!ListPos (CharPos (_, x))):position
+--	= (ListPos (CharPos (_, x))):position
 		v:var _:spaces ':' ':'
 		_:spaces t:hsTypeArr _:spaces '='
 		_:spaces sel:selection _:spaces _:semiColon _:spaces
 		{ put x >> return (v, Just t, sel) }
 --	/ (!(ListPos (CharPos (_, x)))):position
-	/ (ListPos (CharPos (_, x))):position
+	/ (!ListPos (CharPos (_, x))):position
+--	/ (ListPos (CharPos (_, x))):position
 		v:var _:spaces '=' _:spaces
 		sel:plainSelection _:spaces _:semiColon _:spaces
 		{ put x >> return (v, Nothing, Right sel) }
@@ -316,6 +319,8 @@ pat1 :: Pat
 	/ '"' s:stringLit '"'			{ return $ LitP $ StringL s }
 	/ '(' p:patList ')'			{ return $ TupP p }
 	/ '[' p:patList ']'			{ return $ ListP p }
+	/ '(' p:pat ')'				{ return p }
+	/ '!' p:pat				{ return $ BangP p }
 
 patList :: [Pat]
 	= p:patOp _:spaces ',' _:spaces ps:patList
@@ -519,12 +524,14 @@ semiColon :: ()
 	= ';' _:newLine?			{ return () }
 	/ _:newLine _:headSpace*
 --		(!(ListPos (CharPos (_, h)))):position[get>>=(\b -> return (b>=h))]
-		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
+		(!ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
+--		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
 		';' _:newLine?
 						{ return () }
 	/ _:newLine _:headSpace*
 --		(!(ListPos (CharPos (_, h)))):position[get>>=(\b -> return (b>=h))]
-		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
+		(!ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
+--		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
 		!_:lineComment !_:comment
 						{ return () }
 	/ !_:[return True]			{ return () }
@@ -532,7 +539,8 @@ semiColon :: ()
 notSemiColon :: ()
 	= _:newLine _:headSpace
 --		(!(ListPos (CharPos (_, h)))):position[get>>=(\b -> return (b < h))]
-		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b < h))]
+		(!ListPos (CharPos (_, h))):position[get>>=(\b -> return (b < h))]
+--		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b < h))]
 						{ return () }
 	/ _:newLine _:lineComment		{ return () }
 	/ _:newLine _:comment			{ return () }

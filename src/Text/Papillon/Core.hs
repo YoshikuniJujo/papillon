@@ -235,6 +235,7 @@ check th monadic (Left ((n, nc), rf, test)) = do
 	where
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
+	notHaveOthers (BangP _) = True
 	notHaveOthers _ = False
 check th monadic (Right (c, l)) =
 	check th monadic

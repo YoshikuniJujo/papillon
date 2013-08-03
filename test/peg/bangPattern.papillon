@@ -1,0 +1,22 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies, BangPatterns #-}
+
+import Text.Papillon
+
+main :: IO ()
+main = case runError $ bang $ parse "hello, good-bye!" of
+	Right (r, _) -> print r
+	Left _ -> putStrLn "parse error"
+
+data Hello = Hello String deriving Show
+data GoodBye = GoodBye String deriving Show
+
+[papillon|
+
+bang :: (String, String)
+	= (!Hello h):hello ',' ' ' (!GoodBye g):goodBye	{ (h, g) }
+
+hello :: Hello = 'h' 'e' 'l' 'l' 'o'	{ Hello "hello" }
+goodBye :: GoodBye = 'g' 'o' 'o' 'd' '-' 'b' 'y' 'e' '!'
+					{ GoodBye "good-bye!" }
+
+|]

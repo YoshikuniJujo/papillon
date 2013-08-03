@@ -4,6 +4,7 @@
 
 * pattern match が overlap してしまう問題について
 	とりあえずの解決として バンパターンを使おう
+	branch を切ろう
 
 * Parser.papillon のリファクタリング
 	次は spaces をつけてまわることから解放されるために、
