@@ -2,8 +2,8 @@
 * 次にやること           *
 **************************
 
-* merge する
-	そろそろ char_plus を master に merge するべきだ。
+* position を、内部からも使えるようにする
+	これは branch を切ったほうが良いだろう
 
 * Parser.papillon のリファクタリング
 	次は spaces をつけてまわることから解放されるために、
