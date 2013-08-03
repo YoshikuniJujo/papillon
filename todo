@@ -2,6 +2,10 @@
 * 次にやること           *
 **************************
 
+* position を使った形に書き直すのも、branch を切ろう
+	word とは独立した refactoring なので、
+	いざとなったときに、cherry-pick で使えるかもしれないので
+
 * Parser.papillon のリファクタリング
 	次は spaces をつけてまわることから解放されるために、
 	word	= <isAlphaNum>+ spaces
