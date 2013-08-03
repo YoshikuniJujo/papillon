@@ -2,11 +2,8 @@
 * 次にやること           *
 **************************
 
-* author が iocikun.jujon になってたが、iocikun.juj に変えよう
-
-* position を使った形に書き直すのも、branch を切ろう
-	word とは独立した refactoring なので、
-	いざとなったときに、cherry-pick で使えるかもしれないので
+* pattern match が overlap してしまう問題について
+	とりあえずの解決として バンパターンを使おう
 
 * Parser.papillon のリファクタリング
 	次は spaces をつけてまわることから解放されるために、
@@ -127,6 +124,9 @@
 	reify を使い、Pat -> Q (Pat, Bool) とする。
 	IO 内では reify が使えないので、th :: Bool が必要になる。
 	とすると、monad: Reader Bool とする必要がある。
+
+	これも branch を切ったほうが良い
+	しかし Parser.hs で使えないのでどうするべきか考える必要がある。
 
 * Control.Monad.Error が重複しないようにする
 	それから、同じ module を import しないようにすること。

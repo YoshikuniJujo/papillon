@@ -45,7 +45,7 @@ import Data.Char (isSpace, isDigit, isUpper, isLower, isAlphaNum, isSymbol, isPu
 import Language.Haskell.TH.PprLib
 	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>), quotes)
 import qualified Language.Haskell.TH.PprLib as P
-import Control.Arrow ((***), first, second)
+import Control.Arrow ((***)) -- , first, second)
 import Data.List
 
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
@@ -121,7 +121,7 @@ isSym = (||) <$> isPunctuation <*> isSymbol
 
 [papillon|
 
-monad: State (Int, Int)
+monad: State Int
 
 pegFile :: PegFile
 	= pr:pragmas md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
@@ -215,13 +215,17 @@ peg_ :: Peg
 	/ 					{ return [] }
 
 definition :: Definition
-	= v:var _:spaces ':' ':'
+--	= (!(ListPos (CharPos (_, x)))):position
+	= (ListPos (CharPos (_, x))):position
+		v:var _:spaces ':' ':'
 		_:spaces t:hsTypeArr _:spaces '='
 		_:spaces sel:selection _:spaces _:semiColon _:spaces
-		{ gets snd >>= modify . first . const >> return (v, Just t, sel) }
-	/ v:var _:spaces '=' _:spaces
+		{ put x >> return (v, Just t, sel) }
+--	/ (!(ListPos (CharPos (_, x)))):position
+	/ (ListPos (CharPos (_, x))):position
+		v:var _:spaces '=' _:spaces
 		sel:plainSelection _:spaces _:semiColon _:spaces
-		{ gets snd >>= modify . first . const >> return (v, Nothing, Right sel) }
+		{ put x >> return (v, Nothing, Right sel) }
 
 selection = normalSelection / plainSelection
 
@@ -513,25 +517,31 @@ comEnd :: ()
 
 semiColon :: ()
 	= ';' _:newLine?			{ return () }
-	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))]
+	/ _:newLine _:headSpace*
+--		(!(ListPos (CharPos (_, h)))):position[get>>=(\b -> return (b>=h))]
+		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
 		';' _:newLine?
 						{ return () }
-	/ _:newLine _:headSpace*[get>>=(\(b, h) -> return (b>=h))]
+	/ _:newLine _:headSpace*
+--		(!(ListPos (CharPos (_, h)))):position[get>>=(\b -> return (b>=h))]
+		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
 		!_:lineComment !_:comment
 						{ return () }
 	/ !_:[return True]			{ return () }
 
 notSemiColon :: ()
-	= _:newLine _:headSpace[get>>=(\(b, h) -> return (b < h))]
+	= _:newLine _:headSpace
+--		(!(ListPos (CharPos (_, h)))):position[get>>=(\b -> return (b < h))]
+		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b < h))]
 						{ return () }
 	/ _:newLine _:lineComment		{ return () }
 	/ _:newLine _:comment			{ return () }
 
-newLine :: () = '\n'+				{ modify $ second $ const 0 }
+newLine :: () = '\n'+				{ return () }
 
 headSpace :: ()
-	= '\t'	{ modify $ second $ (* 8) . (+ 1) . (`div` 8) }
-	/ ' '	{ modify $ second (+ 1) }
+	= '\t'	{ return () }
+	/ ' '	{ return () }
 
 
 |]

@@ -51,7 +51,7 @@ dvPosN :: Name
 dvPosN = mkName "position"
 
 papillonCore :: String -> DecsQ
-papillonCore str = case flip evalState (0, 0) $ runErrorT $ peg $ parse str of
+papillonCore str = case flip evalState 1 $ runErrorT $ peg $ parse str of
 	Right (stpegq, _) -> do
 		let (monad, src, parsed) = stpegq
 		decParsed True monad src parsed
@@ -59,7 +59,7 @@ papillonCore str = case flip evalState (0, 0) $ runErrorT $ peg $ parse str of
 
 papillonFile :: String ->
 	Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
-papillonFile str = case flip evalState (0, 0) $ runErrorT $ pegFile $ parse str of
+papillonFile str = case flip evalState 1 $ runErrorT $ pegFile $ parse str of
 	Right (pegfileq, _) -> do
 		let	(prgm, mn, ppp, pp, (monad, src, parsed), atp) = pegfileq
 			lu = listUsed parsed
@@ -115,7 +115,7 @@ nextVariable n vs = (n, tail $ fromJust $ lookup n vs) : vs
 
 mkParseBody :: Bool -> Bool -> Peg -> ClauseQ
 mkParseBody th monadic pg = do
-	glb <- runIO $ newIORef 0
+	glb <- runIO $ newIORef 1
 	vars <- foldM (newVariable glb) [] [
 		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t", "err", "b",
 		"list", "list1", "optional"]
@@ -395,7 +395,7 @@ showParseError pe =
 
 showReading :: Derivs -> String -> String
 showReading d n
-	| n == dvCharsN = case flip evalState (0, 0) $ runErrorT $ char d of
+	| n == dvCharsN = case flip evalState 0 $ runErrorT $ char d of
 		Right (c, _) -> show c
 		Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
