@@ -165,3 +165,10 @@ runhaskell -isrc -ibin -Wall bin/papillon test/peg/bangPattern.papillon tmp/ && 
 runhaskell -isrc -itmp -Wall tmp/bangPattern.hs
 cp test/peg/bangPattern.papillon tmp/bangPattern_th.hs
 runhaskell -isrc -Wall tmp/bangPattern_th.hs
+
+echo
+echo prefixArrow.papillon
+runhaskell -isrc -ibin -Wall bin/papillon test/peg/prefixArrow.papillon tmp/ && \
+runhaskell -isrc -itmp -Wall tmp/prefixArrow.hs
+cp test/peg/prefixArrow.papillon tmp/prefixArrow_th.hs
+runhaskell -isrc -Wall tmp/prefixArrow_th.hs

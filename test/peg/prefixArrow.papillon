@@ -1,0 +1,19 @@
+{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+
+import Text.Papillon
+import Data.Char
+
+main :: IO ()
+main = case runError $ prefixArrow $ parse "345" of
+	Right (r, _) -> print $ r 8
+	Left _ -> putStrLn "parse error"
+
+[papillon|
+
+prefixArrow :: (->) Int Int
+	= n:number		{ (+ n) }
+
+number :: Int
+	= ds:<isDigit>+		{ read ds }
+
+|]

@@ -2,10 +2,6 @@
 * 次にやること           *
 **************************
 
-* pattern match が overlap してしまう問題について
-	とりあえずの解決として バンパターンを使おう
-	branch を切ろう
-
 * Parser.papillon のリファクタリング
 	次は spaces をつけてまわることから解放されるために、
 	word	= <isAlphaNum>+ spaces
@@ -21,6 +17,16 @@
 	branch を切る。
 	git checkout -b word
 	で良いだろう。
+
+	word をもうすこし作り込む必要がある。
+	今のところは 英数字と記号のみを分けているが、
+	op 用の記号とそれ以外とを分ける必要がある。
+	つまり、すくなくとも、', ", (, ), [, ], {, }, \,, は
+	単独で使われるので、
+	word	= alnum+ spaces
+		/ opChar+ spaces
+		/ sepChar spaces
+	のようにする必要がある
 
 	layout rule (offset rule) を position を使った形に書き直すこと
 

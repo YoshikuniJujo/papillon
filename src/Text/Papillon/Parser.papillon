@@ -46,7 +46,7 @@ import Data.Char (isSpace, isDigit, isUpper, isLower, isAlphaNum, isSymbol, isPu
 import Language.Haskell.TH.PprLib
 	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>), quotes)
 import qualified Language.Haskell.TH.PprLib as P
-import Control.Arrow ((***)) -- , first, second)
+import Control.Arrow ((***))
 import Data.List
 
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
@@ -146,8 +146,8 @@ pragmaStr :: String
 	/					{ return "" }
 
 pragmaItems :: [String]
-	= t:typToken ',' _:spaces' i:pragmaItems{ return $ t : i }
-	/ t:typToken				{ return [t] }
+	= t:typWord ',' _:spaces' i:pragmaItems{ return $ t : i }
+	/ t:typWord				{ return [t] }
 
 pragmaEnd :: ()
 	= _:spaces' '#' '-' '}'			{ return () }
@@ -188,14 +188,8 @@ afterPeg :: String
 	/					{ return "" }
 
 importPapillon :: ()
-	= "import":varToken "Text":typToken '.' _:spaces' "Papillon":typToken
+	= "import":varWord "Text":typWord '.' _:spaces' "Papillon":typWord
 		!'.'				{ return () }
-
-varToken :: String
-	= v:var _:spaces'			{ return v }
-
-typToken :: String
-	= t:typ _:spaces'			{ return t }
 
 pap :: () = '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ return () }
 
@@ -206,26 +200,22 @@ peg :: STPeg
 		{ return (mt, ConT $ mkName "String", p) }
 
 monadType :: Type
-	= _:spaces' "monad":varToken ':' _:spaces' t:hsTypeArr	{ return t }
+	= _:spaces' "monad":varWord ':' _:spaces' t:hsTypeArr	{ return t }
 
 sourceType :: String
-	= "source":varToken ':' _:spaces' v:typToken		{ return v }
+	= "source":varWord ':' _:spaces' v:typWord		{ return v }
 
 peg_ :: Peg
 	= _:spaces d:definition p:peg_		{ return $ d : p }
 	/ 					{ return [] }
 
 definition :: Definition
---	= (!(ListPos (CharPos (_, x)))):position
 	= (!ListPos (CharPos (_, x))):position
---	= (ListPos (CharPos (_, x))):position
 		v:var _:spaces ':' ':'
 		_:spaces t:hsTypeArr _:spaces '='
 		_:spaces sel:selection _:spaces _:semiColon _:spaces
 		{ put x >> return (v, Just t, sel) }
---	/ (!(ListPos (CharPos (_, x)))):position
 	/ (!ListPos (CharPos (_, x))):position
---	/ (ListPos (CharPos (_, x))):position
 		v:var _:spaces '=' _:spaces
 		sel:plainSelection _:spaces _:semiColon _:spaces
 		{ put x >> return (v, Nothing, Right sel) }
@@ -332,8 +322,8 @@ opConName :: Name
 	= ':' ot:opTail				{ return $ mkName $ ':' : ot }
 
 charLit :: Char
-	= '\'' c:<(`notElem` "\\'")> '\''	{ return c }
-	/ '\'' '\\' c:escapeC '\''		{ return c }
+	= '\'' c:<(`notElem` "\\'")> '\'' _:spaces	{ return c }
+	/ '\'' '\\' c:escapeC '\'' _:spaces		{ return c }
 
 stringLit :: String
 	= c:<(`notElem` "\"\\")> s:stringLit	{ return $ c : s }
@@ -436,14 +426,14 @@ hsExp :: (Exp -> Exp) -> Exp
 
 hsExp1 :: Exp
 	= '(' l:(e:hsExpTyp {return e})? _:spaces o:hsOp _:spaces
-		r:(e:hsExpTyp {return e})? ')'	{ return $ InfixE l o r }
-	/ '(' et:hsExpTpl ')'			{ return $ TupE et }
-	/ '[' et:hsExpTpl ']'			{ return $ ListE et }
-	/ v:var				{ return $ VarE $ mkName v }
-	/ t:typ					{ return $ ConE $ mkName t }
+		r:(e:hsExpTyp {return e})? ')' _:spaces	{ return $ InfixE l o r }
+	/ '(' et:hsExpTpl ')' _:spaces		{ return $ TupE et }
+	/ '[' et:hsExpTpl ']' _:spaces		{ return $ ListE et }
+	/ v:varWord				{ return $ VarE $ mkName v }
+	/ t:typWord				{ return $ ConE $ mkName t }
 	/ i:integer _:spaces			{ return $ LitE $ integerL i }
 	/ c:charLit				{ return $ LitE $ charL c }
-	/ '"' s:stringLit '"'			{ return $ LitE $ stringL s }
+	/ '"' s:stringLit '"' _:spaces		{ return $ LitE $ stringL s }
 	/ '-' _:spaces e:hsExp1			{ return $ AppE (VarE $ mkName "negate") e }
 
 hsExpTpl :: [Exp]
@@ -453,8 +443,7 @@ hsExpTpl :: [Exp]
 	/					{ return [] }
 
 hsTypeArr :: Type
-	= l:hsType '-' '>' _:spaces r:hsTypeArr
-						{ return $ AppT (AppT ArrowT $ l id) r }
+	= l:hsType "->":word r:hsTypeArr	{ return $ AppT (AppT ArrowT $ l id) r }
 	/ t:hsType				{ return $ t id }
 
 hsType :: (Type -> Type) -> Type
@@ -464,22 +453,22 @@ hsType :: (Type -> Type) -> Type
 hsType1 :: Type
 	= '[' ']' _:spaces			{ return ListT }
 	/ '[' t:hsTypeArr ']' _:spaces		{ return $ ListT `AppT` t }
-	/ '(' _:spaces tt:hsTypeTpl ')' _:spaces
-					{ return $ foldl AppT (TupleT $ length tt) tt }
-	/ t:typToken				{ return $ ConT $ mkName t }
-	/ '(' '-' '>' ')' _:spaces		{ return ArrowT }
+	/ '(' _:spaces tt:hsTypeTpl ')' _:spaces{ return $ foldl AppT
+							(TupleT $ length tt) tt }
+	/ t:typWord				{ return $ ConT $ mkName t }
+	/ "(->)":word				{ return ArrowT }
 
 hsTypeTpl :: [Type]
---	= t:hsTypeArr ",":word _:spaces tt:hsTypeTpl
-	= t:hsTypeArr ",":word tt:hsTypeTpl
+	= t:hsTypeArr ',' _:spaces tt:hsTypeTpl
 						{ return $ t : tt }
 	/ t:hsTypeArr				{ return [t] }
 	/					{ return [] }
 
-typ :: String = u:<isUpper> t:<isVarTail>*	{ return $ u : t }
+typWord :: String = t:typ _:spaces		{ return t }
+varWord :: String = v:var _:spaces		{ return v }
 
-var :: String = l:<isVarHead> t:<isVarTail>*
-						{ return $ l : t }
+typ :: String = u:<isUpper> t:<isVarTail>*	{ return $ u : t }
+var :: String = l:<isVarHead> t:<isVarTail>*	{ return $ l : t }
 
 integer :: Integer = ds:word[return $ all isDigit ds]
 						{ return $ read $ ds }
@@ -523,33 +512,24 @@ comEnd :: ()
 semiColon :: ()
 	= ';' _:newLine?			{ return () }
 	/ _:newLine _:headSpace*
---		(!(ListPos (CharPos (_, h)))):position[get>>=(\b -> return (b>=h))]
 		(!ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
---		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
 		';' _:newLine?
 						{ return () }
 	/ _:newLine _:headSpace*
---		(!(ListPos (CharPos (_, h)))):position[get>>=(\b -> return (b>=h))]
 		(!ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
---		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
 		!_:lineComment !_:comment
 						{ return () }
 	/ !_:[return True]			{ return () }
 
 notSemiColon :: ()
 	= _:newLine _:headSpace
---		(!(ListPos (CharPos (_, h)))):position[get>>=(\b -> return (b < h))]
 		(!ListPos (CharPos (_, h))):position[get>>=(\b -> return (b < h))]
---		(ListPos (CharPos (_, h))):position[get>>=(\b -> return (b < h))]
 						{ return () }
 	/ _:newLine _:lineComment		{ return () }
 	/ _:newLine _:comment			{ return () }
 
 newLine :: () = '\n'+				{ return () }
 
-headSpace :: ()
-	= '\t'	{ return () }
-	/ ' '	{ return () }
-
+headSpace :: () = '\t' { return () } / ' ' { return () }
 
 |]
