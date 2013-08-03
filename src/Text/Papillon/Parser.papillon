@@ -40,7 +40,7 @@ import Language.Haskell.TH {- (
 	wildP, litP, varP, conP, tupP, listP, uInfixP,
 	litE, varE, conE, tupE, listE, sigE, appE, infixE, uInfixE, lamE,
 	integerL, charL, stringL) -}
-import Data.Char (isSpace, isDigit, isUpper, isLower)
+import Data.Char (isSpace, isDigit, isUpper, isLower, isAlphaNum, isSymbol, isPunctuation)
 
 import Language.Haskell.TH.PprLib
 	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>), quotes)
@@ -109,6 +109,15 @@ charList cs = FromSelection $ Left $ (: []) $ Right $
 
 dvCharsN :: String
 dvCharsN = "char"
+
+isVarHead :: Char -> Bool
+isVarHead = (||) <$> isLower <*> (== '_')
+
+isVarTail :: Char -> Bool
+isVarTail = or <$> sequence [isUpper, isLower, isDigit, (`elem` "_'")]
+
+isSym :: Char -> Bool
+isSym = (||) <$> isPunctuation <*> isSymbol
 
 [papillon|
 
@@ -182,7 +191,7 @@ importPapillon :: ()
 		!'.'				{ return () }
 
 varToken :: String
-	= v:variable _:spaces'			{ return v }
+	= v:var _:spaces'			{ return v }
 
 typToken :: String
 	= t:typ _:spaces'			{ return t }
@@ -206,11 +215,11 @@ peg_ :: Peg
 	/ 					{ return [] }
 
 definition :: Definition
-	= v:variable _:spaces ':' ':'
+	= v:var _:spaces ':' ':'
 		_:spaces t:hsTypeArr _:spaces '='
 		_:spaces sel:selection _:spaces _:semiColon _:spaces
 		{ gets snd >>= modify . first . const >> return (v, Just t, sel) }
-	/ v:variable _:spaces '=' _:spaces
+	/ v:var _:spaces '=' _:spaces
 		sel:plainSelection _:spaces _:semiColon _:spaces
 		{ gets snd >>= modify . first . const >> return (v, Nothing, Right sel) }
 
@@ -295,8 +304,8 @@ pat :: Pat
 
 pat1 :: Pat
 	= t:typ					{ return $ ConP (mkName t) [] }
-	/ "_":variable				{ return WildP }
-	/ n:variable				{ return $ VarP $ mkName n }
+	/ "_":var				{ return WildP }
+	/ n:var				{ return $ VarP $ mkName n }
 	/ i:integer				{ return $ LitP (IntegerL i) }
 	/ '-' _:spaces i:integer		{ return $ LitP (IntegerL $ - i) }
 	/ c:charLit 				{ return $ LitP $ CharL c }
@@ -345,7 +354,7 @@ readFromLs :: ReadFrom
 	/ rf:readFrom				{ return rf }
 
 readFrom :: ReadFrom
-	= v:variable				{ return $ FromVariable $ Just v }
+	= v:var				{ return $ FromVariable $ Just v }
 	/ '(' s:selection ')'			{ return $ FromSelection s }
 	/ e:expressionHsSugar'			{ return $ FromSelection $ Left [e] }
 
@@ -383,7 +392,7 @@ hsExpOp :: Exp
 hsOp :: Exp
 	= c:<(`elem` "+*/-!|&.^=<>$")> o:opTail	{ return $ VarE $ mkName $ c : o }
 	/ ':' !':' o:opTail			{ return $ ConE $ mkName $ ':' : o }
-	/ '`' v:variable '`'			{ return $ VarE $ mkName v }
+	/ '`' v:var '`'			{ return $ VarE $ mkName v }
 	/ '`' t:typ '`'				{ return $ ConE $ mkName t }
 
 
@@ -405,7 +414,7 @@ hsExpOp' :: Exp
 hsOp' :: Exp
 	= c:<(`elem` "+*/-!|&.^=<$")> o:opTail	{ return $ VarE $ mkName $ c : o }
 	/ ':' !':' o:opTail			{ return $ ConE $ mkName $ ':' : o }
-	/ '`' v:variable '`'			{ return $ VarE $ mkName v }
+	/ '`' v:var '`'			{ return $ VarE $ mkName v }
 	/ '`' t:typ '`'				{ return $ ConE $ mkName t }
 
 opTail :: String
@@ -421,7 +430,7 @@ hsExp1 :: Exp
 		r:(e:hsExpTyp {return e})? ')'	{ return $ InfixE l o r }
 	/ '(' et:hsExpTpl ')'			{ return $ TupE et }
 	/ '[' et:hsExpTpl ']'			{ return $ ListE et }
-	/ v:variable				{ return $ VarE $ mkName v }
+	/ v:var				{ return $ VarE $ mkName v }
 	/ t:typ					{ return $ ConE $ mkName t }
 	/ i:integer _:spaces			{ return $ LitE $ integerL i }
 	/ c:charLit				{ return $ LitE $ charL c }
@@ -452,35 +461,23 @@ hsType1 :: Type
 	/ '(' '-' '>' ')' _:spaces		{ return ArrowT }
 
 hsTypeTpl :: [Type]
-	= t:hsTypeArr ',' _:spaces tt:hsTypeTpl
+--	= t:hsTypeArr ",":word _:spaces tt:hsTypeTpl
+	= t:hsTypeArr ",":word tt:hsTypeTpl
 						{ return $ t : tt }
 	/ t:hsTypeArr				{ return [t] }
 	/					{ return [] }
 
-typ :: String
-	= u:upper t:tvtail			{ return $ u : t }
+typ :: String = u:<isUpper> t:<isVarTail>*	{ return $ u : t }
 
-variable :: String
-	= l:lower t:tvtail			{ return $ l : t }
+var :: String = l:<isVarHead> t:<isVarTail>*
+						{ return $ l : t }
 
-tvtail :: String
-	= a:alpha t:tvtail			{ return $ a : t }
-	/ 					{ return "" }
+integer :: Integer = ds:word[return $ all isDigit ds]
+						{ return $ read $ ds }
 
-integer :: Integer
-	= dh:digit ds:(d:digit { return d })*	{ return $ (read $ dh : ds) }
-
-alpha :: Char
-	= u:upper				{ return u }
-	/ l:lower				{ return l }
-	/ d:digit				{ return d }
-	/ '\''					{ return '\'' }
-
-upper :: Char = <isUpper>
-
-lower :: Char = <(||) <$> isLower <*> (== '_')>
-
-digit :: Char = <isDigit>
+word :: String
+	= w:<isAlphaNum>+ _:spaces		{ return w }
+	/ w:<isSym>+ _:spaces			{ return w }
 
 spaces' :: () = _:<isSpace>*			{ return () }
 
