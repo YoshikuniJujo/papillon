@@ -118,7 +118,7 @@ isVarTail :: Char -> Bool
 isVarTail = or <$> sequence [isUpper, isLower, isDigit, (`elem` "_'")]
 
 isPapillonOp :: Char -> Bool
-isPapillonOp = (`elem` "&!?*+[]{}<=>")
+isPapillonOp = (`elem` ":&!?*+[]{}<=>")
 
 isOpChar :: Char -> Bool
 isOpChar = (`elem` ":!#$%&*+./<=>?@\\^|-~")
@@ -273,14 +273,14 @@ nameLeaf_ :: (Lookahead, Check)
 
 nameLeaf :: Check
 	= cl:charLitLs				{ return cl }
-	/ n:pat1 com:comForErr? ':' _:spaces (rf, p):leaf
+	/ n:pat1 com:comForErr? ":":word (rf, p):leaf
 		{ return $ Left ((n, maybe "" id com), rf, p) }
 	/ n:pat1 com:comForErr?
 		{ return $ Left ((n, maybe "" id com), FromVariable Nothing, Nothing) }
 
 nameLeafNoCom :: Check
 	= cl:charLitLs				{ return cl }
-	/ n:pat1 com:comForErr? ':' _:spaces (rf, p):leaf
+	/ n:pat1 com:comForErr? ":":word (rf, p):leaf
 		{ return $ Left ((n, maybe "" id com), rf, p) }
 	/ n:pat1{ return $ Left ((n, ""), FromVariable Nothing, Nothing) }
 
@@ -461,6 +461,7 @@ integer :: Integer = ds:hsw[return $ all isDigit ds]
 
 word :: String
 	= w:<isAlphaNum>+ _:spaces		{ return w }
+	/ ':' ':' _:spaces			{ return "::" }
 	/ '{' '-' '#' _:spaces			{ return "{-#" }
 	/ '#' '-' '}' _:spaces			{ return "#-}" }
 	/ w:<isPapillonOp> _:spaces		{ return [w] }
