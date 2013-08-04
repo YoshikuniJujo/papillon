@@ -35,7 +35,24 @@
 		/ sepChar spaces
 	のようにする必要がある
 
-	layout rule (offset rule) を position を使った形に書き直すこと
+	type や var をちゃんとしよう
+	hs 内では Hoge.Fuga.Piyo や Foo.Bar.baz への対応も。
+	これは word と同じレベルでやってしまおう。
+	hs 外では word を使えば良い。
+	と思ったが、type や var のなかでは ' や _ も使えるので、
+	すこし考える必要がある。
+	word のなかでそれは可能か?
+	やや重複するが可能。
+	word	= varHead varTails spaces
+		/ typHead varTails spaces
+		/ ...
+		...
+	とすれば良い
+	また、同様に opTail 等も hsw 内で扱うほうが良いだろう。
+
+	State Int を State (Maybe Int) とし、Nothing ならば semicolon を挿入
+	しないようにする。
+		こうすることで、!comment 等を消せるだろう
 
 * 'c'+ をより拡張する
 	Char 以外の token でも使えるようにしたい。
