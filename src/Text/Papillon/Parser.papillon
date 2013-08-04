@@ -41,7 +41,7 @@ import Language.Haskell.TH {- (
 	wildP, litP, varP, conP, tupP, listP, uInfixP,
 	litE, varE, conE, tupE, listE, sigE, appE, infixE, uInfixE, lamE,
 	integerL, charL, stringL) -}
-import Data.Char (isSpace, isDigit, isUpper, isLower, isAlphaNum, isSymbol, isPunctuation)
+import Data.Char (isSpace, isDigit, isUpper, isLower, isAlphaNum)
 
 import Language.Haskell.TH.PprLib
 	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>), quotes)
@@ -117,8 +117,11 @@ isVarHead = (||) <$> isLower <*> (== '_')
 isVarTail :: Char -> Bool
 isVarTail = or <$> sequence [isUpper, isLower, isDigit, (`elem` "_'")]
 
-isSym :: Char -> Bool
-isSym = (||) <$> isPunctuation <*> isSymbol
+isOpChar :: Char -> Bool
+isOpChar = (`elem` ":!#$%&*+./<=>?@\\^|-~")
+
+isSepChar :: Char -> Bool
+isSepChar = (`elem` "(),;[]`{}_:")
 
 [papillon|
 
@@ -260,96 +263,78 @@ expression :: [(Lookahead, Check)]
 	/ 					{ return [] }
 
 nameLeaf_ :: (Lookahead, Check)
-	= '!' nl:nameLeafNoCom _:spaces com:comForErr?
+	= "!":word nl:nameLeafNoCom _:spaces com:comForErr?
 						{ return (NAhead $ maybe "" id com, nl) }
-	/ '&' nl:nameLeaf			{ return (Ahead, nl) }
+	/ "&":word nl:nameLeaf			{ return (Ahead, nl) }
 	/ nl:nameLeaf				{ return (Here, nl) }
 
 nameLeaf :: Check
-	= cl:charLitLs	{ return cl }
-	/ n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
+	= cl:charLitLs				{ return cl }
+	/ n:pat1 com:comForErr? ':' _:spaces (rf, p):leaf
 		{ return $ Left ((n, maybe "" id com), rf, p) }
-	/ n:pat1 _:spaces com:comForErr?
+	/ n:pat1 com:comForErr?
 		{ return $ Left ((n, maybe "" id com), FromVariable Nothing, Nothing) }
 
 nameLeafNoCom :: Check
-	= cl:charLitLs { return cl }
-	/ n:pat1 _:spaces com:comForErr? ':' (rf, p):leaf
+	= cl:charLitLs				{ return cl }
+	/ n:pat1 com:comForErr? ':' _:spaces (rf, p):leaf
 		{ return $ Left ((n, maybe "" id com), rf, p) }
-	/ n:pat1 _:spaces
-		{ return $ Left ((n, ""), FromVariable Nothing, Nothing) }
+	/ n:pat1{ return $ Left ((n, ""), FromVariable Nothing, Nothing) }
 
 comForErr :: String
-	= '{' '-' '#' _:spaces '"' s:stringLit '"' _:spaces '#' '-' '}' _:spaces
-						{ return s }
+	= "{-#":word s:stringLit "#-}":word	{ return s }
 
 leaf :: (ReadFrom, Maybe (Exp, String))
 	= rf:readFromLs t:test			{ return (rf, Just t) }
 	/ rf:readFromLs				{ return (rf, Nothing) }
-	/ t:test			{ return (FromVariable Nothing, Just t) }
+	/ t:test				{ return (FromVariable Nothing,
+							Just t) }
 
 patOp :: Pat
 	= p:pat o:opConName po:patOp		{ return $ UInfixP p o po }
-	/ p:pat _:spaces '`' t:typ '`' _:spaces po:patOp
+	/ p:pat "`":word t:typWord "`":word po:patOp
 						{ return $ UInfixP p (mkName t) po }
 	/ p:pat					{ return p }
 
 pat :: Pat
-	= t:typ _:spaces ps:pats		{ return $ ConP (mkName t) ps }
-	/ '(' o:opConName ')'_:spaces ps:pats	{ return $ ConP o ps }
+	= t:typWord ps:pats			{ return $ ConP (mkName t) ps }
+	/ "(":word o:opConName ")":word ps:pats	{ return $ ConP o ps }
 	/ p:pat1				{ return p }
 
 pat1 :: Pat
-	= t:typ					{ return $ ConP (mkName t) [] }
-	/ "_":var				{ return WildP }
-	/ n:var				{ return $ VarP $ mkName n }
+	= t:typWord				{ return $ ConP (mkName t) [] }
+	/ "_":word				{ return WildP }
+	/ n:varWord				{ return $ VarP $ mkName n }
 	/ i:integer				{ return $ LitP (IntegerL i) }
-	/ '-' _:spaces i:integer		{ return $ LitP (IntegerL $ - i) }
+	/ "-":word i:integer			{ return $ LitP (IntegerL $ - i) }
 	/ c:charLit 				{ return $ LitP $ CharL c }
-	/ '"' s:stringLit '"'			{ return $ LitP $ StringL s }
-	/ '(' p:patList ')'			{ return $ TupP p }
-	/ '[' p:patList ']'			{ return $ ListP p }
-	/ '(' p:pat ')'				{ return p }
-	/ '!' p:pat				{ return $ BangP p }
+	/ s:stringLit				{ return $ LitP $ StringL s }
+	/ "(":word p:patList ")":word		{ return $ TupP p }
+	/ "[":word p:patList "]":word		{ return $ ListP p }
+	/ "(":word p:pat ")":word		{ return p }
+	/ "!":word p:pat			{ return $ BangP p }
 
 patList :: [Pat]
-	= p:patOp _:spaces ',' _:spaces ps:patList
-						{ return $ p : ps }
+	= p:patOp ",":word ps:patList		{ return $ p : ps }
 	/ p:patOp				{ return [p] }
 	/					{ return [] }
 
 opConName :: Name
 	= ':' ot:opTail				{ return $ mkName $ ':' : ot }
 
-charLit :: Char
-	= '\'' c:<(`notElem` "\\'")> '\'' _:spaces	{ return c }
-	/ '\'' '\\' c:escapeC '\'' _:spaces		{ return c }
-
-stringLit :: String
-	= c:<(`notElem` "\"\\")> s:stringLit	{ return $ c : s }
-	/ '\\' c:escapeC s:stringLit		{ return $ c : s }
-	/					{ return "" }
-
-escapeC :: Char
-	= '"'					{ return '"' }
-	/ '\''					{ return '\'' }
-	/ '\\'					{ return '\\' }
-	/ 'n'					{ return '\n' }
-	/ 't'					{ return '\t' }
-
 pats :: [Pat]
-	= p:pat _:spaces ps:pats		{ return $ p : ps }
+	= p:pat ps:pats				{ return $ p : ps }
 	/					{ return [] }
 
 charLitLs :: Check
-	= c:charLit _:spaces '*'		{ return $ Right (c, List) }
-	/ c:charLit _:spaces '+'		{ return $ Right (c, List1) }
-	/ c:charLit _:spaces '?'		{ return $ Right (c, Optional) }
+	= c:charLit "*":word			{ return $ Right (c, List) }
+	/ c:charLit "+":word			{ return $ Right (c, List1) }
+	/ c:charLit "?":word			{ return $ Right (c, Optional) }
 
 readFromLs :: ReadFrom
-	= rf:readFrom '*'			{ return $ FromL List rf }
-	/ rf:readFrom '+'			{ return $ FromL List1 rf }
-	/ rf:readFrom '?'			{ return $ FromL Optional rf }
+	= rf:readFrom "*":word			{ return $ FromL List rf }
+	/ rf:readFrom "+":word			{ return $ FromL List1 rf }
+	/ rf:readFrom "?":word			{ return $ FromL Optional rf }
 	/ rf:readFrom				{ return rf }
 
 readFrom :: ReadFrom
@@ -358,9 +343,9 @@ readFrom :: ReadFrom
 	/ e:expressionHsSugar'			{ return $ FromSelection $ Left [e] }
 
 selectCharsLs :: ReadFrom
-	= rf:selectChars '*'			{ return $ FromL List rf }
-	/ rf:selectChars '+'			{ return $ FromL List1 rf }
-	/ rf:selectChars '?'			{ return $ FromL Optional rf }
+	= rf:selectChars "*":word		{ return $ FromL List rf }
+	/ rf:selectChars "+":word		{ return $ FromL List1 rf }
+	/ rf:selectChars "?":word		{ return $ FromL Optional rf }
 	/ rf:selectChars			{ return rf }
 
 selectChars :: ReadFrom
@@ -370,74 +355,70 @@ selectChars :: ReadFrom
 	/ '\'' c:<(`notElem` "\\'")> '\''	{ return $ charList [c] }
 
 test :: (Exp, String)
-	= '[' h:hsExpLam _:spaces com:comForErr? ']'
+	= "[":word h:hsExpLam com:comForErr? "]":word
 						{ return (h, maybe "" id com) }
 
 hsExpLam :: Exp
-	= '\\' _:spaces ps:pats _:spaces '-' '>' _:spaces e:hsExpTyp
-						{ return $ LamE ps e }
+	= "\\":word ps:pats "->":word e:hsExpTyp{ return $ LamE ps e }
 	/ e:hsExpTyp				{ return e }
 
 hsExpTyp :: Exp
-	= eo:hsExpOp ':' ':' _:spaces t:hsTypeArr
-						{ return $ SigE eo t }
+	= eo:hsExpOp "::":word t:hsTypeArr	{ return $ SigE eo t }
 	/ eo:hsExpOp				{ return eo }
 
 hsExpOp :: Exp
-	= l:hsExp _:spaces o:hsOp _:spaces r:hsExpOp
-						{ return $ UInfixE (l id) o r }
+	= l:hsExp o:hsOp r:hsExpOp		{ return $ UInfixE (l id) o r }
 	/ e:hsExp				{ return $ e id }
 
 hsOp :: Exp
-	= c:<(`elem` "+*/-!|&.^=<>$")> o:opTail	{ return $ VarE $ mkName $ c : o }
-	/ ':' !':' o:opTail			{ return $ ConE $ mkName $ ':' : o }
-	/ '`' v:var '`'			{ return $ VarE $ mkName v }
-	/ '`' t:typ '`'				{ return $ ConE $ mkName t }
+	= c:<(`elem` "+*/-!|&.^=<>$")> o:opTail _:spaces	{ return $ VarE $ mkName $ c : o }
+	/ ':' !':' o:opTail _:spaces			{ return $ ConE $ mkName $ ':' : o }
+	/ "`":word v:varWord "`":word		{ return $ VarE $ mkName v }
+	/ "`":word t:typWord "`":word		{ return $ ConE $ mkName t }
 
 
 hsExpLam' :: Exp
-	= '\\' _:spaces ps:pats _:spaces '-' '>' _:spaces e:hsExpTyp'
+	= "\\":word ps:pats "->":word e:hsExpTyp'
 						{ return $ LamE ps e }
 	/ e:hsExpTyp'				{ return e }
 
 hsExpTyp' :: Exp
-	= eo:hsExpOp' ':' ':' _:spaces t:hsTypeArr
-						{ return $ SigE eo t }
+	= eo:hsExpOp' "::":word t:hsTypeArr	{ return $ SigE eo t }
 	/ eo:hsExpOp'				{ return eo }
 
 hsExpOp' :: Exp
-	= l:hsExp _:spaces o:hsOp' _:spaces r:hsExpOp'
-						{ return $ UInfixE (l id) o r }
+	= l:hsExp o:hsOp' r:hsExpOp'		{ return $ UInfixE (l id) o r }
 	/ e:hsExp				{ return $ e id }
 
 hsOp' :: Exp
-	= c:<(`elem` "+*/-!|&.^=<$")> o:opTail	{ return $ VarE $ mkName $ c : o }
-	/ ':' !':' o:opTail			{ return $ ConE $ mkName $ ':' : o }
-	/ '`' v:var '`'			{ return $ VarE $ mkName v }
-	/ '`' t:typ '`'				{ return $ ConE $ mkName t }
+	= c:<(`elem` "+*/-!|&.^=<$")> o:opTail _:spaces
+						{ return $ VarE $ mkName $ c : o }
+	/ ':' !':' o:opTail _:spaces		{ return $ ConE $ mkName $ ':' : o }
+	/ "`":word v:var "`":word		{ return $ VarE $ mkName v }
+	/ "`":word t:typ "`":word		{ return $ ConE $ mkName t }
 
 opTail :: String
 	= c:<(`elem` ":+*/-!|&.^=<>$")> s:opTail{ return $ c : s }
 	/					{ return "" }
 
 hsExp :: (Exp -> Exp) -> Exp
-	= e:hsExp1 _:spaces h:hsExp		{return (\f->h (f e `AppE`))}
+	= e:hsExp1 h:hsExp			{return (\f->h (f e `AppE`))}
 	/ e:hsExp1				{return (\f->f e)}
 
 hsExp1 :: Exp
-	= '(' l:(e:hsExpTyp {return e})? _:spaces o:hsOp _:spaces
-		r:(e:hsExpTyp {return e})? ')' _:spaces	{ return $ InfixE l o r }
-	/ '(' et:hsExpTpl ')' _:spaces		{ return $ TupE et }
-	/ '[' et:hsExpTpl ']' _:spaces		{ return $ ListE et }
+	= "(":word l:hsExpOp? o:hsOp r:hsExpOp? ")":word
+						{ return $ InfixE l o r }
+	/ "(":word et:hsExpTpl ")":word		{ return $ TupE et }
+	/ "[":word et:hsExpTpl "]":word		{ return $ ListE et }
 	/ v:varWord				{ return $ VarE $ mkName v }
 	/ t:typWord				{ return $ ConE $ mkName t }
-	/ i:integer _:spaces			{ return $ LitE $ integerL i }
+	/ i:integer				{ return $ LitE $ integerL i }
 	/ c:charLit				{ return $ LitE $ charL c }
-	/ '"' s:stringLit '"' _:spaces		{ return $ LitE $ stringL s }
-	/ '-' _:spaces e:hsExp1			{ return $ AppE (VarE $ mkName "negate") e }
+	/ s:stringLit				{ return $ LitE $ stringL s }
+	/ "-":word e:hsExp1			{ return $ AppE (VarE $ mkName "negate") e }
 
 hsExpTpl :: [Exp]
-	= e:hsExpLam _:spaces ',' _:spaces et:hsExpTpl
+	= e:hsExpLam ",":word et:hsExpTpl
 						{ return $ e : et }
 	/ e:hsExpLam				{ return [e] }
 	/					{ return [] }
@@ -451,16 +432,15 @@ hsType :: (Type -> Type) -> Type
 	/ t:hsType1				{ return ($ t) }
 
 hsType1 :: Type
-	= '[' ']' _:spaces			{ return ListT }
-	/ '[' t:hsTypeArr ']' _:spaces		{ return $ ListT `AppT` t }
-	/ '(' _:spaces tt:hsTypeTpl ')' _:spaces{ return $ foldl AppT
+	= "[":word "]":word			{ return ListT }
+	/ "[":word t:hsTypeArr "]":word		{ return $ ListT `AppT` t }
+	/ "(":word tt:hsTypeTpl ")":word	{ return $ foldl AppT
 							(TupleT $ length tt) tt }
 	/ t:typWord				{ return $ ConT $ mkName t }
-	/ "(->)":word				{ return ArrowT }
+	/ "(":word "->":word ")":word		{ return ArrowT }
 
 hsTypeTpl :: [Type]
-	= t:hsTypeArr ',' _:spaces tt:hsTypeTpl
-						{ return $ t : tt }
+	= t:hsTypeArr ",":word tt:hsTypeTpl	{ return $ t : tt }
 	/ t:hsTypeArr				{ return [t] }
 	/					{ return [] }
 
@@ -475,7 +455,29 @@ integer :: Integer = ds:word[return $ all isDigit ds]
 
 word :: String
 	= w:<isAlphaNum>+ _:spaces		{ return w }
-	/ w:<isSym>+ _:spaces			{ return w }
+	/ '{' '-' '#' _:spaces			{ return "{-#" }
+	/ '#' '-' '}' _:spaces			{ return "#-}" }
+	/ w:<isOpChar>+ _:spaces		{ return w }
+	/ w:<isSepChar> _:spaces		{ return [w] }
+
+charLit :: Char
+	= '\'' c:<(`notElem` "\\'")> '\'' _:spaces	{ return c }
+	/ '\'' '\\' c:escapeC '\'' _:spaces	{ return c }
+
+stringLit :: String
+	= '"' s:stringLit_ '"' _:spaces		{ return s }
+
+stringLit_ :: String
+	= c:<(`notElem` "\"\\")> s:stringLit_	{ return $ c : s }
+	/ '\\' c:escapeC s:stringLit_		{ return $ c : s }
+	/					{ return "" }
+
+escapeC :: Char
+	= '"'					{ return '"' }
+	/ '\''					{ return '\'' }
+	/ '\\'					{ return '\\' }
+	/ 'n'					{ return '\n' }
+	/ 't'					{ return '\t' }
 
 spaces' :: () = _:<isSpace>*			{ return () }
 
