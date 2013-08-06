@@ -2,8 +2,6 @@
 * 次にやること           *
 **************************
 
-* word と hsw とに分けよう
-
 * string literal と char literal は word と同じレベルで扱うことにする
 
 * それと Haskell ではだめでも papillon では使える token について
@@ -53,6 +51,9 @@
 	State Int を State (Maybe Int) とし、Nothing ならば semicolon を挿入
 	しないようにする。
 		こうすることで、!comment 等を消せるだろう
+
+	word と hsw を lexer としよう。
+	つまり、ちゃんとした Word 型や HsWord 型としよう。
 
 * 'c'+ をより拡張する
 	Char 以外の token でも使えるようにしたい。

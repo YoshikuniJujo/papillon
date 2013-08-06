@@ -118,7 +118,7 @@ isVarTail :: Char -> Bool
 isVarTail = or <$> sequence [isUpper, isLower, isDigit, (`elem` "_'")]
 
 isPapillonOp :: Char -> Bool
-isPapillonOp = (`elem` ":&!?*+[]{}<=>")
+isPapillonOp = (`elem` ":&!?*+[]{}<=>()")
 
 isOpChar :: Char -> Bool
 isOpChar = (`elem` ":!#$%&*+./<=>?@\\^|-~")
@@ -262,11 +262,11 @@ plainReadFromLs :: ReadFrom
 	/ rf:selectCharsLs			{ return rf }
 
 expression :: [(Lookahead, Check)]
-	= l:nameLeaf_ _:spaces e:expression	{ return $ l : e }
-	/ 					{ return [] }
+	= l:nameLeaf_ e:expression		{ return $ l : e }
+	/					{ return [] }
 
 nameLeaf_ :: (Lookahead, Check)
-	= "!":word nl:nameLeafNoCom _:spaces com:comForErr?
+	= "!":word nl:nameLeafNoCom com:comForErr?
 						{ return (NAhead $ maybe "" id com, nl) }
 	/ "&":word nl:nameLeaf			{ return (Ahead, nl) }
 	/ nl:nameLeaf				{ return (Here, nl) }
@@ -341,8 +341,9 @@ readFromLs :: ReadFrom
 	/ rf:readFrom				{ return rf }
 
 readFrom :: ReadFrom
-	= v:var				{ return $ FromVariable $ Just v }
-	/ '(' s:selection ')'			{ return $ FromSelection s }
+	= v:varWord				{ return $ FromVariable $ Just v }
+	/ "(":word s:selection ")":word		{ return $ FromSelection s }
+--	/ '(' s:selection ')'		{ return $ FromSelection s }
 	/ e:expressionHsSugar'			{ return $ FromSelection $ Left [e] }
 
 selectCharsLs :: ReadFrom
