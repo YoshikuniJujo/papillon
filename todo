@@ -3,14 +3,26 @@
 **************************
 
 * Parser.papillon のリファクタリング
+	word を lexer としよう。
+		ちゃんとした Word 型を作ろう。
+		これには WVariable String, WType Sting, WOperator String は
+		とりあえずある。
+		それ以外に WSpecial String として "{-#" "#-}" を入れておくかな。
+		あるいは、これは WOperator に入れても良いかもしれない。
+		また WVariable と WType は分けなくても良いかもしれない。
+		WVar にまとめてしまえば良い。
+		つまり、WVar String | WOp String だけで良いように思う。
+		これも branch を切ってやることにする。
+		git checkout -b word としよう。
+
+	hsw を lexer としよう。
+		ちゃんとした HsWord 型を作ろう。
 
 	State Int を State (Maybe Int) とし、Nothing ならば semicolon を挿入
 	しないようにした。
 		しかし、peg のところの semiColon? は消せるし、spaces' も不必要になる
 		と思ったのだが素直に spaces' を spaces にすると bug るな
-
-		branch を切ろう。
-		git checkout -b semicolon としよう。
+		spaces' を spaces にできるようにしたい
 
 	英数字と記号のみを分けていたが、op 用の記号とそれ以外とを分けた。
 	すくなくとも、', ", (, ), [, ], {, }, \,, は単独で使われるので、
@@ -36,9 +48,6 @@
 
 	それと Haskell ではだめでも papillon では使える token について
 		:< とか >+ とかについて考えた -> word, hsw を分けた
-
-	word と hsw を lexer としよう。
-	つまり、ちゃんとした Word 型や HsWord 型としよう。
 
 	string literal と char literal は word と同じレベルで扱うことにする
 
