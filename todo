@@ -51,6 +51,9 @@
 	State Int を State (Maybe Int) とし、Nothing ならば semicolon を挿入
 	しないようにする。
 		こうすることで、!comment 等を消せるだろう
+		!comment 等は消せない。何故ならば、途中に comment が入る可能性がある
+		から
+		しかし、peg のところの semiColon? は消せるし、spaces' も不必要になる
 
 	word と hsw を lexer としよう。
 	つまり、ちゃんとした Word 型や HsWord 型としよう。

@@ -48,6 +48,7 @@ import Language.Haskell.TH.PprLib
 import qualified Language.Haskell.TH.PprLib as P
 import Control.Arrow ((***))
 import Data.List
+-- import Data.Maybe
 
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
 data Lists = List | List1 | Optional deriving (Show, Eq)
@@ -118,7 +119,7 @@ isVarTail :: Char -> Bool
 isVarTail = or <$> sequence [isUpper, isLower, isDigit, (`elem` "_'")]
 
 isPapillonOp :: Char -> Bool
-isPapillonOp = (`elem` ":&!?*+[]{}<=>()")
+isPapillonOp = (`elem` ":&!?*+[]{}<=>()-/|")
 
 isOpChar :: Char -> Bool
 isOpChar = (`elem` ":!#$%&*+./<=>?@\\^|-~")
@@ -132,9 +133,9 @@ monad: State Int
 
 pegFile :: PegFile
 	= pr:pragmas md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
-		p:peg _:spaces' '|' ']' '\n' atp:afterPeg
+		_:spaces' p:peg' _:spaces' '|' ']' '\n' atp:afterPeg
 			{ return $ mkPegFile pr md pip pp p atp }
-	/ pr:pragmas md:moduleDec pp:prePeg _:pap p:peg _:spaces'
+	/ pr:pragmas md:moduleDec pp:prePeg _:pap _:spaces' p:peg' _:spaces'
 		'|' ']' '\n' atp:afterPeg
 			{ return $ mkPegFile pr md [] pp p atp }
 
@@ -143,42 +144,37 @@ pragmas :: [PPragma]
 	/ _:spaces'				{ return [] }
 
 pragma :: PPragma
-	= '{' '-' '#' _:spaces' 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces'
-		s:pragmaItems _:pragmaEnd _:spaces'	{ return $ LanguagePragma s }
-	/ '{' '-' '#' _:spaces' s:pragmaStr _:pragmaEnd	{ return $ OtherPragma s }
+	= "{-#":word 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces'
+		s:pragmaItems _:pragmaEnd	{ return $ LanguagePragma s }
+	/ "{-#":word s:pragmaStr _:pragmaEnd	{ return $ OtherPragma s }
 
 pragmaStr :: String
 	= !_:pragmaEnd c s:pragmaStr		{ return $ c : s }
 	/					{ return "" }
 
 pragmaItems :: [String]
-	= t:typWord ',' _:spaces' i:pragmaItems{ return $ t : i }
+	= t:typWord ",":hsw i:pragmaItems	{ return $ t : i }
 	/ t:typWord				{ return [t] }
 
 pragmaEnd :: ()
-	= _:spaces' '#' '-' '}'			{ return () }
+	= _:spaces' "#-}":word			{ return () }
 
 moduleDec :: Maybe ([String], Maybe String)
-	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces'
-		n:moduleName _:spaces'
-		'(' _:spaces' s:moduleDecStr _:whr
+	= "module":word n:moduleName "(":word s:moduleDecStr _:whr
 						{ return $ Just (n, Just s) }
-	/ 'm' 'o' 'd' 'u' 'l' 'e' _:spaces'
-		n:moduleName _:spaces' 'w' 'h' 'e' 'r' 'e' _:spaces'
+	/ "module":word n:moduleName "where":word
 						{ return $ Just (n, Nothing) }
 	/					{ return Nothing }
 
 moduleName :: ModuleName
 	= t:typ '.' n:moduleName		{ return $ t : n }
-	/ t:typ					{ return [t] }
+	/ t:typWord				{ return [t] }
 
 moduleDecStr :: String
 	= !_:whr c s:moduleDecStr		{ return $ c : s }
 	/					{ return "" }
 
-whr :: ()
-	= _:spaces' ')' _:spaces' 'w' 'h' 'e' 'r' 'e'
-						{ return () }
+whr :: () = _:spaces' ")":word "where":word	{ return () }
 
 preImpPap :: String
 	= !_:importPapillon !_:pap c pip:preImpPap
@@ -194,63 +190,63 @@ afterPeg :: String
 	/					{ return "" }
 
 importPapillon :: ()
-	= "import":varWord "Text":typWord '.' _:spaces' "Papillon":typWord
-		!'.'				{ return () }
+	= "import":varWord "Text":typ '.' "Papillon":typ !'.'
+						{ return () }
 
-pap :: () = '\n' '[' 'p' 'a' 'p' 'i' 'l' 'l' 'o' 'n' '|' '\n'	{ return () }
+pap :: () = '\n' "[":word "papillon":word "|":word '\n'
+						{ return () }
 
-peg :: STPeg
-	= mt:monadType? _:spaces' s:sourceType _:spaces _:semiColon? p:peg_
-		{ return (mt, ConT $ mkName s, p) }
-	/ mt:monadType? _:spaces' _:spaces _:semiColon? p:peg_				
-		{ return (mt, ConT $ mkName "String", p) }
+peg :: STPeg = _:spaces _:spaces' p:peg'	{ return p }
+
+peg' :: STPeg
+	= mt:monadType? s:sourceType p:peg_	{ return (mt, ConT $
+							mkName s, p) }
+	/ mt:monadType? p:peg_			{ return (mt, ConT $
+							mkName "String", p) }
 
 monadType :: Type
-	= _:spaces' "monad":varWord ':' _:spaces' t:hsTypeArr	{ return t }
+	= "monad":varWord ":":word t:hsTypeArr _:semi	{ return t }
 
 sourceType :: String
-	= "source":varWord ':' _:spaces' v:typWord		{ return v }
+	= "source":varWord ":":word v:typWord _:semi	{ return v }
 
 peg_ :: Peg
-	= _:spaces d:definition p:peg_		{ return $ d : p }
+	= d:definition p:peg_			{ return $ d : p }
 	/ 					{ return [] }
 
 definition :: Definition
 	= (!ListPos (CharPos (_, x))):position
-		v:var _:spaces ':' ':'
-		_:spaces t:hsTypeArr _:spaces '='
-		_:spaces sel:selection _:spaces _:semiColon _:spaces
+		v:varWord "::":word t:hsTypeArr "=":word sel:selection _:semi
 		{ put x >> return (v, Just t, sel) }
 	/ (!ListPos (CharPos (_, x))):position
-		v:var _:spaces '=' _:spaces
-		sel:plainSelection _:spaces _:semiColon _:spaces
+		v:varWord "=":word sel:plainSelection _:semi
 		{ put x >> return (v, Nothing, Right sel) }
 
 selection = normalSelection / plainSelection
 
 normalSelection :: [Expression]
-	= ex:expressionHs _:spaces '/' _:spaces sel:normalSelection
+	= ex:expressionHs "/":word sel:normalSelection
 						{ return $ ex : sel }
 	/ ex:expressionHs			{ return [ex] }
 
 plainSelection :: [PlainExpression]
-	= ex:plainExpressionHs _:spaces '/' _:spaces sel:plainSelection
+	= ex:plainExpressionHs "/":word sel:plainSelection
 						{ return $ ex : sel }
 	/ ex:plainExpressionHs			{ return [ex] }
 
 expressionHs :: Expression
-	= e:expression _:spaces '{' _:spaces h:hsExpLam _:spaces '}' _:spaces
+	= e:expression "{":word h:hsExpLam "}":word
 						{ return $ Left (e, h) }
 	/ e:expressionHsSugar			{ return e }
 
 expressionHsSugar :: Expression
-	= '<' _:spaces h:hsExpLam _:spaces '>'	{ return $ Right h }
+	= "<":word h:hsExpLam ">":word		{ return $ Right h }
 
 expressionHsSugar' :: Expression
-	= '<' _:spaces h:hsExpLam' _:spaces '>'	{ return $ Right h }
+	= "<":word h:hsExpLam' ">":word		{ return $ Right h }
 
 plainExpressionHs :: PlainExpression
-	= rfs:(rf:plainHAReadFromLs _:spaces { return rf })*	{ return rfs }
+	= rfs:(rf:plainHAReadFromLs { return rf })*	{ return rfs }
 
 plainHAReadFromLs :: (Lookahead, ReadFrom)
 	= rf:plainReadFromLs			{ return (Here, rf) }
@@ -353,10 +349,11 @@ selectCharsLs :: ReadFrom
 	/ rf:selectChars			{ return rf }
 
 selectChars :: ReadFrom
-	= '[' cs:<(`notElem` "\\-")>+ ']'	{ return $ charList cs }
-	/ '[' cb:<(`notElem` "\\-")> '-' ce:<(`notElem` "\\-")> ']'
+	= "[":word cs:<(`notElem` "\\-")>+ "]":word	{ return $ charList cs }
+	/ "[":word cb:<(`notElem` "\\-")> "-":word ce:<(`notElem` "\\-")> "]":word
 						{ return $ charList [cb .. ce] }
-	/ '\'' c:<(`notElem` "\\'")> '\''	{ return $ charList [c] }
+--	/ '\'' c:<(`notElem` "\\'")> '\''	{ return $ charList [c] }
+	/ c:charLit				{ return $ charList [c] }
 
 test :: (Exp, String)
 	= "[":word h:hsExpLam com:comForErr? "]":word
@@ -469,6 +466,7 @@ word :: String
 
 hsw :: String
 	= w:<isAlphaNum>+ _:spaces		{ return w }
+	/ '|' ']' _:spaces			{ return "|]" }
 	/ w:<isOpChar>+ _:spaces		{ return w }
 	/ w:<isSepChar> _:spaces		{ return [w] }
 
@@ -522,6 +520,8 @@ notComStr :: ()
 
 comEnd :: ()
 	= '-' '}'				{ return () }
+
+semi :: () = _:semiColon _:spaces		{ return () }
 
 semiColon :: ()
 	= ';' _:newLine?			{ return () }
