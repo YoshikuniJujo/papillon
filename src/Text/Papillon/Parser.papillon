@@ -501,7 +501,7 @@ space :: ()
 	= s:[return $ s `elem` " \t"]		{ return () }
 	/ _:notSemiColon			{ return () }
 	/ _:lineComment				{ return () }
-	/ _:comment _:semiColon?		{ return () }
+	/ _:comment				{ return () }
 
 lineComment :: () = '-' '-' _:notNLString &'\n'	{ return () }
 
