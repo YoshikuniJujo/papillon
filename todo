@@ -2,36 +2,24 @@
 * 次にやること           *
 **************************
 
-* string literal と char literal は word と同じレベルで扱うことにする
-
-* それと Haskell ではだめでも papillon では使える token について
-	:< とか >+ とかについて考える必要があるな
-
 * Parser.papillon のリファクタリング
-	次は spaces をつけてまわることから解放されるために、
-	word	= <isAlphaNum>+ spaces
-		/ <isSymbol>+ spaces
-	のような感じにする。
-	そして、以下のようにする。
-	some	= x:word[all isDigit x] "+":word y:word[all isDigit y]
-	また、top に来るものに関しては、例えば、
-	peg = spaces peg_
-	peg_ = ...
-	のような感じにしよう。
-	この変更は大規模であり、また途中でうまくいかないことに気づく可能性もあるので、
-	branch を切る。
-	git checkout -b word
-	で良いだろう。
 
-	word をもうすこし作り込む必要がある。
-	今のところは 英数字と記号のみを分けているが、
-	op 用の記号とそれ以外とを分ける必要がある。
-	つまり、すくなくとも、', ", (, ), [, ], {, }, \,, は
-	単独で使われるので、
+	State Int を State (Maybe Int) とし、Nothing ならば semicolon を挿入
+	しないようにする。
+		こうすることで、!comment 等を消せるだろう
+		!comment 等は消せない。何故ならば、途中に comment が入る可能性がある
+		から
+		しかし、peg のところの semiColon? は消せるし、spaces' も不必要になる
+
+		branch を切ろう。
+		git checkout -b semicolon としよう。
+
+	英数字と記号のみを分けていたが、op 用の記号とそれ以外とを分けた。
+	すくなくとも、', ", (, ), [, ], {, }, \,, は単独で使われるので、
 	word	= alnum+ spaces
 		/ opChar+ spaces
 		/ sepChar spaces
-	のようにする必要がある
+	のようにした。
 
 	type や var をちゃんとしよう
 	hs 内では Hoge.Fuga.Piyo や Foo.Bar.baz への対応も。
@@ -48,15 +36,13 @@
 	とすれば良い
 	また、同様に opTail 等も hsw 内で扱うほうが良いだろう。
 
-	State Int を State (Maybe Int) とし、Nothing ならば semicolon を挿入
-	しないようにする。
-		こうすることで、!comment 等を消せるだろう
-		!comment 等は消せない。何故ならば、途中に comment が入る可能性がある
-		から
-		しかし、peg のところの semiColon? は消せるし、spaces' も不必要になる
+	それと Haskell ではだめでも papillon では使える token について
+		:< とか >+ とかについて考えた -> word, hsw を分けた
 
 	word と hsw を lexer としよう。
 	つまり、ちゃんとした Word 型や HsWord 型としよう。
+
+	string literal と char literal は word と同じレベルで扱うことにする
 
 * 'c'+ をより拡張する
 	Char 以外の token でも使えるようにしたい。
