@@ -129,7 +129,7 @@ isSepChar = (`elem` "(),;[]`{}_:")
 
 [papillon|
 
-monad: State Int
+monad: State (Maybe Int)
 
 pegFile :: PegFile
 	= pr:pragmas md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
@@ -205,22 +205,24 @@ peg' :: STPeg
 							mkName "String", p) }
 
 monadType :: Type
-	= "monad":varWord ":":word t:hsTypeArr _:semi	{ return t }
+	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
+		"monad":varWord ":":word t:hsTypeArr _:semi	{ return t }
 
 sourceType :: String
-	= "source":varWord ":":word v:typWord _:semi	{ return v }
+	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
+		"source":varWord ":":word v:typWord _:semi	{ return v }
 
 peg_ :: Peg
 	= d:definition p:peg_			{ return $ d : p }
 	/ 					{ return [] }
 
 definition :: Definition
-	= (!ListPos (CharPos (_, x))):position
+	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		v:varWord "::":word t:hsTypeArr "=":word sel:selection _:semi
-		{ put x >> return (v, Just t, sel) }
-	/ (!ListPos (CharPos (_, x))):position
+		{ return (v, Just t, sel) }
+	/ (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		v:varWord "=":word sel:plainSelection _:semi
-		{ put x >> return (v, Nothing, Right sel) }
+		{ return (v, Nothing, Right sel) }
 
 selection = normalSelection / plainSelection
 
@@ -521,23 +523,26 @@ notComStr :: ()
 comEnd :: ()
 	= '-' '}'				{ return () }
 
-semi :: () = _:semiColon _:spaces		{ return () }
+semi :: () = _:semiColon _:spaces		{ put Nothing }
 
 semiColon :: ()
 	= ';' _:newLine?			{ return () }
 	/ _:newLine _:headSpace*
-		(!ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
+		(!ListPos (CharPos (_, h))):position[get>>=
+			(\b -> return $ maybe False (>=h) b)]
 		';' _:newLine?
 						{ return () }
 	/ _:newLine _:headSpace*
-		(!ListPos (CharPos (_, h))):position[get>>=(\b -> return (b>=h))]
+		(!ListPos (CharPos (_, h))):position[get>>=
+			(\b -> return $ maybe False (>=h) b)]
 		!_:lineComment !_:comment
 						{ return () }
 	/ !_:[return True]			{ return () }
 
 notSemiColon :: ()
 	= _:newLine _:headSpace
-		(!ListPos (CharPos (_, h))):position[get>>=(\b -> return (b < h))]
+		(!ListPos (CharPos (_, h))):position[get>>=
+			(\b -> return $ maybe True (< h) b)]
 						{ return () }
 	/ _:newLine _:lineComment		{ return () }
 	/ _:newLine _:comment			{ return () }

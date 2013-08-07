@@ -10,6 +10,7 @@
 		!comment 等は消せない。何故ならば、途中に comment が入る可能性がある
 		から
 		しかし、peg のところの semiColon? は消せるし、spaces' も不必要になる
+		と思ったのだが素直に spaces' を spaces にすると bug るな
 
 		branch を切ろう。
 		git checkout -b semicolon としよう。
