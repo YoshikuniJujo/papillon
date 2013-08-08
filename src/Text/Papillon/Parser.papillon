@@ -112,7 +112,18 @@ charList cs = FromSelection $ Left $ (: []) $ Right $
 dvCharsN :: String
 dvCharsN = "char"
 
-data Word = WTyp String | WVar String | WOp String deriving Show
+data Word
+	= WTyp String
+	| WVar String
+	| WOp String
+	| WTypeDef
+	| WOpenComment
+	| WCloseComment
+	| WOpenBracket
+	| WCloseBracket
+	| WOpenBrace
+	| WCloseBrace
+	deriving Show
 
 isVarHead :: Char -> Bool
 isVarHead = (||) <$> isLower <*> (== '_')
@@ -146,9 +157,9 @@ pragmas :: [PPragma]
 	/ _:spaces'				{ return [] }
 
 pragma :: PPragma
-	= (WOp "{-#"):word 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces'
+	= WOpenComment:word 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces'
 		s:pragmaItems _:pragmaEnd	{ return $ LanguagePragma s }
-	/ (WOp "{-#"):word s:pragmaStr _:pragmaEnd	{ return $ OtherPragma s }
+	/ WOpenComment:word s:pragmaStr _:pragmaEnd	{ return $ OtherPragma s }
 
 pragmaStr :: String
 	= !_:pragmaEnd c s:pragmaStr		{ return $ c : s }
@@ -159,7 +170,7 @@ pragmaItems :: [String]
 	/ (WTyp t):word				{ return [t] }
 
 pragmaEnd :: ()
-	= _:spaces' (WOp "#-}"):word			{ return () }
+	= _:spaces' WCloseComment:word		{ return () }
 
 moduleDec :: Maybe ([String], Maybe String)
 	= (WVar "module"):word n:moduleName (WOp "("):word s:moduleDecStr _:whr
@@ -195,7 +206,7 @@ importPapillon :: ()
 	= "import":varWord "Text":typ '.' "Papillon":typ !'.'
 						{ return () }
 
-pap :: () = '\n' (WOp "["):word (WVar "papillon"):word (WOp "|"):word '\n'
+pap :: () = '\n' WOpenBracket:word (WVar "papillon"):word (WOp "|"):word '\n'
 						{ return () }
 
 peg :: STPeg = _:spaces _:spaces' p:peg'	{ return p }
@@ -220,7 +231,7 @@ peg_ :: Peg
 
 definition :: Definition
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
-		v:varWord (WOp "::"):word t:hsTypeArr (WOp "="):word sel:selection
+		v:varWord WTypeDef:word t:hsTypeArr (WOp "="):word sel:selection
 			_:semi
 		{ return (v, Just t, sel) }
 	/ (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
@@ -240,7 +251,7 @@ plainSelection :: [PlainExpression]
 	/ ex:plainExpressionHs			{ return [ex] }
 
 expressionHs :: Expression
-	= e:expression (WOp "{"):word h:hsExpLam (WOp "}"):word
+	= e:expression WOpenBrace:word h:hsExpLam WCloseBrace:word
 						{ return $ Left (e, h) }
 	/ e:expressionHsSugar			{ return e }
 
@@ -286,7 +297,7 @@ nameLeafNoCom :: Check
 	/ n:pat1{ return $ Left ((n, ""), FromVariable Nothing, Nothing) }
 
 comForErr :: String
-	= (WOp "{-#"):word s:stringLit (WOp "#-}"):word	{ return s }
+	= WOpenComment:word s:stringLit WCloseComment:word	{ return s }
 
 leaf :: (ReadFrom, Maybe (Exp, String))
 	= rf:readFromLs t:test			{ return (rf, Just t) }
@@ -353,15 +364,16 @@ selectCharsLs :: ReadFrom
 	/ rf:selectChars			{ return rf }
 
 selectChars :: ReadFrom
-	= (WOp "["):word cs:<(`notElem` "\\-")>+ (WOp "]"):word	{ return $ charList cs }
-	/ (WOp "["):word cb:<(`notElem` "\\-")> (WOp "-"):word
-		ce:<(`notElem` "\\-")> (WOp "]"):word
+	= WOpenBracket:word cs:<(`notElem` "\\-")>+ WCloseBracket:word
+						{ return $ charList cs }
+	/ WOpenBracket:word cb:<(`notElem` "\\-")> (WOp "-"):word
+		ce:<(`notElem` "\\-")> WCloseBracket:word
 						{ return $ charList [cb .. ce] }
 --	/ '\'' c:<(`notElem` "\\'")> '\''	{ return $ charList [c] }
 	/ c:charLit				{ return $ charList [c] }
 
 test :: (Exp, String)
-	= (WOp "["):word h:hsExpLam com:comForErr? (WOp "]"):word
+	= WOpenBracket:word h:hsExpLam com:comForErr? WCloseBracket:word
 						{ return (h, maybe "" id com) }
 
 hsExpLam :: Exp
@@ -465,9 +477,13 @@ word :: Word
 	= t:typ _:spaces			{ return $ WTyp t }
 	/ v:var _:spaces			{ return $ WVar v }
 	/ w:<isAlphaNum>+ _:spaces		{ return $ WVar w }
-	/ ':' ':' _:spaces			{ return $ WOp "::" }
-	/ '{' '-' '#' _:spaces			{ return $ WOp "{-#" }
-	/ '#' '-' '}' _:spaces			{ return $ WOp "#-}" }
+	/ ':' ':' _:spaces			{ return $ WTypeDef }
+	/ '{' '-' '#' _:spaces			{ return $ WOpenComment }
+	/ '#' '-' '}' _:spaces			{ return $ WCloseComment }
+	/ '[' _:spaces				{ return $ WOpenBracket }
+	/ ']' _:spaces				{ return $ WCloseBracket }
+	/ '{' _:spaces				{ return $ WOpenBrace }
+	/ '}' _:spaces				{ return $ WCloseBrace }
 	/ w:<isPapillonOp> _:spaces		{ return $ WOp [w] }
 
 hsw :: String

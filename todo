@@ -15,6 +15,29 @@
 		これも branch を切ってやることにする。
 		git checkout -b word としよう。
 
+		lexer が semicolon を返すようにしようかな?
+		word や hsw より上のレベルでは必ずどちらかを使うようにしよう。
+
+		ただ、毎度 (WOp "::"):word のようにするより、wop を作って、
+		"::":wop としたほうが良いのでは無いかとも思う。
+		あるいは記号に関しては WColon のような型を使うべきかもしれない。
+		難しいところだ。
+
+		もっと本格的に lexer 的にするのはどうか。
+
+		data Token
+			= TypeWord String | VarWord String
+			| OpenBracket | CloseBracket
+			| OpenParens | CloseParens | TypeDef | Colon
+			| SemiColon
+		といった感じ。
+		名前自体は後でまたリファクタリングすることを考慮して、
+		そんなに悩まずに決めようと思う。
+		この方針が正しいかどうかを決めるために、とりあえず進めてみよう。
+
+		また word と hsw は data Token を共有しよう。
+		問題無いと思うし、名前の節約になる。
+
 	hsw を lexer としよう。
 		ちゃんとした HsWord 型を作ろう。
 
