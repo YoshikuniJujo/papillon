@@ -399,6 +399,9 @@ showReading d n
 	| n == dvCharsN = case flip evalState Nothing $ runErrorT $ char d of
 		Right (c, _) -> show c
 		Left _ -> error "bad"
+showReading d "hsw" = case flip evalState Nothing $ runErrorT $ hsw d of
+	Right (c, _) -> show c
+	Left _ -> error "bad"
 showReading _ n = "yet: " ++ n
 
 doE :: [Stmt] -> Exp

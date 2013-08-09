@@ -13,6 +13,8 @@ module Text.Papillon.Parser (
 	Check,
 	ReadFrom(..),
 
+	hsw,
+
 	pprCheck,
 
 	parse,
@@ -138,6 +140,15 @@ data Word
 	| WSlash
 	| WVerticalBar
 	| WSemiColon
+	| WOperator String
+	| WVariable String
+	| WType String
+	| WOpenQuasiQuote String
+	| WCloseQuasiQuote
+	| WComma
+	| WBackQuote
+	| WRightArrow
+	| WBackSlash
 	deriving Show
 
 isVarHead :: Char -> Bool
@@ -149,9 +160,6 @@ isVarTail = or <$> sequence [isUpper, isLower, isDigit, (`elem` "_'")]
 isOpChar :: Char -> Bool
 isOpChar = (`elem` ":!#$%&*+./<=>?@\\^|-~")
 
-isSepChar :: Char -> Bool
-isSepChar = (`elem` "(),;[]`{}_:")
-
 [papillon|
 
 monad: State (Maybe Int)
@@ -161,7 +169,7 @@ pegFile :: PegFile
 		_:spaces' p:peg' _:spaces' '|' ']' '\n' atp:afterPeg
 			{ return $ mkPegFile pr md pip pp p atp }
 	/ pr:pragmas md:moduleDec pp:prePeg _:pap _:spaces' p:peg' _:spaces'
-		'|' ']' '\n' atp:afterPeg
+		WCloseQuasiQuote:hsw atp:afterPeg
 			{ return $ mkPegFile pr md [] pp p atp }
 
 pragmas :: [PPragma]
@@ -178,7 +186,7 @@ pragmaStr :: String
 	/					{ return "" }
 
 pragmaItems :: [String]
-	= (WTyp t):word ",":hsw i:pragmaItems	{ return $ t : i }
+	= (WTyp t):word WComma:hsw i:pragmaItems	{ return $ t : i }
 	/ (WTyp t):word				{ return [t] }
 
 pragmaEnd :: ()
@@ -218,8 +226,7 @@ importPapillon :: ()
 	= "import":varWord "Text":typ '.' "Papillon":typ !'.'
 						{ return () }
 
-pap :: () = '\n' WOpenBracket:word (WVar "papillon"):word WVerticalBar:word '\n'
-						{ return () }
+pap :: () = (WOpenQuasiQuote "papillon"):hsw	{ return () }
 
 peg :: STPeg = _:spaces _:spaces' p:peg'	{ return p }
 
@@ -321,30 +328,32 @@ leaf :: (ReadFrom, Maybe (Exp, String))
 
 patOp :: Pat
 	= p:pat o:opConName po:patOp		{ return $ UInfixP p o po }
-	/ p:pat "`":hsw (WTyp t):word "`":hsw po:patOp
+	/ p:pat WBackQuote:hsw (WTyp t):word WBackQuote:hsw po:patOp
 						{ return $ UInfixP p (mkName t) po }
 	/ p:pat					{ return p }
 
 pat :: Pat
 	= (WTyp t):word ps:pats			{ return $ ConP (mkName t) ps }
-	/ "(":hsw o:opConName ")":hsw ps:pats	{ return $ ConP o ps }
+	/ WOpenParen:hsw o:opConName WCloseParen:hsw ps:pats	{ return $ ConP o ps }
 	/ p:pat1				{ return p }
 
 pat1 :: Pat
-	= (WTyp t):word			{ return $ ConP (mkName t) [] }
-	/ "_":hsw				{ return WildP }
+	= (WTyp t):word				{ return $ ConP (mkName t) [] }
+	/ (WVariable "_"):hsw			{ return WildP }
 	/ n:varWord				{ return $ VarP $ mkName n }
 	/ i:integer				{ return $ LitP (IntegerL i) }
-	/ "-":hsw i:integer			{ return $ LitP (IntegerL $ - i) }
+	/ WHyphen:hsw i:integer			{ return $ LitP (IntegerL $ - i) }
 	/ c:charLit 				{ return $ LitP $ CharL c }
 	/ s:stringLit				{ return $ LitP $ StringL s }
-	/ "(":hsw p:patList ")":hsw		{ return $ TupP p }
-	/ "[":hsw p:patList "]":hsw		{ return $ ListP p }
-	/ "(":hsw p:pat ")":hsw			{ return p }
-	/ "!":hsw p:pat				{ return $ BangP p }
+	/ WOpenParen:hsw p:patList WCloseParen:hsw
+						{ return $ TupP p }
+	/ WOpenBracket:hsw p:patList WCloseBracket:hsw
+						{ return $ ListP p }
+	/ WOpenParen:hsw p:pat WCloseParen:hsw	{ return p }
+	/ WExclamation:hsw p:pat		{ return $ BangP p }
 
 patList :: [Pat]
-	= p:patOp ",":hsw ps:patList		{ return $ p : ps }
+	= p:patOp WComma:hsw ps:patList		{ return $ p : ps }
 	/ p:patOp				{ return [p] }
 	/					{ return [] }
 
@@ -391,11 +400,11 @@ test :: (Exp, String)
 						{ return (h, maybe "" id com) }
 
 hsExpLam :: Exp
-	= "\\":hsw ps:pats "->":hsw e:hsExpTyp{ return $ LamE ps e }
+	= WBackSlash:hsw ps:pats WRightArrow:hsw e:hsExpTyp{ return $ LamE ps e }
 	/ e:hsExpTyp				{ return e }
 
 hsExpTyp :: Exp
-	= eo:hsExpOp "::":hsw t:hsTypeArr	{ return $ SigE eo t }
+	= eo:hsExpOp WTypeDef:hsw t:hsTypeArr	{ return $ SigE eo t }
 	/ eo:hsExpOp				{ return eo }
 
 hsExpOp :: Exp
@@ -403,21 +412,23 @@ hsExpOp :: Exp
 	/ e:hsExp				{ return $ e id }
 
 hsOp :: Exp
-	= op:hsw[return $ all isOpChar op && head op /= ':']
+	= (WOperator op):hsw[return $ all isOpChar op && head op /= ':']
 						{ return $ VarE $ mkName op }
-	/ op:hsw[return $ all isOpChar op && op /= "::"]
+	/ (WOperator op):hsw[return $ all isOpChar op && op /= "::"]
 						{ return $ ConE $ mkName op }
-	/ "`":hsw v:varWord "`":hsw		{ return $ VarE $ mkName v }
-	/ "`":hsw (WTyp t):word "`":hsw	{ return $ ConE $ mkName t }
+	/ WBackQuote:hsw v:varWord WBackQuote:hsw	
+						{ return $ VarE $ mkName v }
+	/ WBackQuote:hsw (WTyp t):word WBackQuote:hsw
+						{ return $ ConE $ mkName t }
 
 
 hsExpLam' :: Exp
-	= "\\":hsw ps:pats "->":hsw e:hsExpTyp'
+	= WBackSlash:hsw ps:pats WRightArrow:hsw e:hsExpTyp'
 						{ return $ LamE ps e }
 	/ e:hsExpTyp'				{ return e }
 
 hsExpTyp' :: Exp
-	= eo:hsExpOp' "::":hsw t:hsTypeArr	{ return $ SigE eo t }
+	= eo:hsExpOp' WTypeDef:hsw t:hsTypeArr	{ return $ SigE eo t }
 	/ eo:hsExpOp'				{ return eo }
 
 hsExpOp' :: Exp
@@ -425,12 +436,12 @@ hsExpOp' :: Exp
 	/ e:hsExp				{ return $ e id }
 
 hsOp' :: Exp
-	= op:hsw[return $ all isOpChar op && head op /= ':' && head op /= '>']
+	= (WOperator op):hsw[return $ all isOpChar op && head op /= ':' && head op /= '>']
 						{ return $ VarE $ mkName op }
-	/ op:hsw[return $ all isOpChar op && op /= "::" && head op /= '>']
+	/ (WOperator op):hsw[return $ all isOpChar op && op /= "::" && head op /= '>']
 						{ return $ ConE $ mkName op }
-	/ "`":hsw v:var "`":hsw		{ return $ VarE $ mkName v }
-	/ "`":hsw t:typ "`":hsw		{ return $ ConE $ mkName t }
+	/ WBackQuote:hsw v:var WBackQuote:hsw		{ return $ VarE $ mkName v }
+	/ WBackQuote:hsw t:typ WBackQuote:hsw		{ return $ ConE $ mkName t }
 
 opTail :: String
 	= c:<(`elem` ":+*/-!|&.^=<>$")> s:opTail{ return $ c : s }
@@ -441,25 +452,25 @@ hsExp :: (Exp -> Exp) -> Exp
 	/ e:hsExp1				{return (\f->f e)}
 
 hsExp1 :: Exp
-	= "(":hsw l:hsExpOp? o:hsOp r:hsExpOp? ")":hsw
+	= WOpenParen:hsw l:hsExpOp? o:hsOp r:hsExpOp? WCloseParen:hsw
 						{ return $ InfixE l o r }
-	/ "(":hsw et:hsExpTpl ")":hsw		{ return $ TupE et }
-	/ "[":hsw et:hsExpTpl "]":hsw		{ return $ ListE et }
+	/ WOpenParen:hsw et:hsExpTpl WCloseParen:hsw		{ return $ TupE et }
+	/ WOpenBracket:hsw et:hsExpTpl WCloseBracket:hsw		{ return $ ListE et }
 	/ v:varWord				{ return $ VarE $ mkName v }
 	/ (WTyp t):word			{ return $ ConE $ mkName t }
 	/ i:integer				{ return $ LitE $ integerL i }
 	/ c:charLit				{ return $ LitE $ charL c }
 	/ s:stringLit				{ return $ LitE $ stringL s }
-	/ "-":hsw e:hsExp1			{ return $ AppE (VarE $ mkName "negate") e }
+	/ WHyphen:hsw e:hsExp1			{ return $ AppE (VarE $ mkName "negate") e }
 
 hsExpTpl :: [Exp]
-	= e:hsExpLam ",":hsw et:hsExpTpl
+	= e:hsExpLam WComma:hsw et:hsExpTpl
 						{ return $ e : et }
 	/ e:hsExpLam				{ return [e] }
 	/					{ return [] }
 
 hsTypeArr :: Type
-	= l:hsType "->":hsw r:hsTypeArr	{ return $ AppT (AppT ArrowT $ l id) r }
+	= l:hsType WRightArrow:hsw r:hsTypeArr	{ return $ AppT (AppT ArrowT $ l id) r }
 	/ t:hsType				{ return $ t id }
 
 hsType :: (Type -> Type) -> Type
@@ -467,19 +478,19 @@ hsType :: (Type -> Type) -> Type
 	/ t:hsType1				{ return ($ t) }
 
 hsType1 :: Type
-	= "[":hsw "]":hsw			{ return ListT }
-	/ "[":hsw t:hsTypeArr "]":hsw		{ return $ ListT `AppT` t }
-	/ "(":hsw tt:hsTypeTpl ")":hsw		{ return $ foldl AppT
+	= WOpenBracket:hsw WCloseBracket:hsw			{ return ListT }
+	/ WOpenBracket:hsw t:hsTypeArr WCloseBracket:hsw		{ return $ ListT `AppT` t }
+	/ WOpenParen:hsw tt:hsTypeTpl WCloseParen:hsw		{ return $ foldl AppT
 							(TupleT $ length tt) tt }
 	/ (WTyp t):word			{ return $ ConT $ mkName t }
-	/ "(":hsw "->":hsw ")":hsw		{ return ArrowT }
+	/ WOpenParen:hsw WRightArrow:hsw WCloseParen:hsw		{ return ArrowT }
 
 hsTypeTpl :: [Type]
-	= t:hsTypeArr ",":hsw tt:hsTypeTpl	{ return $ t : tt }
+	= t:hsTypeArr WComma:hsw tt:hsTypeTpl	{ return $ t : tt }
 	/ t:hsTypeArr				{ return [t] }
 	/					{ return [] }
 
-integer :: Integer = ds:hsw[return $ all isDigit ds]
+integer :: Integer = (WVariable ds):hsw[return $ all isDigit ds]
 						{ return $ read $ ds }
 
 varWord :: String = v:var _:spaces		{ return v }
@@ -516,11 +527,25 @@ word :: Word
 	/ '|' _:spaces				{ return WVerticalBar }
 	/ _:semiColon _:spaces			{ return WSemiColon}
 
-hsw :: String
-	= w:<isAlphaNum>+ _:spaces		{ return w }
-	/ '|' ']' _:spaces			{ return "|]" }
-	/ w:<isOpChar>+ _:spaces		{ return w }
-	/ w:<isSepChar> _:spaces		{ return [w] }
+hsw :: Word
+	= w:<isAlphaNum>+ _:spaces		{ return $ WVariable w }
+	/ v:var _:spaces			{ return $ WVariable v }
+	/ '[' v:var '|' _:spaces		{ return $ WOpenQuasiQuote v }
+	/ '|' ']' _:spaces			{ return WCloseQuasiQuote }
+	/ '-' '>' _:spaces			{ return WRightArrow }
+	/ ':' ':' _:spaces			{ return WTypeDef }
+	/ '[' _:spaces				{ return WOpenBracket }
+	/ ']' _:spaces				{ return WCloseBracket }
+	/ '{' _:spaces				{ return WOpenBrace }
+	/ '}' _:spaces				{ return WCloseBrace }
+	/ '(' _:spaces				{ return WOpenParen }
+	/ ')' _:spaces				{ return WCloseParen }
+	/ ',' _:spaces				{ return WComma }
+	/ '`' _:spaces				{ return WBackQuote }
+	/ '-' _:spaces				{ return WHyphen }
+	/ '!' _:spaces				{ return WExclamation }
+	/ '\\' _:spaces				{ return WBackSlash }
+	/ w:<isOpChar>+ _:spaces		{ return $ WOperator w }
 
 charLit :: Char
 	= '\'' c:<(`notElem` "\\'")> '\'' _:spaces	{ return c }

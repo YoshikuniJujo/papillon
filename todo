@@ -2,8 +2,6 @@
 * 次にやること           *
 **************************
 
-* version up して install
-
 * Parser.papillon のリファクタリング
 	hsw を lexer としよう。
 		word と Word 型を共有しよう。
