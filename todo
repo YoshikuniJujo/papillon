@@ -3,15 +3,18 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	hsw を lexer としよう。
-		word と Word 型を共有しよう。
+	spaces' を消そう
+
+	word と hsw をちゃんと使い分けよう。
+
+	varWord や typWord の代わりに word や hsw を使うようにする
 
 	word を lexer としよう。
 		word や hsw より上のレベルでは必ずどちらかを使うようにしよう。
 
 		もっと本格的に lexer 的にする。
 
-	word と hsw をちゃんと使い分けよう。
+	hsw をもっと本格的に lexer 的にする
 
 	word と hsw の共有できる部分を切り出そう。
 
@@ -327,6 +330,13 @@
 
 * SyntaxTree.hs
 	名前を変更する
+
+* Parser.papillon
+	pragmaStr を String ではなく [Word] としよう
+		そして最終的な成果物は [String] とすれば良いと思うが、
+		そのまま [Word] でもいいかな。
+		つまり String よりは、より構造を持っているので。
+		と思ったが pragma の種類に何があるのかわからないので難しいかも。
 
 ******************************
 *  機能面における細かい修正  *
