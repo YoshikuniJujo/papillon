@@ -2,6 +2,8 @@
 * 次にやること           *
 **************************
 
+* version up して install
+
 * Parser.papillon のリファクタリング
 	hsw を lexer としよう。
 		word と Word 型を共有しよう。
@@ -149,6 +151,8 @@
 	そして、listToken を自動で定義することを考える。
 
 * source [Token] のような表記が出来るようにする
+
+* !x:[True] が動くことを確認する
 
 **************************
 *  warning 関係          *
