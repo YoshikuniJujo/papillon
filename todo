@@ -158,6 +158,8 @@
 
 * !x:[True] が動くことを確認する
 
+* monad, source, prefix を順不同とする
+
 **************************
 *  warning 関係          *
 **************************
@@ -340,6 +342,14 @@
 		そのまま [Word] でもいいかな。
 		つまり String よりは、より構造を持っているので。
 		と思ったが pragma の種類に何があるのかわからないので難しいかも。
+
+* import を list にする
+	そうすれば import Text.Papillon や import "..." Control.Monad.Error 等を
+	消すのが簡単になるだろう
+	その場合の型は
+	data Import =
+		Import { package :: String, name :: [String], vars :: [ImportVars] }
+	data ImportVars = Var String | Type String [String] のような感じになるかな
 
 ******************************
 *  機能面における細かい修正  *

@@ -50,7 +50,7 @@ import Language.Haskell.TH.PprLib
 import qualified Language.Haskell.TH.PprLib as P
 import Control.Arrow ((***))
 import Data.List
--- import Data.Maybe
+import Data.Maybe
 
 data Lookahead = Here | Ahead | NAhead String deriving (Show, Eq)
 data Lists = List | List1 | Optional deriving (Show, Eq)
@@ -169,11 +169,11 @@ monad: State (Maybe Int)
 pegFile :: PegFile
 	= pr:pragma* md:moduleDec pip:preImpPap _:importPapillon pp:prePeg
 		(WOpenQuasiQuote "papillon"):hsw
-		p:peg' WCloseQuasiQuote:hsw atp:afterPeg
+		p:peg_ WCloseQuasiQuote:hsw atp:afterPeg
 			{ return $ mkPegFile pr md pip pp p atp }
 	/ pr:pragma* md:moduleDec pp:prePeg
 		(WOpenQuasiQuote "papillon"):hsw
-		p:peg' WCloseQuasiQuote:hsw atp:afterPeg
+		p:peg_ WCloseQuasiQuote:hsw atp:afterPeg
 			{ return $ mkPegFile pr md [] pp p atp }
 
 pragma :: PPragma
@@ -225,27 +225,20 @@ importPapillon :: ()
 	= "import":varWord "Text":typ '.' "Papillon":typ !'.'
 						{ return () }
 
-peg :: STPeg = _:spaces p:peg'	{ return p }
+peg :: STPeg = _:spaces p:peg_	{ return p }
 
-peg' :: STPeg
-	= mt:monadType? s:sourceType p:peg_	{ return (mt, ConT $
-							mkName s, p) }
-	/ mt:monadType? p:peg_			{ return (mt, ConT $
-							mkName "String", p) }
+peg_ :: STPeg = mt:monadType? st:sourceType? p:definition*
+	{ return (mt, fromMaybe (ConT $ mkName "String") st, p) }
 
 monadType :: Type
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WVar "monad"):word WColon:word t:hsTypeArr WSemiColon:word
 						{ put Nothing >> return t }
 
-sourceType :: String
+sourceType :: Type
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
-		(WVar "source"):word WColon:word (WTyp v):word WSemiColon:word
-						{ put Nothing >> return v }
-
-peg_ :: Peg
-	= d:definition p:peg_			{ return $ d : p }
-	/ 					{ return [] }
+		(WVar "source"):word WColon:word t:hsTypeArr WSemiColon:word
+						{ put Nothing >> return t }
 
 definition :: Definition
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
