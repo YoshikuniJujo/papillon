@@ -149,6 +149,8 @@ data Word
 	| WBackQuote
 	| WRightArrow
 	| WBackSlash
+	| WModule
+	| WWhere
 	deriving Show
 
 isVarHead :: Char -> Bool
@@ -185,25 +187,25 @@ pragmaStr :: String
 	/					{ return "" }
 
 pragmaItems :: [String]
-	= (WTyp t):word WComma:hsw i:pragmaItems	{ return $ t : i }
-	/ (WTyp t):word				{ return [t] }
+	= (WType t):hsw WComma:hsw i:pragmaItems{ return $ t : i }
+	/ (WType t):hsw				{ return [t] }
 
 moduleDec :: Maybe ([String], Maybe String)
-	= (WVar "module"):word n:moduleName WOpenParen:word s:moduleDecStr _:whr
+	= WModule:hsw n:moduleName WOpenParen:hsw s:moduleDecStr _:whr
 						{ return $ Just (n, Just s) }
-	/ (WVar "module"):word n:moduleName (WVar "where"):word
+	/ WModule:hsw n:moduleName WWhere:hsw
 						{ return $ Just (n, Nothing) }
 	/					{ return Nothing }
 
 moduleName :: ModuleName
 	= t:typ '.' n:moduleName		{ return $ t : n }
-	/ (WTyp t):word				{ return [t] }
+	/ (WType t):hsw				{ return [t] }
 
 moduleDecStr :: String
 	= !_:whr c s:moduleDecStr		{ return $ c : s }
 	/					{ return "" }
 
-whr :: () = WCloseParen:word (WVar "where"):word	{ return () }
+whr :: () = WCloseParen:word WWhere:hsw		{ return () }
 
 preImpPap :: String
 	= !_:importPapillon !(WOpenQuasiQuote "papillon"):hsw c pip:preImpPap
@@ -523,7 +525,9 @@ word :: Word
 	/ _:semiColon _:spaces			{ return WSemiColon}
 
 hsw :: Word
-	= t:typ _:spaces			{ return $ WType t }
+	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces	{ return $ WModule }
+	/ 'w' 'h' 'e' 'r' 'e' _:spaces		{ return $ WWhere }
+	/ t:typ _:spaces			{ return $ WType t }
 	/ v:var _:spaces			{ return $ WVariable v }
 	/ w:<isAlphaNum>+ _:spaces		{ return $ WVariable w }
 	/ '[' v:var '|' _:spaces		{ return $ WOpenQuasiQuote v }
