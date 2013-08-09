@@ -205,7 +205,7 @@ moduleDecStr :: String
 	= !_:whr c s:moduleDecStr		{ return $ c : s }
 	/					{ return "" }
 
-whr :: () = WCloseParen:word WWhere:hsw		{ return () }
+whr :: () = WCloseParen:hsw WWhere:hsw		{ return () }
 
 preImpPap :: String
 	= !_:importPapillon !(WOpenQuasiQuote "papillon"):hsw c pip:preImpPap

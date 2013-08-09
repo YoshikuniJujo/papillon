@@ -3,11 +3,14 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	予約語(module, where) を lex するようにする。
+	予約語 monad と source を lex (word) で扱うようにする
 
 	word と hsw をちゃんと使い分けよう。
+		papillon のなかでもたとえば type のなかでは hsw を使うし ...
 
 	varWord や typWord の代わりに word や hsw を使うようにする
+
+	Foo.Bar.Baz や Hoge.Fuga.piyo を lex レベルで扱うようにする
 
 	word を lexer としよう。
 		word や hsw より上のレベルでは必ずどちらかを使うようにしよう。
