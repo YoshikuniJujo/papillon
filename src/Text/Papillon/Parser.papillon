@@ -118,6 +118,7 @@ data Word
 	= WTyp String
 	| WVar String
 	| WOp String
+	| WOther String
 	| WTypeDef
 	| WColon
 	| WOpenComment
@@ -151,6 +152,7 @@ data Word
 	| WBackSlash
 	| WModule
 	| WWhere
+	| WImport
 	| WMonad
 	| WSource
 	deriving Show
@@ -224,7 +226,7 @@ afterPeg :: String
 	/					{ return "" }
 
 importPapillon :: ()
-	= "import":varWord "Text":typ '.' "Papillon":typ !'.'
+	= WImport:hsw "Text":typ '.' "Papillon":typ !'.'
 						{ return () }
 
 peg :: STPeg = _:spaces p:peg_	{ return p }
@@ -244,11 +246,11 @@ sourceType :: Type
 
 definition :: Definition
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
-		v:varWord WTypeDef:word t:hsTypeArr WEquals:word sel:selection
+		(WVar v):word WTypeDef:word t:hsTypeArr WEquals:word sel:selection
 			WSemiColon:word
 		{ put Nothing >> return (v, Just t, sel) }
 	/ (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
-		v:varWord WEquals:word sel:plainSelection WSemiColon:word
+		(WVar v):word WEquals:word sel:plainSelection WSemiColon:word
 		{ put Nothing >> return (v, Nothing, Right sel) }
 
 selection = normalSelection / plainSelection
@@ -332,7 +334,7 @@ pat :: Pat
 pat1 :: Pat
 	= (WType t):hsw				{ return $ ConP (mkName t) [] }
 	/ (WVariable "_"):hsw			{ return WildP }
-	/ n:varWord				{ return $ VarP $ mkName n }
+	/ (WVariable n):hsw			{ return $ VarP $ mkName n }
 	/ i:integer				{ return $ LitP (IntegerL i) }
 	/ WHyphen:hsw i:integer			{ return $ LitP (IntegerL $ - i) }
 	/ c:charLit 				{ return $ LitP $ CharL c }
@@ -368,7 +370,7 @@ readFromLs :: ReadFrom
 	/ rf:readFrom				{ return rf }
 
 readFrom :: ReadFrom
-	= v:varWord				{ return $ FromVariable $ Just v }
+	= (WVar v):word				{ return $ FromVariable $ Just v }
 	/ WOpenParen:word s:selection WCloseParen:word		{ return $ FromSelection s }
 	/ e:expressionHsSugar'			{ return $ FromSelection $ Left [e] }
 
@@ -407,7 +409,7 @@ hsOp :: Exp
 						{ return $ VarE $ mkName op }
 	/ (WOperator op):hsw[return $ all isOpChar op && op /= "::"]
 						{ return $ ConE $ mkName op }
-	/ WBackQuote:hsw v:varWord WBackQuote:hsw	
+	/ WBackQuote:hsw (WVariable v):hsw WBackQuote:hsw	
 						{ return $ VarE $ mkName v }
 	/ WBackQuote:hsw (WType t):hsw WBackQuote:hsw
 						{ return $ ConE $ mkName t }
@@ -447,7 +449,7 @@ hsExp1 :: Exp
 						{ return $ InfixE l o r }
 	/ WOpenParen:hsw et:hsExpTpl WCloseParen:hsw		{ return $ TupE et }
 	/ WOpenBracket:hsw et:hsExpTpl WCloseBracket:hsw		{ return $ ListE et }
-	/ v:varWord				{ return $ VarE $ mkName v }
+	/ (WVariable v):hsw			{ return $ VarE $ mkName v }
 	/ (WType t):hsw				{ return $ ConE $ mkName t }
 	/ i:integer				{ return $ LitE $ integerL i }
 	/ c:charLit				{ return $ LitE $ charL c }
@@ -484,10 +486,8 @@ hsTypeTpl :: [Type]
 	/ t:hsTypeArr				{ return [t] }
 	/					{ return [] }
 
-integer :: Integer = (WVariable ds):hsw[return $ all isDigit ds]
+integer :: Integer = (WOther ds):hsw[return $ all isDigit ds]
 						{ return $ read $ ds }
-
-varWord :: String = v:var _:spaces		{ return v }
 
 typ :: String = u:<isUpper> t:<isVarTail>*	{ return $ u : t }
 var :: String = l:<isVarHead> t:<isVarTail>*	{ return $ l : t }
@@ -495,7 +495,7 @@ var :: String = l:<isVarHead> t:<isVarTail>*	{ return $ l : t }
 word :: Word
 	= t:typ _:spaces			{ return $ WTyp t }
 	/ v:var _:spaces			{ return $ WVar v }
-	/ w:<isAlphaNum>+ _:spaces		{ return $ WVar w }
+	/ w:<isAlphaNum>+ _:spaces		{ return $ WOther w }
 	/ ':' ':' _:spaces			{ return WTypeDef }
 	/ ':' _:spaces				{ return WColon }
 	/ '{' '-' '#' _:spaces			{ return WOpenComment }
@@ -524,9 +524,10 @@ word :: Word
 hsw :: Word
 	= 'm' 'o' 'd' 'u' 'l' 'e' _:spaces	{ return $ WModule }
 	/ 'w' 'h' 'e' 'r' 'e' _:spaces		{ return $ WWhere }
+	/ 'i' 'm' 'p' 'o' 'r' 't' _:spaces	{ return $ WImport }
 	/ t:typ _:spaces			{ return $ WType t }
 	/ v:var _:spaces			{ return $ WVariable v }
-	/ w:<isAlphaNum>+ _:spaces		{ return $ WVariable w }
+	/ w:<isAlphaNum>+ _:spaces		{ return $ WOther w }
 	/ '[' v:var '|' _:spaces		{ return $ WOpenQuasiQuote v }
 	/ '|' ']' _:spaces			{ return WCloseQuasiQuote }
 	/ '-' '>' _:spaces			{ return WRightArrow }
