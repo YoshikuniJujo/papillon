@@ -3,56 +3,20 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	word を lexer としよう。
-		ちゃんとした Word 型を作ろう。
-		これには WVariable String, WType Sting, WOperator String は
-		とりあえずある。
-		それ以外に WSpecial String として "{-#" "#-}" を入れておくかな。
-		あるいは、これは WOperator に入れても良いかもしれない。
-		また WVariable と WType は分けなくても良いかもしれない。
-		WVar にまとめてしまえば良い。
-		つまり、WVar String | WOp String だけで良いように思う。
-		これも branch を切ってやることにする。
-		git checkout -b word としよう。
+	hsw を lexer としよう。
+		word と Word 型を共有しよう。
 
-		lexer が semicolon を返すようにしようかな?
+	word を lexer としよう。
 		word や hsw より上のレベルでは必ずどちらかを使うようにしよう。
 
-		ただ、毎度 (WOp "::"):word のようにするより、wop を作って、
-		"::":wop としたほうが良いのでは無いかとも思う。
-		あるいは記号に関しては WColon のような型を使うべきかもしれない。
-		難しいところだ。
+		もっと本格的に lexer 的にする。
 
-		もっと本格的に lexer 的にするのはどうか。
+	word と hsw をちゃんと使い分けよう。
 
-		data Token
-			= TypeWord String | VarWord String
-			| OpenBracket | CloseBracket
-			| OpenParens | CloseParens | TypeDef | Colon
-			| SemiColon
-		といった感じ。
-		名前自体は後でまたリファクタリングすることを考慮して、
-		そんなに悩まずに決めようと思う。
-		この方針が正しいかどうかを決めるために、とりあえず進めてみよう。
+	word と hsw の共有できる部分を切り出そう。
 
-		また word と hsw は data Token を共有しよう。
-		問題無いと思うし、名前の節約になる。
-
-	hsw を lexer としよう。
-		ちゃんとした HsWord 型を作ろう。
-
-	State Int を State (Maybe Int) とし、Nothing ならば semicolon を挿入
-	しないようにした。
-		しかし、peg のところの semiColon? は消せるし、spaces' も不必要になる
-		と思ったのだが素直に spaces' を spaces にすると bug るな
-		spaces' を spaces にできるようにしたい
-
-	英数字と記号のみを分けていたが、op 用の記号とそれ以外とを分けた。
-	すくなくとも、', ", (, ), [, ], {, }, \,, は単独で使われるので、
-	word	= alnum+ spaces
-		/ opChar+ spaces
-		/ sepChar spaces
-	のようにした。
+	また、papillon 内での var に大文字も許そうと思うので、そこらへんも考える
+	(ただし、この場合、prefix が必要となるので、そっちが先ではある)
 
 	type や var をちゃんとしよう
 	hs 内では Hoge.Fuga.Piyo や Foo.Bar.baz への対応も。
