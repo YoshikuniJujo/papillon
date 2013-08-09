@@ -43,7 +43,7 @@ import Language.Haskell.TH {- (
 	wildP, litP, varP, conP, tupP, listP, uInfixP,
 	litE, varE, conE, tupE, listE, sigE, appE, infixE, uInfixE, lamE,
 	integerL, charL, stringL) -}
-import Data.Char (isSpace, isDigit, isUpper, isLower, isAlphaNum)
+import Data.Char (isDigit, isUpper, isLower, isAlphaNum)
 
 import Language.Haskell.TH.PprLib
 	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>), quotes)
@@ -165,32 +165,28 @@ isOpChar = (`elem` ":!#$%&*+./<=>?@\\^|-~")
 monad: State (Maybe Int)
 
 pegFile :: PegFile
-	= pr:pragmas md:moduleDec pip:preImpPap _:importPapillon pp:prePeg _:pap
-		_:spaces' p:peg' _:spaces' '|' ']' '\n' atp:afterPeg
+	= pr:pragma* md:moduleDec pip:preImpPap _:importPapillon pp:prePeg
+		(WOpenQuasiQuote "papillon"):hsw
+		p:peg' WCloseQuasiQuote:hsw atp:afterPeg
 			{ return $ mkPegFile pr md pip pp p atp }
-	/ pr:pragmas md:moduleDec pp:prePeg _:pap _:spaces' p:peg' _:spaces'
-		WCloseQuasiQuote:hsw atp:afterPeg
+	/ pr:pragma* md:moduleDec pp:prePeg
+		(WOpenQuasiQuote "papillon"):hsw
+		p:peg' WCloseQuasiQuote:hsw atp:afterPeg
 			{ return $ mkPegFile pr md [] pp p atp }
 
-pragmas :: [PPragma]
-	= _:spaces' pr:pragma prs:pragmas	{ return $ pr : prs }
-	/ _:spaces'				{ return [] }
-
 pragma :: PPragma
-	= WOpenComment:word 'L' 'A' 'N' 'G' 'U' 'A' 'G' 'E' _:spaces'
-		s:pragmaItems _:pragmaEnd	{ return $ LanguagePragma s }
-	/ WOpenComment:word s:pragmaStr _:pragmaEnd	{ return $ OtherPragma s }
+	= WOpenComment:hsw (WType "LANGUAGE"):hsw s:pragmaItems WCloseComment:hsw
+						{ return $ LanguagePragma s }
+	/ WOpenComment:hsw s:pragmaStr WCloseComment:hsw
+						{ return $ OtherPragma s }
 
 pragmaStr :: String
-	= !_:pragmaEnd c s:pragmaStr		{ return $ c : s }
+	= !WCloseComment:hsw c s:pragmaStr	{ return $ c : s }
 	/					{ return "" }
 
 pragmaItems :: [String]
 	= (WTyp t):word WComma:hsw i:pragmaItems	{ return $ t : i }
 	/ (WTyp t):word				{ return [t] }
-
-pragmaEnd :: ()
-	= _:spaces' WCloseComment:word		{ return () }
 
 moduleDec :: Maybe ([String], Maybe String)
 	= (WVar "module"):word n:moduleName WOpenParen:word s:moduleDecStr _:whr
@@ -207,15 +203,16 @@ moduleDecStr :: String
 	= !_:whr c s:moduleDecStr		{ return $ c : s }
 	/					{ return "" }
 
-whr :: () = _:spaces' WCloseParen:word (WVar "where"):word	{ return () }
+whr :: () = WCloseParen:word (WVar "where"):word	{ return () }
 
 preImpPap :: String
-	= !_:importPapillon !_:pap c pip:preImpPap
+	= !_:importPapillon !(WOpenQuasiQuote "papillon"):hsw c pip:preImpPap
 						{ return $ c : pip }
 	/					{ return "" }
 
 prePeg :: String
-	= !_:pap c pp:prePeg			{ return $ c : pp }
+	= !(WOpenQuasiQuote "papillon"):hsw c pp:prePeg
+						{ return $ c : pp }
 	/					{ return "" }
 
 afterPeg :: String
@@ -226,9 +223,7 @@ importPapillon :: ()
 	= "import":varWord "Text":typ '.' "Papillon":typ !'.'
 						{ return () }
 
-pap :: () = (WOpenQuasiQuote "papillon"):hsw	{ return () }
-
-peg :: STPeg = _:spaces _:spaces' p:peg'	{ return p }
+peg :: STPeg = _:spaces p:peg'	{ return p }
 
 peg' :: STPeg
 	= mt:monadType? s:sourceType p:peg_	{ return (mt, ConT $
@@ -528,12 +523,15 @@ word :: Word
 	/ _:semiColon _:spaces			{ return WSemiColon}
 
 hsw :: Word
-	= w:<isAlphaNum>+ _:spaces		{ return $ WVariable w }
+	= t:typ _:spaces			{ return $ WType t }
 	/ v:var _:spaces			{ return $ WVariable v }
+	/ w:<isAlphaNum>+ _:spaces		{ return $ WVariable w }
 	/ '[' v:var '|' _:spaces		{ return $ WOpenQuasiQuote v }
 	/ '|' ']' _:spaces			{ return WCloseQuasiQuote }
 	/ '-' '>' _:spaces			{ return WRightArrow }
 	/ ':' ':' _:spaces			{ return WTypeDef }
+	/ '{' '-' '#' _:spaces			{ return WOpenComment }
+	/ '#' '-' '}' _:spaces			{ return WCloseComment }
 	/ '[' _:spaces				{ return WOpenBracket }
 	/ ']' _:spaces				{ return WCloseBracket }
 	/ '{' _:spaces				{ return WOpenBrace }
@@ -565,8 +563,6 @@ escapeC :: Char
 	/ '\\'					{ return '\\' }
 	/ 'n'					{ return '\n' }
 	/ 't'					{ return '\t' }
-
-spaces' :: () = _:<isSpace>*			{ return () }
 
 spaces :: ()
 	= _:space _:spaces			{ return () }
@@ -610,7 +606,7 @@ semiColon :: ()
 	/ !_:[return True]			{ return () }
 
 notSemiColon :: ()
-	= _:newLine _:headSpace
+	= _:newLine _:headSpace*
 		(!ListPos (CharPos (_, h))):position[get>>=
 			(\b -> return $ maybe True (< h) b)]
 						{ return () }
