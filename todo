@@ -3,7 +3,7 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	spaces' を消そう
+	予約語(module, where) を lex するようにする。
 
 	word と hsw をちゃんと使い分けよう。
 
