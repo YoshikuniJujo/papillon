@@ -3,12 +3,9 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	予約語 monad と source を lex (word) で扱うようにする
-
-	word と hsw をちゃんと使い分けよう。
-		papillon のなかでもたとえば type のなかでは hsw を使うし ...
-
 	varWord や typWord の代わりに word や hsw を使うようにする
+
+	integer や charLit、stringLit も hsw にする
 
 	Foo.Bar.Baz や Hoge.Fuga.piyo を lex レベルで扱うようにする
 
@@ -342,6 +339,11 @@
 		そのまま [Word] でもいいかな。
 		つまり String よりは、より構造を持っているので。
 		と思ったが pragma の種類に何があるのかわからないので難しいかも。
+
+	予約語 monad と source を lex (word) で扱うようにする
+		しかし、そうすると monad や source を変数として使えなくなる。
+		これはもったいないかもしれないな。
+
 
 * import を list にする
 	そうすれば import Text.Papillon や import "..." Control.Monad.Error 等を
