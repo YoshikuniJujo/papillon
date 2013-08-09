@@ -4,6 +4,7 @@
 
 * Parser.papillon のリファクタリング
 	varWord や typWord の代わりに word や hsw を使うようにする
+		import は WImport とする
 
 	integer や charLit、stringLit も hsw にする
 
