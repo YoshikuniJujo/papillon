@@ -158,6 +158,7 @@ data Word
 	| WSource
 	| WChar Char
 	| WString String
+	| WSelectChars String
 	deriving Show
 
 isVarHead :: Char -> Bool
@@ -289,7 +290,7 @@ plainHAReadFromLs :: (Lookahead, ReadFrom)
 
 plainReadFromLs :: ReadFrom
 	= rf:readFromLs				{ return rf }
-	/ rf:selectCharsLs			{ return rf }
+--	/ rf:selectCharsLs			{ return rf }
 
 expression :: [(Lookahead, Check)]
 	= l:nameLeaf_ e:expression		{ return $ l : e }
@@ -376,20 +377,7 @@ readFrom :: ReadFrom
 	= (WVar v):word				{ return $ FromVariable $ Just v }
 	/ WOpenParen:word s:selection WCloseParen:word		{ return $ FromSelection s }
 	/ e:expressionHsSugar'			{ return $ FromSelection $ Left [e] }
-
-selectCharsLs :: ReadFrom
-	= rf:selectChars WAsterisk:word		{ return $ FromL List rf }
-	/ rf:selectChars WPlus:word		{ return $ FromL List1 rf }
-	/ rf:selectChars WQuestion:word		{ return $ FromL Optional rf }
-	/ rf:selectChars			{ return rf }
-
-selectChars :: ReadFrom
-	= WOpenBracket:word cs:<(`notElem` "\\-")>+ WCloseBracket:word
-						{ return $ charList cs }
-	/ WOpenBracket:word cb:<(`notElem` "\\-")> WHyphen:word
-		ce:<(`notElem` "\\-")> WCloseBracket:word
-						{ return $ charList [cb .. ce] }
-	/ (WChar c):word				{ return $ charList [c] }
+	/ (WSelectChars sc):scw			{ return $ charList sc }
 
 test :: (Exp, String)
 	= WOpenBracket:word h:hsExpLam com:comForErr? WCloseBracket:word
@@ -555,6 +543,14 @@ hsw :: Word
 						{ return $ WChar c }
 	/ '\'' '\\' c:escapeC '\'' _:space*	{ return $ WChar c }
 	/ '"' s:stringLit_ '"' _:space*		{ return $ WString s }
+
+scw :: Word
+	= WOpenBracket:word cs:<(`notElem` "\\-")>+ WCloseBracket:word
+						{ return $ WSelectChars cs }
+	/ WOpenBracket:word cb:<(`notElem` "\\-")> WHyphen:word
+		ce:<(`notElem` "\\-")> WCloseBracket:word
+						{ return $ WSelectChars [cb .. ce] }
+	/ (WChar c):word			{ return $ WSelectChars [c] }
 
 stringLit_ :: String
 	= c:<(`notElem` "\"\\")> s:stringLit_	{ return $ c : s }
