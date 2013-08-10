@@ -3,7 +3,7 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	integer や charLit、stringLit も hsw にする
+	charLit、stringLit も hsw にする
 
 	Foo.Bar.Baz や Hoge.Fuga.piyo を lex レベルで扱うようにする
 

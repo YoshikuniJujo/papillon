@@ -143,6 +143,7 @@ data Word
 	| WSemiColon
 	| WOperator String
 	| WVariable String
+	| WInteger Integer
 	| WType String
 	| WOpenQuasiQuote String
 	| WCloseQuasiQuote
@@ -335,8 +336,8 @@ pat1 :: Pat
 	= (WType t):hsw				{ return $ ConP (mkName t) [] }
 	/ (WVariable "_"):hsw			{ return WildP }
 	/ (WVariable n):hsw			{ return $ VarP $ mkName n }
-	/ i:integer				{ return $ LitP (IntegerL i) }
-	/ WHyphen:hsw i:integer			{ return $ LitP (IntegerL $ - i) }
+	/ (WInteger i):hsw			{ return $ LitP (IntegerL i) }
+	/ WHyphen:hsw (WInteger i):hsw		{ return $ LitP (IntegerL $ - i) }
 	/ c:charLit 				{ return $ LitP $ CharL c }
 	/ s:stringLit				{ return $ LitP $ StringL s }
 	/ WOpenParen:hsw p:patList WCloseParen:hsw
@@ -451,7 +452,7 @@ hsExp1 :: Exp
 	/ WOpenBracket:hsw et:hsExpTpl WCloseBracket:hsw		{ return $ ListE et }
 	/ (WVariable v):hsw			{ return $ VarE $ mkName v }
 	/ (WType t):hsw				{ return $ ConE $ mkName t }
-	/ i:integer				{ return $ LitE $ integerL i }
+	/ (WInteger i):hsw			{ return $ LitE $ integerL i }
 	/ c:charLit				{ return $ LitE $ charL c }
 	/ s:stringLit				{ return $ LitE $ stringL s }
 	/ WHyphen:hsw e:hsExp1			{ return $ AppE (VarE $ mkName "negate") e }
@@ -485,9 +486,6 @@ hsTypeTpl :: [Type]
 	= t:hsTypeArr WComma:hsw tt:hsTypeTpl	{ return $ t : tt }
 	/ t:hsTypeArr				{ return [t] }
 	/					{ return [] }
-
-integer :: Integer = (WOther ds):hsw[return $ all isDigit ds]
-						{ return $ read $ ds }
 
 typ :: String = u:<isUpper> t:<isVarTail>*	{ return $ u : t }
 var :: String = l:<isVarHead> t:<isVarTail>*	{ return $ l : t }
@@ -527,6 +525,7 @@ hsw :: Word
 	/ 'i' 'm' 'p' 'o' 'r' 't' _:spaces	{ return $ WImport }
 	/ t:typ _:spaces			{ return $ WType t }
 	/ v:var _:spaces			{ return $ WVariable v }
+	/ d:<isDigit>+ _:spaces			{ return $ WInteger $ read d }
 	/ w:<isAlphaNum>+ _:spaces		{ return $ WOther w }
 	/ '[' v:var '|' _:spaces		{ return $ WOpenQuasiQuote v }
 	/ '|' ']' _:spaces			{ return WCloseQuasiQuote }
