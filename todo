@@ -3,7 +3,7 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	charLit、stringLit も hsw にする
+	selectChars の中身を word で lex するようにする
 
 	Foo.Bar.Baz や Hoge.Fuga.piyo を lex レベルで扱うようにする
 
