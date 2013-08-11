@@ -3,13 +3,8 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	[a-z] の形を消す
-		git checkout -b trueRemoveCS としよう
-
-	plain style を消す前に、Parser.papillon の plain style を使っている部分を
-	書き換える
-
 	plain style を消す
+		git checkout -b removePlainStyle としよう
 
 	{ ... } を省略した場合 { () } または { return () } があると見なす
 		それと同時に :: Type を省略した場合には () があるものと見なす

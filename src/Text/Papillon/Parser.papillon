@@ -258,7 +258,9 @@ definition :: Definition
 		{ put Nothing >> return (v, Nothing, Right sel) }
 --		{ return (v, Nothing, Right sel) }
 
-selection = normalSelection / plainSelection
+selection :: Either [Expression] [PlainExpression]
+	= ns:normalSelection			{ return $ Left ns }
+	/ ps:plainSelection			{ return $ Right ps }
 
 normalSelection :: [Expression]
 	= ex:expressionHs WSlash:word sel:normalSelection
