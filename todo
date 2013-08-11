@@ -3,6 +3,22 @@
 **************************
 
 * Parser.papillon のリファクタリング
+	[a-z] の形を消す
+		git checkout -b trueRemoveCS としよう
+
+	plain style を消す前に、Parser.papillon の plain style を使っている部分を
+	書き換える
+
+	plain style を消す
+
+	{ ... } を省略した場合 { () } または { return () } があると見なす
+		それと同時に :: Type を省略した場合には () があるものと見なす
+		つまり、
+		some = '\n' / '\t' / ' '
+		は
+		some :: () = '\n' { () } / '\t' { () } / ' ' { () }
+		と、解釈される。
+
 	下記の2つをする
 		つまり [abc] や [a-z] のような形は捨てる。
 		そして ('a' / 'b') のような形を syntax sugar とする。
