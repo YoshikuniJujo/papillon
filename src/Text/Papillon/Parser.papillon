@@ -239,24 +239,20 @@ monadType :: Type
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WVar "monad"):word WColon:word t:hsTypeArr WSemiColon:word
 						{ put Nothing >> return t }
---						{ return t }
 
 sourceType :: Type
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WVar "source"):word WColon:word t:hsTypeArr WSemiColon:word
 						{ put Nothing >> return t }
---						{ return t }
 
 definition :: Definition
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WVar v):word WTypeDef:word t:hsTypeArr WEquals:word sel:selection
 			WSemiColon:word
 		{ put Nothing >> return (v, Just t, sel) }
---		{ return (v, Just t, sel) }
 	/ (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WVar v):word WEquals:word sel:plainSelection WSemiColon:word
 		{ put Nothing >> return (v, Nothing, Right sel) }
---		{ return (v, Nothing, Right sel) }
 
 selection :: Either [Expression] [PlainExpression]
 	= ns:normalSelection			{ return $ Left ns }
@@ -569,6 +565,12 @@ space :: ()
 	/ _:lineComment				{ return () }
 	/ _:comment				{ return () }
 
+space' :: ()
+	= s:[return $ s `elem` " \t"]		{ return () }
+	/ _:newLine				{ return () }
+	/ _:lineComment				{ return () }
+	/ _:comment				{ return () }
+
 lineComment :: () = '-' '-' _:notNLString &'\n'	{ return () }
 
 notNLString :: String
@@ -590,14 +592,13 @@ comEnd :: ()
 	= '-' '}'				{ return () }
 
 semiColon :: ()
-	= ';'					{ put Nothing }
+	= ';' _:space'*				{ return () }
 	/ _:newLine _:headSpace*
 		(!ListPos (CharPos (_, h))):position[get>>=
 			(\b -> return $ maybe False (>=h) b)]
 		!_:lineComment !_:comment !';'
---						{ put Nothing }
 						{ return () }
-	/ !_:[return True]			{ put Nothing }
+	/ !_:[return True]			{ return () }
 
 notSemiColon :: ()
 	= _:newLine _:headSpace*
