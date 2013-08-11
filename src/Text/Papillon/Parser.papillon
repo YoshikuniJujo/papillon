@@ -107,10 +107,6 @@ mkPegFile :: [PPragma] -> Maybe ([String], Maybe String) -> String -> String ->
 mkPegFile ps (Just md) x y z w = (ps, fst md, snd md, x ++ "\n" ++ y, z, w)
 mkPegFile ps Nothing x y z w = (ps, [], Nothing, x ++ "\n" ++ y, z, w)
 
-charList :: String -> ReadFrom
-charList cs = FromSelection $ Left $ (: []) $ Right $
-	InfixE Nothing (VarE $ mkName "elem") $ Just $ LitE $ StringL cs
-
 dvCharsN :: String
 dvCharsN = "char"
 
@@ -159,6 +155,7 @@ data Word
 	| WChar Char
 	| WString String
 	| WSelectChars String
+	| WDotDot
 	deriving Show
 
 isVarHead :: Char -> Bool
@@ -242,20 +239,24 @@ monadType :: Type
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WVar "monad"):word WColon:word t:hsTypeArr WSemiColon:word
 						{ put Nothing >> return t }
+--						{ return t }
 
 sourceType :: Type
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WVar "source"):word WColon:word t:hsTypeArr WSemiColon:word
 						{ put Nothing >> return t }
+--						{ return t }
 
 definition :: Definition
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WVar v):word WTypeDef:word t:hsTypeArr WEquals:word sel:selection
 			WSemiColon:word
 		{ put Nothing >> return (v, Just t, sel) }
+--		{ return (v, Just t, sel) }
 	/ (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WVar v):word WEquals:word sel:plainSelection WSemiColon:word
 		{ put Nothing >> return (v, Nothing, Right sel) }
+--		{ return (v, Nothing, Right sel) }
 
 selection = normalSelection / plainSelection
 
@@ -377,7 +378,6 @@ readFrom :: ReadFrom
 	= (WVar v):word				{ return $ FromVariable $ Just v }
 	/ WOpenParen:word s:selection WCloseParen:word		{ return $ FromSelection s }
 	/ e:expressionHsSugar'			{ return $ FromSelection $ Left [e] }
-	/ (WSelectChars sc):scw			{ return $ charList sc }
 
 test :: (Exp, String)
 	= WOpenBracket:word h:hsExpLam com:comForErr? WCloseBracket:word
@@ -438,8 +438,12 @@ hsExp :: (Exp -> Exp) -> Exp
 hsExp1 :: Exp
 	= WOpenParen:hsw l:hsExpOp? o:hsOp r:hsExpOp? WCloseParen:hsw
 						{ return $ InfixE l o r }
-	/ WOpenParen:hsw et:hsExpTpl WCloseParen:hsw		{ return $ TupE et }
-	/ WOpenBracket:hsw et:hsExpTpl WCloseBracket:hsw		{ return $ ListE et }
+	/ WOpenParen:hsw et:hsExpTpl WCloseParen:hsw
+						{ return $ TupE et }
+	/ WOpenBracket:hsw et:hsExpTpl WCloseBracket:hsw
+						{ return $ ListE et }
+	/ WOpenBracket:hsw b:hsExpOp WDotDot:hsw e:hsExpOp WCloseBracket:hsw
+						{ return $ ArithSeqE $ FromToR b e }
 	/ (WVariable v):hsw			{ return $ VarE $ mkName v }
 	/ (WType t):hsw				{ return $ ConE $ mkName t }
 	/ (WInteger i):hsw			{ return $ LitE $ integerL i }
@@ -504,7 +508,7 @@ word :: Word
 	/ '*' _:space*				{ return WAsterisk }
 	/ '+' _:space*				{ return WPlus }
 	/ '=' _:space*				{ return WEquals }
-	/ '-' _:space*				{ return WHyphen }
+	/ '-' !'-' _:space*			{ return WHyphen }
 	/ '/' _:space*				{ return WSlash }
 	/ '|' _:space*				{ return WVerticalBar }
 	/ _:semiColon _:space*			{ return WSemiColon}
@@ -527,6 +531,7 @@ hsw :: Word
 	/ ':' ':' _:space*			{ return WTypeDef }
 	/ '{' '-' '#' _:space*			{ return WOpenComment }
 	/ '#' '-' '}' _:space*			{ return WCloseComment }
+	/ '.' '.' _:space*			{ return WDotDot }
 	/ '[' _:space*				{ return WOpenBracket }
 	/ ']' _:space*				{ return WCloseBracket }
 	/ '{' _:space*				{ return WOpenBrace }
@@ -535,7 +540,7 @@ hsw :: Word
 	/ ')' _:space*				{ return WCloseParen }
 	/ ',' _:space*				{ return WComma }
 	/ '`' _:space*				{ return WBackQuote }
-	/ '-' _:space*				{ return WHyphen }
+	/ '-' !'-' _:space*			{ return WHyphen }
 	/ '!' _:space*				{ return WExclamation }
 	/ '\\' _:space*				{ return WBackSlash }
 	/ w:<isOpChar>+ _:space*		{ return $ WOperator w }
@@ -543,14 +548,6 @@ hsw :: Word
 						{ return $ WChar c }
 	/ '\'' '\\' c:escapeC '\'' _:space*	{ return $ WChar c }
 	/ '"' s:stringLit_ '"' _:space*		{ return $ WString s }
-
-scw :: Word
-	= WOpenBracket:word cs:<(`notElem` "\\-")>+ WCloseBracket:word
-						{ return $ WSelectChars cs }
-	/ WOpenBracket:word cb:<(`notElem` "\\-")> WHyphen:word
-		ce:<(`notElem` "\\-")> WCloseBracket:word
-						{ return $ WSelectChars [cb .. ce] }
-	/ (WChar c):word			{ return $ WSelectChars [c] }
 
 stringLit_ :: String
 	= c:<(`notElem` "\"\\")> s:stringLit_	{ return $ c : s }
@@ -591,13 +588,14 @@ comEnd :: ()
 	= '-' '}'				{ return () }
 
 semiColon :: ()
-	= ';' _:newLine?			{ return () }
+	= ';'					{ put Nothing }
 	/ _:newLine _:headSpace*
 		(!ListPos (CharPos (_, h))):position[get>>=
 			(\b -> return $ maybe False (>=h) b)]
 		!_:lineComment !_:comment !';'
+--						{ put Nothing }
 						{ return () }
-	/ !_:[return True]			{ return () }
+	/ !_:[return True]			{ put Nothing }
 
 notSemiColon :: ()
 	= _:newLine _:headSpace*

@@ -19,7 +19,10 @@ type Hoge = Either (String, String) (Either (String, String) ())
 uppers :: String
 	= s:(c:[isUpper c] { c })+	{ s }
 ;
-lowers = [a-z]+;
-str = uppers lowers &',' / lowers uppers !',' / lowers;
+lowers :: String = cs:<(`elem` ['a' .. 'z'])>+	{ cs };
+-- lowers :: String = cs:<isLower>+	{ cs };
+str = uppers lowers / lowers uppers / lowers;
+-- str :: String = l:lowers	{ l };
+-- lowers :: String = cs:<(`elem` ['a' .. 'z'])>+	{ cs };
 
 |]
