@@ -509,7 +509,7 @@ word :: Word
 	/ '-' !'-' _:space*			{ return WHyphen }
 	/ '/' _:space*				{ return WSlash }
 	/ '|' _:space*				{ return WVerticalBar }
-	/ _:semiColon _:space*			{ return WSemiColon}
+	/ _:semiColon _:space'*			{ return WSemiColon}
 	/ '\'' c:<(`notElem` "\\'")> '\'' _:space*
 						{ return $ WChar c }
 	/ '\'' '\\' c:escapeC '\'' _:space*	{ return $ WChar c }
@@ -592,7 +592,7 @@ comEnd :: ()
 	= '-' '}'				{ return () }
 
 semiColon :: ()
-	= ';' _:space'*				{ return () }
+	= ';'					{ return () }
 	/ _:newLine _:headSpace*
 		(!ListPos (CharPos (_, h))):position[get>>=
 			(\b -> return $ maybe False (>=h) b)]
