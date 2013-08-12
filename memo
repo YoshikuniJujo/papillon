@@ -160,3 +160,15 @@ tab をちゃんと数える。
 
 ((x - 1) `div` 8 + 1) * 8 + 1
 --> (+ 1) . (* 8) . (+ 1) . (`div` 8) . (subtract 1)
+
+2013.08.12 Mon.
+
+2013年  8月 12日 月曜日 18:26:18 JST
+Text/Papillon.hs                        9
+Text/Papillon/Core.hs                   386
+Text/Papillon/Parser.hs                 2896
+Text/Papillon/Papillon.hs               46
+Text/Papillon/List.hs                   59
+total                                   3396
+
+Text/Papillon/Parser.papillon           494
