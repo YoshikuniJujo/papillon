@@ -210,7 +210,7 @@ moduleDecStr :: String
 	= !_:whr c s:moduleDecStr		{ return $ c : s }
 	/					{ return "" }
 
-whr :: () = WCloseParen:hsw WWhere:hsw		{ return () }
+whr :: () = WCloseParen:hsw WWhere:hsw
 
 preImpPap :: String
 	= !_:importPapillon !(WOpenQuasiQuote "papillon"):hsw c pip:preImpPap
@@ -573,7 +573,7 @@ comEnd :: ()
 
 semiColon :: ()
 	= ';'					{ return () }
-	/ _:newLine _:headSpace*
+	/ _:newLine _:('\t' / ' ')*
 		(!ListPos (CharPos (_, h))):position[get>>=
 			(\b -> return $ maybe False (>=h) b)]
 		!_:lineComment !_:comment !';'
@@ -581,16 +581,13 @@ semiColon :: ()
 	/ !_:[return True]			{ return () }
 
 notSemiColon :: ()
-	= _:newLine _:headSpace*
+	= _:newLine _:('\t' / ' ')*
 		(!ListPos (CharPos (_, h))):position[get>>=
 			(\b -> return $ maybe True (< h) b)]
-						{ return () }
-	/ _:newLine _:lineComment		{ return () }
-	/ _:newLine _:comment			{ return () }
-	/ _:newLine &';'			{ return () }
+	/ _:newLine _:lineComment
+	/ _:newLine _:comment
+	/ _:newLine &';'
 
-newLine :: () = '\n'+				{ return () }
-
-headSpace :: () = '\t' { return () } / ' ' { return () }
+newLine :: () = '\n'+
 
 |]
