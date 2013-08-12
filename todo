@@ -3,8 +3,6 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	version up して install
-
 	return () や :: () を消していく
 
 	plain style の名残りを消す
