@@ -250,23 +250,14 @@ definition :: Definition
 		(WVar v):word WTypeDef:word t:hsTypeArr WEquals:word sel:selection
 			WSemiColon:word
 		{ put Nothing >> return (v, Just t, sel) }
-	/ (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
-		(WVar v):word WEquals:word sel:plainSelection WSemiColon:word
-		{ put Nothing >> return (v, Nothing, Right sel) }
 
 selection :: Either [Expression] [PlainExpression]
 	= ns:normalSelection			{ return $ Left ns }
-	/ ps:plainSelection			{ return $ Right ps }
 
 normalSelection :: [Expression]
 	= ex:expressionHs WSlash:word sel:normalSelection
 						{ return $ ex : sel }
 	/ ex:expressionHs			{ return [ex] }
-
-plainSelection :: [PlainExpression]
-	= ex:plainExpressionHs WSlash:word sel:plainSelection
-						{ return $ ex : sel }
-	/ ex:plainExpressionHs			{ return [ex] }
 
 expressionHs :: Expression
 	= e:expression WOpenBrace:word h:hsExpLam WCloseBrace:word
@@ -278,18 +269,6 @@ expressionHsSugar :: Expression
 
 expressionHsSugar' :: Expression
 	= WLT:word h:hsExpLam' WGT:word		{ return $ Right h }
-
-plainExpressionHs :: PlainExpression
-	= rfs:(rf:plainHAReadFromLs { return rf })*	{ return rfs }
-
-plainHAReadFromLs :: (Lookahead, ReadFrom)
-	= rf:plainReadFromLs			{ return (Here, rf) }
-	/ '&' rf:plainReadFromLs		{ return (Ahead, rf) }
-	/ '!' rf:plainReadFromLs		{ return (NAhead "", rf) }
-
-plainReadFromLs :: ReadFrom
-	= rf:readFromLs				{ return rf }
---	/ rf:selectCharsLs			{ return rf }
 
 expression :: [(Lookahead, Check)]
 	= l:nameLeaf_ e:expression		{ return $ l : e }

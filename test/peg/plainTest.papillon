@@ -21,8 +21,12 @@ uppers :: String
 ;
 lowers :: String = cs:<(`elem` ['a' .. 'z'])>+	{ cs };
 -- lowers :: String = cs:<isLower>+	{ cs };
-str = uppers lowers / lowers uppers / lowers;
+-- str = uppers lowers / lowers uppers / lowers;
 -- str :: String = l:lowers	{ l };
 -- lowers :: String = cs:<(`elem` ['a' .. 'z'])>+	{ cs };
+str :: (String, String)
+	= u:uppers l:lowers	{ (u, l) }
+	/ l:lowers u:uppers	{ (l, u) }
+	/ l:lowers		{ (l, "") }
 
 |]
