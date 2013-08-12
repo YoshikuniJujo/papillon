@@ -3,18 +3,11 @@
 **************************
 
 * Parser.papillon のリファクタリング
+	version up して install
+
+	return () や :: () を消していく
+
 	plain style の名残りを消す
-
-	:: Type を省略した場合には () があるものと見なす
-		つまり、
-		some = '\n' / '\t' / ' '
-		は
-		some :: () = '\n' { () } / '\t' { () } / ' ' { () }
-		と、解釈される。
-		そうすると、
-		other = _:('\n' / '\t' / ' ') ... のようにできるようになる。
-
-		git checkout -b ellipsisType としよう。
 
 	Foo.Bar.Baz や Hoge.Fuga.piyo を lex レベルで扱うようにする
 

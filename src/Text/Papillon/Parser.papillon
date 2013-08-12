@@ -247,9 +247,10 @@ sourceType :: Type
 
 definition :: Definition
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
-		(WVar v):word WTypeDef:word t:hsTypeArr WEquals:word sel:selection
-			WSemiColon:word
-		{ put Nothing >> return (v, Just t, sel) }
+		(WVar v):word
+		mt:(WTypeDef:word t:hsTypeArr { return t })?
+		WEquals:word sel:selection WSemiColon:word
+		{ put Nothing >> return (v, mt, sel) }
 
 selection :: Either [Expression] [PlainExpression]
 	= ns:normalSelection			{ return $ Left ns }
@@ -568,10 +569,9 @@ notComStr :: ()
 	= !_:comment !_:comEnd _ _:notComStr	{ return () }
 	/					{ return () }
 
-comEnd :: ()
-	= '-' '}'				{ return () }
+comEnd = '-' '}'
 
-semiColon :: ()
+semiColon
 	= ';'					{ return () }
 	/ _:newLine _:('\t' / ' ')*
 		(!ListPos (CharPos (_, h))):position[get>>=
@@ -580,7 +580,7 @@ semiColon :: ()
 						{ return () }
 	/ !_:[return True]			{ return () }
 
-notSemiColon :: ()
+notSemiColon
 	= _:newLine _:('\t' / ' ')*
 		(!ListPos (CharPos (_, h))):position[get>>=
 			(\b -> return $ maybe True (< h) b)]
@@ -588,6 +588,6 @@ notSemiColon :: ()
 	/ _:newLine _:comment
 	/ _:newLine &';'
 
-newLine :: () = '\n'+
+newLine = '\n'+
 
 |]

@@ -9,6 +9,6 @@ main = case runError $ some $ parse "Hellllllo, world" of
 
 [papillon|
 
-some :: () = _:('H' / 'h') 'e' 'l'* 'o' ','
+some = _:('H' / 'h') 'e' 'l'* 'o' ','
 
 |]
