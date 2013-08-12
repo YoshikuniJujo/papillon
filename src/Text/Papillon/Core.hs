@@ -65,7 +65,8 @@ papillonFile str = case flip evalState Nothing $ runErrorT $ pegFile $ parse str
 			lu = listUsed parsed
 			ou = optionalUsed parsed
 			addApplicative = if lu || ou
-				then "import Control.Applicative\n" else ""
+				then "import Control.Applicative" ++
+					"(Applicative, (<$>), (<*>))\n" else ""
 			addIdentity = if isJust monad then ""
 				else "import \"monads-tf\" Control.Monad.Identity\n"
 		return (prgm, mn, ppp,
