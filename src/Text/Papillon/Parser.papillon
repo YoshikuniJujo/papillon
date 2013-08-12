@@ -65,7 +65,7 @@ type STPeg = (Maybe Type, Type, Peg)
 type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
 type Selection =  Either [Expression] [PlainExpression]
-type Expression = Either ([(Lookahead, Check)], Exp) Exp
+type Expression = Either ([(Lookahead, Check)], Maybe Exp) Exp
 type PlainExpression = [(Lookahead, ReadFrom)]
 type Check = Either ((Pat, String), ReadFrom, Maybe (Exp, String)) (Char, Lists)
 data ReadFrom
@@ -86,7 +86,7 @@ instance Ppr ReadFrom where
 	ppr (FromSelection sel) = parens $ ps sel
 		where
 		ps = hsep . intersperse (P.char '/') . either (map pe) (map ppe)
-		pe (Left (ex, hs)) = (<+> braces (ppr hs)) $ hsep $
+		pe (Left (ex, hs)) = (<+> braces (maybe P.empty ppr hs)) $ hsep $
 			map (uncurry ($) . (((<>) . ppr) *** pprCheck)) ex
 		pe (Right ex) = P.char '<' <> ppr ex <> P.char '>'
 		ppe = hsep . map (uncurry (<>) . (ppr *** ppr))
@@ -260,8 +260,9 @@ normalSelection :: [Expression]
 	/ ex:expressionHs			{ return [ex] }
 
 expressionHs :: Expression
-	= e:expression WOpenBrace:word h:hsExpLam WCloseBrace:word
-						{ return $ Left (e, h) }
+	= e:expression
+		mh:(WOpenBrace:word h:hsExpLam WCloseBrace:word { return h })?
+						{ return $ Left (e, mh) }
 	/ e:expressionHsSugar			{ return e }
 
 expressionHsSugar :: Expression

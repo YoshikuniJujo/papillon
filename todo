@@ -3,6 +3,10 @@
 **************************
 
 * Parser.papillon のリファクタリング
+	version up して install
+
+	plain style の名残りを消す
+
 	plain style を消す
 		git checkout -b removePlainStyle としよう
 

@@ -172,3 +172,10 @@ runhaskell -isrc -ibin -Wall bin/papillon test/peg/prefixArrow.papillon tmp/ && 
 runhaskell -isrc -itmp -Wall tmp/prefixArrow.hs
 cp test/peg/prefixArrow.papillon tmp/prefixArrow_th.hs
 runhaskell -isrc -Wall tmp/prefixArrow_th.hs
+
+echo
+echo noExp.papillon
+runhaskell -isrc -ibin -Wall bin/papillon test/peg/noExp.papillon tmp/ && \
+runhaskell -isrc -itmp -Wall tmp/noExp.hs
+cp test/peg/noExp.papillon tmp/noExp_th.hs
+runhaskell -isrc -Wall tmp/noExp_th.hs

@@ -180,11 +180,14 @@ mkRule t m s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$
 
 expression :: Bool -> Bool -> Expression -> State Variables Exp
 expression th m (Left (e, r)) =
-	(doE . (++ [NoBindS $ retLift `AppE` r]) . concat <$>) $
+--	(doE . (++ [NoBindS $ retLift `AppE` r]) . concat <$>) $
+	(doE . (++ [NoBindS $ mkRetLift r]) . concat <$>) $
 		forM e $ \(la, ck) ->
 			lookahead th la (show $ pprCheck ck) (getReadings ck) =<<
 				check th m ck
 	where
+	mkRetLift (Just rr) = retLift `AppE` rr
+	mkRetLift Nothing = VarE (mkName "return") `AppE` TupE []
 	retLift = if m then VarE $ liftN th else VarE $ mkName "return"
 	getReadings (Left (_, rf, _)) = readings rf
 	getReadings (Right _) = [dvCharsN]
@@ -194,7 +197,7 @@ expression th _ (Right e) = do
 	let	e' = [(Here, Left ((VarP c, ""), FromVariable Nothing,
 			Just (e `AppE` VarE c, "")))]
 		r = VarE c
-	expression th False (Left (e', r))
+	expression th False (Left (e', Just r))
 
 check :: Bool -> Bool -> Check -> State Variables [Stmt]
 check th monadic (Left ((n, nc), rf, test)) = do
@@ -243,7 +246,7 @@ check th monadic (Right (c, l)) =
 	where
 	sel = Left [Left
 		([(Here, Left ((LitP $ CharL c, ""), FromVariable Nothing, Nothing))],
-		if monadic then VarE (mkName "return") `AppE` TupE [] else TupE [])]
+		Just $ if monadic then VarE (mkName "return") `AppE` TupE [] else TupE [])]
 
 plainExpression :: Bool -> Bool -> PlainExpression -> State Variables Exp
 plainExpression th monadic pexs = do
@@ -451,7 +454,8 @@ getType pg tkn s = case s of
 	Right e -> foldr1 (\x y -> (ConT (mkName "Either") `AppT` x) `AppT` y) $
 		map (mkt . map (rf . snd) . filter ((== Here) . fst)) e
 	Left [Right _] -> tkn
-	Left [Left ([(Here, Left ((VarP p, _), FromVariable Nothing, _))], VarE v)]
+	Left [Left ([(Here, Left ((VarP p, _), FromVariable Nothing, _))],
+			Just (VarE v))]
 		| p == v -> tkn
 	_ -> error "getType: can't get type"
 	where
