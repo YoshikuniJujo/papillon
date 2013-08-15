@@ -9,7 +9,6 @@ module Text.Papillon.Parser (
 	Definition,
 	Selection,
 	Expression,
-	PlainExpression,
 	Check,
 	ReadFrom(..),
 
@@ -64,9 +63,8 @@ type Code = String
 type STPeg = (Maybe Type, Type, Peg)
 type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
-type Selection =  Either [Expression] [PlainExpression]
+type Selection = [Expression]
 type Expression = Either ([(Lookahead, Check)], Maybe Exp) Exp
-type PlainExpression = [(Lookahead, ReadFrom)]
 type Check = Either ((Pat, String), ReadFrom, Maybe (Exp, String)) (Char, Lists)
 data ReadFrom
 	= FromVariable (Maybe String)
@@ -85,11 +83,10 @@ instance Ppr ReadFrom where
 	ppr (FromL l rf) = ppr rf <> ppr l
 	ppr (FromSelection sel) = parens $ ps sel
 		where
-		ps = hsep . intersperse (P.char '/') . either (map pe) (map ppe)
+		ps = hsep . intersperse (P.char '/') . map pe
 		pe (Left (ex, hs)) = (<+> braces (maybe P.empty ppr hs)) $ hsep $
 			map (uncurry ($) . (((<>) . ppr) *** pprCheck)) ex
 		pe (Right ex) = P.char '<' <> ppr ex <> P.char '>'
-		ppe = hsep . map (uncurry (<>) . (ppr *** ppr))
 
 
 instance Ppr Lookahead where
@@ -250,8 +247,8 @@ definition :: Definition
 		WEquals:word sel:selection WSemiColon:word
 		{ put Nothing >> return (v, mt, sel) }
 
-selection :: Either [Expression] [PlainExpression]
-	= ns:normalSelection			{ return $ Left ns }
+selection :: [Expression]
+	= ns:normalSelection			{ return ns }
 
 normalSelection :: [Expression]
 	= ex:expressionHs WSlash:word sel:normalSelection
@@ -354,7 +351,7 @@ readFromLs :: ReadFrom
 readFrom :: ReadFrom
 	= (WVar v):word				{ return $ FromVariable $ Just v }
 	/ WOpenParen:word s:selection WCloseParen:word		{ return $ FromSelection s }
-	/ e:expressionHsSugar'			{ return $ FromSelection $ Left [e] }
+	/ e:expressionHsSugar'			{ return $ FromSelection [e] }
 
 test :: (Exp, String)
 	= WOpenBracket:word h:hsExpLam com:comForErr? WCloseBracket:word

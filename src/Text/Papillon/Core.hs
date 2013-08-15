@@ -170,14 +170,7 @@ parseChar th = do
 mkRule :: Bool -> Bool -> Selection -> State Variables Exp
 mkRule t m s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$>
 	case s of
-		Left exs -> expression t m `mapM` exs
-		Right exs -> zipWithM ((<$>) . lr (length exs)) [0 .. ] $
-			map (plainExpression t m) exs
-	where
-	lr 1 0 ex = ex
-	lr _ 0 ex = infixApp (ConE $ mkName "Left") (VarE $ mkName "<$>") ex
-	lr l n ex = infixApp (ConE $ mkName "Right") (VarE $ mkName "<$>") $
-		lr (l - if n == l - 1 then 1 else 0) (n - 1) ex
+		exs -> expression t m `mapM` exs
 
 expression :: Bool -> Bool -> Expression -> State Variables Exp
 expression th m (Left (e, r)) =
@@ -245,27 +238,9 @@ check th monadic (Right (c, l)) =
 	check th monadic
 		(Left ((WildP, ""), FromL l $ FromSelection sel, Nothing))
 	where
-	sel = Left [Left
+	sel = [Left
 		([(Here, Left ((LitP $ CharL c, ""), FromVariable Nothing, Nothing))],
 		Just $ if monadic then VarE (mkName "return") `AppE` TupE [] else TupE [])]
-
-plainExpression :: Bool -> Bool -> PlainExpression -> State Variables Exp
-plainExpression th monadic pexs = do
-	laxs <- gets $ zip (map fst pexs) . fromJust . lookup "x"
-	let mkt = LamE (map (uncurry mkp) laxs) $
-		TupE $ map (VarE . snd) $ filter ((== Here) . fst) laxs
-	foldl (\x y -> infixApp x (VarE $ mkName "<*>") y)
-		(VarE (mkName "return") `AppE` mkt) <$>
-			mapM (transHAReadFrom th monadic) pexs
-	where
-	mkp Here n = VarP n
-	mkp _ _ = WildP
-
-transHAReadFrom :: Bool -> Bool -> (Lookahead, ReadFrom) -> State Variables Exp
-transHAReadFrom th monadic (ha, rf) = do
-	modify $ nextVariable "d"
-	doE <$> (lookahead th ha "" (readings rf) =<<
-		((: []) . NoBindS <$> transReadFrom th monadic rf))
 
 lookahead :: Bool -> Lookahead -> String -> [String] -> [Stmt] ->
 	State Variables [Stmt]
@@ -347,7 +322,7 @@ afterCheck th monadic b (pp, pc) d ns = [
 listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
 	where
-	sel = either (any ex) (any $ any $ rf . snd)
+	sel = any ex
 	ex (Left e) = any (either (rf . \(_, r, _) -> r) chr . snd) $ fst e
 	ex (Right _) = False
 	chr (_, List) = True
@@ -359,7 +334,7 @@ listUsed = any $ sel . \(_, _, s) -> s
 	rf _ = False
 optionalUsed = any $ sel . \(_, _, s) -> s
 	where
-	sel = either (any $ ex) (any $ any $ rf . snd)
+	sel = any ex
 	ex (Left e) = any (either (rf . \(_, r, _) -> r) chr . snd) $ fst e
 	ex (Right _) = False
 	chr (_, Optional) = True
@@ -454,8 +429,8 @@ readings :: ReadFrom -> [String]
 readings (FromVariable (Just s)) = [s]
 readings (FromVariable _) = [dvCharsN]
 readings (FromL _ rf) = readings rf
-readings (FromSelection s) = concat $ either
+readings (FromSelection s) = concat $
 	(mapM $ either
-		(either (readings . \(_, rf, _) -> rf) (const [dvCharsN]) . snd . head . fst)
-		(const [dvCharsN]))
-	(mapM $ concatMap $ readings . snd) s
+		(either (readings . \(_, rf, _) -> rf) (const [dvCharsN]) . snd .
+			head . fst)
+		(const [dvCharsN])) s
