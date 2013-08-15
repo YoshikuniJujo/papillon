@@ -3,8 +3,6 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	return () や :: () を消していく
-
 	plain style の名残りを消す
 
 	Foo.Bar.Baz や Hoge.Fuga.piyo を lex レベルで扱うようにする

@@ -210,7 +210,7 @@ moduleDecStr :: String
 	= !_:whr c s:moduleDecStr		{ return $ c : s }
 	/					{ return "" }
 
-whr :: () = WCloseParen:hsw WWhere:hsw
+whr = WCloseParen:hsw WWhere:hsw
 
 preImpPap :: String
 	= !_:importPapillon !(WOpenQuasiQuote "papillon"):hsw c pip:preImpPap
@@ -226,9 +226,7 @@ afterPeg :: String
 	= c atp:afterPeg			{ return $ c : atp }
 	/					{ return "" }
 
-importPapillon :: ()
-	= WImport:hsw "Text":typ '.' "Papillon":typ !'.'
-						{ return () }
+importPapillon = WImport:hsw "Text":typ '.' "Papillon":typ !'.'
 
 peg :: STPeg = _:space* p:peg_	{ return p }
 
@@ -540,45 +538,37 @@ escapeC :: Char
 	/ 'n'					{ return '\n' }
 	/ 't'					{ return '\t' }
 
-space :: ()
-	= s:[return $ s `elem` " \t"]		{ return () }
-	/ _:notSemiColon			{ return () }
-	/ _:lineComment				{ return () }
-	/ _:comment				{ return () }
+space	= s:[return $ s `elem` " \t"]
+	/ _:notSemiColon
+	/ _:lineComment
+	/ _:comment
 
-space' :: ()
-	= s:[return $ s `elem` " \t"]		{ return () }
-	/ _:newLine				{ return () }
-	/ _:lineComment				{ return () }
-	/ _:comment				{ return () }
+space'	= s:[return $ s `elem` " \t"]
+	/ _:newLine
+	/ _:lineComment
+	/ _:comment
 
-lineComment :: () = '-' '-' _:notNLString &'\n'	{ return () }
+lineComment = '-' '-' _:notNLString &'\n'
 
 notNLString :: String
 	= !'\n' c s:notNLString			{ return $ c : s }
 	/					{ return "" }
 
-comment :: ()
-	= '{' '-' !'#' _:comments _:comEnd	{ return () }
+comment = '{' '-' !'#' _:comments _:comEnd
 
-comments :: ()
-	= _:notComStr _:comment _:comments	{ return () }
-	/ _:notComStr				{ return () }
+comments = _:notComStr _:comment _:comments / _:notComStr
 
-notComStr :: ()
-	= !_:comment !_:comEnd _ _:notComStr	{ return () }
-	/					{ return () }
+notComStr = !_:comment !_:comEnd _ _:notComStr /
 
 comEnd = '-' '}'
 
 semiColon
-	= ';'					{ return () }
+	= ';'
 	/ _:newLine _:('\t' / ' ')*
 		(!ListPos (CharPos (_, h))):position[get>>=
 			(\b -> return $ maybe False (>=h) b)]
 		!_:lineComment !_:comment !';'
-						{ return () }
-	/ !_:[return True]			{ return () }
+	/ !_:[return True]
 
 notSemiColon
 	= _:newLine _:('\t' / ' ')*
