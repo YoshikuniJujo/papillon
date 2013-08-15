@@ -541,15 +541,13 @@ space	= s:[return $ s `elem` " \t"]
 	/ _:comment
 
 space'	= s:[return $ s `elem` " \t"]
-	/ _:newLine
+	/ '\n'+
 	/ _:lineComment
 	/ _:comment
 
 lineComment = '-' '-' _:notNLString &'\n'
 
-notNLString :: String
-	= !'\n' c s:notNLString			{ return $ c : s }
-	/					{ return "" }
+notNLString = !'\n' _ _:notNLString /
 
 comment = '{' '-' !'#' _:comments _:comEnd
 
@@ -561,20 +559,15 @@ comEnd = '-' '}'
 
 semiColon
 	= ';'
-	/ _:newLine _:('\t' / ' ')*
-		(!ListPos (CharPos (_, h))):position[get>>=
-			(\b -> return $ maybe False (>=h) b)]
-		!_:lineComment !_:comment !';'
+	/ '\n'+ _:('\t' / ' ')* (!ListPos (CharPos (_, h))):position
+		[maybe False (>= h) <$> get] !_:lineComment !_:comment !';'
 	/ !_:[return True]
 
 notSemiColon
-	= _:newLine _:('\t' / ' ')*
-		(!ListPos (CharPos (_, h))):position[get>>=
-			(\b -> return $ maybe True (< h) b)]
-	/ _:newLine _:lineComment
-	/ _:newLine _:comment
-	/ _:newLine &';'
-
-newLine = '\n'+
+	= '\n'+ _:('\t' / ' ')* (!ListPos (CharPos (_, h))):position
+		[maybe True (< h) <$> get]
+	/ '\n'+ _:lineComment
+	/ '\n'+ _:comment
+	/ '\n'+ &';'
 
 |]
