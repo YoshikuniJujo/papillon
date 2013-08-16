@@ -256,10 +256,10 @@ normalSelection :: [Expression]
 	/ ex:expressionHs			{ return [ex] }
 
 expressionHs :: Expression
-	= e:expression
+	= e:expressionHsSugar			{ return e }
+	/ e:expression
 		mh:(WOpenBrace:word h:hsExpLam WCloseBrace:word { return h })?
 						{ return $ Left (e, mh) }
-	/ e:expressionHsSugar			{ return e }
 
 expressionHsSugar :: Expression
 	= WLT:word h:hsExpLam WGT:word		{ return $ Right h }

@@ -4,11 +4,17 @@ import Text.Papillon
 import Data.Char
 
 main :: IO ()
-main = case runError $ var' $ parse "he_llo, world" of
-	Right (r, _) -> print r
-	Left _ -> putStrLn "parse error"
+main = do
+	case runError $ var' $ parse "he_llo, world" of
+		Right (r, _) -> print r
+		Left _ -> putStrLn "parse error"
+	case runError $ some $ parse "He_llo, world" of
+		Right (r, _) -> print r
+		Left _ -> putStrLn "parse error"
 
 [papillon|
+
+some :: Char = <isUpper>
 
 var :: String = cs:<isLower>+ ',' { cs }
 

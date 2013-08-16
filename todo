@@ -3,6 +3,10 @@
 **************************
 
 * Parser.papillon のリファクタリング
+	some :: Type = v:(<isDigit>) が出来ないのは変だろう。
+		{ () } を省略できるようにしたために空も expression として認識され
+		るようになり、<...> よりも先にそれがマッチしてしまった。
+
 	Foo.Bar.Baz や Hoge.Fuga.piyo を lex レベルで扱うようにする
 
 	word を lexer としよう。
