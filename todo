@@ -3,8 +3,6 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	opConName 等を hsWord 内で
-
 	word を lexer としよう。
 		word や hsw より上のレベルでは必ずどちらかを使うようにしよう。
 
@@ -124,6 +122,8 @@
 	mkName (concatMap (++ ".") m ++ t)
 	mkName (concatMap (++ ".") m ++ v)
 	のようにすれば良いだけだ。
+
+* '\xab' "\123\12345" のような表記を可能にしよう
 
 **************************
 *  warning 関係          *
