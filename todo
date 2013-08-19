@@ -3,9 +3,7 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	word の _:space* を分ける
-		wrd = w:word _:space*
-		のような感じにしようかな
+	opConName 等を hsWord 内で
 
 	word を lexer としよう。
 		word や hsw より上のレベルでは必ずどちらかを使うようにしよう。
@@ -16,25 +14,8 @@
 
 	word と hsw の共有できる部分を切り出そう。
 
-	type や var をちゃんとしよう
-	hs 内では Hoge.Fuga.Piyo や Foo.Bar.baz への対応も。
-	これは word と同じレベルでやってしまおう。
-	hs 外では word を使えば良い。
-	と思ったが、type や var のなかでは ' や _ も使えるので、
-	すこし考える必要がある。
-	word のなかでそれは可能か?
-	やや重複するが可能。
-	word	= varHead varTails spaces
-		/ typHead varTails spaces
-		/ ...
-		...
-	とすれば良い
-	また、同様に opTail 等も hsw 内で扱うほうが良いだろう。
-
 	それと Haskell ではだめでも papillon では使える token について
 		:< とか >+ とかについて考えた -> word, hsw を分けた
-
-	string literal と char literal は word と同じレベルで扱うことにする
 
 * 'c'+ をより拡張する
 	Char 以外の token でも使えるようにしたい。
