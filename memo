@@ -176,3 +176,16 @@ Text/Papillon/Parser.papillon           494
 2013.08.15 Thu.
 
 Text/Papillon/Parser.papillon		488
+
+2013.08.19 Mon.
+
+2013年  8月 19日 月曜日 17:33:40 JST
+
+Text/Papillon.hs                        9
+Text/Papillon/Core.hs                   363
+Text/Papillon/Parser.hs                 2557
+Text/Papillon/Papillon.hs               46
+Text/Papillon/List.hs                   59
+total                                   3034
+
+Text/Papillon/Parser.papillon		448

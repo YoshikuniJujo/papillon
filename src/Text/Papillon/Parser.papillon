@@ -42,7 +42,7 @@ import Language.Haskell.TH {- (
 	wildP, litP, varP, conP, tupP, listP, uInfixP,
 	litE, varE, conE, tupE, listE, sigE, appE, infixE, uInfixE, lamE,
 	integerL, charL, stringL) -}
-import Data.Char (isDigit, isUpper, isLower)
+import Data.Char (isDigit, isUpper, isLower, isAlphaNum)
 
 import Language.Haskell.TH.PprLib
 	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>), quotes)
@@ -119,49 +119,46 @@ data Word
 	| WOQuasiQuote String
 	| WCQuasiQuote
 
-	-- ["import", "module", "where"]
-	| WImport
+	-- ["module", "where", "import"]
 	| WModule
 	| WWhere
+	| WImport
 
-	-- ["->", "#-}", "::", "..", "{-#"]
-	| WRightArrow
-	| WCComment
+	-- ["::", "->", "..", "{-#", "#-}"]
 	| WTypeDef
+	| WRightArrow
 	| WDotDot
 	| WOComment
+	| WCComment
 
-	-- "!&()*+,-/:;<=>?[\\]`{|}"
-	| WExclamation
+	-- "!&*+?=/:<>"
+	| WBang
 	| WAmp
-	| WOParen
-	| WCParen
 	| WAsterisk
 	| WPlus
-	| WComma
+	| WQuestion
+	| WEqual
 	| WSlash
 	| WColon
-	| WSemiColon
 	| WLT
-	| WEquals
 	| WGT
-	| WQuestion
+
+	-- "[]{}()"
 	| WOBracket
---	| WBackSlash
 	| WCBracket
-	| WBackQuote
 	| WOBrace
 	| WCBrace
+	| WOParen
+	| WCParen
+
+	-- ",;`"
+	| WComma
+	| WSemiColon
+	| WBackQuote
 	deriving Show
 
-isVarHead :: Char -> Bool
-isVarHead = (||) <$> isLower <*> (== '_')
-
-isVarTail :: Char -> Bool
-isVarTail = or <$> sequence [isUpper, isLower, isDigit, (`elem` "_'")]
-
-isOpChar :: Char -> Bool
-isOpChar = (`elem` ":!#$%&*+./<=>?@\\^|-~")
+opChars :: String
+opChars = ":!#$%&*+./<=>?@\\^|-~"
 
 [papillon|
 
@@ -221,7 +218,7 @@ afterPeg :: String
 	= c atp:afterPeg			{ return $ c : atp }
 	/					{ return "" }
 
-importPapillon = WImport:hsw "Text":typ '.' "Papillon":typ !'.'
+importPapillon = WImport:hsw (WType ["Text"] "Papillon"):hsw
 
 peg :: STPeg = _:space* p:peg_			{ return p }
 
@@ -242,7 +239,7 @@ definition :: Definition
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WSymbol v):wrd
 		mt:(WTypeDef:hsw t:hsTypeArr { return t })?
-		WEquals:wrd sel:selection WSemiColon:wrd
+		WEqual:wrd sel:selection WSemiColon:wrd
 		{ put Nothing >> return (v, mt, sel) }
 
 selection :: [Expression]
@@ -269,7 +266,7 @@ expression :: [(Lookahead, Check)]
 	/					{ return [] }
 
 nameLeaf_ :: (Lookahead, Check)
-	= WExclamation:wrd nl:nameLeafNoCom com:comForErr?
+	= WBang:wrd nl:nameLeafNoCom com:comForErr?
 						{ return (NAhead $ maybe "" id com, nl) }
 	/ WAmp:wrd nl:nameLeaf			{ return (Ahead, nl) }
 	/ nl:nameLeaf				{ return (Here, nl) }
@@ -372,7 +369,6 @@ hsOp :: Exp
 	/ WBackQuote:hsw (WType [] t):hsw WBackQuote:hsw
 						{ return $ ConE $ mkName t }
 
-
 hsExpLam' :: Exp
 	= (WOp "\\"):hsw ps:pats WRightArrow:hsw e:hsExpTyp'
 						{ return $ LamE ps e }
@@ -447,17 +443,17 @@ wrd :: Word
 hsw :: Word = w:hsWord _:space*			{ return w }
 
 word :: Word
-	= v:<isVarTail>+ 			{ return $ WSymbol v }
-
+	= v:<(||) <$> isAlphaNum <*> (`elem` "_'")>+
+			 			{ return $ WSymbol v }
 	-- "!&*+?=/:<>"
-	/ '!'					{ return WExclamation }
+	/ '!'					{ return WBang }
 	/ '&'					{ return WAmp }
 
 	/ '*'					{ return WAsterisk }
 	/ '+'					{ return WPlus }
 	/ '?'					{ return WQuestion }
 
-	/ '='					{ return WEquals }
+	/ '='					{ return WEqual }
 	/ '/'					{ return WSlash }
 	/ ':'					{ return WColon }
 	/ '<'					{ return WLT }
@@ -482,17 +478,16 @@ hsWord :: Word
 
 	/ m:(t:typ '.' { return t })* t1:typ	{ return $ WType m t1 }
 	/ m:(t:typ '.' { return t })* v1:var	{ return $ WVar m v1 }
-	/ ':' w:<isOpChar>*			{ return $ WOpCon $ ':' : w }
-	/ w:<isOpChar>+				{ return $ WOp w }
+	/ ':' w:<(`elem` opChars)>*		{ return $ WOpCon $ ':' : w }
+	/ w:<(`elem` opChars)>+			{ return $ WOp w }
 	/ '\'' c:<(`notElem` "\\'")> '\''	{ return $ WChar c }
 	/ '\'' '\\' c:escChar '\''		{ return $ WChar c }
-	/ '"' s:stringLit '"'			{ return $ WString s }
+	/ '"' s:strLit '"'			{ return $ WString s }
 	/ d:<isDigit>+				{ return $ WInteger $ read d }
 
+	/ b:bras				{ return b }
 	/ ','					{ return WComma }
 	/ '`'					{ return WBackQuote }
-
-	/ b:bras				{ return b }
 
 bras :: Word
 	= '['					{ return WOBracket }
@@ -502,52 +497,51 @@ bras :: Word
 	/ '('					{ return WOParen }
 	/ ')'					{ return WCParen }
 
-typ :: String = u:<isUpper> t:<isVarTail>*	{ return $ u : t }
-var :: String = l:<isVarHead> t:<isVarTail>*	{ return $ l : t }
+typ :: String = u:<isUpper>
+	cs:<(||) <$> isAlphaNum <*> (`elem` "_'")>*	
+						{ return $ u : cs }
+var :: String = l:<(||) <$> isLower <*> (== '_')>
+	cs:<(||) <$> isAlphaNum <*> (`elem` "_'")>*
+						{ return $ l : cs }
 
-stringLit :: String
-	= c:<(`notElem` "\"\\")> s:stringLit	{ return $ c : s }
-	/ '\\' c:escChar s:stringLit		{ return $ c : s }
+strLit :: String
+	= c0:('\\' c:escChar { return c } / <(`notElem` "\"\\")>) s:strLit
+						{ return $ c0 : s }
 	/					{ return "" }
 
 escChar :: Char
-	= '"'					{ return '"' }
+	= '\\'					{ return '\\' }
 	/ '\''					{ return '\'' }
-	/ '\\'					{ return '\\' }
+	/ '"'					{ return '"' }
 	/ 'n'					{ return '\n' }
 	/ 't'					{ return '\t' }
 
 space	= _:<(`elem` " \t")>
 	/ _:notSemiColon
-	/ _:lineComment
 	/ _:comment
+	/ _:lineComment
 
 space'	= _:<(`elem` " \t")>
 	/ '\n'+
-	/ _:lineComment
 	/ _:comment
+	/ _:lineComment
 
-lineComment = '-' '-' _:notNLString &'\n'
+lineComment = '-' '-' _:<(/= '\n')>* &'\n'
 
-notNLString = !'\n' _ _:notNLString /
-
-comment = '{' '-' !'#' _:comments _:comEnd
-
-comments = _:notComStr _:comment _:comments / _:notComStr
-
-notComStr = !_:comment !_:comEnd _ _:notComStr /
-
-comEnd = '-' '}'
+comment = '{' '-' !'#' _:comments '-' '}'
+comments = _:comStr _:comment _:comments / _:comStr
+comStr = !_:comment !_:('-' '}') _ _:comStr /
 
 semiColon
 	= ';'
-	/ '\n'+ _:('\t' / ' ')* (!ListPos (CharPos (_, h))):position
-		[maybe False (>= h) <$> get] !_:lineComment !_:comment !';'
+	/ '\n'+ _:('\t' / ' ')*
+		(!ListPos (CharPos (_, x))):position[maybe False (x <=) <$> get]
+		!_:lineComment !_:comment !';'
 	/ !_:[return True]
 
 notSemiColon
-	= '\n'+ _:('\t' / ' ')* (!ListPos (CharPos (_, h))):position
-		[maybe True (< h) <$> get]
+	= '\n'+ _:('\t' / ' ')*
+		(!ListPos (CharPos (_, x))):position[maybe True (x >) <$> get]
 	/ '\n'+ _:lineComment
 	/ '\n'+ _:comment
 	/ '\n'+ &';'
