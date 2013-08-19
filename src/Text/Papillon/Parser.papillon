@@ -108,8 +108,7 @@ dvCharsN :: String
 dvCharsN = "char"
 
 data Word
-	= WTyp String
-	| WVar String
+	= WVar String
 	| WOp String
 	| WOther String
 	| WTypeDef
@@ -454,17 +453,8 @@ hsTypeTpl :: [Type]
 	/ t:hsTypeArr				{ return [t] }
 	/					{ return [] }
 
-hsTyp :: Word
-	= m:(t:typ '.' { return t })* t1:typ	{ return $ WModType m t1 }
-hsVar :: Word
-	= m:(t:typ '.' { return t })* v1:var	{ return $ WModVar m v1 }
-
-typ :: String = u:<isUpper> t:<isVarTail>*	{ return $ u : t }
-var :: String = l:<isVarHead> t:<isVarTail>*	{ return $ l : t }
-
 word :: Word
-	= t:typ _:space*			{ return $ WTyp t }
-	/ v:var _:space*			{ return $ WVar v }
+	= v:<isVarTail>+ _:space*		{ return $ WVar v }
 	/ w:<isAlphaNum>+ _:space*		{ return $ WOther w }
 	/ ':' ':' _:space*			{ return WTypeDef }
 	/ ':' _:space*				{ return WColon }
@@ -495,12 +485,17 @@ word :: Word
 	/ '\'' '\\' c:escapeC '\'' _:space*	{ return $ WChar c }
 	/ '"' s:stringLit_ '"' _:space*		{ return $ WString s }
 
+typ :: String = u:<isUpper> t:<isVarTail>*	{ return $ u : t }
+var :: String = l:<isVarHead> t:<isVarTail>*	{ return $ l : t }
+
 hsw :: Word
 	= 'm' 'o' 'd' 'u' 'l' 'e' _:space*	{ return $ WModule }
 	/ 'w' 'h' 'e' 'r' 'e' _:space*		{ return $ WWhere }
 	/ 'i' 'm' 'p' 'o' 'r' 't' _:space*	{ return $ WImport }
-	/ t:hsTyp _:space*			{ return $ t }
-	/ v:hsVar _:space*			{ return $ v }
+	/ m:(t:typ '.' { return t })* t1:typ _:space*
+						{ return $ WModType m t1 }
+	/ m:(t:typ '.' { return t })* v1:var _:space*
+						{ return $ WModVar m v1 }
 	/ d:<isDigit>+ _:space*			{ return $ WInteger $ read d }
 	/ w:<isAlphaNum>+ _:space*		{ return $ WOther w }
 	/ '[' v:var '|' _:space*		{ return $ WOpenQuasiQuote v }
