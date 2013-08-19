@@ -107,6 +107,9 @@ mkPegFile ps Nothing x y z w = (ps, [], Nothing, x ++ "\n" ++ y, z, w)
 dvCharsN :: String
 dvCharsN = "char"
 
+opChars :: String
+opChars = ":!#$%&*+./<=>?@\\^|-~"
+
 data Word
 	= WSymbol String
 	| WType [String] String
@@ -156,9 +159,6 @@ data Word
 	| WSemiColon
 	| WBackQuote
 	deriving Show
-
-opChars :: String
-opChars = ":!#$%&*+./<=>?@\\^|-~"
 
 [papillon|
 

@@ -3,17 +3,29 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	word を lexer としよう。
-		word や hsw より上のレベルでは必ずどちらかを使うようにしよう。
+	まずは module の export list をちゃんと parse してみようかな。
+		以下参照
 
-		もっと本格的に lexer 的にする。
+	import Hoge.Hage(Some(..), hage)
+	をちゃんとパースし、[Import] とし、そこから Text.Papillon を消すようにする
+	import list の要素は以下のようになると思う
+		name, Name, Name(Name, name), Name(..), (+++)
+	まとめると
+		var / typ "(" names? ")" / "(" op ")"
+		names = (var / typ) (, (var / typ))*
+	上記で全てのパターンを網羅しているだろうか?
+	また import 自体にも以下のパターンがあるだろう
+		import Hage.Hoge
+		import Hage.Hoge(...)
+		import Hage.Hoge hiding (...)
+		import qualified Hage.Hoge
+		import qualified Hage.Hoge as H
+		import "package-name" Hoge.Hoge
+	まとめると以下の感じか。
+		"import" strLit? "qualified"? name ("as" name)? "hiding"?
+			importList?
 
-	hsw をもっと本格的に lexer 的にする
-
-	word と hsw の共有できる部分を切り出そう。
-
-	それと Haskell ではだめでも papillon では使える token について
-		:< とか >+ とかについて考えた -> word, hsw を分けた
+* hscodelines を -rtsopts をつけて compile するようにしてみようかな
 
 * 'c'+ をより拡張する
 	Char 以外の token でも使えるようにしたい。
