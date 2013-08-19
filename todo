@@ -3,8 +3,6 @@
 **************************
 
 * Parser.papillon のリファクタリング
-	Foo.Bar.Baz や Hoge.Fuga.piyo を lex レベルで扱うようにする
-
 	word を lexer としよう。
 		word や hsw より上のレベルでは必ずどちらかを使うようにしよう。
 
@@ -152,6 +150,12 @@
 * !x:[True] が動くことを確認する
 
 * monad, source, prefix を順不同とする
+
+* Foo.Bar.Baz や Hoge.Fuga.piyo を扱えるようにする
+	lex レベルではすでに対応しているので、あとは、
+	mkName (concatMap (++ ".") m ++ t)
+	mkName (concatMap (++ ".") m ++ v)
+	のようにすれば良いだけだ。
 
 **************************
 *  warning 関係          *

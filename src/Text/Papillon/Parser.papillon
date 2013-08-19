@@ -135,9 +135,9 @@ data Word
 	| WVerticalBar
 	| WSemiColon
 	| WOperator String
-	| WVariable String
 	| WInteger Integer
-	| WType String
+	| WModVar [String] String
+	| WModType [String] String
 	| WOpenQuasiQuote String
 	| WCloseQuasiQuote
 	| WComma
@@ -179,7 +179,7 @@ pegFile :: PegFile
 			{ return $ mkPegFile pr md [] pp p atp }
 
 pragma :: PPragma
-	= WOpenComment:hsw (WType "LANGUAGE"):hsw s:pragmaItems WCloseComment:hsw
+	= WOpenComment:hsw (WModType [] "LANGUAGE"):hsw s:pragmaItems WCloseComment:hsw
 						{ return $ LanguagePragma s }
 	/ WOpenComment:hsw s:pragmaStr WCloseComment:hsw
 						{ return $ OtherPragma s }
@@ -189,8 +189,8 @@ pragmaStr :: String
 	/					{ return "" }
 
 pragmaItems :: [String]
-	= (WType t):hsw WComma:hsw i:pragmaItems{ return $ t : i }
-	/ (WType t):hsw				{ return [t] }
+	= (WModType [] t):hsw WComma:hsw i:pragmaItems{ return $ t : i }
+	/ (WModType [] t):hsw				{ return [t] }
 
 moduleDec :: Maybe ([String], Maybe String)
 	= WModule:hsw n:moduleName WOpenParen:hsw s:moduleDecStr _:whr
@@ -200,8 +200,7 @@ moduleDec :: Maybe ([String], Maybe String)
 	/					{ return Nothing }
 
 moduleName :: ModuleName
-	= t:typ '.' n:moduleName		{ return $ t : n }
-	/ (WType t):hsw				{ return [t] }
+	= (WModType m t):hsw			{ return $ m ++ [t] }
 
 moduleDecStr :: String
 	= !_:whr c s:moduleDecStr		{ return $ c : s }
@@ -301,19 +300,19 @@ leaf :: (ReadFrom, Maybe (Exp, String))
 
 patOp :: Pat
 	= p:pat o:opConName po:patOp		{ return $ UInfixP p o po }
-	/ p:pat WBackQuote:hsw (WType t):hsw WBackQuote:hsw po:patOp
+	/ p:pat WBackQuote:hsw (WModType [] t):hsw WBackQuote:hsw po:patOp
 						{ return $ UInfixP p (mkName t) po }
 	/ p:pat					{ return p }
 
 pat :: Pat
-	= (WType t):hsw ps:pats			{ return $ ConP (mkName t) ps }
+	= (WModType [] t):hsw ps:pats		{ return $ ConP (mkName t) ps }
 	/ WOpenParen:hsw o:opConName WCloseParen:hsw ps:pats	{ return $ ConP o ps }
 	/ p:pat1				{ return p }
 
 pat1 :: Pat
-	= (WType t):hsw				{ return $ ConP (mkName t) [] }
-	/ (WVariable "_"):hsw			{ return WildP }
-	/ (WVariable n):hsw			{ return $ VarP $ mkName n }
+	= (WModType [] t):hsw			{ return $ ConP (mkName t) [] }
+	/ (WModVar [] "_"):hsw			{ return WildP }
+	/ (WModVar [] n):hsw			{ return $ VarP $ mkName n }
 	/ (WInteger i):hsw			{ return $ LitP (IntegerL i) }
 	/ WHyphen:hsw (WInteger i):hsw		{ return $ LitP (IntegerL $ - i) }
 	/ (WChar c):hsw				{ return $ LitP $ CharL c }
@@ -374,9 +373,9 @@ hsOp :: Exp
 						{ return $ VarE $ mkName op }
 	/ (WOperator op):hsw[return $ all isOpChar op && op /= "::"]
 						{ return $ ConE $ mkName op }
-	/ WBackQuote:hsw (WVariable v):hsw WBackQuote:hsw	
+	/ WBackQuote:hsw (WModVar [] v):hsw WBackQuote:hsw	
 						{ return $ VarE $ mkName v }
-	/ WBackQuote:hsw (WType t):hsw WBackQuote:hsw
+	/ WBackQuote:hsw (WModType [] t):hsw WBackQuote:hsw
 						{ return $ ConE $ mkName t }
 
 
@@ -418,8 +417,8 @@ hsExp1 :: Exp
 						{ return $ ListE et }
 	/ WOpenBracket:hsw b:hsExpOp WDotDot:hsw e:hsExpOp WCloseBracket:hsw
 						{ return $ ArithSeqE $ FromToR b e }
-	/ (WVariable v):hsw			{ return $ VarE $ mkName v }
-	/ (WType t):hsw				{ return $ ConE $ mkName t }
+	/ (WModVar [] v):hsw			{ return $ VarE $ mkName v }
+	/ (WModType [] t):hsw			{ return $ ConE $ mkName t }
 	/ (WInteger i):hsw			{ return $ LitE $ integerL i }
 	/ (WChar c):hsw				{ return $ LitE $ charL c }
 	/ (WString s):hsw			{ return $ LitE $ stringL s }
@@ -446,7 +445,7 @@ hsType1 :: Type
 	/ WOpenParen:hsw tt:hsTypeTpl WCloseParen:hsw
 						{ return $ foldl AppT
 							(TupleT $ length tt) tt }
-	/ (WType t):hsw				{ return $ ConT $ mkName t }
+	/ (WModType [] t):hsw			{ return $ ConT $ mkName t }
 	/ WOpenParen:hsw WRightArrow:hsw WCloseParen:hsw
 						{ return ArrowT }
 
@@ -454,6 +453,11 @@ hsTypeTpl :: [Type]
 	= t:hsTypeArr WComma:hsw tt:hsTypeTpl	{ return $ t : tt }
 	/ t:hsTypeArr				{ return [t] }
 	/					{ return [] }
+
+hsTyp :: Word
+	= m:(t:typ '.' { return t })* t1:typ	{ return $ WModType m t1 }
+hsVar :: Word
+	= m:(t:typ '.' { return t })* v1:var	{ return $ WModVar m v1 }
 
 typ :: String = u:<isUpper> t:<isVarTail>*	{ return $ u : t }
 var :: String = l:<isVarHead> t:<isVarTail>*	{ return $ l : t }
@@ -495,8 +499,8 @@ hsw :: Word
 	= 'm' 'o' 'd' 'u' 'l' 'e' _:space*	{ return $ WModule }
 	/ 'w' 'h' 'e' 'r' 'e' _:space*		{ return $ WWhere }
 	/ 'i' 'm' 'p' 'o' 'r' 't' _:space*	{ return $ WImport }
-	/ t:typ _:space*			{ return $ WType t }
-	/ v:var _:space*			{ return $ WVariable v }
+	/ t:hsTyp _:space*			{ return $ t }
+	/ v:hsVar _:space*			{ return $ v }
 	/ d:<isDigit>+ _:space*			{ return $ WInteger $ read d }
 	/ w:<isAlphaNum>+ _:space*		{ return $ WOther w }
 	/ '[' v:var '|' _:space*		{ return $ WOpenQuasiQuote v }
