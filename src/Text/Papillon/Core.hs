@@ -180,9 +180,11 @@ expression th m (Left (e, r)) =
 			lookahead th la (show $ pprCheck ck) (getReadings ck) =<<
 				check th m ck
 	where
-	mkRetLift (Just rr) = retLift `AppE` rr
+	mkRetLift (Just rr) = retLift rr
 	mkRetLift Nothing = VarE (mkName "return") `AppE` TupE []
-	retLift = if m then VarE $ liftN th else VarE $ mkName "return"
+	retLift x = if m
+		then VarE (liftN th) `AppE` (VarE (liftN th) `AppE` x)
+		else VarE (mkName "return") `AppE` x
 	getReadings (Left (_, rf, _)) = readings rf
 	getReadings (Right _) = [dvCharsN]
 expression th _ (Right e) = do
@@ -313,11 +315,13 @@ beforeMatch th t nn d ns nc = [
 
 afterCheck :: Bool -> Bool -> Name -> (Exp, String) -> Name -> [String] -> [Stmt]
 afterCheck th monadic b (pp, pc) d ns = [
-	BindS (VarP b) $ retLift `AppE` pp,
+	BindS (VarP b) $ retLift pp,
 	NoBindS $ VarE (unlessN th) `AppE` VarE b `AppE`
 		throwErrorTH th d ns "not match: " (show $ ppr pp) pc]
 	where
-	retLift = if monadic then VarE $ liftN th else VarE $ mkName "return"
+	retLift x = if monadic
+		then VarE (liftN th) `AppE` (VarE (liftN th) `AppE` x)
+		else VarE (mkName "return") `AppE` x
 
 listUsed, optionalUsed :: Peg -> Bool
 listUsed = any $ sel . \(_, _, s) -> s
