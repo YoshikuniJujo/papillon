@@ -514,6 +514,7 @@ escChar :: Char
 	/ '\''					{ return '\'' }
 	/ '"'					{ return '"' }
 	/ 'n'					{ return '\n' }
+	/ 'r'					{ return '\r' }
 	/ 't'					{ return '\t' }
 
 space	= _:<(`elem` " \t")>
