@@ -4,10 +4,12 @@ import Text.Papillon
 
 parseSpace :: String -> Maybe Char
 parseSpace src
-	| Right (c, _) <- runError $ space $ parse src = Just c
+	| Right (c, _) <- runError $ hogespace $ hogeparse src = Just c
 	| otherwise = Nothing
 
 [papillon|
+
+prefix:"hoge"
 
 space :: Char
 	= '\x0020'	{ '\x0020' }

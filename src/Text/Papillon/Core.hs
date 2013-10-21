@@ -42,26 +42,36 @@ import Control.Applicative
 import Text.Papillon.Parser
 import Data.Maybe
 import Data.IORef
+import Data.Char
 
 import Text.Papillon.List
 
 import System.IO.Unsafe
 
-dvPosN :: Name
-dvPosN = mkName "position"
+dvPosN :: String -> Name
+dvPosN prefix = mkName $ prefix ++ "position"
+
+mkPrName :: String -> String -> Name
+mkPrName prefix = mkName . (prefix ++)
+
+mkPrUName :: String -> String -> Name
+mkPrUName prefix = mkName . (capitalize prefix ++)
+	where
+	capitalize "" = ""
+	capitalize (h : t) = toUpper h : t
 
 papillonCore :: String -> DecsQ
 papillonCore str = case flip evalState Nothing $ runErrorT $ peg $ parse str of
 	Right (stpegq, _) -> do
-		let (monad, src, parsed) = stpegq
-		decParsed True monad src parsed
+		let (monad, src, prefix, parsed) = stpegq
+		decParsed True monad src prefix parsed
 	Left err -> error $ "parse error: " ++ showParseError err
 
 papillonFile :: String ->
 	Q ([PPragma], ModuleName, Maybe Exports, Code, DecsQ, Code)
 papillonFile str = case flip evalState Nothing $ runErrorT $ pegFile $ parse str of
 	Right (pegfileq, _) -> do
-		let	(prgm, mn, ppp, pp, (monad, src, parsed), atp) = pegfileq
+		let	(prgm, mn, ppp, pp, (monad, src, prefix, parsed), atp) = pegfileq
 			lu = listUsed parsed
 			ou = optionalUsed parsed
 			addApplicative = if lu || ou
@@ -71,35 +81,36 @@ papillonFile str = case flip evalState Nothing $ runErrorT $ pegFile $ parse str
 				else "import \"monads-tf\" Control.Monad.Identity\n"
 		return (prgm, mn, ppp,
 			addApplicative ++ addIdentity ++ pp,
-			decs monad src parsed, atp)
+			decs monad src prefix parsed, atp)
 		where
 		decs = decParsed False
 	Left err -> error $ "parse error: " ++ showParseError err
 
-decParsed :: Bool -> Maybe Type -> Type -> Peg -> DecsQ
-decParsed th monad src parsed = do
-	let	d = derivs th (fromMaybe (ConT $ identityN th) monad) src parsed
-		pt = SigD (mkName "parse") $ src `arrT` ConT (mkName "Derivs")
-	p <- funD (mkName "parse") [mkParseBody th (isJust monad) parsed]
+decParsed :: Bool -> Maybe Type -> Type -> String -> Peg -> DecsQ
+decParsed th monad src prefix parsed = do
+	let	d = derivs th (fromMaybe (ConT $ identityN th) monad) src prefix parsed
+		pt = SigD (mkPrName prefix "parse") $
+			src `arrT` ConT (mkPrUName prefix "Derivs")
+	p <- funD (mkPrName prefix "parse") [mkParseBody th (isJust monad) prefix parsed]
 	return [d, pt, p]
 
-derivs :: Bool -> Type -> Type -> Peg -> Dec
-derivs th monad src pg = DataD [] (mkName "Derivs") [] [
-	RecC (mkName "Derivs") $ map derivs1 pg ++ [
-		(mkName dvCharsN, NotStrict, resultT tkn),
-		(dvPosN, NotStrict, resultT $ ConT (mkName "Pos") `AppT` src)
+derivs :: Bool -> Type -> Type -> String -> Peg -> Dec
+derivs th monad src prefix pg = DataD [] (mkPrUName prefix "Derivs") [] [
+	RecC (mkPrUName prefix "Derivs") $ map derivs1 pg ++ [
+		(mkPrName prefix dvCharsN, NotStrict, resultT tkn),
+		(dvPosN prefix, NotStrict, resultT $ ConT (mkName "Pos") `AppT` src)
 	 ]] []
 	where
 	tkn = ConT (mkName "Token") `AppT` src
-	derivs1 (name, Just t, _) = (mkName name, NotStrict, resultT t)
+	derivs1 (name, Just t, _) = (mkPrName prefix name, NotStrict, resultT t)
 	derivs1 (name, Nothing, _) =
-		(mkName name, NotStrict, resultT $ TupleT 0)
+		(mkPrName prefix name, NotStrict, resultT $ TupleT 0)
 	resultT typ = ConT (errorTTN th)
 		`AppT` (ConT (mkName "ParseError")
 			`AppT` (ConT (mkName "Pos") `AppT` src)
-			`AppT` ConT (mkName "Derivs"))
+			`AppT` ConT (mkPrUName prefix "Derivs"))
 		`AppT` monad
-		`AppT` (TupleT 2 `AppT` typ `AppT` ConT (mkName "Derivs"))
+		`AppT` (TupleT 2 `AppT` typ `AppT` ConT (mkPrUName prefix "Derivs"))
 
 type Variables = [(String, [Name])]
 
@@ -114,17 +125,17 @@ getVariable = ((head . fromJust) .) . lookup
 nextVariable :: String -> Variables -> Variables
 nextVariable n vs = (n, tail $ fromJust $ lookup n vs) : vs
 
-mkParseBody :: Bool -> Bool -> Peg -> ClauseQ
-mkParseBody th monadic pg = do
+mkParseBody :: Bool -> Bool -> String -> Peg -> ClauseQ
+mkParseBody th monadic prefix pg = do
 	glb <- runIO $ newIORef 1
 	vars <- foldM (newVariable glb) [] [
 		"parse", "chars", "pos", "d", "c", "s", "s'", "x", "t", "err", "b",
 		"list", "list1", "optional"]
 	let	pgn = getVariable "parse" vars
-	rets <- mapM (newNewName glb . \(n, _, _) -> n) pg
-	rules <- mapM (newNewName glb . \(n, _, _) -> n) pg
+	rets <- mapM (newNewName glb . \(n, _, _) -> prefix ++ n) pg
+	rules <- mapM (newNewName glb . \(n, _, _) -> prefix ++ n) pg
 	let	decs = flip evalState vars $ (:)
-			<$> (FunD pgn <$> (: []) <$> mkParseCore th rets rules)
+			<$> (FunD pgn <$> (: []) <$> mkParseCore th prefix rets rules)
 			<*> zipWithM mkr rules pg
 		list = if not $ listUsed pg then [] else listDec
 			(getVariable "list" vars) (getVariable "list1" vars) th
@@ -134,22 +145,22 @@ mkParseBody th monadic pg = do
 		VarE pgn `AppE` VarE (mkName "initialPos")
 	where
 	mkr rule (_, _, sel) =
-		flip (ValD $ VarP rule) [] . NormalB <$> mkRule th monadic sel
+		flip (ValD $ VarP rule) [] . NormalB <$> mkRule th monadic prefix sel
 
-mkParseCore :: Bool -> [Name] -> [Name] -> State Variables Clause
-mkParseCore th rets rules = do
+mkParseCore :: Bool -> String -> [Name] -> [Name] -> State Variables Clause
+mkParseCore th prefix rets rules = do
 	[ch, p, s, d] <- mapM (gets . getVariable) ["chars", "pos", "s", "d"]
 	let def ret rule = flip (ValD $ VarP ret) [] $
 		NormalB $ VarE (runStateTN th) `AppE` VarE rule `AppE` VarE d
-	pc <- parseChar th
+	pc <- parseChar th prefix
 	return $ Clause [VarP p, VarP s] (NormalB $ VarE d) $ [
 		flip (ValD $ VarP d) [] $ NormalB $ foldl1 AppE $
-			ConE (mkName "Derivs") : map VarE rets ++ [VarE ch,
+			ConE (mkPrUName prefix "Derivs") : map VarE rets ++ [VarE ch,
 				VarE (mkName "return") `AppE` TupE [VarE p, VarE d]]
 	 ] ++ zipWith def rets rules ++ [pc]
 
-parseChar :: Bool -> State Variables Dec
-parseChar th = do
+parseChar :: Bool -> String -> State Variables Dec
+parseChar th prefix = do
 	[prs, ch, p, c, s, s', d] <- mapM (gets . getVariable)
 		["parse", "chars", "pos", "c", "s", "s'", "d"]
 	let	emsg = "end of input"
@@ -164,21 +175,21 @@ parseChar th = do
 					VarE (mkName "return") `AppE` VarE c])
 				[],
 			flip (Match WildP) [] $ NormalB $
-				throwErrorTH th (mkName "undefined") [] emsg "" ""
+				throwErrorTH th prefix (mkName "undefined") [] emsg "" ""
 		 ] `AppE` VarE d
 
-mkRule :: Bool -> Bool -> Selection -> State Variables Exp
-mkRule t m s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$>
+mkRule :: Bool -> Bool -> String -> Selection -> State Variables Exp
+mkRule t m prefix s = (VarE (mkName "foldl1") `AppE` VarE (mplusN t) `AppE`) . ListE <$>
 	case s of
-		exs -> expression t m `mapM` exs
+		exs -> expression t m prefix `mapM` exs
 
-expression :: Bool -> Bool -> Expression -> State Variables Exp
-expression th m (Left (e, r)) =
+expression :: Bool -> Bool -> String -> Expression -> State Variables Exp
+expression th m prefix (Left (e, r)) =
 --	(doE . (++ [NoBindS $ retLift `AppE` r]) . concat <$>) $
 	(doE . (++ [NoBindS $ mkRetLift r]) . concat <$>) $
 		forM e $ \(la, ck) ->
-			lookahead th la (show $ pprCheck ck) (getReadings ck) =<<
-				check th m ck
+			lookahead th prefix la (show $ pprCheck ck) (getReadings ck) =<<
+				check th m prefix ck
 	where
 	mkRetLift (Just rr) = retLift rr
 	mkRetLift Nothing = VarE (mkName "return") `AppE` TupE []
@@ -187,16 +198,16 @@ expression th m (Left (e, r)) =
 		else VarE (mkName "return") `AppE` x
 	getReadings (Left (_, rf, _)) = readings rf
 	getReadings (Right _) = [dvCharsN]
-expression th _ (Right e) = do
+expression th _ prefix (Right e) = do
 	c <- gets $ getVariable "c"
 	modify $ nextVariable "c"
 	let	e' = [(Here, Left ((VarP c, ""), FromVariable Nothing,
 			Just (e `AppE` VarE c, "")))]
 		r = VarE c
-	expression th False (Left (e', Just r))
+	expression th False prefix (Left (e', Just r))
 
-check :: Bool -> Bool -> Check -> State Variables [Stmt]
-check th monadic (Left ((n, nc), rf, test)) = do
+check :: Bool -> Bool -> String -> Check -> State Variables [Stmt]
+check th monadic prefix (Left ((n, nc), rf, test)) = do
 	t <- gets $ getVariable "t"
 	d <- gets $ getVariable "d"
 	b <- gets $ getVariable "b"
@@ -205,66 +216,66 @@ check th monadic (Left ((n, nc), rf, test)) = do
 	modify $ nextVariable "b"
 	case (n, test) of
 		(WildP, Just p) -> ((BindS (VarP d) (VarE $ getN th) :) .
-				(: afterCheck th monadic b p d (readings rf))) .
-			BindS WildP <$> transReadFrom th monadic rf
+				(: afterCheck th monadic prefix b p d (readings rf))) .
+			BindS WildP <$> transReadFrom th monadic prefix rf
 		(_, Just p)
 			| notHaveOthers n -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
 					m = LetS [ValD n (NormalB $ VarE t) []]
-					c = afterCheck th monadic b p d (readings rf)
-				s <- BindS (VarP t) <$> transReadFrom th monadic rf
+					c = afterCheck th monadic prefix b p d (readings rf)
+				s <- BindS (VarP t) <$> transReadFrom th monadic prefix rf
 				return $ [bd, s, m] ++ c
 			| otherwise -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
-					m = beforeMatch th t n d (readings rf) nc
-					c = afterCheck th monadic b p d (readings rf)
-				s <- BindS (VarP t) <$> transReadFrom th monadic rf
+					m = beforeMatch th prefix t n d (readings rf) nc
+					c = afterCheck th monadic prefix b p d (readings rf)
+				s <- BindS (VarP t) <$> transReadFrom th monadic prefix rf
 				return $ [bd, s]  ++ m ++ c
 		(WildP, _) -> sequence [
-			BindS WildP <$> transReadFrom th monadic rf,
+			BindS WildP <$> transReadFrom th monadic prefix rf,
 			return $ NoBindS $ VarE (mkName "return") `AppE` TupE []
 		 ]
 		_	| notHaveOthers n ->
-				(: []) . BindS n <$> transReadFrom th monadic rf
+				(: []) . BindS n <$> transReadFrom th monadic prefix rf
 			| otherwise -> do
 				let	bd = BindS (VarP d) $ VarE $ getN th
-					m = beforeMatch th t n d (readings rf) nc
-				s <- BindS (VarP t) <$> transReadFrom th monadic rf
+					m = beforeMatch th prefix t n d (readings rf) nc
+				s <- BindS (VarP t) <$> transReadFrom th monadic prefix rf
 				return $ bd : s : m
 	where
 	notHaveOthers (VarP _) = True
 	notHaveOthers (TupP pats) = all notHaveOthers pats
 	notHaveOthers (BangP _) = True
 	notHaveOthers _ = False
-check th monadic (Right (c, l)) =
-	check th monadic
+check th monadic prefix (Right (c, l)) =
+	check th monadic prefix
 		(Left ((WildP, ""), FromL l $ FromSelection sel, Nothing))
 	where
 	sel = [Left
 		([(Here, Left ((LitP $ CharL c, ""), FromVariable Nothing, Nothing))],
 		Just $ if monadic then VarE (mkName "return") `AppE` TupE [] else TupE [])]
 
-lookahead :: Bool -> Lookahead -> String -> [String] -> [Stmt] ->
+lookahead :: Bool -> String -> Lookahead -> String -> [String] -> [Stmt] ->
 	State Variables [Stmt]
-lookahead _ Here _ _ ret = return ret
-lookahead th Ahead _ _ ret = do
+lookahead _ _ Here _ _ ret = return ret
+lookahead th _ Ahead _ _ ret = do
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "d"
 	return [BindS (VarP d) $ VarE (getN th),
 		BindS WildP $ doE ret,
 		NoBindS $ VarE (putN th) `AppE` VarE d]
-lookahead th (NAhead com) ck ns ret = do
+lookahead th prefix (NAhead com) ck ns ret = do
 	d <- gets $ getVariable "d"
 	modify $ nextVariable "d"
-	n <- negative th ('!' : ck) com
+	n <- negative th prefix ('!' : ck) com
 		d ns (doE ret)
 	return [BindS (VarP d) $ VarE (getN th),
 		NoBindS n,
 		NoBindS $ VarE (putN th) `AppE` VarE d]
 
-negative :: Bool -> String -> String -> Name -> [String] -> Exp ->
+negative :: Bool -> String -> String -> String -> Name -> [String] -> Exp ->
 	State Variables Exp
-negative th code com d ns act = do
+negative th prefix code com d ns act = do
 	err <- gets $ getVariable "err"
 	modify $ nextVariable "err"
 	return $ DoE [
@@ -277,31 +288,31 @@ negative th code com d ns act = do
 				(VarE (mkName "return") `AppE`
 					ConE (mkName "True"))),
 		NoBindS $ VarE (unlessN th) `AppE` VarE err `AppE`
-			throwErrorTH th d ns "not match: " code com]
+			throwErrorTH th prefix d ns "not match: " code com]
 
-transReadFrom :: Bool -> Bool -> ReadFrom -> State Variables Exp
-transReadFrom th _ (FromVariable Nothing) = return $
-	ConE (stateTN th) `AppE` VarE (mkName dvCharsN)
-transReadFrom th _ (FromVariable (Just var)) = return $
-	ConE (stateTN th) `AppE` VarE (mkName var)
-transReadFrom th m (FromSelection sel) = mkRule th m sel
-transReadFrom th m (FromL List rf) = do
+transReadFrom :: Bool -> Bool -> String -> ReadFrom -> State Variables Exp
+transReadFrom th _ prefix (FromVariable Nothing) = return $
+	ConE (stateTN th) `AppE` VarE (mkPrName prefix dvCharsN)
+transReadFrom th _ prefix (FromVariable (Just var)) = return $
+	ConE (stateTN th) `AppE` VarE (mkPrName prefix var)
+transReadFrom th m prefix (FromSelection sel) = mkRule th m prefix sel
+transReadFrom th m prefix (FromL List rf) = do
 	list <- gets $ getVariable "list"
-	(VarE list `AppE`) <$> transReadFrom th m rf
-transReadFrom th m (FromL List1 rf) = do
+	(VarE list `AppE`) <$> transReadFrom th m prefix rf
+transReadFrom th m prefix (FromL List1 rf) = do
 	list1 <- gets $ getVariable "list1"
-	(VarE list1 `AppE`) <$> transReadFrom th m rf
-transReadFrom th m (FromL Optional rf) = do
+	(VarE list1 `AppE`) <$> transReadFrom th m prefix rf
+transReadFrom th m prefix (FromL Optional rf) = do
 	opt <- gets $ getVariable "optional"
-	(VarE opt `AppE`) <$> transReadFrom th m rf
+	(VarE opt `AppE`) <$> transReadFrom th m prefix rf
 
-beforeMatch :: Bool -> Name -> Pat -> Name -> [String] -> String -> [Stmt]
-beforeMatch th t nn d ns nc = [
+beforeMatch :: Bool -> String -> Name -> Pat -> Name -> [String] -> String -> [Stmt]
+beforeMatch th prefix t nn d ns nc = [
 	NoBindS $ CaseE (VarE t) [
 		flip (Match $ vpw nn) [] $ NormalB $
 			VarE (mkName "return") `AppE` TupE [],
 		flip (Match WildP) [] $ NormalB $
-			throwErrorTH th d ns "not match pattern: " (show $ ppr nn) nc],
+			throwErrorTH th prefix d ns "not match pattern: " (show $ ppr nn) nc],
 	LetS [ValD nn (NormalB $ VarE t) []],
 	NoBindS $ VarE (mkName "return") `AppE` TupE []]
 	where
@@ -313,11 +324,11 @@ beforeMatch th t nn d ns nc = [
 	vpw (TupP ps) = TupP $ vpw `map` ps
 	vpw o = o
 
-afterCheck :: Bool -> Bool -> Name -> (Exp, String) -> Name -> [String] -> [Stmt]
-afterCheck th monadic b (pp, pc) d ns = [
+afterCheck :: Bool -> Bool -> String -> Name -> (Exp, String) -> Name -> [String] -> [Stmt]
+afterCheck th monadic prefix b (pp, pc) d ns = [
 	BindS (VarP b) $ retLift pp,
 	NoBindS $ VarE (unlessN th) `AppE` VarE b `AppE`
-		throwErrorTH th d ns "not match: " (show $ ppr pp) pc]
+		throwErrorTH th prefix d ns "not match: " (show $ ppr pp) pc]
 	where
 	retLift x = if monadic
 		then VarE (liftN th) `AppE` (VarE (liftN th) `AppE` x)
@@ -347,9 +358,9 @@ optionalUsed = any $ sel . \(_, _, s) -> s
 	rf (FromSelection s) = sel s
 	rf _ = False
 
-throwErrorTH :: Bool -> Name -> [String] -> String -> String -> String -> Exp
-throwErrorTH th d ns msg code com = InfixE
-	(Just $ ConE (stateTN th) `AppE` VarE dvPosN)
+throwErrorTH :: Bool -> String -> Name -> [String] -> String -> String -> String -> Exp
+throwErrorTH th prefix d ns msg code com = InfixE
+	(Just $ ConE (stateTN th) `AppE` VarE (dvPosN prefix))
 	(VarE $ mkName ">>=")
 	(Just $ InfixE
 		(Just $ VarE $ throwErrorN th)

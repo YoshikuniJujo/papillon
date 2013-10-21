@@ -61,7 +61,7 @@ type ModuleName = [String]
 type Exports = String
 type Code = String
 
-type STPeg = (Maybe Type, Type, Peg)
+type STPeg = (Maybe Type, Type, String, Peg)
 type Peg = [Definition]
 type Definition = (String, Maybe Type, Selection)
 type Selection = [Expression]
@@ -223,8 +223,9 @@ importPapillon = WImport:hsw (WType ["Text"] "Papillon"):hsw
 
 peg :: STPeg = _:space* p:peg_			{ return p }
 
-peg_ :: STPeg = mt:monadType? st:sourceType? p:definition*
-	{ return (mt, fromMaybe (ConT $ mkName "String") st, p) }
+peg_ :: STPeg = mt:monadType? st:sourceType? prfx:prefix? p:definition*
+	{ return (mt, fromMaybe (ConT $ mkName "String") st,
+		fromMaybe "" prfx, p) }
 
 monadType :: Type
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
@@ -235,6 +236,11 @@ sourceType :: Type
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
 		(WSymbol "source"):wrd WColon:wrd t:hsTypeArr WSemiColon:wrd
 						{ put Nothing >> return t }
+
+prefix :: String
+	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
+		(WSymbol "prefix"):wrd WColon:wrd (WString prfx):hsw WSemiColon:wrd
+						{ put Nothing >> return prfx }
 
 definition :: Definition
 	= (!ListPos (CharPos (_, x))):position[put (Just x) >> return True]
