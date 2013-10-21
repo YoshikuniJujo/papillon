@@ -42,7 +42,8 @@ import Language.Haskell.TH {- (
 	wildP, litP, varP, conP, tupP, listP, uInfixP,
 	litE, varE, conE, tupE, listE, sigE, appE, infixE, uInfixE, lamE,
 	integerL, charL, stringL) -}
-import Data.Char (isDigit, isUpper, isLower, isAlphaNum)
+import Data.Char (isDigit, isUpper, isLower, isAlphaNum, isHexDigit, chr)
+import Numeric (readHex)
 
 import Language.Haskell.TH.PprLib
 	((<>), hsep, colon, brackets, text, braces, Doc, parens, (<+>), quotes)
@@ -516,6 +517,7 @@ escChar :: Char
 	/ 'n'					{ return '\n' }
 	/ 'r'					{ return '\r' }
 	/ 't'					{ return '\t' }
+	/ 'x' ds:<isHexDigit>+			{ return $ chr $ fst $ head $ readHex ds }
 
 space	= _:<(`elem` " \t")>
 	/ _:notSemiColon
