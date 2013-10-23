@@ -123,10 +123,13 @@ data Word
 	| WOQuasiQuote String
 	| WCQuasiQuote
 
-	-- ["module", "where", "import"]
+	-- ["module", "where", "import", "if", "then", "else"]
 	| WModule
 	| WWhere
 	| WImport
+	| WIf
+	| WThen
+	| WElse
 
 	-- ["::", "->", "..", "{-#", "#-}"]
 	| WTypeDef
@@ -415,6 +418,8 @@ hsExp1 :: Exp
 	/ (WChar c):hsw				{ return $ LitE $ charL c }
 	/ (WString s):hsw			{ return $ LitE $ stringL s }
 	/ (WOp "-"):hsw e:hsExp1		{ return $ AppE (VarE $ mkName "negate") e }
+	/ WIf:hsw p:hsExpLam WThen:hsw t:hsExpLam WElse:hsw e:hsExpLam
+						{ return $ CondE p t e }
 
 hsExpTpl :: [Exp]
 	= e:hsExpLam WComma:hsw et:hsExpTpl
@@ -470,10 +475,13 @@ word :: Word
 	/ b:bras				{ return b }
 
 hsWord :: Word
-	-- ["module", "where", "import"]
+	-- ["module", "where", "import", "if", "then", "else"]
 	= 'm' 'o' 'd' 'u' 'l' 'e'		{ return $ WModule }
 	/ 'w' 'h' 'e' 'r' 'e'			{ return $ WWhere }
 	/ 'i' 'm' 'p' 'o' 'r' 't'		{ return $ WImport }
+	/ 'i' 'f'				{ return $ WIf }
+	/ 't' 'h' 'e' 'n'			{ return $ WThen }
+	/ 'e' 'l' 's' 'e'			{ return $ WElse }
 
 	-- ["[hoge|", "|]", "::", "->", "..", "{-#", "#-}"]
 	/ '[' v:var '|'				{ return $ WOQuasiQuote v }
