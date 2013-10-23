@@ -314,7 +314,8 @@ pat :: Pat
 	/ p:pat1				{ return p }
 
 pat1 :: Pat
-	= (WType [] t):hsw			{ return $ ConP (mkName t) [] }
+	= (WVar [] n):hsw (WOp "@"):hsw p:pat1	{ return $ AsP (mkName n) p }
+	/ (WType [] t):hsw			{ return $ ConP (mkName t) [] }
 	/ (WVar [] "_"):hsw			{ return WildP }
 	/ (WVar [] n):hsw			{ return $ VarP $ mkName n }
 	/ (WInteger i):hsw			{ return $ LitP (IntegerL i) }
