@@ -130,6 +130,8 @@ data Word
 	| WIf
 	| WThen
 	| WElse
+	| WLet
+	| WIn
 
 	-- ["::", "->", "..", "{-#", "#-}"]
 	| WTypeDef
@@ -420,6 +422,10 @@ hsExp1 :: Exp
 	/ (WOp "-"):hsw e:hsExp1		{ return $ AppE (VarE $ mkName "negate") e }
 	/ WIf:hsw p:hsExpLam WThen:hsw t:hsExpLam WElse:hsw e:hsExpLam
 						{ return $ CondE p t e }
+	/ WLet:hsw (WVar [] v):hsw (WOp "="):hsw e:hsExpLam WIn:hsw b:hsExpLam
+		{ return $ LetE
+			[ValD (VarP $ mkName v) (NormalB e) []]
+			b }
 
 hsExpTpl :: [Exp]
 	= e:hsExpLam WComma:hsw et:hsExpTpl
@@ -482,6 +488,8 @@ hsWord :: Word
 	/ 'i' 'f'				{ return $ WIf }
 	/ 't' 'h' 'e' 'n'			{ return $ WThen }
 	/ 'e' 'l' 's' 'e'			{ return $ WElse }
+	/ 'l' 'e' 't'				{ return $ WLet }
+	/ 'i' 'n'				{ return $ WIn }
 
 	-- ["[hoge|", "|]", "::", "->", "..", "{-#", "#-}"]
 	/ '[' v:var '|'				{ return $ WOQuasiQuote v }
@@ -491,6 +499,7 @@ hsWord :: Word
 	/ '.' '.'				{ return WDotDot }
 	/ '{' '-' '#'				{ return WOComment }
 	/ '#' '-' '}'				{ return WCComment }
+--	/ '='					{ return WEqual }
 
 	/ m:(t:typ '.' { return t })* t1:typ	{ return $ WType m t1 }
 	/ m:(t:typ '.' { return t })* v1:var	{ return $ WVar m v1 }
