@@ -1,5 +1,6 @@
 /tmp/
 /dist/
+/ebuilds
 /*.ebuild
 /src/Text/Papillon/Parser.hs
 /src/Text/Papillon/Papillon.hs

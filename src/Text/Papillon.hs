@@ -23,6 +23,8 @@ module Text.Papillon (
 import Text.Papillon.Core
 import Language.Haskell.TH.Quote
 
+import qualified Data.ByteString.Char8 as BSC
+
 papillon :: QuasiQuoter
 papillon = QuasiQuoter {
 	quoteExp = undefined,
