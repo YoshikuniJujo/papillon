@@ -137,11 +137,13 @@ mkParseBody th monadic prefix pg = do
 	let	decs = flip evalState vars $ (:)
 			<$> (FunD pgn <$> (: []) <$> mkParseCore th prefix rets rules)
 			<*> zipWithM mkr rules pg
-		list = if not $ listUsed pg then [] else listDec
+		list = if not $ listUsed pg then return [] else listDec
 			(getVariable "list" vars) (getVariable "list1" vars) th
-		opt = if not $ optionalUsed pg then [] else optionalDec
+		opt = if not $ optionalUsed pg then return [] else optionalDec
 			(getVariable "optional" vars) th
-	return $ flip (Clause []) (decs ++ list ++ opt) $ NormalB $
+	lst <- list
+	op <- opt
+	return $ flip (Clause []) (decs ++ lst ++ op) $ NormalB $
 		VarE pgn `AppE` VarE (mkName "initialPos")
 	where
 	mkr rule (_, _, sel) =
