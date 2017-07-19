@@ -92,19 +92,22 @@ decParsed th monad src prefix parsed = do
 		pt = SigD (mkPrName prefix "parse") $
 			src `arrT` ConT (mkPrUName prefix "Derivs")
 	p <- funD (mkPrName prefix "parse") [mkParseBody th (isJust monad) prefix parsed]
-	return [d, pt, p]
+	d' <- d
+	return [d', pt, p]
 
-derivs :: Bool -> Type -> Type -> String -> Peg -> Dec
-derivs th monad src prefix pg = DataD [] (mkPrUName prefix "Derivs") [] [
-	RecC (mkPrUName prefix "Derivs") $ map derivs1 pg ++ [
-		(mkPrName prefix dvCharsN, NotStrict, resultT tkn),
-		(dvPosN prefix, NotStrict, resultT $ ConT (mkName "Pos") `AppT` src)
-	 ]] []
+derivs :: Bool -> Type -> Type -> String -> Peg -> DecQ
+derivs th monad src prefix pg = do
+	ns <- notStrict
+	return $ DataD [] (mkPrUName prefix "Derivs") [] Nothing [
+		RecC (mkPrUName prefix "Derivs") $ map (derivs1 ns) pg ++ [
+			(mkPrName prefix dvCharsN, ns, resultT tkn),
+			(dvPosN prefix, ns, resultT $ ConT (mkName "Pos") `AppT` src)
+		]] []
 	where
 	tkn = ConT (mkName "Token") `AppT` src
-	derivs1 (name, Just t, _) = (mkPrName prefix name, NotStrict, resultT t)
-	derivs1 (name, Nothing, _) =
-		(mkPrName prefix name, NotStrict, resultT $ TupleT 0)
+	derivs1 ns (name, Just t, _) = (mkPrName prefix name, ns, resultT t)
+	derivs1 ns (name, Nothing, _) =
+		(mkPrName prefix name, ns, resultT $ TupleT 0)
 	resultT typ = ConT (errorTTN th)
 		`AppT` (ConT (mkName "ParseError")
 			`AppT` (ConT (mkName "Pos") `AppT` src)
