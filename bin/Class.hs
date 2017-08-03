@@ -83,7 +83,7 @@ parseErrorT _ = dataD (cxt []) (mkName "ParseError")
 			varStrictType d drvT,
 			varStrictType r lstT,
 			varStrictType pos posT ]
-	 ] (cxt [])
+	 ] []
 	where
 	[c, m, com, r, d, pos] = map mkName [
 		"peCode",
@@ -248,7 +248,7 @@ instance (SourceList c) => Source [c] where
 instanceSrcStr _ =
 	instanceD (cxt [classP sourceList [varT c]]) (conT source `appT` listC) [
 		tySynInstD tokenN $ tySynEqn [listC] (varT c),
-		flip (newtypeInstD (cxt []) posN [listC] Nothing) (cxt []) $
+		flip (newtypeInstD (cxt []) posN [listC] Nothing) [] $
 			normalC listPosN [strictType notStrict $
 				conT listPosN `appT` varT c],
 		valD (varP getTokenN) (normalB $ varE listTokenN) [],
@@ -312,7 +312,7 @@ instanceSLC th = instanceD (cxt []) (conT sourceList `appT` conT (charN th)) [
 			strictType notStrict $ tupleT 2
 				`appT` conT (mkName "Int")
 				`appT` conT (mkName "Int")]
-	 ) (cxt [conT $ mkName "Show"]),
+	 ) ([derivClause Nothing $ [conT $ mkName "Show"]]),
 	funD listTokenN [
 		clause [infixP (varP c) (consN th) (varP s)]
 			(normalB $ conE (justN th) `appE` tupleBody) [],
