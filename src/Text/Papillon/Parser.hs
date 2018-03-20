@@ -35,7 +35,7 @@ module Text.Papillon.Parser (
 
 ) where
 
-import Prelude hiding (Word)
+import Prelude hiding (Word, (<>))
 import Text.Papillon.Papillon
 import "monads-tf" Control.Monad.State
 import "monads-tf" Control.Monad.Error

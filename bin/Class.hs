@@ -198,8 +198,8 @@ class Source sl where
 -}
 
 classS th = classD (cxt []) source [PlainTV sl] [] [
-	familyNoKindD typeFam tokenN [PlainTV sl],
-	familyNoKindD dataFam posN [PlainTV sl],
+	openTypeFamilyD tokenN [PlainTV sl] NoSig Nothing,
+	dataFamilyD posN [PlainTV sl] Nothing,
 	sigD getTokenN $ arrowT `appT` varT sl `appT`
 		(conT (maybeN th) `appT` tupleBody),
 	sigD initialPosN $ conT posN `appT` varT sl,
@@ -223,7 +223,7 @@ class SourceList c where
 -}
 
 classSL th = classD (cxt []) sourceList [PlainTV c] [] [
-	familyNoKindD dataFam listPosN [PlainTV c],
+	dataFamilyD listPosN [PlainTV c] Nothing,
 	sigD listTokenN $ arrowT `appT` (listT `appT` varT c) `appT`
 		(conT (maybeN th) `appT` tupleBody),
 	sigD listInitialPosN $ conT listPosN `appT` varT c,
