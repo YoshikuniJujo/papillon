@@ -13,8 +13,7 @@ license-file:	LICENSE
 
 category:	Parsing
 synopsis:	packrat parser
-description:
-	see examples directory
+description:    see examples directory
 
 extra-source-files:
   examples/arith.hs
